@@ -1,0 +1,285 @@
+import React, { useMemo } from 'react';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import Animated, { FadeInUp } from 'react-native-reanimated';
+import type { MainTabScreenProps } from '../../navigation/types';
+import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { Badge } from '../../components/common/Badge';
+import { Chip } from '../../components/common/Chip';
+import { Button } from '../../components/common/Button';
+import { ModeToggle } from '../../components/profile/ModeToggle';
+import { useLanguage } from '../../store/LanguageContext';
+import { useAuth } from '../../store/AuthContext';
+import { useTheme } from '../../store/ThemeContext';
+import { useDialog } from '../../store/DialogContext';
+import { ageFromDob } from '../../utils/date';
+import { profileCompletion } from '../../utils/profileCompletion';
+import { radius, spacing, typography } from '../../theme';
+import type { Palette } from '../../theme/palettes';
+import type { ProfileMode } from '../../types/user';
+
+type Props = MainTabScreenProps<'Profile'>;
+
+const READINESS_KEY: Record<string, string> = {
+  browsing: 'profile.readinessBrowsing',
+  few_months: 'profile.readinessFewMonths',
+  ready_now: 'profile.readinessNow',
+};
+
+export function ProfileScreen({ navigation }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { t, rtl } = useLanguage();
+  const { user, updateUser, logout } = useAuth();
+  const { confirm } = useDialog();
+
+  if (!user) return null;
+  const age = ageFromDob(user.dob);
+  const completion = profileCompletion(user);
+  const memberSince = new Date(user.createdAt).getFullYear();
+
+  const setMode = (mode: ProfileMode) => {
+    updateUser({ ...user, activeMode: mode });
+  };
+
+  const onLogout = async () => {
+    const confirmed = await confirm({
+      title: t('profile.logOutConfirmTitle'),
+      message: t('profile.logOutConfirmBody'),
+      confirmLabel: t('profile.logOut'),
+      cancelLabel: t('common.cancel'),
+      destructive: true,
+    });
+    if (confirmed) {
+      logout();
+    }
+  };
+
+  return (
+    <ScreenContainer>
+      <LinearGradient colors={[colors.tealDark, colors.teal]} style={styles.banner}>
+        <Pressable onPress={() => navigation.navigate('Settings')} style={styles.settingsButton}>
+          <Ionicons name="settings-outline" size={18} color="#FFFFFF" />
+        </Pressable>
+      </LinearGradient>
+
+      <Animated.View entering={FadeInUp.duration(360)} style={styles.headerCard}>
+        <View style={styles.avatarWrap}>
+          {user.photos[0] ? (
+            <Image source={{ uri: user.photos[0] }} style={styles.avatar} />
+          ) : (
+            <View style={[styles.avatar, styles.avatarPlaceholder]}>
+              <Ionicons name="person" size={28} color={colors.textInverse} />
+            </View>
+          )}
+          {user.selfieVerified && (
+            <View style={styles.verifiedDot}>
+              <Ionicons name="checkmark" size={12} color="#FFFFFF" />
+            </View>
+          )}
+        </View>
+
+        <View style={styles.nameRow}>
+          <Text style={[styles.name, rtl && styles.rtlText]}>
+            {user.fullName}
+            {age ? `, ${age}` : ''}
+          </Text>
+        </View>
+        <Text style={[styles.meta, rtl && styles.rtlText]}>{user.city}</Text>
+
+        <View style={styles.badgeRow}>
+          <Badge label={user.selfieVerified ? t('profile.verified') : t('profile.notVerified')} tone={user.selfieVerified ? 'success' : 'neutral'} />
+          <Badge label={t(`intent.${user.intent}Title`)} tone="neutral" />
+        </View>
+
+        <Button label={t('profile.editProfile')} variant="secondary" onPress={() => navigation.navigate('EditProfile')} style={styles.editButton} />
+      </Animated.View>
+
+      <View style={styles.statsRow}>
+        <View style={styles.statItem}>
+          <Text style={styles.statValue}>{completion}%</Text>
+          <Text style={styles.statLabel}>{t('profile.completion')}</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.statItem}>
+          <Text style={styles.statValue}>{user.photos.length}</Text>
+          <Text style={styles.statLabel}>{t('photos.title')}</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.statItem}>
+          <Text style={styles.statValue}>{memberSince}</Text>
+          <Text style={styles.statLabel}>Member since</Text>
+        </View>
+      </View>
+
+      <View style={styles.section}>
+        <ModeToggle mode={user.activeMode} onChange={setMode} datingLabel={t('profile.datingMode')} rishtaLabel={t('profile.rishtaMode')} />
+      </View>
+
+      {user.bio ? (
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('profile.about')}</Text>
+          <Text style={[styles.body, rtl && styles.rtlText]}>{user.bio}</Text>
+        </View>
+      ) : null}
+
+      {user.activeMode === 'dating' ? (
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('profile.vibeTags')}</Text>
+          <View style={styles.chipRow}>
+            {user.dating.vibeTags.length === 0 ? (
+              <Text style={[styles.body, rtl && styles.rtlText]}>—</Text>
+            ) : (
+              user.dating.vibeTags.map((tag) => <Chip key={tag} label={tag} tone="dating" selected />)
+            )}
+          </View>
+        </View>
+      ) : (
+        <View style={styles.section}>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('profile.rishtaDetails')}</Text>
+            <Button label={t('common.edit')} variant="ghost" onPress={() => navigation.navigate('RishtaProfile')} />
+          </View>
+          <View style={styles.detailCard}>
+            <ProfileRow label={t('profile.readiness')} value={t(READINESS_KEY[user.rishta.readiness])} rtl={rtl} />
+            <ProfileRow label={t('profile.religion')} value={user.rishta.religion || '—'} rtl={rtl} />
+            <ProfileRow label={t('profile.sect')} value={user.rishta.sect || '—'} rtl={rtl} />
+            <ProfileRow label={t('profile.familyBackground')} value={user.rishta.familyBackground || '—'} rtl={rtl} />
+            <ProfileRow label={t('profile.education')} value={user.rishta.education || '—'} rtl={rtl} last />
+          </View>
+        </View>
+      )}
+
+      <View style={styles.section}>
+        <View style={styles.quickLinks}>
+          <QuickLinkRow icon="heart-outline" label={t('profile.favorites')} onPress={() => navigation.navigate('Favorites')} rtl={rtl} />
+          <QuickLinkRow icon="sparkles-outline" label={t('profile.subscription')} onPress={() => navigation.navigate('ExplorePlus')} rtl={rtl} />
+          <QuickLinkRow icon="notifications-outline" label={t('profile.notifications')} onPress={() => navigation.navigate('Notifications')} rtl={rtl} />
+          <QuickLinkRow icon="settings-outline" label={t('profile.settings')} onPress={() => navigation.navigate('Settings')} rtl={rtl} last />
+        </View>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('profile.comingInV2')}</Text>
+        <View style={styles.chipRow}>
+          <Badge label={t('profile.cnic')} tone="locked" />
+          <Badge label={t('profile.wali')} tone="locked" />
+          <Badge label={t('profile.bureau')} tone="locked" />
+          <Badge label={t('profile.aiScore')} tone="locked" />
+        </View>
+      </View>
+
+      <Button label={t('profile.logOut')} variant="danger" onPress={onLogout} style={styles.logout} />
+    </ScreenContainer>
+  );
+}
+
+function ProfileRow({ label, value, rtl, last }: { label: string; value: string; rtl: boolean; last?: boolean }) {
+  const { colors } = useTheme();
+  return (
+    <View
+      style={[
+        detailStyles.row,
+        !last && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.borderSoft },
+        rtl && { flexDirection: 'row-reverse' },
+      ]}
+    >
+      <Text style={[detailStyles.label, { color: colors.textSecondary }, rtl && detailStyles.rtlText]}>{label}</Text>
+      <Text style={[detailStyles.value, { color: colors.textPrimary }, rtl && detailStyles.rtlText]}>{value}</Text>
+    </View>
+  );
+}
+
+function QuickLinkRow({ icon, label, onPress, rtl, last }: { icon: keyof typeof Ionicons.glyphMap; label: string; onPress: () => void; rtl: boolean; last?: boolean }) {
+  const { colors } = useTheme();
+  return (
+    <Pressable onPress={onPress} style={[quickStyles.row, !last && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }, rtl && { flexDirection: 'row-reverse' }]}>
+      <Ionicons name={icon} size={18} color={colors.textSecondary} />
+      <Text style={[quickStyles.label, rtl && quickStyles.rtlText]}>{label}</Text>
+      <Ionicons name={rtl ? 'chevron-back' : 'chevron-forward'} size={16} color={colors.textTertiary} />
+    </Pressable>
+  );
+}
+
+const detailStyles = StyleSheet.create({
+  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.sm },
+  label: { ...typography.body },
+  value: { ...typography.bodyBold, flexShrink: 1, textAlign: 'right', marginLeft: spacing.md },
+  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
+});
+
+const quickStyles = StyleSheet.create({
+  row: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.md, gap: spacing.sm },
+  label: { ...typography.body, flex: 1 },
+  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
+});
+
+const makeStyles = (colors: Palette) =>
+  StyleSheet.create({
+    banner: { height: 88, borderRadius: radius.lg, marginTop: spacing.sm, alignItems: 'flex-end', padding: spacing.sm },
+    settingsButton: {
+      width: 34,
+      height: 34,
+      borderRadius: radius.pill,
+      backgroundColor: 'rgba(255,255,255,0.2)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    headerCard: { alignItems: 'center', marginTop: -40, paddingHorizontal: spacing.md },
+    avatarWrap: { position: 'relative' },
+    avatar: { width: 84, height: 84, borderRadius: 42, borderWidth: 4, borderColor: colors.background, backgroundColor: colors.skeleton },
+    avatarPlaceholder: { backgroundColor: colors.teal, alignItems: 'center', justifyContent: 'center' },
+    verifiedDot: {
+      position: 'absolute',
+      bottom: 2,
+      right: 2,
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      backgroundColor: colors.success,
+      borderWidth: 2,
+      borderColor: colors.background,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    nameRow: { marginTop: spacing.sm },
+    name: { ...typography.h2, color: colors.textPrimary },
+    meta: { ...typography.body, color: colors.textSecondary, marginTop: 2 },
+    badgeRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
+    editButton: { marginTop: spacing.md, alignSelf: 'stretch' },
+    statsRow: {
+      flexDirection: 'row',
+      backgroundColor: colors.surface,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      marginTop: spacing.lg,
+      paddingVertical: spacing.md,
+    },
+    statItem: { flex: 1, alignItems: 'center' },
+    statDivider: { width: 1, backgroundColor: colors.border },
+    statValue: { ...typography.h3, color: colors.textPrimary },
+    statLabel: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
+    section: { marginTop: spacing.lg },
+    sectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    sectionTitle: { ...typography.label, color: colors.textSecondary, marginBottom: spacing.sm, textTransform: 'uppercase' },
+    body: { ...typography.body, color: colors.textPrimary },
+    chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+    detailCard: {
+      backgroundColor: colors.surface,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingHorizontal: spacing.md,
+    },
+    quickLinks: {
+      backgroundColor: colors.surface,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingHorizontal: spacing.md,
+    },
+    logout: { marginTop: spacing.xl, marginBottom: spacing.lg },
+    rtlText: { textAlign: 'right', writingDirection: 'rtl' },
+  });

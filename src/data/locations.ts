@@ -1,0 +1,31 @@
+// Major Pakistani cities, covering the markets called out in the roadmap
+// (Lahore, Karachi, Islamabad, Faisalabad, Multan) plus enough others that
+// most users will find their own city rather than falling back to "Other".
+export const PAKISTAN_CITIES: string[] = [
+  'Karachi',
+  'Lahore',
+  'Islamabad',
+  'Rawalpindi',
+  'Faisalabad',
+  'Multan',
+  'Peshawar',
+  'Quetta',
+  'Sialkot',
+  'Gujranwala',
+  'Hyderabad',
+  'Bahawalpur',
+  'Sargodha',
+  'Sukkur',
+  'Abbottabad',
+  'Sahiwal',
+  'Mardan',
+  'Gujrat',
+  'Kasur',
+  'Rahim Yar Khan',
+  'Jhelum',
+  'Larkana',
+  'Sheikhupura',
+  'Mirpur (AJK)',
+  'Gilgit',
+  'Other',
+];
