@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Image, LayoutChangeEvent, NativeScrollEvent, NativeSyntheticEvent, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { BlurView } from 'expo-blur';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import type { AppStackScreenProps } from '../../navigation/types';
 import { Badge } from '../../components/common/Badge';
@@ -14,9 +15,11 @@ import { mockRishtaProfiles } from '../../data/mockRishta';
 import type { DiscoverProfile, RishtaListingProfile } from '../../types/content';
 import { useLanguage } from '../../store/LanguageContext';
 import { useTheme } from '../../store/ThemeContext';
+import { useAuth } from '../../store/AuthContext';
 import { useDialog } from '../../store/DialogContext';
 import { useMatches } from '../../store/MatchesContext';
 import { useFavorites } from '../../store/FavoritesContext';
+import { datingCompatibility, rishtaCompatibility } from '../../utils/compatibility';
 import { radius, spacing, typography } from '../../theme';
 import type { Palette } from '../../theme/palettes';
 
@@ -29,9 +32,10 @@ const READINESS_KEY: Record<string, string> = {
 };
 
 export function ProfileDetailScreen({ navigation, route }: Props) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
+  const { user } = useAuth();
   const { notify } = useDialog();
   const { getOrCreateMatchForProfile } = useMatches();
   const { isFavorite, toggleFavorite } = useFavorites();
@@ -45,7 +49,11 @@ export function ProfileDetailScreen({ navigation, route }: Props) {
   const rishtaProfile = kind === 'rishta' ? mockRishtaProfiles.find((p) => p.id === id) : undefined;
   const profile = datingProfile ?? rishtaProfile;
 
-  if (!profile) return null;
+  if (!profile || !user) return null;
+
+  const compatibilityScore = kind === 'dating' ? datingCompatibility(user, profile as DiscoverProfile) : rishtaCompatibility(user, profile as RishtaListingProfile);
+  const compatibilityTone = compatibilityScore >= 70 ? 'premium' : compatibilityScore >= 40 ? 'neutral' : 'locked';
+  const photosHidden = Boolean(profile.photosBlurred) && !isFavorite(profile.id);
 
   const onGalleryLayout = (e: LayoutChangeEvent) => setGalleryWidth(e.nativeEvent.layout.width);
   const onGalleryScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -95,6 +103,15 @@ export function ProfileDetailScreen({ navigation, route }: Props) {
                 <Image key={uri} source={{ uri }} style={[styles.galleryImage, { width: galleryWidth }]} />
               ))}
             </ScrollView>
+          )}
+
+          {photosHidden && (
+            <BlurView intensity={50} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFill}>
+              <View style={styles.blurOverlay}>
+                <Ionicons name="lock-closed" size={22} color="#FFFFFF" />
+                <Text style={styles.blurText}>{t('profileDetail.photosHidden')}</Text>
+              </View>
+            </BlurView>
           )}
 
           <View style={styles.galleryOverlayTop}>
@@ -169,10 +186,13 @@ export function ProfileDetailScreen({ navigation, route }: Props) {
           )}
 
           <View style={styles.lockedSection}>
-            <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('profile.comingInV2')}</Text>
+            <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('profile.insightsSection')}</Text>
             <View style={styles.chipRow}>
-              <Badge label={t('profile.aiScore')} tone="locked" />
-              <Badge label={t('profile.bureau')} tone="locked" />
+              <Badge label={t('profile.aiScoreValue', { score: compatibilityScore })} tone={compatibilityTone} icon="sparkles" />
+              <Badge
+                label={profile.bureauVerified ? t('profile.bureau') : t('profile.bureauNotVerified')}
+                tone={profile.bureauVerified ? 'success' : 'neutral'}
+              />
             </View>
           </View>
         </Animated.View>
@@ -243,6 +263,8 @@ const makeStyles = (colors: Palette) =>
     safeArea: { flex: 1, backgroundColor: colors.background },
     galleryWrap: { width: '100%', aspectRatio: 3 / 4, backgroundColor: colors.skeleton },
     galleryImage: { height: '100%' },
+    blurOverlay: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.xs },
+    blurText: { ...typography.label, color: '#FFFFFF' },
     galleryOverlayTop: {
       position: 'absolute',
       top: spacing.sm,

@@ -36,7 +36,7 @@ export function SettingsScreen({ navigation }: Props) {
   const { t, rtl, language, setLanguage } = useLanguage();
   const { logout } = useAuth();
   const { prefs, setPref } = useNotifications();
-  const { confirm, notify } = useDialog();
+  const { confirm } = useDialog();
 
   const onLogout = async () => {
     const confirmed = await confirm({
@@ -80,6 +80,9 @@ export function SettingsScreen({ navigation }: Props) {
         <Pressable onPress={() => setLanguage('ur')} style={[styles.themeOption, language === 'ur' && styles.themeOptionSelected]}>
           <Text style={[styles.themeLabel, language === 'ur' && styles.themeLabelSelected]}>{t('language.urdu')}</Text>
         </Pressable>
+        <Pressable onPress={() => setLanguage('roman')} style={[styles.themeOption, language === 'roman' && styles.themeOptionSelected]}>
+          <Text style={[styles.themeLabel, language === 'roman' && styles.themeLabelSelected]}>{t('language.roman')}</Text>
+        </Pressable>
       </View>
 
       <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('settings.notificationsSection')}</Text>
@@ -103,9 +106,9 @@ export function SettingsScreen({ navigation }: Props) {
         <View style={styles.divider} />
         <SettingsRow icon="heart-outline" label={t('profile.favorites')} right="chevron" onPress={() => navigation.navigate('Favorites')} />
         <View style={styles.divider} />
-        <SettingsRow icon="shield-checkmark-outline" label={t('settings.privacy')} right="chevron" onPress={() => notify({ title: t('settings.privacy'), message: 'Coming soon.' })} />
+        <SettingsRow icon="shield-checkmark-outline" label={t('settings.privacy')} right="chevron" onPress={() => navigation.navigate('PrivacySafety')} />
         <View style={styles.divider} />
-        <SettingsRow icon="help-circle-outline" label={t('settings.help')} right="chevron" onPress={() => notify({ title: t('settings.help'), message: 'Coming soon.' })} />
+        <SettingsRow icon="help-circle-outline" label={t('settings.help')} right="chevron" onPress={() => navigation.navigate('HelpSupport')} />
       </View>
 
       <Button label={t('profile.logOut')} variant="danger" onPress={onLogout} style={styles.logout} />

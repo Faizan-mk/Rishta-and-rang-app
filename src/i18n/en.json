@@ -32,7 +32,7 @@
   },
   "signup": {
     "title": "Create your account",
-    "subtitle": "Step 1 of 5 · Account details",
+    "subtitle": "Step 1 of 3 · Create your account",
     "email": "Email",
     "password": "Password",
     "confirmPassword": "Confirm password",
@@ -46,7 +46,7 @@
   },
   "personalDetails": {
     "title": "Personal details",
-    "subtitle": "Step 2 of 5 · Tell us about yourself",
+    "subtitle": "Tell us about yourself",
     "fullName": "Full name",
     "dob": "Date of birth",
     "dobPlaceholder": "DD/MM/YYYY",
@@ -89,7 +89,8 @@
     "title": "Choose your language",
     "subtitle": "Dating and rishta, in one app.",
     "english": "English",
-    "urdu": "اردو"
+    "urdu": "اردو",
+    "roman": "Roman English"
   },
   "nav": {
     "home": "Home",
@@ -112,8 +113,11 @@
     "moveToRishtaTitle": "The signature move",
     "moveToRishtaBody": "When a dating conversation gets serious, either of you can send a 'Move to Rishta' request right from chat.",
     "recentActivity": "Recent activity",
-    "comingSoonTitle": "Coming in a future update",
-    "comingSoonBody": "AI compatibility scoring, verified bureaus, and the Wali Dashboard land once this V1 test proves demand."
+    "likesWidgetTitle": "Daily likes",
+    "likesUsed": "{used} of {limit} likes used today",
+    "upgradeCta": "Upgrade for unlimited",
+    "proActiveTitle": "Explore+ active",
+    "proActiveBody": "You've got unlimited likes and can see everyone who's liked you."
   },
   "discover": {
     "title": "Discover",
@@ -122,7 +126,10 @@
     "like": "Like",
     "pass": "Pass",
     "rewind": "Rewind",
-    "outOfProfiles": "No more profiles right now"
+    "outOfProfiles": "No more profiles right now",
+    "likesRemaining": "{count} likes left today",
+    "limitReachedTitle": "You're out of likes for today",
+    "limitReachedBody": "Free accounts get 15 likes a day. Upgrade to Explore+ for unlimited likes."
   },
   "rishtaBrowse": {
     "title": "Browse Rishta",
@@ -151,9 +158,9 @@
     "blockConfirmTitle": "Block {name}?",
     "blockConfirmBody": "They won't be able to message you or see your profile again.",
     "reportConfirmTitle": "Report {name}?",
-    "reportConfirmBody": "Our safety team will review this conversation.",
     "reportSentTitle": "Report submitted",
-    "reportSentBody": "Thanks — our safety team will review this conversation shortly."
+    "reportSentBody": "Thanks — our safety team will review this conversation shortly.",
+    "recording": "Recording..."
   },
   "profile": {
     "title": "Profile",
@@ -164,6 +171,7 @@
     "vibeTags": "Vibe tags",
     "verified": "Verified",
     "notVerified": "Not verified",
+    "premiumBadge": "Explore+ member",
     "logOut": "Log out",
     "logOutConfirmTitle": "Log out?",
     "logOutConfirmBody": "You can always log back in with your email and password.",
@@ -181,10 +189,13 @@
     "familyBackground": "Family background",
     "education": "Education",
     "comingInV2": "Coming in a future update",
+    "verificationSection": "Verification & family",
+    "insightsSection": "Compatibility & verification",
     "cnic": "CNIC / ID verification",
     "wali": "Wali Dashboard",
     "bureau": "Bureau-verified badge",
-    "aiScore": "AI Compatibility Score",
+    "bureauNotVerified": "Not bureau verified",
+    "aiScoreValue": "{score}% compatible",
     "completion": "profile complete"
   },
   "editProfile": {
@@ -193,7 +204,8 @@
     "bioPlaceholder": "Tell people a bit about yourself...",
     "addVibeTag": "Add a vibe tag",
     "city": "City",
-    "saved": "Profile updated"
+    "saved": "Profile updated",
+    "blurNotice": "Your photos will appear blurred to others until you match (Privacy & safety setting)."
   },
   "rishtaProfile": {
     "title": "Matrimonial details",
@@ -222,31 +234,169 @@
     "help": "Help & support",
     "version": "Version 1.0.0 (V1 MVP)"
   },
+  "privacy": {
+    "title": "Privacy & safety",
+    "visibilitySection": "Profile visibility",
+    "profileVisible": "Show my profile to others",
+    "profileVisibleDesc": "Turn off to pause your profile from appearing in Discover and Rishta browsing.",
+    "onlineStatus": "Show when I'm online",
+    "blurPhotos": "Blur my photos until matched",
+    "blurPhotosDesc": "Others see your photos blurred until you match with them.",
+    "safetySection": "Safety",
+    "blockedUsers": "Blocked users",
+    "blockedUsersEmpty": "You haven't blocked anyone.",
+    "unblock": "Unblock",
+    "safetyTipsTitle": "Staying safe",
+    "safetyTip1": "Never send money or share financial details with a match.",
+    "safetyTip2": "Meet in public places until you've verified who someone really is.",
+    "safetyTip3": "Report anything that feels off — our safety team reviews every report.",
+    "accountSection": "Account",
+    "deleteAccount": "Delete account",
+    "deleteAccountConfirmTitle": "Delete your account?",
+    "deleteAccountConfirmBody": "This permanently removes your profile, matches, and messages. This can't be undone.",
+    "deleteAccountConfirmLabel": "Delete account"
+  },
+  "cnic": {
+    "title": "CNIC / ID verification",
+    "subtitle": "Upload a photo of your CNIC or ID card so we can confirm your identity.",
+    "detailSubtitle": "Collected and verified when you created your account.",
+    "uploadId": "Upload ID photo",
+    "number": "CNIC number",
+    "numberPlaceholder": "12345-1234567-1",
+    "invalidFormat": "Enter a valid 13-digit CNIC number (12345-1234567-1).",
+    "genderMismatch": "This CNIC number doesn't match the gender you selected — security check failed.",
+    "verified": "ID verified",
+    "notVerifiedInfo": "ID verification now happens during account creation, so this isn't available here.",
+    "imageCheckFailed_tooSmall": "That image couldn't be read. Try a clearer photo.",
+    "imageCheckFailed_wrongShape": "That doesn't look like an ID card photo — make sure the whole card fills the frame.",
+    "imageCheckFailed_notCardColored": "That doesn't look like a Pakistani CNIC. Upload a clear, well-lit photo of the green ID card."
+  },
+  "bureau": {
+    "confirmTitle": "Request bureau verification?",
+    "confirmBody": "We'll run a background check through our verification bureau and add a verified badge to your profile.",
+    "confirmLabel": "Request verification",
+    "requesting": "Requesting...",
+    "verifiedTitle": "Bureau verified",
+    "verifiedBody": "You now have a bureau-verified badge on your profile.",
+    "alreadyVerifiedBody": "You're already bureau verified."
+  },
+  "wali": {
+    "title": "Wali Dashboard",
+    "explainer": "Invite a wali (guardian) to stay in the loop on your rishta-stage matches — the conversations that have moved from dating to a serious, family-involved stage.",
+    "name": "Wali's name",
+    "namePlaceholder": "e.g. Abu Bakr",
+    "contact": "Wali's contact",
+    "contactPlaceholder": "Phone or email",
+    "missingFields": "Please fill in both fields.",
+    "sendInvite": "Send invite",
+    "invitedTitle": "Invite sent",
+    "invitedBody": "{name} has been added as your wali.",
+    "removeWali": "Remove wali",
+    "removeConfirmTitle": "Remove your wali?",
+    "removeConfirmBody": "They'll no longer see your rishta-stage activity.",
+    "removeConfirmLabel": "Remove",
+    "sharedActivity": "Shared activity",
+    "sharedActivityEmpty": "No rishta-stage matches yet.",
+    "statusInvited": "Invited — {name}",
+    "statusNotSet": "Not set up"
+  },
+  "report": {
+    "subtitle": "Tell us why you're reporting this profile.",
+    "reason_fakeProfile": "Fake profile",
+    "reason_inappropriate": "Inappropriate photos or messages",
+    "reason_harassment": "Harassment or abuse",
+    "reason_spam": "Spam or scam",
+    "reason_underage": "Underage user",
+    "reason_other": "Other",
+    "customLabel": "Tell us more",
+    "customPlaceholder": "Describe the issue...",
+    "missingReason": "Please select a reason.",
+    "missingCustomText": "Please describe the issue.",
+    "submit": "Submit report"
+  },
+  "help": {
+    "title": "Help & support",
+    "faqTitle": "Frequently asked questions",
+    "faq": {
+      "selfie": {
+        "q": "Why do you need a verification selfie?",
+        "a": "It confirms you're a real person behind the profile. It's never shown publicly and is only used for verification."
+      },
+      "subscription": {
+        "q": "What does Explore+ include?",
+        "a": "Explore+ removes your daily like limit and lets you see everyone who's already liked you, on a monthly or yearly plan."
+      },
+      "reporting": {
+        "q": "How do blocking and reporting work?",
+        "a": "Blocking someone from a chat removes the match immediately and stops them from contacting you again. Reporting sends the conversation to our safety team for review."
+      },
+      "changeDetails": {
+        "q": "Can I change my city or language later?",
+        "a": "Yes — update your city from Edit profile, and switch language anytime from Settings."
+      },
+      "deleteAccount": {
+        "q": "How do I delete my account?",
+        "a": "Go to Settings → Privacy & safety → Delete account. This permanently removes your profile, matches, and messages."
+      },
+      "safety": {
+        "q": "What should I do if something feels off?",
+        "a": "Block and report the person right from the chat screen. Our safety team reviews every report."
+      }
+    },
+    "contactTitle": "Still need help?",
+    "emailUs": "Email us directly",
+    "subject": "Subject",
+    "subjectPlaceholder": "What's this about?",
+    "message": "Message",
+    "messagePlaceholder": "Describe the issue or question...",
+    "send": "Send message",
+    "sentTitle": "Message sent",
+    "sentBody": "Thanks for reaching out — our support team replies within 24 hours.",
+    "missingFields": "Please fill in both fields."
+  },
   "explorePlus": {
     "title": "Explore+",
     "subtitle": "One simple upgrade — unlimited likes and see who liked you first.",
-    "price": "PKR 999/mo",
+    "monthly": "Monthly",
+    "yearly": "Yearly",
+    "monthlyPrice": "PKR 999/mo",
+    "yearlyPrice": "PKR 8,990/yr",
+    "save25": "Save 25%",
     "featureUnlimitedLikes": "Unlimited daily likes",
     "featureSeeWhoLikedYou": "See everyone who's liked you",
+    "dailyLikesRemaining": "{used} of {limit} daily likes used on the free plan",
     "upgrade": "Upgrade to Explore+",
     "upgraded": "You're on Explore+",
     "upgradeSuccessTitle": "Welcome to Explore+",
     "upgradeSuccessBody": "Unlimited likes and your admirers list are unlocked.",
     "whoLikedYou": "People who liked you",
-    "lockedHint": "Upgrade to see who's already interested"
+    "lockedHint": "Upgrade to see who's already interested",
+    "manageSubscription": "Manage subscription",
+    "currentPlan": "Current plan",
+    "renewsOn": "Renews on",
+    "unlimitedLikes": "Unlimited",
+    "cancelSubscription": "Cancel subscription",
+    "cancelConfirmTitle": "Cancel Explore+?",
+    "cancelConfirmBody": "You'll lose unlimited likes and your admirers list right away.",
+    "cancelConfirmLabel": "Cancel plan",
+    "cancelledTitle": "Subscription cancelled",
+    "cancelledBody": "You're back on the free plan."
   },
   "profileDetail": {
     "expressInterest": "Express interest",
     "interestSentTitle": "Interest sent",
     "interestSentBody": "{name} will be notified. If they're interested too, you'll both be able to move to Rishta Mode.",
     "message": "Message",
-    "call": "Call"
+    "call": "Call",
+    "photosHidden": "Photos hidden until you match"
   },
   "call": {
     "ringing": "Ringing...",
     "calling": "Calling {name}...",
     "connected": "Call in progress",
-    "end": "End call"
+    "end": "End call",
+    "cameraPermission": "Camera access is needed for video calls.",
+    "grantAccess": "Grant access"
   },
   "favorites": {
     "title": "Favorites",
@@ -256,7 +406,9 @@
     "photoLibraryTitle": "Permission needed",
     "photoLibraryBody": "Photo library access is required to add photos.",
     "cameraTitle": "Permission needed",
-    "cameraBody": "Camera access is required for verification."
+    "cameraBody": "Camera access is required for verification.",
+    "microphoneTitle": "Permission needed",
+    "microphoneBody": "Microphone access is required to record voice messages."
   },
   "notificationsScreen": {
     "title": "Notifications",

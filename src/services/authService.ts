@@ -26,6 +26,8 @@ export interface SignupInput {
   bio?: string;
   photos?: string[];
   selfieVerified?: boolean;
+  cnicNumber: string;
+  cnicPhotoUri?: string;
 }
 
 async function emailExists(email: string): Promise<boolean> {
@@ -53,6 +55,10 @@ async function signup(input: SignupInput): Promise<UserProfile> {
     selfieVerified: input.selfieVerified ?? false,
     intent: input.intent,
     language: input.language,
+    // Validated client-side (format + gender-parity security check) before signup is submitted.
+    cnicVerified: true,
+    cnicNumber: input.cnicNumber,
+    cnicPhotoUri: input.cnicPhotoUri,
     activeMode: input.intent === 'matrimonial' ? 'rishta' : 'dating',
     dating: { vibeTags: [] },
     rishta: {
@@ -112,4 +118,16 @@ async function updateUser(updated: UserProfile): Promise<UserProfile> {
   return updated;
 }
 
-export const authService = { signup, login, logout, getCurrentUser, updateUser, emailExists };
+async function deleteAccount(userId: string, email: string): Promise<void> {
+  const users = await getUsers();
+  delete users[userId];
+  await storage.setJSON(storage.KEYS.users, users);
+
+  const credentials = await getCredentials();
+  delete credentials[email.trim().toLowerCase()];
+  await storage.setJSON(storage.KEYS.credentials, credentials);
+
+  await storage.setJSON(storage.KEYS.session, null);
+}
+
+export const authService = { signup, login, logout, getCurrentUser, updateUser, deleteAccount, emailExists };

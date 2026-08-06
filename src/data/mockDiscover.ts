@@ -6,7 +6,7 @@ function gallery(...imgs: number[]): string[] {
 
 // Placeholder demo data only — a real backend would replace this with actual
 // candidate profiles from the matching service.
-export const mockDiscoverProfiles: DiscoverProfile[] = [
+const rawDiscoverProfiles: DiscoverProfile[] = [
   {
     id: 'd1',
     name: 'Ayesha',
@@ -68,3 +68,10 @@ export const mockDiscoverProfiles: DiscoverProfile[] = [
     photos: gallery(14, 15),
   },
 ];
+
+// Bureau verification + photo-blur privacy demoed on a subset of profiles for variety.
+export const mockDiscoverProfiles: DiscoverProfile[] = rawDiscoverProfiles.map((p, i) => ({
+  ...p,
+  bureauVerified: i % 3 === 0,
+  photosBlurred: i % 4 === 1,
+}));

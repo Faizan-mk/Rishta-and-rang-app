@@ -10,6 +10,9 @@ const KEYS = {
   matches: 'rishta.matches.v1',
   chatHistory: 'rishta.chatHistory.v1',
   favorites: 'rishta.favorites.v1',
+  dailyLikes: 'rishta.dailyLikes.v1',
+  privacyPrefs: 'rishta.privacyPrefs.v1',
+  blockedUsers: 'rishta.blockedUsers.v1',
 } as const;
 
 async function getJSON<T>(key: string, fallback: T): Promise<T> {

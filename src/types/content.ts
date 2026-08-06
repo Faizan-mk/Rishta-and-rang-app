@@ -9,6 +9,8 @@ export interface DiscoverProfile {
   bio: string;
   vibeTags: string[];
   photos: string[];
+  bureauVerified?: boolean;
+  photosBlurred?: boolean;
 }
 
 export interface RishtaListingProfile {
@@ -23,6 +25,8 @@ export interface RishtaListingProfile {
   familyBackground: string;
   readiness: RishtaReadiness;
   photos: string[];
+  bureauVerified?: boolean;
+  photosBlurred?: boolean;
 }
 
 export interface Match {
@@ -39,12 +43,18 @@ export interface Match {
   sourceProfileId?: string;
 }
 
+export type ChatMessageKind = 'text' | 'voice' | 'image';
+
 export interface ChatMessage {
   id: string;
   matchId: string;
   fromMe: boolean;
   text: string;
   sentAt: string;
+  kind?: ChatMessageKind;
+  audioUri?: string;
+  durationSec?: number;
+  imageUri?: string;
 }
 
 export type NotificationType = 'match' | 'like' | 'message' | 'rishta_request' | 'system';

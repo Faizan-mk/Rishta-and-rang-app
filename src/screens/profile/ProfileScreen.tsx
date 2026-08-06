@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -8,6 +8,7 @@ import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { Badge } from '../../components/common/Badge';
 import { Chip } from '../../components/common/Chip';
 import { Button } from '../../components/common/Button';
+import { SettingsRow } from '../../components/common/SettingsRow';
 import { ModeToggle } from '../../components/profile/ModeToggle';
 import { useLanguage } from '../../store/LanguageContext';
 import { useAuth } from '../../store/AuthContext';
@@ -32,7 +33,8 @@ export function ProfileScreen({ navigation }: Props) {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
   const { user, updateUser, logout } = useAuth();
-  const { confirm } = useDialog();
+  const { confirm, notify } = useDialog();
+  const [requestingBureau, setRequestingBureau] = useState(false);
 
   if (!user) return null;
   const age = ageFromDob(user.dob);
@@ -56,6 +58,24 @@ export function ProfileScreen({ navigation }: Props) {
     }
   };
 
+  const onRequestBureau = async () => {
+    if (user.bureauVerified) {
+      await notify({ title: t('profile.bureau'), message: t('bureau.alreadyVerifiedBody') });
+      return;
+    }
+    const confirmed = await confirm({
+      title: t('bureau.confirmTitle'),
+      message: t('bureau.confirmBody'),
+      confirmLabel: t('bureau.confirmLabel'),
+      cancelLabel: t('common.cancel'),
+    });
+    if (!confirmed) return;
+    setRequestingBureau(true);
+    await updateUser({ ...user, bureauVerified: true });
+    setRequestingBureau(false);
+    await notify({ title: t('bureau.verifiedTitle'), message: t('bureau.verifiedBody') });
+  };
+
   return (
     <ScreenContainer>
       <LinearGradient colors={[colors.tealDark, colors.teal]} style={styles.banner}>
@@ -67,9 +87,9 @@ export function ProfileScreen({ navigation }: Props) {
       <Animated.View entering={FadeInUp.duration(360)} style={styles.headerCard}>
         <View style={styles.avatarWrap}>
           {user.photos[0] ? (
-            <Image source={{ uri: user.photos[0] }} style={styles.avatar} />
+            <Image source={{ uri: user.photos[0] }} style={[styles.avatar, user.isExplorePlus && styles.avatarPremium]} />
           ) : (
-            <View style={[styles.avatar, styles.avatarPlaceholder]}>
+            <View style={[styles.avatar, styles.avatarPlaceholder, user.isExplorePlus && styles.avatarPremium]}>
               <Ionicons name="person" size={28} color={colors.textInverse} />
             </View>
           )}
@@ -89,6 +109,7 @@ export function ProfileScreen({ navigation }: Props) {
         <Text style={[styles.meta, rtl && styles.rtlText]}>{user.city}</Text>
 
         <View style={styles.badgeRow}>
+          {user.isExplorePlus && <Badge label={t('profile.premiumBadge')} tone="premium" icon="sparkles" />}
           <Badge label={user.selfieVerified ? t('profile.verified') : t('profile.notVerified')} tone={user.selfieVerified ? 'success' : 'neutral'} />
           <Badge label={t(`intent.${user.intent}Title`)} tone="neutral" />
         </View>
@@ -161,12 +182,31 @@ export function ProfileScreen({ navigation }: Props) {
       </View>
 
       <View style={styles.section}>
-        <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('profile.comingInV2')}</Text>
-        <View style={styles.chipRow}>
-          <Badge label={t('profile.cnic')} tone="locked" />
-          <Badge label={t('profile.wali')} tone="locked" />
-          <Badge label={t('profile.bureau')} tone="locked" />
-          <Badge label={t('profile.aiScore')} tone="locked" />
+        <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('profile.verificationSection')}</Text>
+        <View style={styles.quickLinks}>
+          <SettingsRow
+            icon="card-outline"
+            label={t('profile.cnic')}
+            description={user.cnicVerified ? t('profile.verified') : t('profile.notVerified')}
+            right="chevron"
+            onPress={() => navigation.navigate('CnicVerification')}
+          />
+          <View style={styles.rowDivider} />
+          <SettingsRow
+            icon="shield-checkmark-outline"
+            label={t('profile.bureau')}
+            description={requestingBureau ? t('bureau.requesting') : user.bureauVerified ? t('profile.verified') : t('profile.notVerified')}
+            right="chevron"
+            onPress={onRequestBureau}
+          />
+          <View style={styles.rowDivider} />
+          <SettingsRow
+            icon="people-outline"
+            label={t('profile.wali')}
+            description={user.waliContact ? t('wali.statusInvited', { name: user.waliName ?? '' }) : t('wali.statusNotSet')}
+            right="chevron"
+            onPress={() => navigation.navigate('WaliDashboard')}
+          />
         </View>
       </View>
 
@@ -229,6 +269,7 @@ const makeStyles = (colors: Palette) =>
     headerCard: { alignItems: 'center', marginTop: -40, paddingHorizontal: spacing.md },
     avatarWrap: { position: 'relative' },
     avatar: { width: 84, height: 84, borderRadius: 42, borderWidth: 4, borderColor: colors.background, backgroundColor: colors.skeleton },
+    avatarPremium: { borderColor: colors.gold },
     avatarPlaceholder: { backgroundColor: colors.teal, alignItems: 'center', justifyContent: 'center' },
     verifiedDot: {
       position: 'absolute',
@@ -280,6 +321,7 @@ const makeStyles = (colors: Palette) =>
       borderColor: colors.border,
       paddingHorizontal: spacing.md,
     },
+    rowDivider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border },
     logout: { marginTop: spacing.xl, marginBottom: spacing.lg },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   });

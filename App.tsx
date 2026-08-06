@@ -8,6 +8,8 @@ import { AuthProvider } from './src/store/AuthContext';
 import { NotificationProvider } from './src/store/NotificationContext';
 import { MatchesProvider } from './src/store/MatchesContext';
 import { FavoritesProvider } from './src/store/FavoritesContext';
+import { LikeLimitProvider } from './src/store/LikeLimitContext';
+import { PrivacyProvider } from './src/store/PrivacyContext';
 import { DialogProvider } from './src/store/DialogContext';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { ResponsiveFrame } from './src/components/common/ResponsiveFrame';
@@ -32,9 +34,13 @@ export default function App() {
               <NotificationProvider>
                 <MatchesProvider>
                   <FavoritesProvider>
-                    <DialogProvider>
-                      <AppContent />
-                    </DialogProvider>
+                    <LikeLimitProvider>
+                      <PrivacyProvider>
+                        <DialogProvider>
+                          <AppContent />
+                        </DialogProvider>
+                      </PrivacyProvider>
+                    </LikeLimitProvider>
                   </FavoritesProvider>
                 </MatchesProvider>
               </NotificationProvider>

@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { radius, spacing, typography } from '../../theme';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
@@ -13,17 +14,30 @@ interface ActionCardProps {
   onPress: () => void;
 }
 
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
 export function ActionCard({ icon, title, tint, tintSoft, onPress }: ActionCardProps) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const scale = useSharedValue(1);
+  const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
+    <AnimatedPressable
+      onPress={onPress}
+      onPressIn={() => {
+        scale.value = withSpring(0.94, { damping: 14, stiffness: 260 });
+      }}
+      onPressOut={() => {
+        scale.value = withSpring(1, { damping: 12, stiffness: 220 });
+      }}
+      style={[styles.card, animatedStyle]}
+    >
       <View style={[styles.iconWrap, { backgroundColor: tintSoft }]}>
         <Ionicons name={icon} size={22} color={tint} />
       </View>
       <Text style={styles.title}>{title}</Text>
-    </Pressable>
+    </AnimatedPressable>
   );
 }
 
@@ -38,7 +52,6 @@ const makeStyles = (colors: Palette) =>
       borderWidth: 1,
       borderColor: colors.border,
     },
-    pressed: { opacity: 0.8 },
     iconWrap: {
       width: 44,
       height: 44,

@@ -3,7 +3,7 @@ export type Intent = 'casual' | 'serious' | 'matrimonial';
 export type RishtaReadiness = 'browsing' | 'few_months' | 'ready_now';
 export type ProfileMode = 'dating' | 'rishta';
 export type Gender = 'male' | 'female' | 'other';
-export type AppLanguage = 'en' | 'ur';
+export type AppLanguage = 'en' | 'ur' | 'roman';
 
 export interface DatingProfile {
   vibeTags: string[];
@@ -38,11 +38,21 @@ export interface UserProfile {
   dating: DatingProfile;
   rishta: RishtaProfile;
   activeMode: ProfileMode;
-  // V2 stubs — verification tiers beyond the V1 selfie check.
+  // Verification tiers beyond the V1 selfie check. CNIC number + photo are collected
+  // at signup (see OnboardingDraft) and validated on the spot — cnicVerified is set
+  // true at account creation, not via a later profile-section flow.
   cnicVerified?: boolean;
+  cnicNumber?: string;
+  cnicPhotoUri?: string;
   bureauVerified?: boolean;
+  // Wali (guardian) contact invited to oversee rishta-stage activity.
+  waliName?: string;
+  waliContact?: string;
+  waliInvitedAt?: string;
   // V1 monetization — the single paid unlock (Explore+ lite) from the roadmap.
   isExplorePlus?: boolean;
+  subscriptionPlan?: 'monthly' | 'yearly';
+  subscriptionRenewsAt?: string;
   createdAt: string;
 }
 
@@ -52,13 +62,7 @@ export interface StoredCredential {
   userId: string;
 }
 
-// Step 1 of signup: account credentials, collected before any personal details.
-export interface AccountDraft {
-  email: string;
-  password: string;
-}
-
-// Accumulated across the multi-step signup flow (Account -> Personal -> Intent -> Photos -> Selfie)
+// Accumulated across the 3-step signup flow (Signup [account+personal] -> IntentPhotos -> Selfie)
 // before a single account is created at the end.
 export interface OnboardingDraft {
   fullName: string;
@@ -68,6 +72,8 @@ export interface OnboardingDraft {
   gender: Gender;
   city: string;
   bio?: string;
+  cnicNumber: string;
   intent?: Intent;
   photos?: string[];
+  cnicPhotoUri?: string;
 }

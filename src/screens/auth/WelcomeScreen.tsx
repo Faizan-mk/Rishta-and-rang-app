@@ -51,6 +51,12 @@ export function WelcomeScreen({ navigation }: Props) {
               onPress={() => setLanguage('ur')}
               style={styles.langButton}
             />
+            <Button
+              label={t('language.roman')}
+              variant={language === 'roman' ? 'primary' : 'secondary'}
+              onPress={() => setLanguage('roman')}
+              style={styles.langButton}
+            />
           </View>
 
           <View style={styles.actions}>

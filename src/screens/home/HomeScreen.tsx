@@ -2,7 +2,6 @@ import React, { useMemo } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeInUp } from 'react-native-reanimated';
 import type { MainTabScreenProps } from '../../navigation/types';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { StatCard } from '../../components/dashboard/StatCard';
@@ -10,11 +9,14 @@ import { ActionCard } from '../../components/dashboard/ActionCard';
 import { ProgressBar } from '../../components/dashboard/ProgressBar';
 import { NotificationRow } from '../../components/dashboard/NotificationRow';
 import { IconButton } from '../../components/common/IconButton';
+import { FadeIn } from '../../components/common/FadeInUp';
+import { Button } from '../../components/common/Button';
 import { useLanguage } from '../../store/LanguageContext';
 import { useAuth } from '../../store/AuthContext';
 import { useTheme } from '../../store/ThemeContext';
 import { useNotifications } from '../../store/NotificationContext';
 import { useMatches } from '../../store/MatchesContext';
+import { useLikeLimit } from '../../store/LikeLimitContext';
 import { profileCompletion } from '../../utils/profileCompletion';
 import { radius, spacing, typography } from '../../theme';
 import type { Palette } from '../../theme/palettes';
@@ -28,6 +30,7 @@ export function HomeScreen({ navigation }: Props) {
   const { user } = useAuth();
   const { feed, unreadCount } = useNotifications();
   const { matches } = useMatches();
+  const { used, limit, isUnlimited } = useLikeLimit();
 
   if (!user) return null;
   const completion = profileCompletion(user);
@@ -35,12 +38,12 @@ export function HomeScreen({ navigation }: Props) {
 
   return (
     <ScreenContainer edges={['top', 'bottom']}>
-      <Animated.View entering={FadeInUp.duration(360)} style={styles.headerRow}>
+      <FadeIn style={styles.headerRow}>
         <View style={styles.headerLeft}>
           {user.photos[0] ? (
-            <Image source={{ uri: user.photos[0] }} style={styles.avatar} />
+            <Image source={{ uri: user.photos[0] }} style={[styles.avatar, user.isExplorePlus && styles.avatarPremium]} />
           ) : (
-            <View style={[styles.avatar, styles.avatarPlaceholder]}>
+            <View style={[styles.avatar, styles.avatarPlaceholder, user.isExplorePlus && styles.avatarPremium]}>
               <Ionicons name="person" size={18} color={colors.textInverse} />
             </View>
           )}
@@ -50,12 +53,12 @@ export function HomeScreen({ navigation }: Props) {
           </View>
         </View>
         <View style={styles.headerActions}>
-          <IconButton icon="settings-outline" onPress={() => navigation.navigate('Settings')} />
           <IconButton icon="notifications-outline" onPress={() => navigation.navigate('Notifications')} badge={unreadCount} />
+          <IconButton icon="settings-outline" onPress={() => navigation.navigate('Settings')} />
         </View>
-      </Animated.View>
+      </FadeIn>
 
-      <Animated.View entering={FadeInUp.delay(80).duration(360)} style={styles.completionCard}>
+      <FadeIn delay={80} style={styles.completionCard}>
         <View style={styles.completionHeader}>
           <Text style={[styles.completionLabel, rtl && styles.rtlText]}>{t('dashboard.profileStrength')}</Text>
           <Text style={styles.completionValue}>{completion}%</Text>
@@ -67,17 +70,22 @@ export function HomeScreen({ navigation }: Props) {
             <Ionicons name={rtl ? 'chevron-back' : 'chevron-forward'} size={14} color={colors.teal} />
           </Pressable>
         )}
-      </Animated.View>
+      </FadeIn>
 
-      <Animated.View entering={FadeInUp.delay(140).duration(360)} style={styles.statsRow}>
-        <Pressable style={styles.statPressable} onPress={() => navigation.navigate('ExplorePlus')}>
-          <StatCard icon="heart" value={28} label={t('dashboard.statsLikes')} tint={colors.dating} tintSoft={colors.datingSoft} />
-        </Pressable>
+      <FadeIn delay={140} style={styles.statsRow}>
+        <StatCard
+          icon="heart"
+          value={28}
+          label={t('dashboard.statsLikes')}
+          tint={colors.dating}
+          tintSoft={colors.datingSoft}
+          onPress={() => navigation.navigate('ExplorePlus')}
+        />
         <StatCard icon="people" value={matches.length} label={t('dashboard.statsMatches')} tint={colors.rishta} tintSoft={colors.rishtaSoft} />
         <StatCard icon="eye" value={112} label={t('dashboard.statsViews')} tint={colors.teal} tintSoft={colors.tealSoft} />
-      </Animated.View>
+      </FadeIn>
 
-      <Animated.View entering={FadeInUp.delay(200).duration(360)} style={styles.section}>
+      <FadeIn delay={200} style={styles.section}>
         <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('dashboard.quickActions')}</Text>
         <View style={styles.actionsRow}>
           <ActionCard
@@ -109,17 +117,17 @@ export function HomeScreen({ navigation }: Props) {
             onPress={() => navigation.navigate('Favorites')}
           />
         </View>
-      </Animated.View>
+      </FadeIn>
 
-      <Animated.View entering={FadeInUp.delay(260).duration(360)}>
+      <FadeIn delay={260}>
         <LinearGradient colors={[colors.rishta, colors.plum]} style={styles.featureCard}>
           <Ionicons name="git-merge" size={22} color="#FFFFFF" />
           <Text style={styles.featureTitle}>{t('dashboard.moveToRishtaTitle')}</Text>
           <Text style={styles.featureBody}>{t('dashboard.moveToRishtaBody')}</Text>
         </LinearGradient>
-      </Animated.View>
+      </FadeIn>
 
-      <Animated.View entering={FadeInUp.delay(320).duration(360)} style={styles.section}>
+      <FadeIn delay={320} style={styles.section}>
         <View style={styles.sectionHeaderRow}>
           <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('dashboard.recentActivity')}</Text>
           <Pressable onPress={() => navigation.navigate('Notifications')}>
@@ -131,12 +139,33 @@ export function HomeScreen({ navigation }: Props) {
             <NotificationRow key={item.id} item={item} onPress={() => navigation.navigate('Notifications')} />
           ))}
         </View>
-      </Animated.View>
+      </FadeIn>
 
-      <Animated.View entering={FadeInUp.delay(380).duration(360)} style={styles.comingSoonCard}>
-        <Text style={[styles.comingSoonTitle, rtl && styles.rtlText]}>{t('dashboard.comingSoonTitle')}</Text>
-        <Text style={[styles.comingSoonBody, rtl && styles.rtlText]}>{t('dashboard.comingSoonBody')}</Text>
-      </Animated.View>
+      <FadeIn delay={380} style={styles.likesWidget}>
+        {isUnlimited ? (
+          <LinearGradient colors={[colors.gold, colors.dating]} style={styles.likesWidgetGradient}>
+            <Ionicons name="sparkles" size={20} color="#FFFFFF" />
+            <Text style={styles.likesWidgetTitlePro}>{t('dashboard.proActiveTitle')}</Text>
+            <Text style={styles.likesWidgetBodyPro}>{t('dashboard.proActiveBody')}</Text>
+            <Pressable onPress={() => navigation.navigate('ExplorePlus')} style={styles.manageLink}>
+              <Text style={styles.manageLinkText}>{t('explorePlus.manageSubscription')}</Text>
+              <Ionicons name={rtl ? 'chevron-back' : 'chevron-forward'} size={14} color="#FFFFFF" />
+            </Pressable>
+          </LinearGradient>
+        ) : (
+          <View style={styles.likesWidgetCard}>
+            <Text style={[styles.likesWidgetTitle, rtl && styles.rtlText]}>{t('dashboard.likesWidgetTitle')}</Text>
+            <Text style={[styles.likesWidgetBody, rtl && styles.rtlText]}>{t('dashboard.likesUsed', { used, limit })}</Text>
+            <ProgressBar progress={Math.min((used / limit) * 100, 100)} color={colors.dating} />
+            <Button
+              label={t('dashboard.upgradeCta')}
+              variant="secondary"
+              onPress={() => navigation.navigate('ExplorePlus')}
+              style={styles.upgradeCta}
+            />
+          </View>
+        )}
+      </FadeIn>
     </ScreenContainer>
   );
 }
@@ -145,12 +174,12 @@ const makeStyles = (colors: Palette) =>
   StyleSheet.create({
     headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.lg },
     headerLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-    avatar: { width: 44, height: 44, borderRadius: radius.pill, backgroundColor: colors.skeleton },
+    avatar: { width: 44, height: 44, borderRadius: radius.pill, backgroundColor: colors.skeleton, borderWidth: 2, borderColor: 'transparent' },
+    avatarPremium: { borderColor: colors.gold },
     avatarPlaceholder: { backgroundColor: colors.teal, alignItems: 'center', justifyContent: 'center' },
     greetingSmall: { ...typography.caption, color: colors.textSecondary },
     greetingName: { ...typography.h3, color: colors.textPrimary },
     headerActions: { flexDirection: 'row', gap: spacing.sm },
-    statPressable: { flex: 1 },
     completionCard: {
       backgroundColor: colors.surface,
       borderRadius: radius.lg,
@@ -180,13 +209,21 @@ const makeStyles = (colors: Palette) =>
       borderColor: colors.border,
       paddingHorizontal: spacing.md,
     },
-    comingSoonCard: {
-      backgroundColor: colors.plumLight,
+    likesWidget: { marginBottom: spacing.lg },
+    likesWidgetCard: {
+      backgroundColor: colors.surface,
       borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
       padding: spacing.md,
-      marginBottom: spacing.lg,
     },
-    comingSoonTitle: { ...typography.label, color: colors.plum, marginBottom: 4 },
-    comingSoonBody: { ...typography.caption, color: colors.plum },
+    likesWidgetTitle: { ...typography.label, color: colors.textPrimary, marginBottom: 4 },
+    likesWidgetBody: { ...typography.caption, color: colors.textSecondary, marginBottom: spacing.sm },
+    upgradeCta: { marginTop: spacing.md },
+    likesWidgetGradient: { borderRadius: radius.lg, padding: spacing.lg },
+    likesWidgetTitlePro: { ...typography.h3, color: '#FFFFFF', marginTop: spacing.sm },
+    likesWidgetBodyPro: { ...typography.body, color: 'rgba(255,255,255,0.9)', marginTop: spacing.xs },
+    manageLink: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: spacing.md },
+    manageLinkText: { ...typography.label, color: '#FFFFFF' },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   });

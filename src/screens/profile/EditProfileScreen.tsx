@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { Ionicons } from '@expo/vector-icons';
 import type { AppStackScreenProps } from '../../navigation/types';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { TextField } from '../../components/common/TextField';
@@ -12,6 +13,7 @@ import { useLanguage } from '../../store/LanguageContext';
 import { useAuth } from '../../store/AuthContext';
 import { useTheme } from '../../store/ThemeContext';
 import { useDialog } from '../../store/DialogContext';
+import { usePrivacy } from '../../store/PrivacyContext';
 import { radius, spacing, typography } from '../../theme';
 import type { Palette } from '../../theme/palettes';
 
@@ -25,6 +27,7 @@ export function EditProfileScreen({ navigation }: Props) {
   const { t, rtl } = useLanguage();
   const { user, updateUser } = useAuth();
   const { notify } = useDialog();
+  const { prefs } = usePrivacy();
 
   const [bio, setBio] = useState(user?.bio ?? '');
   const [city, setCity] = useState<string | null>(user?.city || null);
@@ -82,6 +85,12 @@ export function EditProfileScreen({ navigation }: Props) {
       <Text style={[styles.title, rtl && styles.rtlText]}>{t('editProfile.title')}</Text>
 
       <Text style={[styles.label, rtl && styles.rtlText]}>{t('photos.title')}</Text>
+      {prefs.blurPhotos && (
+        <View style={styles.blurNotice}>
+          <Ionicons name="eye-off-outline" size={14} color={colors.teal} />
+          <Text style={styles.blurNoticeText}>{t('editProfile.blurNotice')}</Text>
+        </View>
+      )}
       <View style={styles.grid}>
         {photos.map((uri) => (
           <Pressable key={uri} onPress={() => removePhoto(uri)} style={styles.slot}>
@@ -139,6 +148,8 @@ const makeStyles = (colors: Palette) =>
   StyleSheet.create({
     title: { ...typography.h1, color: colors.textPrimary, marginBottom: spacing.lg },
     label: { ...typography.label, color: colors.textPrimary, marginBottom: spacing.sm },
+    blurNotice: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.sm },
+    blurNoticeText: { ...typography.caption, color: colors.teal, flexShrink: 1 },
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.md },
     slot: { width: 80, height: 100, borderRadius: radius.md, overflow: 'hidden' },
     addSlot: {

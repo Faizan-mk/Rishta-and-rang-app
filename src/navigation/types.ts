@@ -1,16 +1,14 @@
 import type { CompositeScreenProps } from '@react-navigation/native';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import type { AccountDraft, OnboardingDraft } from '../types/user';
+import type { OnboardingDraft } from '../types/user';
 
 export type AuthStackParamList = {
   Welcome: undefined;
   Login: undefined;
-  Signup: undefined; // Step 1: account details (email + password)
-  PersonalDetails: { account: AccountDraft }; // Step 2: name, dob, gender, city
-  IntentSelection: { draft: OnboardingDraft }; // Step 3
-  PhotoUpload: { draft: OnboardingDraft }; // Step 4
-  SelfieVerification: { draft: OnboardingDraft }; // Step 5
+  Signup: undefined; // Step 1: account + personal details
+  IntentPhotos: { draft: OnboardingDraft }; // Step 2: intent + photos
+  SelfieVerification: { draft: OnboardingDraft }; // Step 3
 };
 
 export type MainTabParamList = {
@@ -26,7 +24,7 @@ export type ProfileDetailParams = { kind: 'dating'; id: string } | { kind: 'rish
 export type AppStackParamList = {
   MainTabs: undefined;
   Chat: { matchId: string };
-  Call: { name: string; photo: string };
+  Call: { name: string; photo: string; video?: boolean };
   EditProfile: undefined;
   RishtaProfile: undefined;
   Settings: undefined;
@@ -34,6 +32,11 @@ export type AppStackParamList = {
   ProfileDetail: ProfileDetailParams;
   ExplorePlus: undefined;
   Favorites: undefined;
+  PrivacySafety: undefined;
+  BlockedUsers: undefined;
+  HelpSupport: undefined;
+  CnicVerification: undefined;
+  WaliDashboard: undefined;
 };
 
 export type MainTabScreenProps<T extends keyof MainTabParamList> = CompositeScreenProps<

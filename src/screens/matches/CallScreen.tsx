@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { CameraView, useCameraPermissions, type CameraType } from 'expo-camera';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, {
   Easing,
@@ -12,6 +13,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import type { AppStackScreenProps } from '../../navigation/types';
+import { Button } from '../../components/common/Button';
 import { useLanguage } from '../../store/LanguageContext';
 import { useTheme } from '../../store/ThemeContext';
 import { radius, spacing, typography } from '../../theme';
@@ -28,16 +30,25 @@ function formatDuration(totalSeconds: number): string {
 export function CallScreen({ navigation, route }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { t } = useLanguage();
-  const { name, photo } = route.params;
+  const { t, rtl } = useLanguage();
+  const { name, photo, video } = route.params;
 
   const [connected, setConnected] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const [muted, setMuted] = useState(false);
   const [speaker, setSpeaker] = useState(false);
+  const [facing, setFacing] = useState<CameraType>('front');
+  const [permission, requestPermission] = useCameraPermissions();
   const ringScale = useSharedValue(1);
   const ringOpacity = useSharedValue(0.6);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (video && !permission?.granted) {
+      requestPermission();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [video]);
 
   useEffect(() => {
     ringScale.value = withRepeat(withSequence(withTiming(1.35, { duration: 900, easing: Easing.out(Easing.ease) }), withTiming(1, { duration: 0 })), -1, false);
@@ -61,33 +72,69 @@ export function CallScreen({ navigation, route }: Props) {
   }));
 
   const endCall = () => navigation.goBack();
+  const flipCamera = () => setFacing((f) => (f === 'front' ? 'back' : 'front'));
+
+  const isVideo = Boolean(video);
+  const showCamera = isVideo && permission?.granted;
 
   return (
-    <LinearGradient colors={[colors.tealDark, colors.background]} style={styles.flex}>
+    <View style={styles.flex}>
+      {showCamera ? (
+        <CameraView style={StyleSheet.absoluteFill} facing={facing} />
+      ) : (
+        <LinearGradient colors={[colors.tealDark, colors.background]} style={StyleSheet.absoluteFill} />
+      )}
+
       <SafeAreaView style={styles.flex} edges={['top', 'bottom']}>
-        <View style={styles.center}>
-          <Text style={styles.status}>{connected ? formatDuration(seconds) : t('call.ringing')}</Text>
-
-          <View style={styles.avatarWrap}>
-            {!connected && <Animated.View style={[styles.ring, ringStyle]} />}
-            <Image source={{ uri: photo }} style={styles.avatar} />
+        {isVideo && !permission?.granted ? (
+          <View style={styles.permissionWrap}>
+            <Ionicons name="videocam-off-outline" size={40} color="rgba(255,255,255,0.8)" />
+            <Text style={styles.permissionText}>{t('call.cameraPermission')}</Text>
+            <Button label={t('call.grantAccess')} onPress={requestPermission} style={styles.permissionButton} />
           </View>
+        ) : (
+          <>
+            <View style={showCamera ? styles.topBar : styles.center}>
+              <Text style={[styles.status, showCamera && styles.statusOnCamera]}>
+                {connected ? formatDuration(seconds) : t('call.ringing')}
+              </Text>
 
-          <Text style={styles.name}>{name}</Text>
-          <Text style={styles.hint}>{connected ? t('call.connected') : t('call.calling', { name })}</Text>
-        </View>
+              {!showCamera && (
+                <View style={styles.avatarWrap}>
+                  {!connected && <Animated.View style={[styles.ring, ringStyle]} />}
+                  <Image source={{ uri: photo }} style={styles.avatar} />
+                </View>
+              )}
 
-        <View style={styles.controlsRow}>
-          <CallControl icon={muted ? 'mic-off' : 'mic-outline'} active={muted} onPress={() => setMuted((m) => !m)} colors={colors} />
-          <CallControl icon="volume-high" active={speaker} onPress={() => setSpeaker((s) => !s)} colors={colors} />
-        </View>
+              <Text style={[styles.name, showCamera && styles.statusOnCamera]}>{name}</Text>
+              <Text style={[styles.hint, showCamera && styles.hintOnCamera]}>
+                {connected ? t('call.connected') : t('call.calling', { name })}
+              </Text>
+            </View>
 
-        <Pressable onPress={endCall} style={styles.endButton}>
-          <Ionicons name="call" size={26} color="#FFFFFF" style={styles.endIcon} />
-        </Pressable>
-        <Text style={styles.endLabel}>{t('call.end')}</Text>
+            {showCamera && connected && (
+              <View style={[styles.remoteTile, rtl && styles.remoteTileRtl]}>
+                <Image source={{ uri: photo }} style={styles.remoteImage} />
+              </View>
+            )}
+
+            <View style={styles.controlsRow}>
+              <CallControl icon={muted ? 'mic-off' : 'mic-outline'} active={muted} onPress={() => setMuted((m) => !m)} colors={colors} />
+              {showCamera ? (
+                <CallControl icon="camera-reverse-outline" active={false} onPress={flipCamera} colors={colors} />
+              ) : (
+                <CallControl icon="volume-high" active={speaker} onPress={() => setSpeaker((s) => !s)} colors={colors} />
+              )}
+            </View>
+
+            <Pressable onPress={endCall} style={styles.endButton}>
+              <Ionicons name="call" size={26} color="#FFFFFF" style={styles.endIcon} />
+            </Pressable>
+            <Text style={styles.endLabel}>{t('call.end')}</Text>
+          </>
+        )}
       </SafeAreaView>
-    </LinearGradient>
+    </View>
   );
 }
 
@@ -120,13 +167,29 @@ const makeStyles = (colors: Palette) =>
   StyleSheet.create({
     flex: { flex: 1 },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+    topBar: { alignItems: 'center', paddingTop: spacing.lg },
     status: { ...typography.label, color: 'rgba(255,255,255,0.8)', letterSpacing: 1 },
+    statusOnCamera: { color: '#FFFFFF', textShadowColor: 'rgba(0,0,0,0.5)', textShadowRadius: 4 },
     avatarWrap: { marginTop: spacing.lg, alignItems: 'center', justifyContent: 'center' },
     ring: { position: 'absolute', width: 168, height: 168, borderRadius: 84, borderWidth: 2, borderColor: '#FFFFFF' },
     avatar: { width: 140, height: 140, borderRadius: 70, borderWidth: 3, borderColor: 'rgba(255,255,255,0.5)' },
     name: { ...typography.h1, color: '#FFFFFF', marginTop: spacing.lg },
     hint: { ...typography.body, color: 'rgba(255,255,255,0.75)', marginTop: spacing.xs },
-    controlsRow: { flexDirection: 'row', gap: spacing.lg, alignSelf: 'center', marginBottom: spacing.xl },
+    hintOnCamera: { color: 'rgba(255,255,255,0.85)', textShadowColor: 'rgba(0,0,0,0.5)', textShadowRadius: 4 },
+    remoteTile: {
+      position: 'absolute',
+      top: spacing.xl + spacing.lg,
+      right: spacing.md,
+      width: 96,
+      height: 128,
+      borderRadius: radius.md,
+      overflow: 'hidden',
+      borderWidth: 2,
+      borderColor: 'rgba(255,255,255,0.7)',
+    },
+    remoteTileRtl: { right: undefined, left: spacing.md },
+    remoteImage: { width: '100%', height: '100%' },
+    controlsRow: { flexDirection: 'row', gap: spacing.lg, alignSelf: 'center', marginTop: 'auto', marginBottom: spacing.xl },
     endButton: {
       width: 64,
       height: 64,
@@ -138,5 +201,8 @@ const makeStyles = (colors: Palette) =>
     },
     endIcon: { transform: [{ rotate: '135deg' }] },
     endLabel: { ...typography.caption, color: 'rgba(255,255,255,0.7)', textAlign: 'center', marginTop: spacing.sm, marginBottom: spacing.lg },
+    permissionWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xl, gap: spacing.md },
+    permissionText: { ...typography.body, color: 'rgba(255,255,255,0.85)', textAlign: 'center' },
+    permissionButton: { marginTop: spacing.sm, alignSelf: 'stretch' },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   });

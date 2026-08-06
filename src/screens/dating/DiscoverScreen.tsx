@@ -12,6 +12,8 @@ import { useLanguage } from '../../store/LanguageContext';
 import { useTheme } from '../../store/ThemeContext';
 import { useAuth } from '../../store/AuthContext';
 import { useFavorites } from '../../store/FavoritesContext';
+import { useDialog } from '../../store/DialogContext';
+import { useLikeLimit } from '../../store/LikeLimitContext';
 import { oppositeGenderProfiles } from '../../utils/genderMatch';
 import { radius, spacing, typography } from '../../theme';
 import type { Palette } from '../../theme/palettes';
@@ -24,6 +26,8 @@ export function DiscoverScreen({ navigation }: Props) {
   const { t, rtl } = useLanguage();
   const { user } = useAuth();
   const { isFavorite, toggleFavorite } = useFavorites();
+  const { confirm } = useDialog();
+  const { isUnlimited, remaining, recordLike } = useLikeLimit();
   const [celebration, setCelebration] = useState<{ name: string; photo: string } | null>(null);
 
   const visibleProfiles = useMemo(
@@ -31,8 +35,23 @@ export function DiscoverScreen({ navigation }: Props) {
     [user?.gender]
   );
 
-  const toggleLike = (profile: DiscoverProfile) => {
+  const toggleLike = async (profile: DiscoverProfile) => {
     const wasLiked = isFavorite(profile.id);
+    if (!wasLiked) {
+      const allowed = recordLike();
+      if (!allowed) {
+        const wantsUpgrade = await confirm({
+          title: t('discover.limitReachedTitle'),
+          message: t('discover.limitReachedBody'),
+          confirmLabel: t('explorePlus.upgrade'),
+          cancelLabel: t('common.cancel'),
+        });
+        if (wantsUpgrade) {
+          navigation.navigate('ExplorePlus');
+        }
+        return;
+      }
+    }
     toggleFavorite({ id: profile.id, kind: 'dating', name: profile.name, age: profile.age, city: profile.city, photo: profile.photos[0] });
     if (!wasLiked) {
       setCelebration({ name: profile.name, photo: profile.photos[0] });
@@ -54,9 +73,17 @@ export function DiscoverScreen({ navigation }: Props) {
     <ScreenContainer scroll={false} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <Text style={[styles.title, rtl && styles.rtlText]}>{t('discover.title')}</Text>
-        <View style={styles.modeBadge}>
-          <Ionicons name="flame" size={12} color={colors.dating} />
-          <Text style={styles.modeBadgeText}>{t('discover.subtitle')}</Text>
+        <View style={styles.badgeRow}>
+          <View style={styles.modeBadge}>
+            <Ionicons name="flame" size={12} color={colors.dating} />
+            <Text style={styles.modeBadgeText}>{t('discover.subtitle')}</Text>
+          </View>
+          {!isUnlimited && (
+            <View style={styles.likesBadge}>
+              <Ionicons name="heart" size={12} color={colors.teal} />
+              <Text style={styles.likesBadgeText}>{t('discover.likesRemaining', { count: remaining })}</Text>
+            </View>
+          )}
         </View>
       </View>
 
@@ -88,6 +115,7 @@ const makeStyles = (colors: Palette) =>
   StyleSheet.create({
     header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md },
     title: { ...typography.h1, color: colors.textPrimary },
+    badgeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
     modeBadge: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -98,6 +126,16 @@ const makeStyles = (colors: Palette) =>
       paddingVertical: 4,
     },
     modeBadgeText: { ...typography.caption, color: colors.dating, fontWeight: '700' },
+    likesBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      backgroundColor: colors.tealSoft,
+      borderRadius: radius.pill,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 4,
+    },
+    likesBadgeText: { ...typography.caption, color: colors.teal, fontWeight: '700' },
     listContent: { paddingBottom: spacing.xl },
     emptyState: { alignItems: 'center', justifyContent: 'center', paddingTop: spacing.xxl, gap: spacing.md },
     emptyText: { ...typography.body, color: colors.textSecondary, textAlign: 'center', paddingHorizontal: spacing.xl },

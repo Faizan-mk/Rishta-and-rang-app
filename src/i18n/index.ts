@@ -1,8 +1,9 @@
 import en from './en.json';
 import ur from './ur.json';
+import roman from './roman.json';
 import type { AppLanguage } from '../types/user';
 
-const dictionaries = { en, ur } as const;
+const dictionaries = { en, ur, roman } as const;
 
 type Dictionary = typeof en;
 type TranslateParams = Record<string, string | number>;

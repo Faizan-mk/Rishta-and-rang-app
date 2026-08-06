@@ -11,6 +11,11 @@ import { SettingsScreen } from '../screens/settings/SettingsScreen';
 import { NotificationsScreen } from '../screens/notifications/NotificationsScreen';
 import { ExplorePlusScreen } from '../screens/monetization/ExplorePlusScreen';
 import { FavoritesScreen } from '../screens/favorites/FavoritesScreen';
+import { PrivacySafetyScreen } from '../screens/settings/PrivacySafetyScreen';
+import { BlockedUsersScreen } from '../screens/settings/BlockedUsersScreen';
+import { HelpSupportScreen } from '../screens/settings/HelpSupportScreen';
+import { CnicVerificationScreen } from '../screens/profile/CnicVerificationScreen';
+import { WaliDashboardScreen } from '../screens/profile/WaliDashboardScreen';
 import { useLanguage } from '../store/LanguageContext';
 import { useTheme } from '../store/ThemeContext';
 
@@ -39,6 +44,11 @@ export function AppNavigator() {
       <Stack.Screen name="ProfileDetail" component={ProfileDetailScreen} options={{ headerShown: false }} />
       <Stack.Screen name="ExplorePlus" component={ExplorePlusScreen} options={{ title: t('explorePlus.title') }} />
       <Stack.Screen name="Favorites" component={FavoritesScreen} options={{ title: t('favorites.title') }} />
+      <Stack.Screen name="PrivacySafety" component={PrivacySafetyScreen} options={{ title: t('privacy.title') }} />
+      <Stack.Screen name="BlockedUsers" component={BlockedUsersScreen} options={{ title: t('privacy.blockedUsers') }} />
+      <Stack.Screen name="HelpSupport" component={HelpSupportScreen} options={{ title: t('help.title') }} />
+      <Stack.Screen name="CnicVerification" component={CnicVerificationScreen} options={{ title: t('cnic.title') }} />
+      <Stack.Screen name="WaliDashboard" component={WaliDashboardScreen} options={{ title: t('wali.title') }} />
     </Stack.Navigator>
   );
 }

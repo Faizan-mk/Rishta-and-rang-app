@@ -6,7 +6,7 @@ function gallery(...imgs: number[]): string[] {
 
 // Placeholder demo data only — a real backend would replace this with actual
 // matrimonial listings filtered server-side.
-export const mockRishtaProfiles: RishtaListingProfile[] = [
+const rawRishtaProfiles: RishtaListingProfile[] = [
   {
     id: 'r1',
     name: 'Mahnoor',
@@ -99,3 +99,10 @@ export const mockRishtaProfiles: RishtaListingProfile[] = [
     photos: gallery(17, 18),
   },
 ];
+
+// Bureau verification + photo-blur privacy demoed on a subset of profiles for variety.
+export const mockRishtaProfiles: RishtaListingProfile[] = rawRishtaProfiles.map((p, i) => ({
+  ...p,
+  bureauVerified: i % 3 === 0,
+  photosBlurred: i % 4 === 1,
+}));

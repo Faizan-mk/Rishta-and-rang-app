@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import type { RishtaListingProfile } from '../../types/content';
 import { Badge } from '../common/Badge';
@@ -23,11 +24,12 @@ interface RishtaListingCardProps {
 }
 
 export const RishtaListingCard = React.memo(function RishtaListingCard({ profile, liked, onPress, onToggleLike }: RishtaListingCardProps) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
   const heartScale = useSharedValue(1);
   const heartStyle = useAnimatedStyle(() => ({ transform: [{ scale: heartScale.value }] }));
+  const photosHidden = Boolean(profile.photosBlurred) && !liked;
 
   const onLikePress = () => {
     heartScale.value = withSpring(1.35, { damping: 6, stiffness: 260 }, () => {
@@ -40,11 +42,17 @@ export const RishtaListingCard = React.memo(function RishtaListingCard({ profile
     <Pressable onPress={onPress} style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}>
       <View style={styles.photoWrap}>
         <Image source={{ uri: profile.photos[0] }} style={styles.photo} />
-        {profile.photos.length > 1 && (
-          <View style={styles.photoCountBadge}>
-            <Ionicons name="images" size={11} color="#FFFFFF" />
-            <Text style={styles.photoCountText}>{profile.photos.length}</Text>
-          </View>
+        {photosHidden ? (
+          <BlurView intensity={35} tint={isDark ? 'dark' : 'light'} style={styles.blurOverlay}>
+            <Ionicons name="lock-closed" size={16} color="#FFFFFF" />
+          </BlurView>
+        ) : (
+          profile.photos.length > 1 && (
+            <View style={styles.photoCountBadge}>
+              <Ionicons name="images" size={11} color="#FFFFFF" />
+              <Text style={styles.photoCountText}>{profile.photos.length}</Text>
+            </View>
+          )
         )}
       </View>
       <View style={styles.body}>
@@ -90,6 +98,17 @@ const makeStyles = (colors: Palette) =>
     cardPressed: { opacity: 0.85 },
     photoWrap: { position: 'relative' },
     photo: { width: 84, height: 104, borderRadius: radius.md, backgroundColor: colors.skeleton },
+    blurOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      borderRadius: radius.md,
+      overflow: 'hidden',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     photoCountBadge: {
       position: 'absolute',
       bottom: 6,

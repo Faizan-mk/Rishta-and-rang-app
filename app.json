@@ -22,7 +22,15 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-font"
+      "expo-font",
+      "expo-audio",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera for video calls and verification.",
+          "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone for video calls."
+        }
+      ]
     ]
   }
 }
