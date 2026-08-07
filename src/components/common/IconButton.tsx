@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { radius } from '../../theme';
+import { scaleFont } from '../../theme/responsive';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 
@@ -68,5 +69,5 @@ const makeStyles = (colors: Palette) =>
       justifyContent: 'center',
       paddingHorizontal: 3,
     },
-    badgeText: { color: '#FFFFFF', fontSize: 10, fontWeight: '700' },
+    badgeText: { color: '#FFFFFF', fontSize: scaleFont(10), fontWeight: '700' },
   });

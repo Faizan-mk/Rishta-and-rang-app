@@ -53,7 +53,7 @@ const makeStyles = (colors: Palette) =>
       borderRadius: radius.md,
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm + 4,
-      fontSize: 15,
+      fontSize: typography.body.fontSize,
       color: colors.textPrimary,
       backgroundColor: colors.surface,
     },

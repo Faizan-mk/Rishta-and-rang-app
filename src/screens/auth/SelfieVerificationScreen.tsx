@@ -6,12 +6,14 @@ import type { AuthStackParamList } from '../../navigation/types';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { Button } from '../../components/common/Button';
 import { StepHeader } from '../../components/common/StepHeader';
+import { FadeIn } from '../../components/common/FadeInUp';
 import { useLanguage } from '../../store/LanguageContext';
 import { useAuth } from '../../store/AuthContext';
 import { useTheme } from '../../store/ThemeContext';
 import { useDialog } from '../../store/DialogContext';
 import { analyzeIdCardPhoto } from '../../utils/idCardImageCheck';
 import { radius, spacing, typography } from '../../theme';
+import { scaleFont } from '../../theme/responsive';
 import type { Palette } from '../../theme/palettes';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'SelfieVerification'>;
@@ -104,42 +106,46 @@ export function SelfieVerificationScreen({ navigation, route }: Props) {
   return (
     <ScreenContainer>
       <StepHeader total={3} current={2} onBack={() => navigation.goBack()} />
-      <Text style={[styles.title, rtl && styles.rtlText]}>{t('selfie.title')}</Text>
-      <Text style={[styles.subtitle, rtl && styles.rtlText]}>{t('selfie.subtitle')}</Text>
+      <FadeIn>
+        <Text style={[styles.title, rtl && styles.rtlText]}>{t('selfie.title')}</Text>
+        <Text style={[styles.subtitle, rtl && styles.rtlText]}>{t('selfie.subtitle')}</Text>
 
-      <View style={styles.previewWrap}>
-        {selfieUri ? (
-          <Image source={{ uri: selfieUri }} style={styles.preview} />
+        <View style={styles.previewWrap}>
+          {selfieUri ? (
+            <Image source={{ uri: selfieUri }} style={styles.preview} />
+          ) : (
+            <View style={[styles.preview, styles.previewEmpty]}>
+              <Text style={styles.previewPlaceholder}>🤳</Text>
+            </View>
+          )}
+        </View>
+
+        <Button
+          label={selfieUri ? t('common.retake') : t('selfie.takeSelfie')}
+          variant="secondary"
+          onPress={takeSelfie}
+        />
+      </FadeIn>
+
+      <FadeIn delay={100}>
+        <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('cnic.title')}</Text>
+        <Text style={[styles.subtitle, rtl && styles.rtlText]}>{t('cnic.subtitle')}</Text>
+
+        {cnicPhotoUri ? (
+          <Image source={{ uri: cnicPhotoUri }} style={styles.cnicPreview} />
         ) : (
-          <View style={[styles.preview, styles.previewEmpty]}>
-            <Text style={styles.previewPlaceholder}>🤳</Text>
+          <View style={[styles.cnicPreview, styles.previewEmpty]}>
+            {checkingCnicPhoto ? <ActivityIndicator color={colors.teal} /> : <Text style={styles.previewPlaceholder}>🪪</Text>}
           </View>
         )}
-      </View>
 
-      <Button
-        label={selfieUri ? t('common.retake') : t('selfie.takeSelfie')}
-        variant="secondary"
-        onPress={takeSelfie}
-      />
-
-      <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('cnic.title')}</Text>
-      <Text style={[styles.subtitle, rtl && styles.rtlText]}>{t('cnic.subtitle')}</Text>
-
-      {cnicPhotoUri ? (
-        <Image source={{ uri: cnicPhotoUri }} style={styles.cnicPreview} />
-      ) : (
-        <View style={[styles.cnicPreview, styles.previewEmpty]}>
-          {checkingCnicPhoto ? <ActivityIndicator color={colors.teal} /> : <Text style={styles.previewPlaceholder}>🪪</Text>}
-        </View>
-      )}
-
-      <Button
-        label={cnicPhotoUri ? t('common.retake') : t('cnic.uploadId')}
-        variant="secondary"
-        onPress={pickCnicPhoto}
-        loading={checkingCnicPhoto}
-      />
+        <Button
+          label={cnicPhotoUri ? t('common.retake') : t('cnic.uploadId')}
+          variant="secondary"
+          onPress={pickCnicPhoto}
+          loading={checkingCnicPhoto}
+        />
+      </FadeIn>
 
       {cnicPhotoError ? <Text style={[styles.errorText, rtl && styles.rtlText]}>{cnicPhotoError}</Text> : null}
 
@@ -165,7 +171,7 @@ const makeStyles = (colors: Palette) =>
     preview: { width: 180, height: 180, borderRadius: radius.pill, backgroundColor: colors.skeleton },
     cnicPreview: { width: '100%', aspectRatio: 16 / 10, borderRadius: radius.lg, backgroundColor: colors.skeleton, marginBottom: spacing.md },
     previewEmpty: { alignItems: 'center', justifyContent: 'center' },
-    previewPlaceholder: { fontSize: 56 },
+    previewPlaceholder: { fontSize: scaleFont(56) },
     errorText: { ...typography.caption, color: colors.danger, marginTop: spacing.sm },
     submit: { marginTop: spacing.lg },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },

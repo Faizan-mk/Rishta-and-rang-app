@@ -8,6 +8,7 @@ import { SelectField } from '../../components/common/SelectField';
 import { Button } from '../../components/common/Button';
 import { Chip } from '../../components/common/Chip';
 import { Badge } from '../../components/common/Badge';
+import { FadeIn } from '../../components/common/FadeInUp';
 import { SECT_OPTIONS, RELIGION_OPTIONS } from '../../data/sects';
 import { useLanguage } from '../../store/LanguageContext';
 import { useAuth } from '../../store/AuthContext';
@@ -50,40 +51,44 @@ export function RishtaProfileScreen({ navigation }: Props) {
 
   return (
     <ScreenContainer>
-      <Text style={[styles.title, rtl && styles.rtlText]}>{t('rishtaProfile.title')}</Text>
+      <FadeIn>
+        <Text style={[styles.title, rtl && styles.rtlText]}>{t('rishtaProfile.title')}</Text>
 
-      <SelectField label={t('profile.religion')} value={religion} options={RELIGION_OPTIONS} onChange={setReligion} placeholder={t('rishtaProfile.religionPlaceholder')} />
-      <SelectField label={t('profile.sect')} value={sect} options={SECT_OPTIONS} onChange={setSect} placeholder={t('rishtaProfile.sectPlaceholder')} />
-      <TextField
-        label={t('profile.familyBackground')}
-        value={familyBackground}
-        onChangeText={setFamilyBackground}
-        placeholder={t('rishtaProfile.familyPlaceholder')}
-        multiline
-      />
-      <TextField label={t('profile.education')} value={education} onChangeText={setEducation} placeholder={t('rishtaProfile.educationPlaceholder')} />
+        <SelectField label={t('profile.religion')} value={religion} options={RELIGION_OPTIONS} onChange={setReligion} placeholder={t('rishtaProfile.religionPlaceholder')} />
+        <SelectField label={t('profile.sect')} value={sect} options={SECT_OPTIONS} onChange={setSect} placeholder={t('rishtaProfile.sectPlaceholder')} />
+        <TextField
+          label={t('profile.familyBackground')}
+          value={familyBackground}
+          onChangeText={setFamilyBackground}
+          placeholder={t('rishtaProfile.familyPlaceholder')}
+          multiline
+        />
+        <TextField label={t('profile.education')} value={education} onChangeText={setEducation} placeholder={t('rishtaProfile.educationPlaceholder')} />
+      </FadeIn>
 
-      <Text style={[styles.label, rtl && styles.rtlText]}>{t('rishtaProfile.readinessLabel')}</Text>
-      <View style={styles.chipRow}>
-        {READINESS_OPTIONS.map((option) => (
-          <Chip
-            key={option.key}
-            label={t(option.labelKey)}
-            tone="rishta"
-            selected={readiness === option.key}
-            onPress={() => setReadiness(option.key)}
-          />
-        ))}
-      </View>
-
-      <View style={styles.lockedSection}>
-        <Text style={[styles.label, rtl && styles.rtlText]}>{t('profile.comingInV2')}</Text>
+      <FadeIn delay={100}>
+        <Text style={[styles.label, rtl && styles.rtlText]}>{t('rishtaProfile.readinessLabel')}</Text>
         <View style={styles.chipRow}>
-          <Badge label="Prayer habits" tone="locked" />
-          <Badge label="Income range" tone="locked" />
-          <Badge label="Living abroad status" tone="locked" />
+          {READINESS_OPTIONS.map((option) => (
+            <Chip
+              key={option.key}
+              label={t(option.labelKey)}
+              tone="rishta"
+              selected={readiness === option.key}
+              onPress={() => setReadiness(option.key)}
+            />
+          ))}
         </View>
-      </View>
+
+        <View style={styles.lockedSection}>
+          <Text style={[styles.label, rtl && styles.rtlText]}>{t('profile.comingInV2')}</Text>
+          <View style={styles.chipRow}>
+            <Badge label="Prayer habits" tone="locked" />
+            <Badge label="Income range" tone="locked" />
+            <Badge label="Living abroad status" tone="locked" />
+          </View>
+        </View>
+      </FadeIn>
 
       <Button label={t('common.save')} onPress={onSave} loading={saving} style={styles.submit} />
       <Button label={t('common.cancel')} variant="ghost" onPress={() => navigation.goBack()} />

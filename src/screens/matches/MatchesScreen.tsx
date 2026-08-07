@@ -1,9 +1,11 @@
 import React, { useMemo } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, { FadeInUp } from 'react-native-reanimated';
 import type { MainTabScreenProps } from '../../navigation/types';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { MatchRow } from '../../components/matches/MatchRow';
+import { FadeIn } from '../../components/common/FadeInUp';
 import { useLanguage } from '../../store/LanguageContext';
 import { useTheme } from '../../store/ThemeContext';
 import { useMatches } from '../../store/MatchesContext';
@@ -20,12 +22,16 @@ export function MatchesScreen({ navigation }: Props) {
 
   return (
     <ScreenContainer scroll={false} edges={['top', 'bottom']}>
-      <Text style={[styles.title, rtl && styles.rtlText]}>{t('matches.title')}</Text>
+      <FadeIn><Text style={[styles.title, rtl && styles.rtlText]}>{t('matches.title')}</Text></FadeIn>
 
       <FlatList
         data={matches}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <MatchRow match={item} onPress={() => navigation.navigate('Chat', { matchId: item.id })} />}
+        renderItem={({ item, index }) => (
+          <Animated.View entering={FadeInUp.delay(Math.min(index * 60, 300)).duration(320)}>
+            <MatchRow match={item} onPress={() => navigation.navigate('Chat', { matchId: item.id })} />
+          </Animated.View>
+        )}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}

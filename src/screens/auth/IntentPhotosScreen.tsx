@@ -12,6 +12,7 @@ import { useLanguage } from '../../store/LanguageContext';
 import { useTheme } from '../../store/ThemeContext';
 import { useDialog } from '../../store/DialogContext';
 import { radius, spacing, typography } from '../../theme';
+import { scaleFont } from '../../theme/responsive';
 import type { Palette } from '../../theme/palettes';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'IntentPhotos'>;
@@ -137,7 +138,7 @@ const makeStyles = (colors: Palette) =>
       backgroundColor: colors.surface,
     },
     photo: { width: '100%', height: '100%' },
-    addPlus: { fontSize: 32, color: colors.teal, marginBottom: 4 },
+    addPlus: { fontSize: scaleFont(32), color: colors.teal, marginBottom: 4 },
     addLabel: { ...typography.caption, color: colors.textSecondary },
     removeBadge: {
       position: 'absolute',
@@ -150,7 +151,7 @@ const makeStyles = (colors: Palette) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
-    removeText: { color: colors.textInverse, fontSize: 16, lineHeight: 18 },
+    removeText: { color: colors.textInverse, fontSize: scaleFont(16), lineHeight: scaleFont(18) },
     hint: { ...typography.caption, color: colors.warning, marginTop: spacing.md },
     submit: { marginTop: spacing.lg },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },

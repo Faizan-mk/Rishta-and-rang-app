@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { FlatList, Image, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, { FadeInUp } from 'react-native-reanimated';
 import type { AppStackScreenProps } from '../../navigation/types';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { Button } from '../../components/common/Button';
@@ -18,12 +19,12 @@ export function BlockedUsersScreen({}: Props) {
   const { t, rtl } = useLanguage();
   const { blockedProfiles, unblockUser } = useMatches();
 
-  const renderItem = ({ item }: { item: BlockedProfile }) => (
-    <View style={styles.row}>
+  const renderItem = ({ item, index }: { item: BlockedProfile; index: number }) => (
+    <Animated.View entering={FadeInUp.delay(Math.min(index * 60, 300)).duration(320)} style={styles.row}>
       <Image source={{ uri: item.photo }} style={styles.avatar} />
       <Text style={[styles.name, rtl && styles.rtlText]}>{item.name}</Text>
       <Button label={t('privacy.unblock')} variant="secondary" onPress={() => unblockUser(item.id)} style={styles.unblockButton} />
-    </View>
+    </Animated.View>
   );
 
   return (

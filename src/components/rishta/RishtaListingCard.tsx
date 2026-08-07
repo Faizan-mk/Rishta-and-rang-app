@@ -6,6 +6,7 @@ import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-na
 import type { RishtaListingProfile } from '../../types/content';
 import { Badge } from '../common/Badge';
 import { radius, spacing, typography } from '../../theme';
+import { scaleFont } from '../../theme/responsive';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
@@ -121,7 +122,7 @@ const makeStyles = (colors: Palette) =>
       paddingHorizontal: 6,
       paddingVertical: 2,
     },
-    photoCountText: { color: '#FFFFFF', fontSize: 10, fontWeight: '700' },
+    photoCountText: { color: '#FFFFFF', fontSize: scaleFont(10), fontWeight: '700' },
     body: { flex: 1, marginLeft: spacing.md, justifyContent: 'center' },
     headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
     name: { ...typography.h3, color: colors.textPrimary },

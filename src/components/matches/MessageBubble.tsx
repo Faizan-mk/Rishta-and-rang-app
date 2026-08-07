@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import type { ChatMessage } from '../../types/content';
 import { radius, spacing, typography } from '../../theme';
+import { scaleFont } from '../../theme/responsive';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 
@@ -121,7 +122,7 @@ const makeStyles = (colors: Palette) =>
     image: { width: 200, height: 200, borderRadius: radius.md },
     previewOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.9)', alignItems: 'center', justifyContent: 'center' },
     previewImage: { width: '100%', height: '80%' },
-    timestamp: { ...typography.caption, fontSize: 10, marginTop: 2 },
+    timestamp: { ...typography.caption, fontSize: scaleFont(10), marginTop: 2 },
     timestampMe: { color: colors.textTertiary, textAlign: 'right' },
     timestampThem: { color: colors.textTertiary, textAlign: 'left' },
   });

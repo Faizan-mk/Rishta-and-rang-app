@@ -2,7 +2,11 @@ import React, { useMemo } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, ViewStyle } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { radius, spacing, typography } from '../../theme';
+import { scaleSpace } from '../../theme/responsive';
 import type { Palette } from '../../theme/palettes';
+
+// iOS HIG / Material minimum comfortable touch target, regardless of device scale.
+const MIN_TOUCH_TARGET = 48;
 import { useTheme } from '../../store/ThemeContext';
 
 interface ButtonProps {
@@ -72,7 +76,7 @@ export function Button({ label, onPress, variant = 'primary', disabled, loading,
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
     base: {
-      minHeight: 52,
+      minHeight: Math.max(MIN_TOUCH_TARGET, scaleSpace(52)),
       borderRadius: radius.md,
       alignItems: 'center',
       justifyContent: 'center',

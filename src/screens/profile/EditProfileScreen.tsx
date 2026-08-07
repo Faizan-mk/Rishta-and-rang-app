@@ -8,6 +8,7 @@ import { TextField } from '../../components/common/TextField';
 import { SelectField } from '../../components/common/SelectField';
 import { Button } from '../../components/common/Button';
 import { Chip } from '../../components/common/Chip';
+import { FadeIn } from '../../components/common/FadeInUp';
 import { PAKISTAN_CITIES } from '../../data/locations';
 import { useLanguage } from '../../store/LanguageContext';
 import { useAuth } from '../../store/AuthContext';
@@ -15,6 +16,7 @@ import { useTheme } from '../../store/ThemeContext';
 import { useDialog } from '../../store/DialogContext';
 import { usePrivacy } from '../../store/PrivacyContext';
 import { radius, spacing, typography } from '../../theme';
+import { scaleFont } from '../../theme/responsive';
 import type { Palette } from '../../theme/palettes';
 
 type Props = AppStackScreenProps<'EditProfile'>;
@@ -82,61 +84,67 @@ export function EditProfileScreen({ navigation }: Props) {
 
   return (
     <ScreenContainer>
-      <Text style={[styles.title, rtl && styles.rtlText]}>{t('editProfile.title')}</Text>
+      <FadeIn>
+        <Text style={[styles.title, rtl && styles.rtlText]}>{t('editProfile.title')}</Text>
 
-      <Text style={[styles.label, rtl && styles.rtlText]}>{t('photos.title')}</Text>
-      {prefs.blurPhotos && (
-        <View style={styles.blurNotice}>
-          <Ionicons name="eye-off-outline" size={14} color={colors.teal} />
-          <Text style={styles.blurNoticeText}>{t('editProfile.blurNotice')}</Text>
-        </View>
-      )}
-      <View style={styles.grid}>
-        {photos.map((uri) => (
-          <Pressable key={uri} onPress={() => removePhoto(uri)} style={styles.slot}>
-            <Image source={{ uri }} style={styles.photo} />
-            <View style={styles.removeBadge}>
-              <Text style={styles.removeText}>×</Text>
-            </View>
-          </Pressable>
-        ))}
-        {photos.length < MAX_PHOTOS && (
-          <Pressable onPress={addPhoto} style={[styles.slot, styles.addSlot]}>
-            <Text style={styles.addPlus}>+</Text>
-          </Pressable>
+        <Text style={[styles.label, rtl && styles.rtlText]}>{t('photos.title')}</Text>
+        {prefs.blurPhotos && (
+          <View style={styles.blurNotice}>
+            <Ionicons name="eye-off-outline" size={14} color={colors.teal} />
+            <Text style={styles.blurNoticeText}>{t('editProfile.blurNotice')}</Text>
+          </View>
         )}
-      </View>
-
-      <TextField
-        label={t('editProfile.bio')}
-        placeholder={t('editProfile.bioPlaceholder')}
-        value={bio}
-        onChangeText={setBio}
-        multiline
-        numberOfLines={4}
-        style={styles.bioInput}
-      />
-
-      <SelectField label={t('editProfile.city')} value={city} options={PAKISTAN_CITIES} onChange={setCity} placeholder={t('editProfile.city')} />
-
-      <Text style={[styles.label, rtl && styles.rtlText]}>{t('profile.vibeTags')}</Text>
-      <View style={styles.chipRow}>
-        {vibeTags.map((tag) => (
-          <Chip key={tag} label={`${tag} ×`} selected tone="dating" onPress={() => removeTag(tag)} />
-        ))}
-      </View>
-      <View style={styles.tagInputRow}>
-        <View style={styles.tagInputField}>
-          <TextField
-            label={t('editProfile.addVibeTag')}
-            value={tagInput}
-            onChangeText={setTagInput}
-            onSubmitEditing={addTag}
-            returnKeyType="done"
-          />
+        <View style={styles.grid}>
+          {photos.map((uri) => (
+            <Pressable key={uri} onPress={() => removePhoto(uri)} style={styles.slot}>
+              <Image source={{ uri }} style={styles.photo} />
+              <View style={styles.removeBadge}>
+                <Text style={styles.removeText}>×</Text>
+              </View>
+            </Pressable>
+          ))}
+          {photos.length < MAX_PHOTOS && (
+            <Pressable onPress={addPhoto} style={[styles.slot, styles.addSlot]}>
+              <Text style={styles.addPlus}>+</Text>
+            </Pressable>
+          )}
         </View>
-        <Button label={t('common.next')} variant="secondary" onPress={addTag} style={styles.addTagButton} />
-      </View>
+      </FadeIn>
+
+      <FadeIn delay={80}>
+        <TextField
+          label={t('editProfile.bio')}
+          placeholder={t('editProfile.bioPlaceholder')}
+          value={bio}
+          onChangeText={setBio}
+          multiline
+          numberOfLines={4}
+          style={styles.bioInput}
+        />
+
+        <SelectField label={t('editProfile.city')} value={city} options={PAKISTAN_CITIES} onChange={setCity} placeholder={t('editProfile.city')} />
+      </FadeIn>
+
+      <FadeIn delay={140}>
+        <Text style={[styles.label, rtl && styles.rtlText]}>{t('profile.vibeTags')}</Text>
+        <View style={styles.chipRow}>
+          {vibeTags.map((tag) => (
+            <Chip key={tag} label={`${tag} ×`} selected tone="dating" onPress={() => removeTag(tag)} />
+          ))}
+        </View>
+        <View style={styles.tagInputRow}>
+          <View style={styles.tagInputField}>
+            <TextField
+              label={t('editProfile.addVibeTag')}
+              value={tagInput}
+              onChangeText={setTagInput}
+              onSubmitEditing={addTag}
+              returnKeyType="done"
+            />
+          </View>
+          <Button label={t('common.next')} variant="secondary" onPress={addTag} style={styles.addTagButton} />
+        </View>
+      </FadeIn>
 
       <Button label={t('common.save')} onPress={onSave} loading={saving} style={styles.submit} />
       <Button label={t('common.cancel')} variant="ghost" onPress={() => navigation.goBack()} />
@@ -161,7 +169,7 @@ const makeStyles = (colors: Palette) =>
       backgroundColor: colors.surface,
     },
     photo: { width: '100%', height: '100%' },
-    addPlus: { fontSize: 26, color: colors.teal },
+    addPlus: { fontSize: scaleFont(26), color: colors.teal },
     removeBadge: {
       position: 'absolute',
       top: 4,
@@ -173,7 +181,7 @@ const makeStyles = (colors: Palette) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
-    removeText: { color: colors.textInverse, fontSize: 14, lineHeight: 16 },
+    removeText: { color: colors.textInverse, fontSize: scaleFont(14), lineHeight: scaleFont(16) },
     bioInput: { minHeight: 90, textAlignVertical: 'top' },
     chipRow: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.xs },
     tagInputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm },

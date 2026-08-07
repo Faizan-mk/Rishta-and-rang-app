@@ -1,10 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, { FadeInUp } from 'react-native-reanimated';
 import type { AppStackScreenProps } from '../../navigation/types';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { TextField } from '../../components/common/TextField';
 import { Button } from '../../components/common/Button';
+import { FadeIn } from '../../components/common/FadeInUp';
 import { useLanguage } from '../../store/LanguageContext';
 import { useAuth } from '../../store/AuthContext';
 import { useTheme } from '../../store/ThemeContext';
@@ -56,17 +58,17 @@ export function WaliDashboardScreen({}: Props) {
     await updateUser({ ...user, waliName: undefined, waliContact: undefined, waliInvitedAt: undefined });
   };
 
-  const renderMatch = ({ item }: { item: Match }) => (
-    <View style={styles.matchRow}>
+  const renderMatch = ({ item, index }: { item: Match; index: number }) => (
+    <Animated.View entering={FadeInUp.delay(Math.min(index * 60, 300)).duration(320)} style={styles.matchRow}>
       <Ionicons name="git-merge" size={16} color={colors.rishta} />
       <Text style={[styles.matchName, rtl && styles.rtlText]}>{item.name}</Text>
-    </View>
+    </Animated.View>
   );
 
   return (
     <ScreenContainer scroll={!hasWali}>
       {!hasWali ? (
-        <>
+        <FadeIn>
           <Text style={[styles.title, rtl && styles.rtlText]}>{t('wali.title')}</Text>
           <Text style={[styles.subtitle, rtl && styles.rtlText]}>{t('wali.explainer')}</Text>
 
@@ -81,22 +83,24 @@ export function WaliDashboardScreen({}: Props) {
           />
           {error ? <Text style={[styles.errorText, rtl && styles.rtlText]}>{error}</Text> : null}
           <Button label={t('wali.sendInvite')} onPress={onInvite} loading={saving} style={styles.submit} />
-        </>
+        </FadeIn>
       ) : (
         <View style={styles.flex}>
-          <View style={styles.waliCard}>
-            <View style={styles.waliRow}>
-              <Text style={[styles.waliLabel, rtl && styles.rtlText]}>{t('wali.name')}</Text>
-              <Text style={styles.waliValue}>{user.waliName}</Text>
+          <FadeIn>
+            <View style={styles.waliCard}>
+              <View style={styles.waliRow}>
+                <Text style={[styles.waliLabel, rtl && styles.rtlText]}>{t('wali.name')}</Text>
+                <Text style={styles.waliValue}>{user.waliName}</Text>
+              </View>
+              <View style={styles.waliRow}>
+                <Text style={[styles.waliLabel, rtl && styles.rtlText]}>{t('wali.contact')}</Text>
+                <Text style={styles.waliValue}>{user.waliContact}</Text>
+              </View>
             </View>
-            <View style={styles.waliRow}>
-              <Text style={[styles.waliLabel, rtl && styles.rtlText]}>{t('wali.contact')}</Text>
-              <Text style={styles.waliValue}>{user.waliContact}</Text>
-            </View>
-          </View>
-          <Button label={t('wali.removeWali')} variant="danger" onPress={onRemove} style={styles.removeButton} />
+            <Button label={t('wali.removeWali')} variant="danger" onPress={onRemove} style={styles.removeButton} />
 
-          <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('wali.sharedActivity')}</Text>
+            <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('wali.sharedActivity')}</Text>
+          </FadeIn>
           <FlatList
             data={sharedActivity}
             keyExtractor={(item) => item.id}

@@ -6,6 +6,7 @@ import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-na
 import type { DiscoverProfile } from '../../types/content';
 import { Chip } from '../common/Chip';
 import { radius, spacing, typography } from '../../theme';
+import { scaleFont } from '../../theme/responsive';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
@@ -114,7 +115,7 @@ const makeStyles = (colors: Palette) =>
       paddingHorizontal: 6,
       paddingVertical: 2,
     },
-    photoCountText: { color: '#FFFFFF', fontSize: 10, fontWeight: '700' },
+    photoCountText: { color: '#FFFFFF', fontSize: scaleFont(10), fontWeight: '700' },
     body: { flex: 1, marginLeft: spacing.md, justifyContent: 'center' },
     name: { ...typography.h3, color: colors.textPrimary },
     cityRow: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 2 },

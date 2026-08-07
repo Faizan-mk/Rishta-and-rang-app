@@ -14,6 +14,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import type { AppStackScreenProps } from '../../navigation/types';
 import { Button } from '../../components/common/Button';
+import { FadeIn } from '../../components/common/FadeInUp';
 import { useLanguage } from '../../store/LanguageContext';
 import { useTheme } from '../../store/ThemeContext';
 import { radius, spacing, typography } from '../../theme';
@@ -94,7 +95,7 @@ export function CallScreen({ navigation, route }: Props) {
           </View>
         ) : (
           <>
-            <View style={showCamera ? styles.topBar : styles.center}>
+            <FadeIn style={showCamera ? styles.topBar : styles.center}>
               <Text style={[styles.status, showCamera && styles.statusOnCamera]}>
                 {connected ? formatDuration(seconds) : t('call.ringing')}
               </Text>
@@ -110,22 +111,22 @@ export function CallScreen({ navigation, route }: Props) {
               <Text style={[styles.hint, showCamera && styles.hintOnCamera]}>
                 {connected ? t('call.connected') : t('call.calling', { name })}
               </Text>
-            </View>
+            </FadeIn>
 
             {showCamera && connected && (
-              <View style={[styles.remoteTile, rtl && styles.remoteTileRtl]}>
+              <FadeIn style={[styles.remoteTile, rtl && styles.remoteTileRtl]}>
                 <Image source={{ uri: photo }} style={styles.remoteImage} />
-              </View>
+              </FadeIn>
             )}
 
-            <View style={styles.controlsRow}>
+            <FadeIn delay={120} style={styles.controlsRow}>
               <CallControl icon={muted ? 'mic-off' : 'mic-outline'} active={muted} onPress={() => setMuted((m) => !m)} colors={colors} />
               {showCamera ? (
                 <CallControl icon="camera-reverse-outline" active={false} onPress={flipCamera} colors={colors} />
               ) : (
                 <CallControl icon="volume-high" active={speaker} onPress={() => setSpeaker((s) => !s)} colors={colors} />
               )}
-            </View>
+            </FadeIn>
 
             <Pressable onPress={endCall} style={styles.endButton}>
               <Ionicons name="call" size={26} color="#FFFFFF" style={styles.endIcon} />

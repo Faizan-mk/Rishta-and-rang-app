@@ -3,6 +3,7 @@ import { Image, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { AppStackScreenProps } from '../../navigation/types';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { FadeIn } from '../../components/common/FadeInUp';
 import { useLanguage } from '../../store/LanguageContext';
 import { useAuth } from '../../store/AuthContext';
 import { useTheme } from '../../store/ThemeContext';
@@ -21,30 +22,32 @@ export function CnicVerificationScreen({}: Props) {
 
   return (
     <ScreenContainer>
-      <Text style={[styles.title, rtl && styles.rtlText]}>{t('cnic.title')}</Text>
+      <FadeIn>
+        <Text style={[styles.title, rtl && styles.rtlText]}>{t('cnic.title')}</Text>
 
-      {user.cnicVerified ? (
-        <>
-          <Text style={[styles.subtitle, rtl && styles.rtlText]}>{t('cnic.detailSubtitle')}</Text>
+        {user.cnicVerified ? (
+          <>
+            <Text style={[styles.subtitle, rtl && styles.rtlText]}>{t('cnic.detailSubtitle')}</Text>
 
-          {user.cnicPhotoUri && <Image source={{ uri: user.cnicPhotoUri }} style={styles.preview} />}
+            {user.cnicPhotoUri && <Image source={{ uri: user.cnicPhotoUri }} style={styles.preview} />}
 
-          <View style={styles.card}>
-            <Text style={[styles.label, rtl && styles.rtlText]}>{t('cnic.number')}</Text>
-            <Text style={styles.value}>{user.cnicNumber ?? '—'}</Text>
+            <View style={styles.card}>
+              <Text style={[styles.label, rtl && styles.rtlText]}>{t('cnic.number')}</Text>
+              <Text style={styles.value}>{user.cnicNumber ?? '—'}</Text>
+            </View>
+
+            <View style={styles.verifiedRow}>
+              <Ionicons name="checkmark-circle" size={20} color={colors.success} />
+              <Text style={styles.verifiedText}>{t('cnic.verified')}</Text>
+            </View>
+          </>
+        ) : (
+          <View style={styles.notVerifiedCard}>
+            <Ionicons name="information-circle-outline" size={22} color={colors.textSecondary} />
+            <Text style={[styles.notVerifiedText, rtl && styles.rtlText]}>{t('cnic.notVerifiedInfo')}</Text>
           </View>
-
-          <View style={styles.verifiedRow}>
-            <Ionicons name="checkmark-circle" size={20} color={colors.success} />
-            <Text style={styles.verifiedText}>{t('cnic.verified')}</Text>
-          </View>
-        </>
-      ) : (
-        <View style={styles.notVerifiedCard}>
-          <Ionicons name="information-circle-outline" size={22} color={colors.textSecondary} />
-          <Text style={[styles.notVerifiedText, rtl && styles.rtlText]}>{t('cnic.notVerifiedInfo')}</Text>
-        </View>
-      )}
+        )}
+      </FadeIn>
     </ScreenContainer>
   );
 }

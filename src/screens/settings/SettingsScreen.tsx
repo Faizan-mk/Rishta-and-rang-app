@@ -5,6 +5,7 @@ import type { AppStackScreenProps } from '../../navigation/types';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { SettingsRow } from '../../components/common/SettingsRow';
 import { Button } from '../../components/common/Button';
+import { FadeIn } from '../../components/common/FadeInUp';
 import { useLanguage } from '../../store/LanguageContext';
 import { useAuth } from '../../store/AuthContext';
 import { useTheme, ThemeMode } from '../../store/ThemeContext';
@@ -53,63 +54,71 @@ export function SettingsScreen({ navigation }: Props) {
 
   return (
     <ScreenContainer>
-      <Text style={[styles.title, rtl && styles.rtlText]}>{t('settings.title')}</Text>
+      <FadeIn><Text style={[styles.title, rtl && styles.rtlText]}>{t('settings.title')}</Text></FadeIn>
 
-      <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('settings.appearance')}</Text>
-      <View style={styles.themeRow}>
-        {THEME_OPTIONS.map((option) => {
-          const selected = mode === option.key;
-          return (
-            <Pressable
-              key={option.key}
-              onPress={() => setMode(option.key)}
-              style={[styles.themeOption, selected && styles.themeOptionSelected]}
-            >
-              <Ionicons name={option.icon} size={20} color={selected ? colors.teal : colors.textSecondary} />
-              <Text style={[styles.themeLabel, selected && styles.themeLabelSelected]}>{t(option.labelKey)}</Text>
-            </Pressable>
-          );
-        })}
-      </View>
+      <FadeIn delay={40}>
+        <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('settings.appearance')}</Text>
+        <View style={styles.themeRow}>
+          {THEME_OPTIONS.map((option) => {
+            const selected = mode === option.key;
+            return (
+              <Pressable
+                key={option.key}
+                onPress={() => setMode(option.key)}
+                style={[styles.themeOption, selected && styles.themeOptionSelected]}
+              >
+                <Ionicons name={option.icon} size={20} color={selected ? colors.teal : colors.textSecondary} />
+                <Text style={[styles.themeLabel, selected && styles.themeLabelSelected]}>{t(option.labelKey)}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </FadeIn>
 
-      <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('settings.language')}</Text>
-      <View style={styles.themeRow}>
-        <Pressable onPress={() => setLanguage('en')} style={[styles.themeOption, language === 'en' && styles.themeOptionSelected]}>
-          <Text style={[styles.themeLabel, language === 'en' && styles.themeLabelSelected]}>{t('language.english')}</Text>
-        </Pressable>
-        <Pressable onPress={() => setLanguage('ur')} style={[styles.themeOption, language === 'ur' && styles.themeOptionSelected]}>
-          <Text style={[styles.themeLabel, language === 'ur' && styles.themeLabelSelected]}>{t('language.urdu')}</Text>
-        </Pressable>
-        <Pressable onPress={() => setLanguage('roman')} style={[styles.themeOption, language === 'roman' && styles.themeOptionSelected]}>
-          <Text style={[styles.themeLabel, language === 'roman' && styles.themeLabelSelected]}>{t('language.roman')}</Text>
-        </Pressable>
-      </View>
+      <FadeIn delay={90}>
+        <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('settings.language')}</Text>
+        <View style={styles.themeRow}>
+          <Pressable onPress={() => setLanguage('en')} style={[styles.themeOption, language === 'en' && styles.themeOptionSelected]}>
+            <Text style={[styles.themeLabel, language === 'en' && styles.themeLabelSelected]}>{t('language.english')}</Text>
+          </Pressable>
+          <Pressable onPress={() => setLanguage('ur')} style={[styles.themeOption, language === 'ur' && styles.themeOptionSelected]}>
+            <Text style={[styles.themeLabel, language === 'ur' && styles.themeLabelSelected]}>{t('language.urdu')}</Text>
+          </Pressable>
+          <Pressable onPress={() => setLanguage('roman')} style={[styles.themeOption, language === 'roman' && styles.themeOptionSelected]}>
+            <Text style={[styles.themeLabel, language === 'roman' && styles.themeLabelSelected]}>{t('language.roman')}</Text>
+          </Pressable>
+        </View>
+      </FadeIn>
 
-      <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('settings.notificationsSection')}</Text>
-      <View style={styles.card}>
-        {NOTIF_ROWS.map((row, index) => (
-          <React.Fragment key={row.key}>
-            <SettingsRow
-              label={t(row.labelKey)}
-              right="switch"
-              switchValue={prefs[row.key]}
-              onSwitchChange={(value) => setPref(row.key, value)}
-            />
-            {index < NOTIF_ROWS.length - 1 && <View style={styles.divider} />}
-          </React.Fragment>
-        ))}
-      </View>
+      <FadeIn delay={140}>
+        <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('settings.notificationsSection')}</Text>
+        <View style={styles.card}>
+          {NOTIF_ROWS.map((row, index) => (
+            <React.Fragment key={row.key}>
+              <SettingsRow
+                label={t(row.labelKey)}
+                right="switch"
+                switchValue={prefs[row.key]}
+                onSwitchChange={(value) => setPref(row.key, value)}
+              />
+              {index < NOTIF_ROWS.length - 1 && <View style={styles.divider} />}
+            </React.Fragment>
+          ))}
+        </View>
+      </FadeIn>
 
-      <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('settings.account')}</Text>
-      <View style={styles.card}>
-        <SettingsRow icon="sparkles-outline" label={t('settings.subscription')} right="chevron" onPress={() => navigation.navigate('ExplorePlus')} />
-        <View style={styles.divider} />
-        <SettingsRow icon="heart-outline" label={t('profile.favorites')} right="chevron" onPress={() => navigation.navigate('Favorites')} />
-        <View style={styles.divider} />
-        <SettingsRow icon="shield-checkmark-outline" label={t('settings.privacy')} right="chevron" onPress={() => navigation.navigate('PrivacySafety')} />
-        <View style={styles.divider} />
-        <SettingsRow icon="help-circle-outline" label={t('settings.help')} right="chevron" onPress={() => navigation.navigate('HelpSupport')} />
-      </View>
+      <FadeIn delay={190}>
+        <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('settings.account')}</Text>
+        <View style={styles.card}>
+          <SettingsRow icon="sparkles-outline" label={t('settings.subscription')} right="chevron" onPress={() => navigation.navigate('ExplorePlus')} />
+          <View style={styles.divider} />
+          <SettingsRow icon="heart-outline" label={t('profile.favorites')} right="chevron" onPress={() => navigation.navigate('Favorites')} />
+          <View style={styles.divider} />
+          <SettingsRow icon="shield-checkmark-outline" label={t('settings.privacy')} right="chevron" onPress={() => navigation.navigate('PrivacySafety')} />
+          <View style={styles.divider} />
+          <SettingsRow icon="help-circle-outline" label={t('settings.help')} right="chevron" onPress={() => navigation.navigate('HelpSupport')} />
+        </View>
+      </FadeIn>
 
       <Button label={t('profile.logOut')} variant="danger" onPress={onLogout} style={styles.logout} />
       <Text style={styles.version}>{t('settings.version')}</Text>

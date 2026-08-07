@@ -1,9 +1,11 @@
 import React, { useMemo } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, { FadeInUp } from 'react-native-reanimated';
 import type { AppStackScreenProps } from '../../navigation/types';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { NotificationRow } from '../../components/dashboard/NotificationRow';
+import { FadeIn } from '../../components/common/FadeInUp';
 import { useLanguage } from '../../store/LanguageContext';
 import { useTheme } from '../../store/ThemeContext';
 import { useNotifications } from '../../store/NotificationContext';
@@ -20,19 +22,23 @@ export function NotificationsScreen(_props: Props) {
 
   return (
     <ScreenContainer scroll={false}>
-      <View style={styles.header}>
+      <FadeIn style={styles.header}>
         <Text style={[styles.title, rtl && styles.rtlText]}>{t('notificationsScreen.title')}</Text>
         {unreadCount > 0 && (
           <Pressable onPress={markAllRead}>
             <Text style={styles.markAllRead}>{t('notificationsScreen.markAllRead')}</Text>
           </Pressable>
         )}
-      </View>
+      </FadeIn>
 
       <FlatList
         data={feed}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <NotificationRow item={item} onPress={() => markRead(item.id)} />}
+        renderItem={({ item, index }) => (
+          <Animated.View entering={FadeInUp.delay(Math.min(index * 60, 300)).duration(320)}>
+            <NotificationRow item={item} onPress={() => markRead(item.id)} />
+          </Animated.View>
+        )}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}

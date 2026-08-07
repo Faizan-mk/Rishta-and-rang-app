@@ -2,12 +2,14 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { FlatList, Image, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Animated, { FadeInUp } from 'react-native-reanimated';
 import * as ImagePicker from 'expo-image-picker';
 import { useAudioRecorder, RecordingPresets, requestRecordingPermissionsAsync } from 'expo-audio';
 import type { AppStackScreenProps } from '../../navigation/types';
 import { MessageBubble } from '../../components/matches/MessageBubble';
 import { Badge } from '../../components/common/Badge';
 import { ReportDialog } from '../../components/common/ReportDialog';
+import { FadeIn } from '../../components/common/FadeInUp';
 import { useLanguage } from '../../store/LanguageContext';
 import { useTheme } from '../../store/ThemeContext';
 import { useDialog } from '../../store/DialogContext';
@@ -123,7 +125,7 @@ export function ChatScreen({ navigation, route }: Props) {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-      <View style={styles.header}>
+      <FadeIn style={styles.header}>
         <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name={rtl ? 'chevron-forward' : 'chevron-back'} size={22} color={colors.textPrimary} />
         </Pressable>
@@ -144,20 +146,26 @@ export function ChatScreen({ navigation, route }: Props) {
         <Pressable onPress={onReport} style={styles.headerIconButton}>
           <Ionicons name="flag-outline" size={20} color={colors.textSecondary} />
         </Pressable>
-      </View>
+      </FadeIn>
 
       {!match.movedToRishta && (
-        <Pressable onPress={onMoveToRishta} style={styles.moveToRishtaBar}>
-          <Ionicons name="git-merge" size={16} color={colors.rishta} />
-          <Text style={styles.moveToRishtaText}>{t('chat.moveToRishta')}</Text>
-        </Pressable>
+        <FadeIn delay={80}>
+          <Pressable onPress={onMoveToRishta} style={styles.moveToRishtaBar}>
+            <Ionicons name="git-merge" size={16} color={colors.rishta} />
+            <Text style={styles.moveToRishtaText}>{t('chat.moveToRishta')}</Text>
+          </Pressable>
+        </FadeIn>
       )}
 
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <FlatList
           data={messages}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <MessageBubble message={item} />}
+          renderItem={({ item }) => (
+            <Animated.View entering={FadeInUp.duration(220)}>
+              <MessageBubble message={item} />
+            </Animated.View>
+          )}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
         />
@@ -255,7 +263,7 @@ const makeStyles = (colors: Palette) =>
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
       color: colors.textPrimary,
-      fontSize: 15,
+      fontSize: typography.body.fontSize,
     },
     rtlInput: { textAlign: 'right', writingDirection: 'rtl' },
     attachButton: { padding: spacing.xs, marginBottom: 4 },

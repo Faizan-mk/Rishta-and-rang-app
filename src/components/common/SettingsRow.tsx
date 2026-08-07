@@ -1,10 +1,13 @@
 import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { spacing, typography } from '../../theme';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 interface SettingsRowProps {
   icon?: keyof typeof Ionicons.glyphMap;
@@ -20,6 +23,8 @@ export function SettingsRow({ icon, label, description, right, switchValue, onSw
   const { colors } = useTheme();
   const { rtl } = useLanguage();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const scale = useSharedValue(1);
+  const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
   const content = (
     <View style={[styles.row, rtl && styles.rowRtl]}>
@@ -45,7 +50,20 @@ export function SettingsRow({ icon, label, description, right, switchValue, onSw
   );
 
   if (onPress) {
-    return <Pressable onPress={onPress}>{content}</Pressable>;
+    return (
+      <AnimatedPressable
+        onPress={onPress}
+        onPressIn={() => {
+          scale.value = withSpring(0.98, { damping: 16, stiffness: 260 });
+        }}
+        onPressOut={() => {
+          scale.value = withSpring(1, { damping: 14, stiffness: 220 });
+        }}
+        style={animatedStyle}
+      >
+        {content}
+      </AnimatedPressable>
+    );
   }
   return content;
 }

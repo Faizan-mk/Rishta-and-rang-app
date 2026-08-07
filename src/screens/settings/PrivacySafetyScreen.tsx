@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import type { AppStackScreenProps } from '../../navigation/types';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { SettingsRow } from '../../components/common/SettingsRow';
+import { FadeIn } from '../../components/common/FadeInUp';
 import { useLanguage } from '../../store/LanguageContext';
 import { useAuth } from '../../store/AuthContext';
 import { useTheme } from '../../store/ThemeContext';
@@ -39,60 +40,66 @@ export function PrivacySafetyScreen({ navigation }: Props) {
 
   return (
     <ScreenContainer>
-      <Text style={[styles.sectionTitle, rtl && styles.rtlText, styles.firstSection]}>{t('privacy.visibilitySection')}</Text>
-      <View style={styles.card}>
-        <SettingsRow
-          icon="eye-outline"
-          label={t('privacy.profileVisible')}
-          description={t('privacy.profileVisibleDesc')}
-          right="switch"
-          switchValue={prefs.profileVisible}
-          onSwitchChange={(value) => setPref('profileVisible', value)}
-        />
-        <View style={styles.divider} />
-        <SettingsRow
-          icon="radio-outline"
-          label={t('privacy.onlineStatus')}
-          right="switch"
-          switchValue={prefs.onlineStatusVisible}
-          onSwitchChange={(value) => setPref('onlineStatusVisible', value)}
-        />
-        <View style={styles.divider} />
-        <SettingsRow
-          icon="eye-off-outline"
-          label={t('privacy.blurPhotos')}
-          description={t('privacy.blurPhotosDesc')}
-          right="switch"
-          switchValue={prefs.blurPhotos}
-          onSwitchChange={(value) => setPref('blurPhotos', value)}
-        />
-      </View>
-
-      <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('privacy.safetySection')}</Text>
-      <View style={styles.card}>
-        <SettingsRow
-          icon="hand-left-outline"
-          label={t('privacy.blockedUsers')}
-          description={String(blockedProfiles.length)}
-          right="chevron"
-          onPress={() => navigation.navigate('BlockedUsers')}
-        />
-      </View>
-
-      <View style={styles.tipsCard}>
-        <View style={styles.tipsHeader}>
-          <Ionicons name="shield-checkmark" size={18} color={colors.success} />
-          <Text style={[styles.tipsTitle, rtl && styles.rtlText]}>{t('privacy.safetyTipsTitle')}</Text>
+      <FadeIn>
+        <Text style={[styles.sectionTitle, rtl && styles.rtlText, styles.firstSection]}>{t('privacy.visibilitySection')}</Text>
+        <View style={styles.card}>
+          <SettingsRow
+            icon="eye-outline"
+            label={t('privacy.profileVisible')}
+            description={t('privacy.profileVisibleDesc')}
+            right="switch"
+            switchValue={prefs.profileVisible}
+            onSwitchChange={(value) => setPref('profileVisible', value)}
+          />
+          <View style={styles.divider} />
+          <SettingsRow
+            icon="radio-outline"
+            label={t('privacy.onlineStatus')}
+            right="switch"
+            switchValue={prefs.onlineStatusVisible}
+            onSwitchChange={(value) => setPref('onlineStatusVisible', value)}
+          />
+          <View style={styles.divider} />
+          <SettingsRow
+            icon="eye-off-outline"
+            label={t('privacy.blurPhotos')}
+            description={t('privacy.blurPhotosDesc')}
+            right="switch"
+            switchValue={prefs.blurPhotos}
+            onSwitchChange={(value) => setPref('blurPhotos', value)}
+          />
         </View>
-        <Text style={[styles.tip, rtl && styles.rtlText]}>• {t('privacy.safetyTip1')}</Text>
-        <Text style={[styles.tip, rtl && styles.rtlText]}>• {t('privacy.safetyTip2')}</Text>
-        <Text style={[styles.tip, rtl && styles.rtlText]}>• {t('privacy.safetyTip3')}</Text>
-      </View>
+      </FadeIn>
 
-      <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('privacy.accountSection')}</Text>
-      <View style={styles.card}>
-        <SettingsRow icon="trash-outline" label={t('privacy.deleteAccount')} right="chevron" onPress={onDeleteAccount} />
-      </View>
+      <FadeIn delay={80}>
+        <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('privacy.safetySection')}</Text>
+        <View style={styles.card}>
+          <SettingsRow
+            icon="hand-left-outline"
+            label={t('privacy.blockedUsers')}
+            description={String(blockedProfiles.length)}
+            right="chevron"
+            onPress={() => navigation.navigate('BlockedUsers')}
+          />
+        </View>
+
+        <View style={styles.tipsCard}>
+          <View style={styles.tipsHeader}>
+            <Ionicons name="shield-checkmark" size={18} color={colors.success} />
+            <Text style={[styles.tipsTitle, rtl && styles.rtlText]}>{t('privacy.safetyTipsTitle')}</Text>
+          </View>
+          <Text style={[styles.tip, rtl && styles.rtlText]}>• {t('privacy.safetyTip1')}</Text>
+          <Text style={[styles.tip, rtl && styles.rtlText]}>• {t('privacy.safetyTip2')}</Text>
+          <Text style={[styles.tip, rtl && styles.rtlText]}>• {t('privacy.safetyTip3')}</Text>
+        </View>
+      </FadeIn>
+
+      <FadeIn delay={160}>
+        <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('privacy.accountSection')}</Text>
+        <View style={styles.card}>
+          <SettingsRow icon="trash-outline" label={t('privacy.deleteAccount')} right="chevron" onPress={onDeleteAccount} />
+        </View>
+      </FadeIn>
     </ScreenContainer>
   );
 }

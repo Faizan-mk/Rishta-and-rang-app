@@ -141,7 +141,7 @@ const makeStyles = (colors: Palette) =>
       marginBottom: spacing.sm,
       backgroundColor: colors.background,
     },
-    searchInput: { flex: 1, paddingVertical: spacing.sm, color: colors.textPrimary, fontSize: 15 },
+    searchInput: { flex: 1, paddingVertical: spacing.sm, color: colors.textPrimary, fontSize: typography.body.fontSize },
     list: { flexGrow: 0 },
     option: {
       flexDirection: 'row',
