@@ -42,8 +42,8 @@ export function MatchCelebration({ visible, name, photo, onClose }: MatchCelebra
           <Animated.View style={heartStyle}>
             <Ionicons name="heart" size={56} color="#FFFFFF" />
           </Animated.View>
-          <Text style={styles.title}>It's a Match!</Text>
-          <Text style={styles.subtitle}>You and {name} liked each other.</Text>
+          <Text style={styles.title}>{t('matches.itsAMatch')}</Text>
+          <Text style={styles.subtitle}>{t('matches.youAndLikedEachOther', { name })}</Text>
           <Image source={{ uri: photo }} style={styles.photo} />
           <Button label={t('common.continue')} variant="secondary" onPress={onClose} style={styles.button} />
         </LinearGradient>

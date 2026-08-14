@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import type { AppStackScreenProps } from '../../navigation/types';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { TextField } from '../../components/common/TextField';
@@ -24,7 +25,7 @@ type Props = AppStackScreenProps<'EditProfile'>;
 const MAX_PHOTOS = 4;
 
 export function EditProfileScreen({ navigation }: Props) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
   const { user, updateUser } = useAuth();
@@ -98,6 +99,9 @@ export function EditProfileScreen({ navigation }: Props) {
           {photos.map((uri) => (
             <Pressable key={uri} onPress={() => removePhoto(uri)} style={styles.slot}>
               <Image source={{ uri }} style={styles.photo} />
+              {prefs.blurPhotos && (
+                <BlurView intensity={35} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
+              )}
               <View style={styles.removeBadge}>
                 <Text style={styles.removeText}>×</Text>
               </View>

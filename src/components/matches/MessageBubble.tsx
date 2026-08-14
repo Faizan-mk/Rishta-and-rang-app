@@ -26,7 +26,6 @@ function formatDuration(totalSeconds: number): string {
 export const MessageBubble = React.memo(function MessageBubble({ message }: { message: ChatMessage }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const [previewVisible, setPreviewVisible] = useState(false);
 
   const bubbleStyle = [styles.bubble, message.fromMe ? styles.bubbleMe : styles.bubbleThem];
   const textColor = message.fromMe ? styles.textMe : styles.textThem;
@@ -35,25 +34,16 @@ export const MessageBubble = React.memo(function MessageBubble({ message }: { me
   if (message.kind === 'voice' && message.audioUri) {
     content = <VoiceBubble uri={message.audioUri} durationSec={message.durationSec ?? 0} fromMe={Boolean(message.fromMe)} colors={colors} />;
   } else if (message.kind === 'image' && message.imageUri) {
-    content = (
-      <>
-        <Pressable onPress={() => setPreviewVisible(true)}>
-          <Image source={{ uri: message.imageUri }} style={styles.image} />
-        </Pressable>
-        <Modal visible={previewVisible} transparent animationType="fade" onRequestClose={() => setPreviewVisible(false)}>
-          <Pressable style={styles.previewOverlay} onPress={() => setPreviewVisible(false)}>
-            <Image source={{ uri: message.imageUri }} style={styles.previewImage} resizeMode="contain" />
-          </Pressable>
-        </Modal>
-      </>
-    );
-  } else {
+    content = <ImageBubble uri={message.imageUri} styles={styles} colors={colors} />;
+  } else if (message.text) {
     content = <Text style={[styles.text, textColor]}>{message.text}</Text>;
+  } else {
+    return null;
   }
 
   return (
     <View style={[styles.row, message.fromMe ? styles.rowMe : styles.rowThem]}>
-      <View>
+      <View style={styles.bubbleWrap}>
         <View style={bubbleStyle}>{content}</View>
         <Text style={[styles.timestamp, message.fromMe ? styles.timestampMe : styles.timestampThem]}>
           {formatMessageTime(message.sentAt)}
@@ -101,6 +91,33 @@ function VoiceBubble({ uri, durationSec, fromMe, colors }: { uri: string; durati
   );
 }
 
+function ImageBubble({ uri, styles, colors }: { uri: string; styles: ReturnType<typeof makeStyles>; colors: Palette }) {
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [failed, setFailed] = useState(false);
+
+  if (failed) {
+    return (
+      <View style={[styles.image, styles.imageFallback]}>
+        <Ionicons name="image-outline" size={28} color={colors.textTertiary} />
+        <Text style={[typography.caption, { color: colors.textTertiary }]}>Photo unavailable</Text>
+      </View>
+    );
+  }
+
+  return (
+    <>
+      <Pressable onPress={() => setPreviewVisible(true)}>
+        <Image source={{ uri }} style={styles.image} onError={() => setFailed(true)} />
+      </Pressable>
+      <Modal visible={previewVisible} transparent animationType="fade" onRequestClose={() => setPreviewVisible(false)}>
+        <Pressable style={styles.previewOverlay} onPress={() => setPreviewVisible(false)}>
+          <Image source={{ uri }} style={styles.previewImage} resizeMode="contain" />
+        </Pressable>
+      </Modal>
+    </>
+  );
+}
+
 const voiceStyles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, minWidth: 160 },
   waveform: { flexDirection: 'row', alignItems: 'center', gap: 2, flex: 1 },
@@ -113,13 +130,20 @@ const makeStyles = (colors: Palette) =>
     row: { flexDirection: 'row', marginVertical: 4 },
     rowMe: { justifyContent: 'flex-end' },
     rowThem: { justifyContent: 'flex-start' },
-    bubble: { maxWidth: '78%', borderRadius: radius.lg, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
+    bubbleWrap: { maxWidth: '78%', alignSelf: 'flex-start' },
+    bubble: { borderRadius: radius.lg, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
     bubbleMe: { backgroundColor: colors.teal, borderBottomRightRadius: 4 },
     bubbleThem: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderBottomLeftRadius: 4 },
     text: { ...typography.body },
     textMe: { color: colors.textInverse },
     textThem: { color: colors.textPrimary },
     image: { width: 200, height: 200, borderRadius: radius.md },
+    imageFallback: {
+      backgroundColor: colors.skeleton,
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.xs,
+    },
     previewOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.9)', alignItems: 'center', justifyContent: 'center' },
     previewImage: { width: '100%', height: '80%' },
     timestamp: { ...typography.caption, fontSize: scaleFont(10), marginTop: 2 },

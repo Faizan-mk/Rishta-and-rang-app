@@ -146,7 +146,9 @@
     "title": "Matches",
     "empty": "No matches yet — start swiping to find your people.",
     "movedToRishta": "Moved to Rishta",
-    "typeMessage": "Type a message..."
+    "typeMessage": "Type a message...",
+    "itsAMatch": "It's a Match!",
+    "youAndLikedEachOther": "You and {name} liked each other."
   },
   "chat": {
     "moveToRishta": "Move to Rishta",
@@ -232,6 +234,7 @@
     "subscription": "Subscription",
     "privacy": "Privacy & safety",
     "help": "Help & support",
+    "legal": "Privacy policy & terms",
     "version": "Version 1.0.0 (V1 MVP)"
   },
   "privacy": {
@@ -266,6 +269,8 @@
     "invalidFormat": "Enter a valid 13-digit CNIC number (12345-1234567-1).",
     "genderMismatch": "This CNIC number doesn't match the gender you selected — security check failed.",
     "verified": "ID verified",
+    "update": "Update CNIC",
+    "updateSuccess": "Your CNIC details have been updated.",
     "notVerifiedInfo": "ID verification now happens during account creation, so this isn't available here.",
     "imageCheckFailed_tooSmall": "That image couldn't be read. Try a clearer photo.",
     "imageCheckFailed_wrongShape": "That doesn't look like an ID card photo — make sure the whole card fills the frame.",
@@ -354,6 +359,14 @@
     "sentBody": "Thanks for reaching out — our support team replies within 24 hours.",
     "missingFields": "Please fill in both fields."
   },
+  "legal": {
+    "title": "Privacy policy & terms",
+    "placeholderNotice": "This is placeholder text for development. Replace it with your reviewed, legally-approved Privacy Policy and Terms of Service — and a hosted URL for each — before submitting to the App Store or Play Store.",
+    "privacyPolicyTitle": "Privacy policy",
+    "privacyPolicyBody": "Rishta & Rang respects your privacy. This section should describe what data is collected (profile details, photos, verification documents, messages), how it's stored and used, who it may be shared with, how long it's retained, and how users can request deletion of their data and account.",
+    "termsTitle": "Terms of service",
+    "termsBody": "By using Rishta & Rang, you agree to these terms. This section should cover eligibility (minimum age, one account per person), acceptable use, prohibited conduct (harassment, fake profiles, impersonation), content ownership, subscription and billing terms for Explore+, and how accounts may be suspended or terminated."
+  },
   "explorePlus": {
     "title": "Explore+",
     "subtitle": "One simple upgrade — unlimited likes and see who liked you first.",
@@ -371,6 +384,7 @@
     "upgradeSuccessBody": "Unlimited likes and your admirers list are unlocked.",
     "whoLikedYou": "People who liked you",
     "lockedHint": "Upgrade to see who's already interested",
+    "hiddenWhileOff": "Your profile is hidden (Privacy & safety → Show my profile to others is off), so no one can see or like you right now.",
     "manageSubscription": "Manage subscription",
     "currentPlan": "Current plan",
     "renewsOn": "Renews on",

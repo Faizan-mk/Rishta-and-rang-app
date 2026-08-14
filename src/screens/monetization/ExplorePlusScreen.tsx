@@ -13,6 +13,7 @@ import { useAuth } from '../../store/AuthContext';
 import { useTheme } from '../../store/ThemeContext';
 import { useDialog } from '../../store/DialogContext';
 import { useLikeLimit } from '../../store/LikeLimitContext';
+import { usePrivacy } from '../../store/PrivacyContext';
 import { oppositeGenderProfiles } from '../../utils/genderMatch';
 import { isoToDisplay } from '../../utils/date';
 import { radius, spacing, typography } from '../../theme';
@@ -34,13 +35,14 @@ export function ExplorePlusScreen({ navigation }: Props) {
   const { user, updateUser } = useAuth();
   const { notify, confirm } = useDialog();
   const { used, limit } = useLikeLimit();
+  const { prefs } = usePrivacy();
   const [upgrading, setUpgrading] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [plan, setPlan] = useState<Plan>('monthly');
 
   const admirers = useMemo(
-    () => oppositeGenderProfiles(mockDiscoverProfiles, user?.gender).slice(0, 4),
-    [user?.gender]
+    () => (prefs.profileVisible ? oppositeGenderProfiles(mockDiscoverProfiles, user?.gender).slice(0, 4) : []),
+    [user?.gender, prefs.profileVisible]
   );
 
   if (!user) return null;
@@ -158,26 +160,35 @@ export function ExplorePlusScreen({ navigation }: Props) {
       )}
 
       <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('explorePlus.whoLikedYou')}</Text>
-      <View style={styles.grid}>
-        {admirers.map((profile) => (
-          <View key={profile.id} style={styles.admirerCard}>
-            <Image source={{ uri: profile.photos[0] }} style={styles.admirerPhoto} />
-            {!isPro && (
-              <BlurView intensity={40} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFill}>
-                <View style={styles.lockOverlay}>
-                  <Ionicons name="lock-closed" size={18} color="#FFFFFF" />
-                </View>
-              </BlurView>
-            )}
-            {isPro && (
-              <View style={styles.admirerNameWrap}>
-                <Text style={styles.admirerName}>{profile.name}, {profile.age}</Text>
+      {prefs.profileVisible ? (
+        <>
+          <View style={styles.grid}>
+            {admirers.map((profile) => (
+              <View key={profile.id} style={styles.admirerCard}>
+                <Image source={{ uri: profile.photos[0] }} style={styles.admirerPhoto} />
+                {!isPro && (
+                  <BlurView intensity={40} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFill}>
+                    <View style={styles.lockOverlay}>
+                      <Ionicons name="lock-closed" size={18} color="#FFFFFF" />
+                    </View>
+                  </BlurView>
+                )}
+                {isPro && (
+                  <View style={styles.admirerNameWrap}>
+                    <Text style={styles.admirerName}>{profile.name}, {profile.age}</Text>
+                  </View>
+                )}
               </View>
-            )}
+            ))}
           </View>
-        ))}
-      </View>
-      {!isPro && <Text style={[styles.lockedHint, rtl && styles.rtlText]}>{t('explorePlus.lockedHint')}</Text>}
+          {!isPro && <Text style={[styles.lockedHint, rtl && styles.rtlText]}>{t('explorePlus.lockedHint')}</Text>}
+        </>
+      ) : (
+        <View style={styles.hiddenCard}>
+          <Ionicons name="eye-off-outline" size={20} color={colors.textSecondary} />
+          <Text style={[styles.hiddenText, rtl && styles.rtlText]}>{t('explorePlus.hiddenWhileOff')}</Text>
+        </View>
+      )}
     </ScreenContainer>
   );
 }
@@ -268,5 +279,17 @@ const makeStyles = (colors: Palette) =>
     admirerNameWrap: { position: 'absolute', bottom: spacing.xs, left: spacing.xs },
     admirerName: { ...typography.caption, color: '#FFFFFF', fontWeight: '700' },
     lockedHint: { ...typography.caption, color: colors.textTertiary, textAlign: 'center', marginTop: spacing.sm, marginBottom: spacing.lg },
+    hiddenCard: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: spacing.sm,
+      backgroundColor: colors.surface,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: spacing.md,
+      marginBottom: spacing.lg,
+    },
+    hiddenText: { ...typography.body, color: colors.textSecondary, flex: 1 },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   });

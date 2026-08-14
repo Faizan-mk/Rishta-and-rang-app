@@ -146,7 +146,9 @@
     "title": "Matches",
     "empty": "Abhi tak koi match nahi — swiping shuru karein.",
     "movedToRishta": "Rishtay ki Taraf Muntaqil",
-    "typeMessage": "Paigham likhein..."
+    "typeMessage": "Paigham likhein...",
+    "itsAMatch": "Yeh Ek Match Hai!",
+    "youAndLikedEachOther": "Aap aur {name} ne ek doosre ko pasand kiya."
   },
   "chat": {
     "moveToRishta": "Rishtay ki Taraf Barhein",
@@ -232,6 +234,7 @@
     "subscription": "Subscription",
     "privacy": "Privacy aur Hifazat",
     "help": "Madad",
+    "legal": "Privacy policy aur shara'it",
     "version": "Version 1.0.0 (V1 MVP)"
   },
   "privacy": {
@@ -266,6 +269,8 @@
     "invalidFormat": "Sahi 13 hindson ka CNIC number darj karein (12345-1234567-1).",
     "genderMismatch": "Yeh CNIC number muntakhib kardah jins se mutabiqat nahi rakhta — security check nakam.",
     "verified": "ID Tasdeeq Shuda",
+    "update": "CNIC update karein",
+    "updateSuccess": "Aapki CNIC tafseelat update ho gayi hain.",
     "notVerifiedInfo": "ID ki tasdeeq ab account banate waqt hoti hai, is liye yeh yahan dastyaab nahi.",
     "imageCheckFailed_tooSmall": "Yeh tasveer parhi nahi ja saki. Ek saaf tasveer azmayein.",
     "imageCheckFailed_wrongShape": "Yeh ID card ki tasveer nahi lagti — yaqeeni banayein ke pura card frame mein aaye.",
@@ -354,6 +359,14 @@
     "sentBody": "Rabta karne ka shukriya — hamari support team 24 ghanton mein jawab degi.",
     "missingFields": "Baraye meherbani dono khane pur karein."
   },
+  "legal": {
+    "title": "Privacy policy aur shara'it",
+    "placeholderNotice": "Yeh development ke liye placeholder text hai. App Store ya Play Store par jama karane se pehle ise apni reviewed, legally-approved Privacy Policy aur Terms of Service se, aur har ek ke liye ek hosted URL se replace karein.",
+    "privacyPolicyTitle": "Privacy Policy",
+    "privacyPolicyBody": "Rishta & Rang aapki privacy ka ehtaram karta hai. Is section mein yeh batana chahiye ke kaunsa data collect hota hai (profile details, tasveerein, verification documents, messages), yeh kaise store aur use hota hai, kis ke saath share ho sakta hai, kitni der tak rakha jata hai, aur users apna data aur account delete karne ki request kaise kar sakte hain.",
+    "termsTitle": "Terms of Service",
+    "termsBody": "Rishta & Rang use karne se aap in shara'it se muttafiq hote hain. Is section mein eligibility (minimum age, fi shakhs ek account), acceptable use, mana kiye gaye rawaiye (harassment, jaali profiles, impersonation), content ownership, Explore+ ke liye subscription aur billing terms, aur accounts ko kaise suspend ya terminate kiya ja sakta hai, shamil hona chahiye."
+  },
   "explorePlus": {
     "title": "Explore+",
     "subtitle": "Ek aasan upgrade — unlimited likes aur dekhein ke aapko kisne pehle pasand kiya.",
@@ -371,6 +384,7 @@
     "upgradeSuccessBody": "Unlimited likes aur aapki admirers list khul gayi hai.",
     "whoLikedYou": "Jin logon ne aapko pasand kiya",
     "lockedHint": "Yeh dekhne ke liye upgrade karein ke kaun pehle se dilchaspi rakhta hai",
+    "hiddenWhileOff": "Aapki profile is waqt chupi hui hai (Privacy & Safety → \"Show my profile to others\" band hai), is liye koi aapko dekh ya pasand nahi kar sakta.",
     "manageSubscription": "Subscription Manage Karein",
     "currentPlan": "Mojooda Plan",
     "renewsOn": "Tajdeed ki Tareekh",

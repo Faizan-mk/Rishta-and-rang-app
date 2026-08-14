@@ -109,7 +109,11 @@ export function ProfileScreen({ navigation }: Props) {
         <Text style={[styles.meta, rtl && styles.rtlText]}>{user.city}</Text>
 
         <View style={styles.badgeRow}>
-          {user.isExplorePlus && <Badge label={t('profile.premiumBadge')} tone="premium" icon="sparkles" />}
+          {user.isExplorePlus && (
+            <Pressable onPress={() => navigation.navigate('ExplorePlus')}>
+              <Badge label={t('profile.premiumBadge')} tone="premium" icon="sparkles" />
+            </Pressable>
+          )}
           <Badge label={user.selfieVerified ? t('profile.verified') : t('profile.notVerified')} tone={user.selfieVerified ? 'success' : 'neutral'} />
           <Badge label={t(`intent.${user.intent}Title`)} tone="neutral" />
         </View>

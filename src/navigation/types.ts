@@ -37,6 +37,7 @@ export type AppStackParamList = {
   HelpSupport: undefined;
   CnicVerification: undefined;
   WaliDashboard: undefined;
+  Legal: undefined;
 };
 
 export type MainTabScreenProps<T extends keyof MainTabParamList> = CompositeScreenProps<

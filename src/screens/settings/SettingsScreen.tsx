@@ -117,6 +117,8 @@ export function SettingsScreen({ navigation }: Props) {
           <SettingsRow icon="shield-checkmark-outline" label={t('settings.privacy')} right="chevron" onPress={() => navigation.navigate('PrivacySafety')} />
           <View style={styles.divider} />
           <SettingsRow icon="help-circle-outline" label={t('settings.help')} right="chevron" onPress={() => navigation.navigate('HelpSupport')} />
+          <View style={styles.divider} />
+          <SettingsRow icon="document-text-outline" label={t('settings.legal')} right="chevron" onPress={() => navigation.navigate('Legal')} />
         </View>
       </FadeIn>
 

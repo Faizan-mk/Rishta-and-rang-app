@@ -16,6 +16,7 @@ import { BlockedUsersScreen } from '../screens/settings/BlockedUsersScreen';
 import { HelpSupportScreen } from '../screens/settings/HelpSupportScreen';
 import { CnicVerificationScreen } from '../screens/profile/CnicVerificationScreen';
 import { WaliDashboardScreen } from '../screens/profile/WaliDashboardScreen';
+import { LegalScreen } from '../screens/settings/LegalScreen';
 import { useLanguage } from '../store/LanguageContext';
 import { useTheme } from '../store/ThemeContext';
 
@@ -49,6 +50,7 @@ export function AppNavigator() {
       <Stack.Screen name="HelpSupport" component={HelpSupportScreen} options={{ title: t('help.title') }} />
       <Stack.Screen name="CnicVerification" component={CnicVerificationScreen} options={{ title: t('cnic.title') }} />
       <Stack.Screen name="WaliDashboard" component={WaliDashboardScreen} options={{ title: t('wali.title') }} />
+      <Stack.Screen name="Legal" component={LegalScreen} options={{ title: t('legal.title') }} />
     </Stack.Navigator>
   );
 }

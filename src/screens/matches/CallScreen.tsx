@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { CameraView, useCameraPermissions, type CameraType } from 'expo-camera';
@@ -10,6 +10,7 @@ import Animated, {
   useSharedValue,
   withRepeat,
   withSequence,
+  withSpring,
   withTiming,
 } from 'react-native-reanimated';
 import type { AppStackScreenProps } from '../../navigation/types';
@@ -128,9 +129,7 @@ export function CallScreen({ navigation, route }: Props) {
               )}
             </FadeIn>
 
-            <Pressable onPress={endCall} style={styles.endButton}>
-              <Ionicons name="call" size={26} color="#FFFFFF" style={styles.endIcon} />
-            </Pressable>
+            <EndCallButton onPress={endCall} style={styles.endButton} />
             <Text style={styles.endLabel}>{t('call.end')}</Text>
           </>
         )}
@@ -138,6 +137,8 @@ export function CallScreen({ navigation, route }: Props) {
     </View>
   );
 }
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 function CallControl({
   icon,
@@ -150,18 +151,52 @@ function CallControl({
   onPress: () => void;
   colors: Palette;
 }) {
+  const scale = useSharedValue(1);
+  const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+
   return (
-    <Pressable
+    <AnimatedPressable
       onPress={onPress}
-      style={[controlStyles.button, { backgroundColor: active ? colors.teal : 'rgba(255,255,255,0.14)' }]}
+      onPressIn={() => {
+        scale.value = withSpring(0.9, { damping: 14, stiffness: 220 });
+      }}
+      onPressOut={() => {
+        scale.value = withSpring(1, { damping: 12, stiffness: 200 });
+      }}
+      style={[
+        controlStyles.button,
+        { backgroundColor: active ? colors.teal : 'rgba(255,255,255,0.14)' },
+        animatedStyle,
+      ]}
     >
       <Ionicons name={icon} size={22} color="#FFFFFF" />
-    </Pressable>
+    </AnimatedPressable>
+  );
+}
+
+function EndCallButton({ onPress, style }: { onPress: () => void; style: ViewStyle }) {
+  const scale = useSharedValue(1);
+  const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+
+  return (
+    <AnimatedPressable
+      onPress={onPress}
+      onPressIn={() => {
+        scale.value = withSpring(0.9, { damping: 14, stiffness: 220 });
+      }}
+      onPressOut={() => {
+        scale.value = withSpring(1, { damping: 12, stiffness: 200 });
+      }}
+      style={[style, animatedStyle]}
+    >
+      <Ionicons name="call" size={26} color="#FFFFFF" style={controlStyles.endIcon} />
+    </AnimatedPressable>
   );
 }
 
 const controlStyles = StyleSheet.create({
   button: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
+  endIcon: { transform: [{ rotate: '135deg' }] },
 });
 
 const makeStyles = (colors: Palette) =>
@@ -200,7 +235,6 @@ const makeStyles = (colors: Palette) =>
       justifyContent: 'center',
       alignSelf: 'center',
     },
-    endIcon: { transform: [{ rotate: '135deg' }] },
     endLabel: { ...typography.caption, color: 'rgba(255,255,255,0.7)', textAlign: 'center', marginTop: spacing.sm, marginBottom: spacing.lg },
     permissionWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xl, gap: spacing.md },
     permissionText: { ...typography.body, color: 'rgba(255,255,255,0.85)', textAlign: 'center' },

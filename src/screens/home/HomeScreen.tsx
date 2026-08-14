@@ -17,6 +17,9 @@ import { useTheme } from '../../store/ThemeContext';
 import { useNotifications } from '../../store/NotificationContext';
 import { useMatches } from '../../store/MatchesContext';
 import { useLikeLimit } from '../../store/LikeLimitContext';
+import { usePrivacy } from '../../store/PrivacyContext';
+import { mockDiscoverProfiles } from '../../data/mockDiscover';
+import { oppositeGenderProfiles } from '../../utils/genderMatch';
 import { profileCompletion } from '../../utils/profileCompletion';
 import { radius, spacing, typography } from '../../theme';
 import type { Palette } from '../../theme/palettes';
@@ -31,10 +34,15 @@ export function HomeScreen({ navigation }: Props) {
   const { feed, unreadCount } = useNotifications();
   const { matches } = useMatches();
   const { used, limit, isUnlimited } = useLikeLimit();
+  const { prefs } = usePrivacy();
 
   if (!user) return null;
   const completion = profileCompletion(user);
   const recent = feed.slice(0, 3);
+  // Demo engagement baseline — zeroed out while the profile is hidden from Discover/Rishta
+  // (Privacy & safety → "Show my profile to others"), since a hidden profile can't be liked or viewed.
+  const likesCount = prefs.profileVisible ? oppositeGenderProfiles(mockDiscoverProfiles, user.gender).length : 0;
+  const viewsCount = prefs.profileVisible ? 112 : 0;
 
   return (
     <ScreenContainer edges={['top', 'bottom']}>
@@ -75,14 +83,14 @@ export function HomeScreen({ navigation }: Props) {
       <FadeIn delay={140} style={styles.statsRow}>
         <StatCard
           icon="heart"
-          value={28}
+          value={likesCount}
           label={t('dashboard.statsLikes')}
           tint={colors.dating}
           tintSoft={colors.datingSoft}
           onPress={() => navigation.navigate('ExplorePlus')}
         />
         <StatCard icon="people" value={matches.length} label={t('dashboard.statsMatches')} tint={colors.rishta} tintSoft={colors.rishtaSoft} />
-        <StatCard icon="eye" value={112} label={t('dashboard.statsViews')} tint={colors.teal} tintSoft={colors.tealSoft} />
+        <StatCard icon="eye" value={viewsCount} label={t('dashboard.statsViews')} tint={colors.teal} tintSoft={colors.tealSoft} />
       </FadeIn>
 
       <FadeIn delay={200} style={styles.section}>

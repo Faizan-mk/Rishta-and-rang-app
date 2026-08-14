@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeInUp } from 'react-native-reanimated';
 import { Button } from './Button';
 import { TextField } from './TextField';
 import { radius, spacing, typography } from '../../theme';
@@ -63,48 +64,50 @@ export function ReportDialog({ visible, name, onCancel, onSubmit }: ReportDialog
   return (
     <Modal visible transparent animationType="fade" onRequestClose={handleCancel}>
       <Pressable style={styles.overlay} onPress={handleCancel}>
-        <Pressable style={styles.card} onPress={(e) => e.stopPropagation()}>
-          <Text style={[styles.title, rtl && styles.rtlText]}>{t('chat.reportConfirmTitle', { name })}</Text>
-          <Text style={[styles.subtitle, rtl && styles.rtlText]}>{t('report.subtitle')}</Text>
+        <Animated.View entering={FadeInUp.duration(220)} style={styles.card}>
+          <Pressable onPress={(e) => e.stopPropagation()}>
+            <Text style={[styles.title, rtl && styles.rtlText]}>{t('chat.reportConfirmTitle', { name })}</Text>
+            <Text style={[styles.subtitle, rtl && styles.rtlText]}>{t('report.subtitle')}</Text>
 
-          {REASON_KEYS.map((key) => {
-            const isSelected = selected === key;
-            return (
-              <Pressable
-                key={key}
-                onPress={() => {
-                  setSelected(key);
-                  setError(null);
-                }}
-                style={[styles.reasonRow, isSelected && styles.reasonRowSelected]}
-              >
-                <View style={[styles.radio, isSelected && styles.radioSelected]}>
-                  {isSelected && <View style={styles.radioDot} />}
-                </View>
-                <Text style={[styles.reasonText, rtl && styles.rtlText]}>{t(`report.reason_${key}`)}</Text>
-              </Pressable>
-            );
-          })}
+            {REASON_KEYS.map((key) => {
+              const isSelected = selected === key;
+              return (
+                <Pressable
+                  key={key}
+                  onPress={() => {
+                    setSelected(key);
+                    setError(null);
+                  }}
+                  style={[styles.reasonRow, isSelected && styles.reasonRowSelected]}
+                >
+                  <View style={[styles.radio, isSelected && styles.radioSelected]}>
+                    {isSelected && <View style={styles.radioDot} />}
+                  </View>
+                  <Text style={[styles.reasonText, rtl && styles.rtlText]}>{t(`report.reason_${key}`)}</Text>
+                </Pressable>
+              );
+            })}
 
-          {selected === 'other' && (
-            <TextField
-              label={t('report.customLabel')}
-              value={customText}
-              onChangeText={setCustomText}
-              placeholder={t('report.customPlaceholder')}
-              multiline
-              numberOfLines={3}
-              style={styles.customInput}
-            />
-          )}
+            {selected === 'other' && (
+              <TextField
+                label={t('report.customLabel')}
+                value={customText}
+                onChangeText={setCustomText}
+                placeholder={t('report.customPlaceholder')}
+                multiline
+                numberOfLines={3}
+                style={styles.customInput}
+              />
+            )}
 
-          {error ? <Text style={[styles.errorText, rtl && styles.rtlText]}>{error}</Text> : null}
+            {error ? <Text style={[styles.errorText, rtl && styles.rtlText]}>{error}</Text> : null}
 
-          <View style={styles.actions}>
-            <Button label={t('common.cancel')} variant="secondary" onPress={handleCancel} style={styles.actionButton} />
-            <Button label={t('report.submit')} variant="danger" onPress={handleSubmit} style={styles.actionButton} />
-          </View>
-        </Pressable>
+            <View style={styles.actions}>
+              <Button label={t('common.cancel')} variant="secondary" onPress={handleCancel} style={styles.actionButton} />
+              <Button label={t('report.submit')} variant="danger" onPress={handleSubmit} style={styles.actionButton} />
+            </View>
+          </Pressable>
+        </Animated.View>
       </Pressable>
     </Modal>
   );

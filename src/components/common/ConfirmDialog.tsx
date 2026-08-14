@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeInUp } from 'react-native-reanimated';
 import { Button } from './Button';
 import { radius, spacing, typography } from '../../theme';
 import type { Palette } from '../../theme/palettes';
@@ -37,22 +38,24 @@ export function ConfirmDialog({
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onCancel}>
       <Pressable style={styles.overlay} onPress={confirmOnly ? undefined : onCancel}>
-        <Pressable style={styles.card} onPress={(e) => e.stopPropagation()}>
-          <Text style={[styles.title, rtl && styles.rtlText]}>{title}</Text>
-          {message ? <Text style={[styles.message, rtl && styles.rtlText]}>{message}</Text> : null}
+        <Animated.View entering={FadeInUp.duration(220)} style={styles.card}>
+          <Pressable onPress={(e) => e.stopPropagation()}>
+            <Text style={[styles.title, rtl && styles.rtlText]}>{title}</Text>
+            {message ? <Text style={[styles.message, rtl && styles.rtlText]}>{message}</Text> : null}
 
-          <View style={styles.actions}>
-            {!confirmOnly && (
-              <Button label={cancelLabel ?? t('common.cancel')} variant="secondary" onPress={onCancel} style={styles.actionButton} />
-            )}
-            <Button
-              label={confirmLabel ?? t('common.done')}
-              variant={destructive ? 'danger' : 'primary'}
-              onPress={onConfirm}
-              style={styles.actionButton}
-            />
-          </View>
-        </Pressable>
+            <View style={styles.actions}>
+              {!confirmOnly && (
+                <Button label={cancelLabel ?? t('common.cancel')} variant="secondary" onPress={onCancel} style={styles.actionButton} />
+              )}
+              <Button
+                label={confirmLabel ?? t('common.done')}
+                variant={destructive ? 'danger' : 'primary'}
+                onPress={onConfirm}
+                style={styles.actionButton}
+              />
+            </View>
+          </Pressable>
+        </Animated.View>
       </Pressable>
     </Modal>
   );
