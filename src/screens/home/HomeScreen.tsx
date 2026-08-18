@@ -1,237 +1,430 @@
-import React, { useMemo } from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { Image, Modal, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, { FadeIn as ReanimatedFadeIn, FadeOut, ZoomIn } from 'react-native-reanimated';
 import type { MainTabScreenProps } from '../../navigation/types';
-import { ScreenContainer } from '../../components/common/ScreenContainer';
-import { StatCard } from '../../components/dashboard/StatCard';
-import { ActionCard } from '../../components/dashboard/ActionCard';
-import { ProgressBar } from '../../components/dashboard/ProgressBar';
-import { NotificationRow } from '../../components/dashboard/NotificationRow';
-import { IconButton } from '../../components/common/IconButton';
-import { FadeIn } from '../../components/common/FadeInUp';
-import { Button } from '../../components/common/Button';
-import { useLanguage } from '../../store/LanguageContext';
-import { useAuth } from '../../store/AuthContext';
-import { useTheme } from '../../store/ThemeContext';
-import { useNotifications } from '../../store/NotificationContext';
-import { useMatches } from '../../store/MatchesContext';
-import { useLikeLimit } from '../../store/LikeLimitContext';
-import { usePrivacy } from '../../store/PrivacyContext';
+import { DiscoverProfileCard } from '../../components/discover/DiscoverProfileCard';
+import { TAB_BAR_BASE_HEIGHT, useHideTabBarOnScroll } from '../../store/TabBarVisibilityContext';
+import { MatchCelebration } from '../../components/discover/MatchCelebration';
+import { ModeToggle } from '../../components/profile/ModeToggle';
+import {
+  AboutMeSection,
+  MarriageIntentionsCard,
+  FaithSection,
+  FuturePlansSection,
+  EducationCareerSection,
+  LanguagesBackgroundSection,
+  VerificationSection,
+} from '../../components/discover/ProfileDetailSections';
+import { ProfileActionsFooter } from '../../components/discover/ProfileActionsFooter';
+import { ReportDialog } from '../../components/common/ReportDialog';
+import { Chip } from '../../components/common/Chip';
+import { Badge } from '../../components/common/Badge';
 import { mockDiscoverProfiles } from '../../data/mockDiscover';
+import { mockRishtaProfiles } from '../../data/mockRishta';
+import type { DiscoverProfile, RishtaListingProfile } from '../../types/content';
+import type { ProfileMode } from '../../types/user';
+import { useLanguage } from '../../store/LanguageContext';
+import { useTheme } from '../../store/ThemeContext';
+import { useAuth } from '../../store/AuthContext';
+import { useFavorites } from '../../store/FavoritesContext';
+import { useDialog } from '../../store/DialogContext';
+import { useLikeLimit } from '../../store/LikeLimitContext';
+import { useMatches } from '../../store/MatchesContext';
+import { useNotifications } from '../../store/NotificationContext';
 import { oppositeGenderProfiles } from '../../utils/genderMatch';
-import { profileCompletion } from '../../utils/profileCompletion';
+import { datingCompatibility, rishtaCompatibility } from '../../utils/compatibility';
 import { radius, spacing, typography } from '../../theme';
 import type { Palette } from '../../theme/palettes';
 
 type Props = MainTabScreenProps<'Home'>;
 
+const ACTION_BAR_HEIGHT = 96;
+
 export function HomeScreen({ navigation }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
-  const { user } = useAuth();
-  const { feed, unreadCount } = useNotifications();
-  const { matches } = useMatches();
-  const { used, limit, isUnlimited } = useLikeLimit();
-  const { prefs } = usePrivacy();
+  const { user, updateUser } = useAuth();
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const { confirm, notify } = useDialog();
+  const { isUnlimited, remaining, recordLike } = useLikeLimit();
+  const { blockedProfiles, getOrCreateMatchForProfile, blockMatch } = useMatches();
+  const { addNotification } = useNotifications();
+  const [celebration, setCelebration] = useState<{ name: string; photo: string } | null>(null);
+  const [datingCursor, setDatingCursor] = useState(0);
+  const [rishtaCursor, setRishtaCursor] = useState(0);
+  const [previewUri, setPreviewUri] = useState<string | null>(null);
+  const [reportVisible, setReportVisible] = useState(false);
+  const insets = useSafeAreaInsets();
+  const onScroll = useHideTabBarOnScroll();
+
+  const mode: ProfileMode = user?.activeMode ?? 'dating';
+  const setMode = (next: ProfileMode) => {
+    if (user) updateUser({ ...user, activeMode: next });
+  };
+
+  const blockedProfileIds = useMemo(
+    () => new Set(blockedProfiles.map((b) => b.sourceProfileId).filter(Boolean)),
+    [blockedProfiles]
+  );
+
+  const visibleDatingProfiles = useMemo(
+    () => oppositeGenderProfiles(mockDiscoverProfiles, user?.gender).filter((p) => !blockedProfileIds.has(p.id)),
+    [user?.gender, blockedProfileIds]
+  );
+  const visibleRishtaProfiles = useMemo(
+    () => oppositeGenderProfiles(mockRishtaProfiles, user?.gender).filter((p) => !blockedProfileIds.has(p.id)),
+    [user?.gender, blockedProfileIds]
+  );
+
+  const visibleProfiles: (DiscoverProfile | RishtaListingProfile)[] = mode === 'dating' ? visibleDatingProfiles : visibleRishtaProfiles;
+  const cursor = mode === 'dating' ? datingCursor : rishtaCursor;
+  const setCursor = mode === 'dating' ? setDatingCursor : setRishtaCursor;
+
+  const safeCursor = Math.min(cursor, visibleProfiles.length);
+  const currentProfile = visibleProfiles[safeCursor];
+  const canUndo = safeCursor > 0;
+
+  const compatibilityScore =
+    user && currentProfile
+      ? mode === 'dating'
+        ? datingCompatibility(user, currentProfile as DiscoverProfile)
+        : rishtaCompatibility(user, currentProfile as RishtaListingProfile)
+      : 0;
+
+  const similarities = useMemo(() => {
+    if (!user || !currentProfile) return [];
+    const found: string[] = [];
+    if (user.city && currentProfile.city && user.city.toLowerCase() === currentProfile.city.toLowerCase()) {
+      found.push(t('discover.similarCity', { city: currentProfile.city }));
+    }
+    if (mode === 'dating') {
+      const userTags = new Set(user.dating.vibeTags.map((tag) => tag.toLowerCase()));
+      (currentProfile.vibeTags ?? []).forEach((tag) => {
+        if (userTags.has(tag.toLowerCase())) found.push(t('discover.similarTag', { tag }));
+      });
+    } else {
+      if (user.rishta.religion && currentProfile.religion && user.rishta.religion.toLowerCase() === currentProfile.religion.toLowerCase()) {
+        found.push(currentProfile.religion);
+      }
+      if (user.rishta.sect && currentProfile.sect && user.rishta.sect.toLowerCase() === currentProfile.sect.toLowerCase()) {
+        found.push(currentProfile.sect);
+      }
+    }
+    return found;
+  }, [user, currentProfile, mode, t]);
+
+  const advance = () => setCursor((c) => Math.min(c + 1, visibleProfiles.length));
+  const onUndo = () => setCursor((c) => Math.max(c - 1, 0));
+
+  const onPass = () => {
+    if (!currentProfile) return;
+    advance();
+  };
+
+  const onLike = async () => {
+    if (!currentProfile) return;
+    const profile = currentProfile;
+    const wasLiked = isFavorite(profile.id);
+    if (!wasLiked) {
+      const allowed = recordLike();
+      if (!allowed) {
+        const wantsUpgrade = await confirm({
+          title: t('discover.limitReachedTitle'),
+          message: t('discover.limitReachedBody'),
+          confirmLabel: t('explorePlus.upgrade'),
+          cancelLabel: t('common.cancel'),
+        });
+        if (wantsUpgrade) {
+          navigation.navigate('ExplorePlus');
+          return;
+        }
+        advance();
+        return;
+      }
+    }
+    toggleFavorite({ id: profile.id, kind: mode, name: profile.name, age: profile.age, city: profile.city, photo: profile.photos[0] });
+    if (!wasLiked) {
+      if (mode === 'dating') {
+        setCelebration({ name: profile.name, photo: profile.photos[0] });
+        addNotification('match', t('matches.itsAMatch'), t('matches.youAndLikedEachOther', { name: profile.name }));
+      } else {
+        addNotification('like', t('profileDetail.interestSentTitle'), t('profileDetail.interestSentBody', { name: profile.name }));
+        await notify({ title: t('profileDetail.interestSentTitle'), message: t('profileDetail.interestSentBody', { name: profile.name }) });
+      }
+    }
+    advance();
+  };
+
+  const onToggleFavourite = () => {
+    if (!currentProfile) return;
+    const profile = currentProfile;
+    toggleFavorite({ id: profile.id, kind: mode, name: profile.name, age: profile.age, city: profile.city, photo: profile.photos[0] });
+  };
+
+  const onShareProfile = async () => {
+    if (!currentProfile) return;
+    try {
+      await Share.share({ message: t('discover.shareMessage', { name: currentProfile.name }) });
+    } catch {
+      // User dismissed the share sheet — nothing to do.
+    }
+  };
+
+  const onBlockProfile = async () => {
+    if (!currentProfile) return;
+    const profile = currentProfile;
+    const confirmed = await confirm({
+      title: t('chat.blockConfirmTitle', { name: profile.name }),
+      message: t('chat.blockConfirmBody'),
+      confirmLabel: t('chat.block'),
+      cancelLabel: t('common.cancel'),
+      destructive: true,
+    });
+    if (!confirmed) return;
+    const match = getOrCreateMatchForProfile({ id: profile.id, name: profile.name, photo: profile.photos[0], mode });
+    blockMatch(match.id);
+  };
+
+  const onSubmitReport = async (_reason: string) => {
+    setReportVisible(false);
+    await notify({ title: t('chat.reportSentTitle'), message: t('chat.reportSentBody') });
+  };
+
+  const onSendCompliment = async (_text: string) => {
+    if (!currentProfile) return;
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    await notify({ title: t('discover.complimentSentTitle'), message: t('discover.complimentSentBody', { name: currentProfile.name }) });
+  };
 
   if (!user) return null;
-  const completion = profileCompletion(user);
-  const recent = feed.slice(0, 3);
-  // Demo engagement baseline — zeroed out while the profile is hidden from Discover/Rishta
-  // (Privacy & safety → "Show my profile to others"), since a hidden profile can't be liked or viewed.
-  const likesCount = prefs.profileVisible ? oppositeGenderProfiles(mockDiscoverProfiles, user.gender).length : 0;
-  const viewsCount = prefs.profileVisible ? 112 : 0;
 
   return (
-    <ScreenContainer edges={['top', 'bottom']}>
-      <FadeIn style={styles.headerRow}>
-        <View style={styles.headerLeft}>
-          {user.photos[0] ? (
-            <Image source={{ uri: user.photos[0] }} style={[styles.avatar, user.isExplorePlus && styles.avatarPremium]} />
-          ) : (
-            <View style={[styles.avatar, styles.avatarPlaceholder, user.isExplorePlus && styles.avatarPremium]}>
-              <Ionicons name="person" size={18} color={colors.textInverse} />
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <View style={styles.header}>
+        <Text style={[styles.title, rtl && styles.rtlText]}>{t('nav.home')}</Text>
+        {mode === 'dating' && !isUnlimited && (
+          <View style={styles.likesBadge}>
+            <Ionicons name="heart" size={12} color={colors.teal} />
+            <Text style={styles.likesBadgeText}>{t('discover.likesRemaining', { count: remaining })}</Text>
+          </View>
+        )}
+      </View>
+
+      <View style={styles.toggleWrap}>
+        <ModeToggle mode={mode} onChange={setMode} datingLabel={t('profile.datingMode')} rishtaLabel={t('profile.rishtaMode')} />
+      </View>
+
+      {currentProfile ? (
+        <Animated.View key={`${mode}-${currentProfile.id}`} entering={ZoomIn.duration(200)} exiting={FadeOut.duration(100)} style={styles.flex}>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            onScroll={onScroll}
+            scrollEventThrottle={16}
+            contentContainerStyle={{ paddingBottom: ACTION_BAR_HEIGHT + insets.bottom + spacing.lg }}
+          >
+            <DiscoverProfileCard profile={currentProfile} liked={isFavorite(currentProfile.id)} onPressPhoto={setPreviewUri} />
+
+            <View style={styles.content}>
+              {(currentProfile.vibeTags ?? []).length > 0 && (
+                <View style={styles.chipRow}>
+                  {(currentProfile.vibeTags ?? []).map((tag) => (
+                    <Chip key={tag} label={tag} tone={mode === 'dating' ? 'dating' : 'rishta'} selected />
+                  ))}
+                </View>
+              )}
+
+              <View style={styles.compatibilityBanner}>
+                <Ionicons name="sparkles" size={18} color={colors.gold} />
+                <View style={styles.compatibilityTextWrap}>
+                  <Text style={[styles.compatibilityTitle, rtl && styles.rtlText]}>
+                    {t('profile.aiScoreValue', { score: compatibilityScore })}
+                  </Text>
+                  <Badge
+                    label={currentProfile.bureauVerified ? t('profile.bureau') : t('profile.bureauNotVerified')}
+                    tone={currentProfile.bureauVerified ? 'success' : 'neutral'}
+                  />
+                </View>
+              </View>
+
+              <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('discover.similaritiesTitle')}</Text>
+              {similarities.length > 0 ? (
+                <>
+                  <Text style={[styles.sectionSubtitle, rtl && styles.rtlText]}>
+                    {t('discover.similaritiesSubtitle', { name: currentProfile.name })}
+                  </Text>
+                  <View style={styles.chipRow}>
+                    {similarities.map((label) => (
+                      <View key={label} style={styles.similarityChip}>
+                        <Ionicons name="checkmark-circle" size={14} color={colors.success} />
+                        <Text style={styles.similarityChipText}>{label}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </>
+              ) : (
+                <Text style={[styles.sectionSubtitle, rtl && styles.rtlText]}>{t('discover.similaritiesEmpty')}</Text>
+              )}
+
+              {currentProfile.bio && (
+                <>
+                  <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('profile.about')}</Text>
+                  <Text style={[styles.bio, rtl && styles.rtlText]}>{currentProfile.bio}</Text>
+                </>
+              )}
+
+              {currentProfile.familyBackground && (
+                <>
+                  <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('rishtaProfile.title')}</Text>
+                  <Text style={[styles.bio, rtl && styles.rtlText]}>{currentProfile.familyBackground}</Text>
+                </>
+              )}
+
+              <AboutMeSection profile={currentProfile} />
+              <MarriageIntentionsCard profile={currentProfile} />
+              <FaithSection profile={currentProfile} />
+              <FuturePlansSection profile={currentProfile} />
+              <EducationCareerSection profile={currentProfile} />
+              <LanguagesBackgroundSection profile={currentProfile} />
+              <VerificationSection profile={currentProfile} />
+
+              <ProfileActionsFooter
+                name={currentProfile.name}
+                liked={isFavorite(currentProfile.id)}
+                onSendCompliment={onSendCompliment}
+                onShare={onShareProfile}
+                onToggleFavourite={onToggleFavourite}
+                onBlock={onBlockProfile}
+                onReport={() => setReportVisible(true)}
+              />
             </View>
-          )}
-          <View>
-            <Text style={[styles.greetingSmall, rtl && styles.rtlText]}>{t('dashboard.greeting')}</Text>
-            <Text style={[styles.greetingName, rtl && styles.rtlText]}>{user.fullName.split(' ')[0]}</Text>
-          </View>
-        </View>
-        <View style={styles.headerActions}>
-          <IconButton icon="notifications-outline" onPress={() => navigation.navigate('Notifications')} badge={unreadCount} />
-          <IconButton icon="settings-outline" onPress={() => navigation.navigate('Settings')} />
-        </View>
-      </FadeIn>
+          </ScrollView>
+        </Animated.View>
+      ) : (
+        <Animated.View entering={ReanimatedFadeIn.duration(240)} style={styles.emptyState}>
+          <Ionicons name="sparkles-outline" size={32} color={colors.textTertiary} />
+          <Text style={[styles.emptyText, rtl && styles.rtlText]}>{t('discover.outOfProfiles')}</Text>
+        </Animated.View>
+      )}
 
-      <FadeIn delay={80} style={styles.completionCard}>
-        <View style={styles.completionHeader}>
-          <Text style={[styles.completionLabel, rtl && styles.rtlText]}>{t('dashboard.profileStrength')}</Text>
-          <Text style={styles.completionValue}>{completion}%</Text>
-        </View>
-        <ProgressBar progress={completion} />
-        {completion < 100 && (
-          <Pressable onPress={() => navigation.navigate('EditProfile')} style={styles.completionCta}>
-            <Text style={styles.completionCtaText}>{t('dashboard.completeProfile')}</Text>
-            <Ionicons name={rtl ? 'chevron-back' : 'chevron-forward'} size={14} color={colors.teal} />
+      {currentProfile && (
+        <View style={[styles.actionsRow, { paddingBottom: TAB_BAR_BASE_HEIGHT + insets.bottom }]}>
+          <Pressable onPress={onUndo} disabled={!canUndo} style={[styles.actionButton, styles.actionButtonSmall, !canUndo && styles.actionButtonDisabled]}>
+            <Ionicons name="arrow-undo" size={20} color={canUndo ? colors.gold : colors.textTertiary} />
           </Pressable>
-        )}
-      </FadeIn>
-
-      <FadeIn delay={140} style={styles.statsRow}>
-        <StatCard
-          icon="heart"
-          value={likesCount}
-          label={t('dashboard.statsLikes')}
-          tint={colors.dating}
-          tintSoft={colors.datingSoft}
-          onPress={() => navigation.navigate('ExplorePlus')}
-        />
-        <StatCard icon="people" value={matches.length} label={t('dashboard.statsMatches')} tint={colors.rishta} tintSoft={colors.rishtaSoft} />
-        <StatCard icon="eye" value={viewsCount} label={t('dashboard.statsViews')} tint={colors.teal} tintSoft={colors.tealSoft} />
-      </FadeIn>
-
-      <FadeIn delay={200} style={styles.section}>
-        <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('dashboard.quickActions')}</Text>
-        <View style={styles.actionsRow}>
-          <ActionCard
-            icon="flame"
-            title={t('dashboard.startSwiping')}
-            tint={colors.dating}
-            tintSoft={colors.datingSoft}
-            onPress={() => navigation.navigate('Discover')}
-          />
-          <ActionCard
-            icon="people-circle"
-            title={t('dashboard.browseRishta')}
-            tint={colors.rishta}
-            tintSoft={colors.rishtaSoft}
-            onPress={() => navigation.navigate('Rishta')}
-          />
-          <ActionCard
-            icon="person-circle"
-            title={t('dashboard.editProfile')}
-            tint={colors.teal}
-            tintSoft={colors.tealSoft}
-            onPress={() => navigation.navigate('EditProfile')}
-          />
-          <ActionCard
-            icon="heart-circle"
-            title={t('profile.favorites')}
-            tint={colors.dating}
-            tintSoft={colors.datingSoft}
-            onPress={() => navigation.navigate('Favorites')}
-          />
-        </View>
-      </FadeIn>
-
-      <FadeIn delay={260}>
-        <LinearGradient colors={[colors.rishta, colors.plum]} style={styles.featureCard}>
-          <Ionicons name="git-merge" size={22} color="#FFFFFF" />
-          <Text style={styles.featureTitle}>{t('dashboard.moveToRishtaTitle')}</Text>
-          <Text style={styles.featureBody}>{t('dashboard.moveToRishtaBody')}</Text>
-        </LinearGradient>
-      </FadeIn>
-
-      <FadeIn delay={320} style={styles.section}>
-        <View style={styles.sectionHeaderRow}>
-          <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('dashboard.recentActivity')}</Text>
-          <Pressable onPress={() => navigation.navigate('Notifications')}>
-            <Text style={styles.seeAll}>{t('common.seeAll')}</Text>
+          <Pressable onPress={onPass} style={[styles.actionButton, styles.actionButtonLarge]}>
+            <Ionicons name="close" size={30} color={colors.textPrimary} />
+          </Pressable>
+          <Pressable onPress={onLike} style={[styles.actionButton, styles.actionButtonLarge, styles.actionButtonLike]}>
+            <Ionicons name="heart" size={26} color="#FFFFFF" />
           </Pressable>
         </View>
-        <View style={styles.activityCard}>
-          {recent.map((item) => (
-            <NotificationRow key={item.id} item={item} onPress={() => navigation.navigate('Notifications')} />
-          ))}
-        </View>
-      </FadeIn>
+      )}
 
-      <FadeIn delay={380} style={styles.likesWidget}>
-        {isUnlimited ? (
-          <LinearGradient colors={[colors.gold, colors.dating]} style={styles.likesWidgetGradient}>
-            <Ionicons name="sparkles" size={20} color="#FFFFFF" />
-            <Text style={styles.likesWidgetTitlePro}>{t('dashboard.proActiveTitle')}</Text>
-            <Text style={styles.likesWidgetBodyPro}>{t('dashboard.proActiveBody')}</Text>
-            <Pressable onPress={() => navigation.navigate('ExplorePlus')} style={styles.manageLink}>
-              <Text style={styles.manageLinkText}>{t('explorePlus.manageSubscription')}</Text>
-              <Ionicons name={rtl ? 'chevron-back' : 'chevron-forward'} size={14} color="#FFFFFF" />
-            </Pressable>
-          </LinearGradient>
-        ) : (
-          <View style={styles.likesWidgetCard}>
-            <Text style={[styles.likesWidgetTitle, rtl && styles.rtlText]}>{t('dashboard.likesWidgetTitle')}</Text>
-            <Text style={[styles.likesWidgetBody, rtl && styles.rtlText]}>{t('dashboard.likesUsed', { used, limit })}</Text>
-            <ProgressBar progress={Math.min((used / limit) * 100, 100)} color={colors.dating} />
-            <Button
-              label={t('dashboard.upgradeCta')}
-              variant="secondary"
-              onPress={() => navigation.navigate('ExplorePlus')}
-              style={styles.upgradeCta}
-            />
-          </View>
-        )}
-      </FadeIn>
-    </ScreenContainer>
+      <Modal visible={Boolean(previewUri)} transparent animationType="fade" onRequestClose={() => setPreviewUri(null)}>
+        <Pressable style={styles.previewOverlay} onPress={() => setPreviewUri(null)}>
+          {previewUri && <Image source={{ uri: previewUri }} style={styles.previewImage} resizeMode="contain" />}
+        </Pressable>
+      </Modal>
+
+      <MatchCelebration
+        visible={Boolean(celebration)}
+        name={celebration?.name ?? ''}
+        photo={celebration?.photo ?? ''}
+        onClose={() => setCelebration(null)}
+      />
+
+      <ReportDialog
+        visible={reportVisible}
+        name={currentProfile?.name ?? ''}
+        onCancel={() => setReportVisible(false)}
+        onSubmit={onSubmitReport}
+      />
+    </SafeAreaView>
   );
 }
 
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
-    headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.lg },
-    headerLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-    avatar: { width: 44, height: 44, borderRadius: radius.pill, backgroundColor: colors.skeleton, borderWidth: 2, borderColor: 'transparent' },
-    avatarPremium: { borderColor: colors.gold },
-    avatarPlaceholder: { backgroundColor: colors.teal, alignItems: 'center', justifyContent: 'center' },
-    greetingSmall: { ...typography.caption, color: colors.textSecondary },
-    greetingName: { ...typography.h3, color: colors.textPrimary },
-    headerActions: { flexDirection: 'row', gap: spacing.sm },
-    completionCard: {
-      backgroundColor: colors.surface,
+    safeArea: { flex: 1, backgroundColor: colors.background },
+    flex: { flex: 1 },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: spacing.lg,
+      paddingBottom: spacing.sm,
+    },
+    title: { ...typography.h1, color: colors.textPrimary },
+    likesBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      backgroundColor: colors.tealSoft,
+      borderRadius: radius.pill,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 4,
+    },
+    likesBadgeText: { ...typography.caption, color: colors.teal, fontWeight: '700' },
+    toggleWrap: { paddingHorizontal: spacing.lg, paddingBottom: spacing.md },
+    content: { padding: spacing.lg },
+    chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+    compatibilityBanner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      backgroundColor: colors.goldSoft,
       borderRadius: radius.lg,
       padding: spacing.md,
-      borderWidth: 1,
-      borderColor: colors.border,
-      marginBottom: spacing.md,
+      marginTop: spacing.lg,
     },
-    completionHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.sm },
-    completionLabel: { ...typography.label, color: colors.textSecondary },
-    completionValue: { ...typography.label, color: colors.teal },
-    completionCta: { flexDirection: 'row', alignItems: 'center', marginTop: spacing.sm, gap: 4 },
-    completionCtaText: { ...typography.caption, color: colors.teal, fontWeight: '700' },
-    statsRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg },
-    section: { marginBottom: spacing.lg },
-    sectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
-    sectionTitle: { ...typography.label, color: colors.textSecondary, textTransform: 'uppercase', marginBottom: spacing.sm },
-    seeAll: { ...typography.caption, color: colors.teal, fontWeight: '700' },
-    actionsRow: { flexDirection: 'row', gap: spacing.sm },
-    featureCard: { borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.lg },
-    featureTitle: { ...typography.h3, color: '#FFFFFF', marginTop: spacing.sm },
-    featureBody: { ...typography.body, color: 'rgba(255,255,255,0.9)', marginTop: spacing.xs },
-    activityCard: {
+    compatibilityTextWrap: { flex: 1, gap: spacing.xs },
+    compatibilityTitle: { ...typography.bodyBold, color: colors.gold },
+    sectionTitle: { ...typography.label, color: colors.textSecondary, textTransform: 'uppercase', marginTop: spacing.lg, marginBottom: spacing.xs },
+    sectionSubtitle: { ...typography.caption, color: colors.textSecondary, marginBottom: spacing.sm },
+    similarityChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      backgroundColor: colors.successSoft,
+      borderRadius: radius.pill,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 6,
+    },
+    similarityChipText: { ...typography.caption, color: colors.success, fontWeight: '600' },
+    bio: { ...typography.body, color: colors.textPrimary },
+    emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, paddingHorizontal: spacing.xl },
+    emptyText: { ...typography.body, color: colors.textSecondary, textAlign: 'center' },
+    actionsRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.lg,
+      paddingTop: spacing.md,
+      backgroundColor: colors.background,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    actionButton: {
+      borderRadius: radius.pill,
+      alignItems: 'center',
+      justifyContent: 'center',
       backgroundColor: colors.surface,
-      borderRadius: radius.lg,
       borderWidth: 1,
       borderColor: colors.border,
-      paddingHorizontal: spacing.md,
+      shadowColor: '#000',
+      shadowOpacity: 0.12,
+      shadowRadius: 8,
+      shadowOffset: { width: 0, height: 3 },
+      elevation: 3,
     },
-    likesWidget: { marginBottom: spacing.lg },
-    likesWidgetCard: {
-      backgroundColor: colors.surface,
-      borderRadius: radius.lg,
-      borderWidth: 1,
-      borderColor: colors.border,
-      padding: spacing.md,
-    },
-    likesWidgetTitle: { ...typography.label, color: colors.textPrimary, marginBottom: 4 },
-    likesWidgetBody: { ...typography.caption, color: colors.textSecondary, marginBottom: spacing.sm },
-    upgradeCta: { marginTop: spacing.md },
-    likesWidgetGradient: { borderRadius: radius.lg, padding: spacing.lg },
-    likesWidgetTitlePro: { ...typography.h3, color: '#FFFFFF', marginTop: spacing.sm },
-    likesWidgetBodyPro: { ...typography.body, color: 'rgba(255,255,255,0.9)', marginTop: spacing.xs },
-    manageLink: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: spacing.md },
-    manageLinkText: { ...typography.label, color: '#FFFFFF' },
+    actionButtonSmall: { width: 46, height: 46 },
+    actionButtonLarge: { width: 62, height: 62 },
+    actionButtonDisabled: { opacity: 0.4, shadowOpacity: 0 },
+    actionButtonLike: { backgroundColor: colors.dating, borderColor: colors.dating },
+    previewOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', alignItems: 'center', justifyContent: 'center' },
+    previewImage: { width: '100%', height: '80%' },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   });

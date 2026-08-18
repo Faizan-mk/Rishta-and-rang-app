@@ -3,6 +3,7 @@ import { storage } from '../services/storage';
 import { mockMatches, mockChatHistory } from '../data/mockMatches';
 import type { ChatMessage, Match } from '../types/content';
 import type { ProfileMode } from '../types/user';
+import { useNotifications } from './NotificationContext';
 
 interface ProfileRef {
   id: string;
@@ -13,6 +14,10 @@ interface ProfileRef {
 
 export interface BlockedProfile {
   id: string;
+  // Links back to the Discover/Rishta listing this block originated from (if any),
+  // so Discover/Rishta decks can exclude the profile even though `id` here is the
+  // match's own id, not the listing's.
+  sourceProfileId?: string;
   name: string;
   photo: string;
   blockedAt: string;
@@ -29,7 +34,7 @@ interface MatchesContextValue {
   sendVoiceMessage: (matchId: string, uri: string, durationSec: number) => void;
   sendImageMessage: (matchId: string, uri: string) => void;
   markMatchRead: (matchId: string) => void;
-  setMovedToRishta: (matchId: string, value: boolean) => void;
+  sendRishtaRequest: (matchId: string, requestText: string, acceptedText: string) => void;
   removeMatch: (matchId: string) => void;
   blockMatch: (matchId: string) => void;
   unblockUser: (id: string) => void;
@@ -43,6 +48,7 @@ function newMatchId(): string {
 }
 
 export function MatchesProvider({ children }: { children: React.ReactNode }) {
+  const { addNotification } = useNotifications();
   const [matches, setMatches] = useState<Match[]>(mockMatches);
   const [chatHistory, setChatHistory] = useState<Record<string, ChatMessage[]>>(mockChatHistory);
   const [blockedProfiles, setBlockedProfiles] = useState<BlockedProfile[]>([]);
@@ -120,8 +126,50 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
     persistMatches(matches.map((m) => (m.id === matchId ? { ...m, unread: false } : m)));
   };
 
-  const setMovedToRishta = (matchId: string, value: boolean) => {
-    persistMatches(matches.map((m) => (m.id === matchId ? { ...m, movedToRishta: value } : m)));
+  // Sends a Move to Rishta request and simulates the other side responding after a
+  // short delay. There's no live backend/second user in this app, so a real accept/
+  // decline from a counterparty isn't possible — this models the pending state and
+  // resolution honestly rather than flipping the match to "moved" instantly.
+  const sendRishtaRequest = (matchId: string, requestText: string, acceptedText: string) => {
+    const match = matches.find((m) => m.id === matchId);
+    if (!match || match.movedToRishta || match.rishtaRequestPending) return;
+
+    const requestMessage: ChatMessage = {
+      id: `msg_${Date.now()}_${Math.floor(Math.random() * 1e6)}`,
+      matchId,
+      fromMe: true,
+      text: requestText,
+      sentAt: new Date().toISOString(),
+      kind: 'text',
+    };
+    pushMessage(matchId, requestMessage, requestText);
+    persistMatches(matches.map((m) => (m.id === matchId ? { ...m, rishtaRequestPending: true } : m)));
+
+    setTimeout(() => {
+      const acceptedMessage: ChatMessage = {
+        id: `msg_${Date.now()}_${Math.floor(Math.random() * 1e6)}`,
+        matchId,
+        fromMe: false,
+        text: acceptedText,
+        sentAt: new Date().toISOString(),
+        kind: 'text',
+      };
+      setChatHistory((prev) => {
+        const next = { ...prev, [matchId]: [...(prev[matchId] ?? []), acceptedMessage] };
+        storage.setJSON(storage.KEYS.chatHistory, next);
+        return next;
+      });
+      setMatches((prev) => {
+        const next = prev.map((m) =>
+          m.id === matchId && m.rishtaRequestPending
+            ? { ...m, movedToRishta: true, rishtaRequestPending: false, lastMessage: acceptedText, lastMessageAt: acceptedMessage.sentAt }
+            : m
+        );
+        storage.setJSON(storage.KEYS.matches, next);
+        return next;
+      });
+      addNotification('rishta_request', match.name, acceptedText);
+    }, 2200);
   };
 
   const removeMatch = (matchId: string) => {
@@ -136,7 +184,16 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
   const blockMatch = (matchId: string) => {
     const match = matches.find((m) => m.id === matchId);
     if (match) {
-      persistBlocked([{ id: match.id, name: match.name, photo: match.photo, blockedAt: new Date().toISOString() }, ...blockedProfiles]);
+      persistBlocked([
+        {
+          id: match.id,
+          sourceProfileId: match.sourceProfileId,
+          name: match.name,
+          photo: match.photo,
+          blockedAt: new Date().toISOString(),
+        },
+        ...blockedProfiles,
+      ]);
     }
     removeMatch(matchId);
   };
@@ -178,7 +235,7 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
       sendVoiceMessage,
       sendImageMessage,
       markMatchRead,
-      setMovedToRishta,
+      sendRishtaRequest,
       removeMatch,
       blockMatch,
       unblockUser,

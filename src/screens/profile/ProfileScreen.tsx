@@ -3,17 +3,21 @@ import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInUp } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { MainTabScreenProps } from '../../navigation/types';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { TAB_BAR_BASE_HEIGHT, useHideTabBarOnScroll } from '../../store/TabBarVisibilityContext';
 import { Badge } from '../../components/common/Badge';
 import { Chip } from '../../components/common/Chip';
 import { Button } from '../../components/common/Button';
+import { IconButton } from '../../components/common/IconButton';
 import { SettingsRow } from '../../components/common/SettingsRow';
 import { ModeToggle } from '../../components/profile/ModeToggle';
 import { useLanguage } from '../../store/LanguageContext';
 import { useAuth } from '../../store/AuthContext';
 import { useTheme } from '../../store/ThemeContext';
 import { useDialog } from '../../store/DialogContext';
+import { useNotifications } from '../../store/NotificationContext';
 import { ageFromDob } from '../../utils/date';
 import { profileCompletion } from '../../utils/profileCompletion';
 import { radius, spacing, typography } from '../../theme';
@@ -34,7 +38,10 @@ export function ProfileScreen({ navigation }: Props) {
   const { t, rtl } = useLanguage();
   const { user, updateUser, logout } = useAuth();
   const { confirm, notify } = useDialog();
+  const { unreadCount } = useNotifications();
   const [requestingBureau, setRequestingBureau] = useState(false);
+  const insets = useSafeAreaInsets();
+  const onScroll = useHideTabBarOnScroll();
 
   if (!user) return null;
   const age = ageFromDob(user.dob);
@@ -77,11 +84,30 @@ export function ProfileScreen({ navigation }: Props) {
   };
 
   return (
-    <ScreenContainer>
+    <ScreenContainer
+      edges={['top']}
+      onScroll={onScroll}
+      scrollEventThrottle={16}
+      style={{ paddingBottom: TAB_BAR_BASE_HEIGHT + insets.bottom + spacing.lg }}
+    >
       <LinearGradient colors={[colors.tealDark, colors.teal]} style={styles.banner}>
-        <Pressable onPress={() => navigation.navigate('Settings')} style={styles.settingsButton}>
-          <Ionicons name="settings-outline" size={18} color="#FFFFFF" />
-        </Pressable>
+        <Animated.View entering={FadeInUp.delay(60).duration(320)} style={styles.bannerActions}>
+          <IconButton
+            icon="notifications-outline"
+            onPress={() => navigation.navigate('Notifications')}
+            background="rgba(255,255,255,0.2)"
+            color="#FFFFFF"
+            badge={unreadCount}
+            style={styles.noBorder}
+          />
+          <IconButton
+            icon="settings-outline"
+            onPress={() => navigation.navigate('Settings')}
+            background="rgba(255,255,255,0.2)"
+            color="#FFFFFF"
+            style={styles.noBorder}
+          />
+        </Animated.View>
       </LinearGradient>
 
       <Animated.View entering={FadeInUp.duration(360)} style={styles.headerCard}>
@@ -134,7 +160,7 @@ export function ProfileScreen({ navigation }: Props) {
         <View style={styles.statDivider} />
         <View style={styles.statItem}>
           <Text style={styles.statValue}>{memberSince}</Text>
-          <Text style={styles.statLabel}>Member since</Text>
+          <Text style={styles.statLabel}>{t('profile.memberSince')}</Text>
         </View>
       </View>
 
@@ -262,14 +288,8 @@ const quickStyles = StyleSheet.create({
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
     banner: { height: 88, borderRadius: radius.lg, marginTop: spacing.sm, alignItems: 'flex-end', padding: spacing.sm },
-    settingsButton: {
-      width: 34,
-      height: 34,
-      borderRadius: radius.pill,
-      backgroundColor: 'rgba(255,255,255,0.2)',
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
+    bannerActions: { flexDirection: 'row', gap: spacing.xs },
+    noBorder: { borderWidth: 0 },
     headerCard: { alignItems: 'center', marginTop: -40, paddingHorizontal: spacing.md },
     avatarWrap: { position: 'relative' },
     avatar: { width: 84, height: 84, borderRadius: 42, borderWidth: 4, borderColor: colors.background, backgroundColor: colors.skeleton },

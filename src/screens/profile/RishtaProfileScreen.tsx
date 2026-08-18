@@ -83,9 +83,9 @@ export function RishtaProfileScreen({ navigation }: Props) {
         <View style={styles.lockedSection}>
           <Text style={[styles.label, rtl && styles.rtlText]}>{t('profile.comingInV2')}</Text>
           <View style={styles.chipRow}>
-            <Badge label="Prayer habits" tone="locked" />
-            <Badge label="Income range" tone="locked" />
-            <Badge label="Living abroad status" tone="locked" />
+            <Badge label={t('profile.prayerHabits')} tone="locked" />
+            <Badge label={t('profile.incomeRange')} tone="locked" />
+            <Badge label={t('profile.livingAbroadStatus')} tone="locked" />
           </View>
         </View>
       </FadeIn>

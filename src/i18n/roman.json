@@ -96,8 +96,8 @@
     "home": "Home",
     "discover": "Discover",
     "rishta": "Rishta",
-    "matches": "Matches",
-    "profile": "Profile"
+    "matches": "Messages",
+    "profile": "Menu"
   },
   "dashboard": {
     "greeting": "Wapas Khush Aamdeed",
@@ -129,7 +129,48 @@
     "outOfProfiles": "Is waqt mazeed profiles nahi",
     "likesRemaining": "Aaj {count} likes baaqi hain",
     "limitReachedTitle": "Aaj ki likes khatam ho gayi",
-    "limitReachedBody": "Free accounts ko rozana 15 likes milti hain. Unlimited likes ke liye Explore+ mein upgrade karein."
+    "limitReachedBody": "Free accounts ko rozana 15 likes milti hain. Unlimited likes ke liye Explore+ mein upgrade karein.",
+    "similaritiesTitle": "Aapki mushtarka baatein",
+    "similaritiesSubtitle": "Aap aur {name} mein pehle se kuch baatein mushtarka hain.",
+    "similaritiesEmpty": "Profile mein filhaal koi mushtarka baat nazar nahi aayi — yeh baat cheet shuru karne ka acha mauqa ho sakta hai.",
+    "similarCity": "Dono {city} mein hain",
+    "similarTag": "Dono ko {tag} pasand hai",
+    "aboutMeTitle": "Mere baare mein",
+    "marriageIntentionsTitle": "Shadi ke iraday",
+    "faithTitle": "Mazhab",
+    "futurePlansTitle": "Mustaqbil ke mansooby",
+    "educationCareerTitle": "Taleem aur career",
+    "languagesBackgroundTitle": "Zubanein aur background",
+    "verificationTitle": "Tasdeeq",
+    "complimentTitle": "Tareefi paigham bhejein",
+    "complimentPlaceholder": "Unhein batayein ke aapko unki profile mein kya pasand aaya...",
+    "complimentSend": "Tareefi paigham bhejein",
+    "complimentSentTitle": "Tareefi paigham bhej diya gaya",
+    "complimentSentBody": "Agar aapka match hua to {name} aapka paigham dekh sakein ge.",
+    "share": "Share Karein",
+    "favourite": "Pasandeeda",
+    "favourited": "Pasandeeda mein shamil",
+    "block": "Block Karein",
+    "report": "Report Karein",
+    "shareMessage": "{name} ki profile Rishta & Rang par dekhein!",
+    "openToRelocate": "Muntaqli ke liye tayyar",
+    "careerPlansTitle": "Career ke mansooby",
+    "grewUpIn": "{place} mein parwarish payi"
+  },
+  "attributes": {
+    "heightValue": "{height} cm",
+    "maritalStatusSingle": "Ghair Shadi Shuda",
+    "maritalStatusDivorced": "Talaq Yafta",
+    "maritalStatusWidowed": "Beva",
+    "hasChildrenYes": "Bachay hain",
+    "hasChildrenNo": "Koi bachay nahi",
+    "practisingYes": "Amli tor par mazhabi",
+    "practisingNo": "Zyada amli nahi",
+    "halalOnly": "Sirf halal khana khate hain",
+    "nonSmoker": "Ghair tambaku nosh",
+    "smoker": "Tambaku nosh",
+    "doesntDrink": "Sharab nahi peete",
+    "drinks": "Sharab peete hain"
   },
   "rishtaBrowse": {
     "title": "Rishta Dekhein",
@@ -152,7 +193,9 @@
   },
   "chat": {
     "moveToRishta": "Rishtay ki Taraf Barhein",
-    "moveToRishtaSent": "Rishta ki darkhwast bhej di gayi",
+    "moveToRishtaSent": "💫 Rishta ki darkhwast bhej di gayi — {name} ke jawab ka intezar hai.",
+    "moveToRishtaAccepted": "✅ {name} ne qabool kar liya — ab aap dono Rishta stage mein hain.",
+    "moveToRishtaPending": "Rishta ki darkhwast zair-e-tameel hai...",
     "moveToRishtaConfirmTitle": "Rishtay ki darkhwast bhejein?",
     "moveToRishtaConfirmBody": "Is se {name} ko maloom hoga ke aap sanjeeda aur khandani guftagu ki taraf barhna chahte hain.",
     "block": "Block Karein",
@@ -162,7 +205,8 @@
     "reportConfirmTitle": "{name} ki report karein?",
     "reportSentTitle": "Report jama ho gayi",
     "reportSentBody": "Shukriya — hamari hifazati team is guftagu ka jaiza legi.",
-    "recording": "Recording ho rahi hai..."
+    "recording": "Recording ho rahi hai...",
+    "photoUnavailable": "Tasveer dastyaab nahi"
   },
   "profile": {
     "title": "Profile",
@@ -191,6 +235,9 @@
     "familyBackground": "Khandani Pas-e-Manzar",
     "education": "Taleem",
     "comingInV2": "Aainda Update mein Shamil Hoga",
+    "prayerHabits": "Namaz ki aadatein",
+    "incomeRange": "Aamdani ki range",
+    "livingAbroadStatus": "Bairun-e-mulk rehaish ki soorat-e-haal",
     "verificationSection": "Tasdeeq aur Khandan",
     "insightsSection": "Mutabiqat aur Tasdeeq",
     "cnic": "CNIC / ID Tasdeeq",
@@ -198,7 +245,8 @@
     "bureau": "Bureau-Tasdeeq Shuda Badge",
     "bureauNotVerified": "Bureau Tasdeeq Shuda Nahi",
     "aiScoreValue": "{score}% mutabiqat",
-    "completion": "profile mukammal"
+    "completion": "profile mukammal",
+    "memberSince": "Member bane ki tareekh"
   },
   "editProfile": {
     "title": "Profile Edit Karein",

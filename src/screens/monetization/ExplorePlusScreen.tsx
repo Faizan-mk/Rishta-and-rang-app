@@ -14,6 +14,7 @@ import { useTheme } from '../../store/ThemeContext';
 import { useDialog } from '../../store/DialogContext';
 import { useLikeLimit } from '../../store/LikeLimitContext';
 import { usePrivacy } from '../../store/PrivacyContext';
+import { useMatches } from '../../store/MatchesContext';
 import { oppositeGenderProfiles } from '../../utils/genderMatch';
 import { isoToDisplay } from '../../utils/date';
 import { radius, spacing, typography } from '../../theme';
@@ -36,13 +37,24 @@ export function ExplorePlusScreen({ navigation }: Props) {
   const { notify, confirm } = useDialog();
   const { used, limit } = useLikeLimit();
   const { prefs } = usePrivacy();
+  const { blockedProfiles } = useMatches();
   const [upgrading, setUpgrading] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [plan, setPlan] = useState<Plan>('monthly');
 
+  const blockedProfileIds = useMemo(
+    () => new Set(blockedProfiles.map((b) => b.sourceProfileId).filter(Boolean)),
+    [blockedProfiles]
+  );
+
   const admirers = useMemo(
-    () => (prefs.profileVisible ? oppositeGenderProfiles(mockDiscoverProfiles, user?.gender).slice(0, 4) : []),
-    [user?.gender, prefs.profileVisible]
+    () =>
+      prefs.profileVisible
+        ? oppositeGenderProfiles(mockDiscoverProfiles, user?.gender)
+            .filter((p) => !blockedProfileIds.has(p.id))
+            .slice(0, 4)
+        : [],
+    [user?.gender, prefs.profileVisible, blockedProfileIds]
   );
 
   if (!user) return null;

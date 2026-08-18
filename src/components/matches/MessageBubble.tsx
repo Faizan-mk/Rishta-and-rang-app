@@ -7,6 +7,7 @@ import { radius, spacing, typography } from '../../theme';
 import { scaleFont } from '../../theme/responsive';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
+import { useLanguage } from '../../store/LanguageContext';
 
 function formatMessageTime(iso: string): string {
   const date = new Date(iso);
@@ -92,6 +93,7 @@ function VoiceBubble({ uri, durationSec, fromMe, colors }: { uri: string; durati
 }
 
 function ImageBubble({ uri, styles, colors }: { uri: string; styles: ReturnType<typeof makeStyles>; colors: Palette }) {
+  const { t } = useLanguage();
   const [previewVisible, setPreviewVisible] = useState(false);
   const [failed, setFailed] = useState(false);
 
@@ -99,7 +101,7 @@ function ImageBubble({ uri, styles, colors }: { uri: string; styles: ReturnType<
     return (
       <View style={[styles.image, styles.imageFallback]}>
         <Ionicons name="image-outline" size={28} color={colors.textTertiary} />
-        <Text style={[typography.caption, { color: colors.textTertiary }]}>Photo unavailable</Text>
+        <Text style={[typography.caption, { color: colors.textTertiary }]}>{t('chat.photoUnavailable')}</Text>
       </View>
     );
   }

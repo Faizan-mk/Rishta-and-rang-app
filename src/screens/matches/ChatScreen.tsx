@@ -32,7 +32,7 @@ export function ChatScreen({ navigation, route }: Props) {
     sendVoiceMessage,
     sendImageMessage,
     markMatchRead,
-    setMovedToRishta,
+    sendRishtaRequest,
     blockMatch,
   } = useMatches();
 
@@ -98,8 +98,11 @@ export function ChatScreen({ navigation, route }: Props) {
       cancelLabel: t('common.cancel'),
     });
     if (!confirmed) return;
-    setMovedToRishta(matchId, true);
-    sendToMatch(matchId, `💫 ${t('chat.moveToRishtaSent')}`);
+    sendRishtaRequest(
+      matchId,
+      t('chat.moveToRishtaSent', { name: match.name }),
+      t('chat.moveToRishtaAccepted', { name: match.name })
+    );
   };
 
   const onBlock = async () => {
@@ -150,9 +153,15 @@ export function ChatScreen({ navigation, route }: Props) {
 
       {!match.movedToRishta && (
         <FadeIn delay={80}>
-          <Pressable onPress={onMoveToRishta} style={styles.moveToRishtaBar}>
-            <Ionicons name="git-merge" size={16} color={colors.rishta} />
-            <Text style={styles.moveToRishtaText}>{t('chat.moveToRishta')}</Text>
+          <Pressable
+            onPress={onMoveToRishta}
+            disabled={match.rishtaRequestPending}
+            style={[styles.moveToRishtaBar, match.rishtaRequestPending && styles.moveToRishtaBarPending]}
+          >
+            <Ionicons name={match.rishtaRequestPending ? 'time-outline' : 'git-merge'} size={16} color={colors.rishta} />
+            <Text style={styles.moveToRishtaText}>
+              {match.rishtaRequestPending ? t('chat.moveToRishtaPending') : t('chat.moveToRishta')}
+            </Text>
           </Pressable>
         </FadeIn>
       )}
@@ -243,6 +252,7 @@ const makeStyles = (colors: Palette) =>
       backgroundColor: colors.rishtaSoft,
       paddingVertical: spacing.sm,
     },
+    moveToRishtaBarPending: { opacity: 0.6 },
     moveToRishtaText: { ...typography.label, color: colors.rishta },
     listContent: { padding: spacing.md, flexGrow: 1, justifyContent: 'flex-end' },
     inputRow: {

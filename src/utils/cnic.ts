@@ -25,3 +25,10 @@ export function cnicMatchesGender(display: string, gender: Gender): boolean {
   const cnicGender = cnicGenderFromLastDigit(display);
   return cnicGender === gender;
 }
+
+// Masks all but the last group for display: "12345-1234567-1" -> "•••••-•••••••-1".
+export function maskCnic(display: string): string {
+  const groups = display.split('-');
+  if (groups.length !== 3) return display;
+  return [groups[0].replace(/./g, '•'), groups[1].replace(/./g, '•'), groups[2]].join('-');
+}

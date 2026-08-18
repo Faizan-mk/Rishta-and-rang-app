@@ -10,7 +10,18 @@ interface NotificationContextValue {
   unreadCount: number;
   markAllRead: () => void;
   markRead: (id: string) => void;
+  addNotification: (type: NotificationItem['type'], title: string, body: string) => void;
 }
+
+// Which preference toggle gates each notification type — a disabled toggle means
+// events of that type are never added to the feed, not just hidden after the fact.
+const PREF_KEY_BY_TYPE: Record<NotificationItem['type'], keyof NotificationPrefs> = {
+  match: 'newMatches',
+  like: 'likes',
+  message: 'messages',
+  rishta_request: 'rishtaRequests',
+  system: 'productUpdates',
+};
 
 const NotificationContext = createContext<NotificationContextValue | undefined>(undefined);
 
@@ -47,10 +58,27 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     });
   };
 
+  const addNotification = (type: NotificationItem['type'], title: string, body: string) => {
+    if (!prefs[PREF_KEY_BY_TYPE[type]]) return;
+    setFeed((prev) => {
+      const item: NotificationItem = {
+        id: `notif_${Date.now()}_${Math.floor(Math.random() * 1e6)}`,
+        type,
+        title,
+        body,
+        createdAt: new Date().toISOString(),
+        read: false,
+      };
+      const next = [item, ...prev];
+      storage.setJSON(storage.KEYS.notificationFeed, next);
+      return next;
+    });
+  };
+
   const unreadCount = useMemo(() => feed.filter((n) => !n.read).length, [feed]);
 
   const value = useMemo(
-    () => ({ prefs, setPref, feed, unreadCount, markAllRead, markRead }),
+    () => ({ prefs, setPref, feed, unreadCount, markAllRead, markRead, addNotification }),
     [prefs, feed, unreadCount]
   );
 

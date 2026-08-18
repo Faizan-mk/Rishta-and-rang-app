@@ -1,6 +1,53 @@
 import type { Gender, ProfileMode, RishtaReadiness } from './user';
 
-export interface DiscoverProfile {
+// Fields that both the Dating (Discover) and Rishta browsing experiences render
+// through the same shared profile-detail UI. Each side only requires the fields
+// its own data actually always has (bio/vibeTags for Discover; religion/sect/
+// education/familyBackground/readiness for Rishta) — everything else is optional
+// and simply doesn't render its section when absent, on either side.
+interface BrowseProfileFields {
+  bio?: string;
+  vibeTags?: string[];
+  bureauVerified?: boolean;
+  photosBlurred?: boolean;
+  selfieVerified?: boolean;
+  // About me
+  heightCm?: number;
+  maritalStatus?: 'single' | 'divorced' | 'widowed';
+  hasChildren?: boolean;
+  occupation?: string;
+  // Marriage intentions
+  readiness?: RishtaReadiness;
+  // Faith
+  religion?: string;
+  sect?: string;
+  practising?: boolean;
+  prayerHabits?: string;
+  halalOnly?: boolean;
+  smoking?: boolean;
+  drinking?: boolean;
+  religiousDress?: string;
+  // Future plans
+  openToRelocate?: boolean;
+  preferredCountry?: string;
+  careerPlans?: string;
+  // Education & career — `education` is Rishta's single free-text field;
+  // `educationLevel`/`degree` are Dating's split fields. Sections check both.
+  education?: string;
+  educationLevel?: string;
+  degree?: string;
+  jobTitle?: string;
+  industry?: string;
+  // Languages & background
+  languages?: string[];
+  nationality?: string;
+  grewUpIn?: string;
+  country?: string;
+  // Rishta-specific narrative field, rendered like a second bio when present.
+  familyBackground?: string;
+}
+
+export interface DiscoverProfile extends BrowseProfileFields {
   id: string;
   name: string;
   age: number;
@@ -9,11 +56,9 @@ export interface DiscoverProfile {
   bio: string;
   vibeTags: string[];
   photos: string[];
-  bureauVerified?: boolean;
-  photosBlurred?: boolean;
 }
 
-export interface RishtaListingProfile {
+export interface RishtaListingProfile extends BrowseProfileFields {
   id: string;
   name: string;
   age: number;
@@ -25,9 +70,19 @@ export interface RishtaListingProfile {
   familyBackground: string;
   readiness: RishtaReadiness;
   photos: string[];
-  bureauVerified?: boolean;
-  photosBlurred?: boolean;
 }
+
+// The minimal shape the shared profile-detail UI (hero card, detail sections,
+// actions footer) actually reads — both DiscoverProfile and RishtaListingProfile
+// structurally satisfy this.
+export type BrowseProfile = BrowseProfileFields & {
+  id: string;
+  name: string;
+  age: number;
+  gender: Gender;
+  city: string;
+  photos: string[];
+};
 
 export interface Match {
   id: string;
@@ -38,6 +93,10 @@ export interface Match {
   unread: boolean;
   mode: ProfileMode;
   movedToRishta: boolean;
+  // True while a "Move to Rishta" request has been sent and we're waiting on
+  // the simulated counterparty response (this app has no live backend/second
+  // user — the response is simulated locally after a short delay).
+  rishtaRequestPending?: boolean;
   // Links back to the Discover/Rishta listing this match was created from, so
   // "Message" on a profile can find (or create) the same match instead of duplicating it.
   sourceProfileId?: string;

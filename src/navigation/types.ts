@@ -13,8 +13,6 @@ export type AuthStackParamList = {
 
 export type MainTabParamList = {
   Home: undefined;
-  Discover: undefined;
-  Rishta: undefined;
   Matches: undefined;
   Profile: undefined;
 };

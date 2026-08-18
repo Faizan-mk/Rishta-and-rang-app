@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import type { AppStackScreenProps } from '../../navigation/types';
@@ -11,7 +11,7 @@ import { useLanguage } from '../../store/LanguageContext';
 import { useAuth } from '../../store/AuthContext';
 import { useTheme } from '../../store/ThemeContext';
 import { useDialog } from '../../store/DialogContext';
-import { digitsToCnicDisplay, isValidCnicFormat, cnicMatchesGender } from '../../utils/cnic';
+import { digitsToCnicDisplay, isValidCnicFormat, cnicMatchesGender, maskCnic } from '../../utils/cnic';
 import { analyzeIdCardPhoto } from '../../utils/idCardImageCheck';
 import { radius, spacing, typography } from '../../theme';
 import { scaleFont } from '../../theme/responsive';
@@ -33,6 +33,7 @@ export function CnicVerificationScreen({}: Props) {
   const [photoError, setPhotoError] = useState<string | null>(null);
   const [numberError, setNumberError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [revealed, setRevealed] = useState(false);
 
   if (!user) return null;
 
@@ -104,8 +105,13 @@ export function CnicVerificationScreen({}: Props) {
             {user.cnicPhotoUri && <Image source={{ uri: user.cnicPhotoUri }} style={styles.preview} />}
 
             <View style={styles.card}>
-              <Text style={[styles.label, rtl && styles.rtlText]}>{t('cnic.number')}</Text>
-              <Text style={styles.value}>{user.cnicNumber ?? '—'}</Text>
+              <View style={styles.cardHeaderRow}>
+                <Text style={[styles.label, rtl && styles.rtlText]}>{t('cnic.number')}</Text>
+                <Pressable onPress={() => setRevealed((r) => !r)} hitSlop={8}>
+                  <Ionicons name={revealed ? 'eye-off-outline' : 'eye-outline'} size={18} color={colors.textSecondary} />
+                </Pressable>
+              </View>
+              <Text style={styles.value}>{user.cnicNumber ? (revealed ? user.cnicNumber : maskCnic(user.cnicNumber)) : '—'}</Text>
             </View>
 
             <View style={styles.verifiedRow}>
@@ -186,7 +192,8 @@ const makeStyles = (colors: Palette) =>
       padding: spacing.md,
       marginBottom: spacing.md,
     },
-    label: { ...typography.label, color: colors.textSecondary, marginBottom: 4 },
+    cardHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
+    label: { ...typography.label, color: colors.textSecondary, marginBottom: 0 },
     value: { ...typography.h3, color: colors.textPrimary },
     verifiedRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
     verifiedText: { ...typography.label, color: colors.success },

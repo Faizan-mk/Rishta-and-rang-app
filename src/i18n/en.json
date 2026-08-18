@@ -96,8 +96,8 @@
     "home": "Home",
     "discover": "Discover",
     "rishta": "Rishta",
-    "matches": "Matches",
-    "profile": "Profile"
+    "matches": "Messages",
+    "profile": "Menu"
   },
   "dashboard": {
     "greeting": "Welcome back",
@@ -129,7 +129,48 @@
     "outOfProfiles": "No more profiles right now",
     "likesRemaining": "{count} likes left today",
     "limitReachedTitle": "You're out of likes for today",
-    "limitReachedBody": "Free accounts get 15 likes a day. Upgrade to Explore+ for unlimited likes."
+    "limitReachedBody": "Free accounts get 15 likes a day. Upgrade to Explore+ for unlimited likes.",
+    "similaritiesTitle": "Your similarities",
+    "similaritiesSubtitle": "You and {name} already have some things in common.",
+    "similaritiesEmpty": "Nothing in common yet from what's on their profile — could be a good icebreaker.",
+    "similarCity": "Both in {city}",
+    "similarTag": "Both into {tag}",
+    "aboutMeTitle": "About me",
+    "marriageIntentionsTitle": "Marriage intentions",
+    "faithTitle": "Faith",
+    "futurePlansTitle": "Future plans",
+    "educationCareerTitle": "Education & career",
+    "languagesBackgroundTitle": "Languages & background",
+    "verificationTitle": "Verification",
+    "complimentTitle": "Send a compliment",
+    "complimentPlaceholder": "Let them know what you liked about their profile...",
+    "complimentSend": "Send compliment",
+    "complimentSentTitle": "Compliment sent",
+    "complimentSentBody": "{name} will see your message if you match.",
+    "share": "Share",
+    "favourite": "Favourite",
+    "favourited": "Favourited",
+    "block": "Block",
+    "report": "Report",
+    "shareMessage": "Check out {name}'s profile on Rishta & Rang!",
+    "openToRelocate": "Open to relocate",
+    "careerPlansTitle": "Career plans",
+    "grewUpIn": "Grew up in {place}"
+  },
+  "attributes": {
+    "heightValue": "{height} cm",
+    "maritalStatusSingle": "Single",
+    "maritalStatusDivorced": "Divorced",
+    "maritalStatusWidowed": "Widowed",
+    "hasChildrenYes": "Has children",
+    "hasChildrenNo": "No children",
+    "practisingYes": "Practising",
+    "practisingNo": "Not practising",
+    "halalOnly": "Only eats halal food",
+    "nonSmoker": "Non-smoker",
+    "smoker": "Smoker",
+    "doesntDrink": "Doesn't drink",
+    "drinks": "Drinks"
   },
   "rishtaBrowse": {
     "title": "Browse Rishta",
@@ -152,7 +193,9 @@
   },
   "chat": {
     "moveToRishta": "Move to Rishta",
-    "moveToRishtaSent": "Rishta request sent",
+    "moveToRishtaSent": "💫 Rishta request sent — waiting for {name} to respond.",
+    "moveToRishtaAccepted": "✅ {name} accepted — you're both in Rishta stage now.",
+    "moveToRishtaPending": "Rishta request pending...",
     "moveToRishtaConfirmTitle": "Send a Move to Rishta request?",
     "moveToRishtaConfirmBody": "This lets {name} know you'd like to take things toward a serious, family-involved conversation.",
     "block": "Block",
@@ -162,7 +205,8 @@
     "reportConfirmTitle": "Report {name}?",
     "reportSentTitle": "Report submitted",
     "reportSentBody": "Thanks — our safety team will review this conversation shortly.",
-    "recording": "Recording..."
+    "recording": "Recording...",
+    "photoUnavailable": "Photo unavailable"
   },
   "profile": {
     "title": "Profile",
@@ -191,6 +235,9 @@
     "familyBackground": "Family background",
     "education": "Education",
     "comingInV2": "Coming in a future update",
+    "prayerHabits": "Prayer habits",
+    "incomeRange": "Income range",
+    "livingAbroadStatus": "Living abroad status",
     "verificationSection": "Verification & family",
     "insightsSection": "Compatibility & verification",
     "cnic": "CNIC / ID verification",
@@ -198,7 +245,8 @@
     "bureau": "Bureau-verified badge",
     "bureauNotVerified": "Not bureau verified",
     "aiScoreValue": "{score}% compatible",
-    "completion": "profile complete"
+    "completion": "profile complete",
+    "memberSince": "Member since"
   },
   "editProfile": {
     "title": "Edit profile",

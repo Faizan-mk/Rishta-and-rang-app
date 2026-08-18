@@ -96,8 +96,8 @@
     "home": "ہوم",
     "discover": "دریافت",
     "rishta": "رشتہ",
-    "matches": "میچز",
-    "profile": "پروفائل"
+    "matches": "پیغامات",
+    "profile": "مینو"
   },
   "dashboard": {
     "greeting": "خوش آمدید",
@@ -129,7 +129,48 @@
     "outOfProfiles": "اس وقت مزید پروفائلز نہیں",
     "likesRemaining": "آج {count} پسندیدگیاں باقی ہیں",
     "limitReachedTitle": "آج کی پسندیدگیاں ختم ہو گئیں",
-    "limitReachedBody": "مفت اکاؤنٹس کو روزانہ 15 پسندیدگیاں ملتی ہیں۔ لامحدود پسندیدگیوں کے لیے ایکسپلور+ میں اپ گریڈ کریں۔"
+    "limitReachedBody": "مفت اکاؤنٹس کو روزانہ 15 پسندیدگیاں ملتی ہیں۔ لامحدود پسندیدگیوں کے لیے ایکسپلور+ میں اپ گریڈ کریں۔",
+    "similaritiesTitle": "آپ کی مشترکہ باتیں",
+    "similaritiesSubtitle": "آپ اور {name} میں پہلے سے کچھ باتیں مشترک ہیں۔",
+    "similaritiesEmpty": "پروفائل میں فی الحال کوئی مشترکہ بات نظر نہیں آئی — یہ بات چیت شروع کرنے کا اچھا موقع ہو سکتا ہے۔",
+    "similarCity": "دونوں {city} میں ہیں",
+    "similarTag": "دونوں کو {tag} پسند ہے",
+    "aboutMeTitle": "میرے بارے میں",
+    "marriageIntentionsTitle": "شادی کے ارادے",
+    "faithTitle": "مذہب",
+    "futurePlansTitle": "مستقبل کے منصوبے",
+    "educationCareerTitle": "تعلیم اور کیریئر",
+    "languagesBackgroundTitle": "زبانیں اور پس منظر",
+    "verificationTitle": "تصدیق",
+    "complimentTitle": "تعریفی پیغام بھیجیں",
+    "complimentPlaceholder": "انہیں بتائیں کہ آپ کو ان کی پروفائل میں کیا پسند آیا...",
+    "complimentSend": "تعریفی پیغام بھیجیں",
+    "complimentSentTitle": "تعریفی پیغام بھیج دیا گیا",
+    "complimentSentBody": "اگر آپ کا میچ ہوا تو {name} آپ کا پیغام دیکھ سکیں گے۔",
+    "share": "شیئر کریں",
+    "favourite": "پسندیدہ",
+    "favourited": "پسندیدہ میں شامل",
+    "block": "بلاک کریں",
+    "report": "رپورٹ کریں",
+    "shareMessage": "{name} کی پروفائل رشتہ اینڈ رنگ پر دیکھیں!",
+    "openToRelocate": "منتقلی کے لیے تیار",
+    "careerPlansTitle": "کیریئر کے منصوبے",
+    "grewUpIn": "{place} میں پرورش پائی"
+  },
+  "attributes": {
+    "heightValue": "{height} سینٹی میٹر",
+    "maritalStatusSingle": "غیر شادی شدہ",
+    "maritalStatusDivorced": "طلاق یافتہ",
+    "maritalStatusWidowed": "بیوہ/بیوہ مرد",
+    "hasChildrenYes": "بچے ہیں",
+    "hasChildrenNo": "کوئی بچے نہیں",
+    "practisingYes": "عملی طور پر مذہبی",
+    "practisingNo": "زیادہ عملی نہیں",
+    "halalOnly": "صرف حلال کھانا کھاتے ہیں",
+    "nonSmoker": "غیر تمباکو نوش",
+    "smoker": "تمباکو نوش",
+    "doesntDrink": "شراب نہیں پیتے",
+    "drinks": "شراب پیتے ہیں"
   },
   "rishtaBrowse": {
     "title": "رشتہ دیکھیں",
@@ -152,7 +193,9 @@
   },
   "chat": {
     "moveToRishta": "رشتے کی طرف بڑھیں",
-    "moveToRishtaSent": "رشتہ کی درخواست بھیج دی گئی",
+    "moveToRishtaSent": "💫 رشتہ کی درخواست بھیج دی گئی — {name} کے جواب کا انتظار ہے۔",
+    "moveToRishtaAccepted": "✅ {name} نے قبول کر لیا — اب آپ دونوں رشتہ مرحلے میں ہیں۔",
+    "moveToRishtaPending": "رشتہ کی درخواست زیر التوا ہے...",
     "moveToRishtaConfirmTitle": "رشتے کی درخواست بھیجیں؟",
     "moveToRishtaConfirmBody": "اس سے {name} کو معلوم ہوگا کہ آپ سنجیدہ اور خاندانی گفتگو کی طرف بڑھنا چاہتے ہیں۔",
     "block": "بلاک کریں",
@@ -162,7 +205,8 @@
     "reportConfirmTitle": "{name} کی رپورٹ کریں؟",
     "reportSentTitle": "رپورٹ جمع ہو گئی",
     "reportSentBody": "شکریہ — ہماری حفاظتی ٹیم جلد اس گفتگو کا جائزہ لے گی۔",
-    "recording": "ریکارڈنگ جاری ہے..."
+    "recording": "ریکارڈنگ جاری ہے...",
+    "photoUnavailable": "تصویر دستیاب نہیں"
   },
   "profile": {
     "title": "پروفائل",
@@ -191,6 +235,9 @@
     "familyBackground": "خاندانی پس منظر",
     "education": "تعلیم",
     "comingInV2": "آئندہ اپڈیٹ میں شامل ہوگا",
+    "prayerHabits": "نماز کی عادات",
+    "incomeRange": "آمدنی کی حد",
+    "livingAbroadStatus": "بیرون ملک رہائش کی صورتحال",
     "verificationSection": "تصدیق اور خاندان",
     "insightsSection": "مطابقت اور تصدیق",
     "cnic": "شناختی کارڈ کی تصدیق",
@@ -198,7 +245,8 @@
     "bureau": "بیورو تصدیق شدہ بیج",
     "bureauNotVerified": "بیورو تصدیق شدہ نہیں",
     "aiScoreValue": "{score}% مطابقت",
-    "completion": "پروفائل مکمل"
+    "completion": "پروفائل مکمل",
+    "memberSince": "ممبر بننے کی تاریخ"
   },
   "editProfile": {
     "title": "پروفائل میں ترمیم کریں",

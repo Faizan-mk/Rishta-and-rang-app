@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View, ViewStyle } from 'react-native';
+import { KeyboardAvoidingView, NativeScrollEvent, NativeSyntheticEvent, Platform, ScrollView, StyleSheet, View, ViewStyle } from 'react-native';
 import { SafeAreaView, Edge } from 'react-native-safe-area-context';
 import { spacing } from '../../theme';
 import type { Palette } from '../../theme/palettes';
@@ -11,9 +11,19 @@ interface ScreenContainerProps {
   style?: ViewStyle;
   edges?: Edge[];
   transparent?: boolean;
+  onScroll?: (e: NativeSyntheticEvent<NativeScrollEvent>) => void;
+  scrollEventThrottle?: number;
 }
 
-export function ScreenContainer({ children, scroll = true, style, edges = ['top', 'bottom'], transparent }: ScreenContainerProps) {
+export function ScreenContainer({
+  children,
+  scroll = true,
+  style,
+  edges = ['top', 'bottom'],
+  transparent,
+  onScroll,
+  scrollEventThrottle,
+}: ScreenContainerProps) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
@@ -22,6 +32,8 @@ export function ScreenContainer({ children, scroll = true, style, edges = ['top'
       contentContainerStyle={[styles.scrollContent, style]}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
+      onScroll={onScroll}
+      scrollEventThrottle={scrollEventThrottle}
     >
       {children}
     </ScrollView>

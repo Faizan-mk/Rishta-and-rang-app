@@ -2,8 +2,10 @@ import React, { useMemo } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInUp } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { MainTabScreenProps } from '../../navigation/types';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { TAB_BAR_BASE_HEIGHT, useHideTabBarOnScroll } from '../../store/TabBarVisibilityContext';
 import { MatchRow } from '../../components/matches/MatchRow';
 import { FadeIn } from '../../components/common/FadeInUp';
 import { useLanguage } from '../../store/LanguageContext';
@@ -19,9 +21,11 @@ export function MatchesScreen({ navigation }: Props) {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
   const { matches } = useMatches();
+  const insets = useSafeAreaInsets();
+  const onScroll = useHideTabBarOnScroll();
 
   return (
-    <ScreenContainer scroll={false} edges={['top', 'bottom']}>
+    <ScreenContainer scroll={false} edges={['top']}>
       <FadeIn><Text style={[styles.title, rtl && styles.rtlText]}>{t('matches.title')}</Text></FadeIn>
 
       <FlatList
@@ -34,7 +38,9 @@ export function MatchesScreen({ navigation }: Props) {
         )}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.listContent}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+        contentContainerStyle={[styles.listContent, { paddingBottom: TAB_BAR_BASE_HEIGHT + insets.bottom + spacing.lg }]}
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Ionicons name="chatbubbles-outline" size={32} color={colors.textTertiary} />
