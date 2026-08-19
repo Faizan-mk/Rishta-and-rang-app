@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { Image, LayoutChangeEvent, NativeScrollEvent, NativeSyntheticEvent, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Image, LayoutChangeEvent, Modal, NativeScrollEvent, NativeSyntheticEvent, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
@@ -10,6 +10,17 @@ import { Chip } from '../../components/common/Chip';
 import { Button } from '../../components/common/Button';
 import { IconButton } from '../../components/common/IconButton';
 import { MatchCelebration } from '../../components/discover/MatchCelebration';
+import {
+  AboutMeSection,
+  MarriageIntentionsCard,
+  FaithSection,
+  FuturePlansSection,
+  EducationCareerSection,
+  LanguagesBackgroundSection,
+  VerificationSection,
+  MidProfilePhoto,
+  IntroMediaSection,
+} from '../../components/discover/ProfileDetailSections';
 import { mockDiscoverProfiles } from '../../data/mockDiscover';
 import { mockRishtaProfiles } from '../../data/mockRishta';
 import type { DiscoverProfile, RishtaListingProfile } from '../../types/content';
@@ -19,6 +30,7 @@ import { useAuth } from '../../store/AuthContext';
 import { useDialog } from '../../store/DialogContext';
 import { useMatches } from '../../store/MatchesContext';
 import { useFavorites } from '../../store/FavoritesContext';
+import { useViewHistory } from '../../store/ViewHistoryContext';
 import { datingCompatibility, rishtaCompatibility } from '../../utils/compatibility';
 import { radius, spacing, typography } from '../../theme';
 import type { Palette } from '../../theme/palettes';
@@ -39,20 +51,27 @@ export function ProfileDetailScreen({ navigation, route }: Props) {
   const { notify } = useDialog();
   const { getOrCreateMatchForProfile } = useMatches();
   const { isFavorite, toggleFavorite } = useFavorites();
+  const { recordView } = useViewHistory();
   const { kind, id } = route.params;
 
   const [galleryWidth, setGalleryWidth] = useState(0);
   const [activeIndex, setActiveIndex] = useState(0);
   const [celebration, setCelebration] = useState<{ name: string; photo: string } | null>(null);
+  const [previewUri, setPreviewUri] = useState<string | null>(null);
 
   const datingProfile = kind === 'dating' ? mockDiscoverProfiles.find((p) => p.id === id) : undefined;
   const rishtaProfile = kind === 'rishta' ? mockRishtaProfiles.find((p) => p.id === id) : undefined;
   const profile = datingProfile ?? rishtaProfile;
 
+  useEffect(() => {
+    if (!profile) return;
+    recordView({ id: profile.id, kind, name: profile.name, age: profile.age, city: profile.city, photo: profile.photos[0] });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.id, kind]);
+
   if (!profile || !user) return null;
 
   const compatibilityScore = kind === 'dating' ? datingCompatibility(user, profile as DiscoverProfile) : rishtaCompatibility(user, profile as RishtaListingProfile);
-  const compatibilityTone = compatibilityScore >= 70 ? 'premium' : compatibilityScore >= 40 ? 'neutral' : 'locked';
   const photosHidden = Boolean(profile.photosBlurred) && !isFavorite(profile.id);
 
   const onGalleryLayout = (e: LayoutChangeEvent) => setGalleryWidth(e.nativeEvent.layout.width);
@@ -154,47 +173,45 @@ export function ProfileDetailScreen({ navigation, route }: Props) {
             <Text style={styles.metaText}>{profile.city}</Text>
           </View>
 
-          {kind === 'dating' ? (
-            <>
-              <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('profile.about')}</Text>
-              <Text style={[styles.bio, rtl && styles.rtlText]}>{(profile as DiscoverProfile).bio}</Text>
+          <View style={styles.compatibilityBanner}>
+            <Ionicons name="sparkles" size={18} color={colors.gold} />
+            <Text style={[styles.compatibilityTitle, rtl && styles.rtlText]}>
+              {t('profile.aiScoreValue', { score: compatibilityScore })}
+            </Text>
+          </View>
 
-              <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('profile.vibeTags')}</Text>
-              <View style={styles.chipRow}>
-                {(profile as DiscoverProfile).vibeTags.map((tag) => (
-                  <Chip key={tag} label={tag} tone="dating" selected />
-                ))}
-              </View>
-            </>
-          ) : (
-            <View style={styles.detailCard}>
-              <DetailRow label={t('profile.religion')} value={(profile as RishtaListingProfile).religion} rtl={rtl} />
-              <DetailRow label={t('profile.sect')} value={(profile as RishtaListingProfile).sect} rtl={rtl} />
-              <DetailRow label={t('profile.education')} value={(profile as RishtaListingProfile).education} rtl={rtl} />
-              <DetailRow
-                label={t('profile.readiness')}
-                value={t(READINESS_KEY[(profile as RishtaListingProfile).readiness])}
-                rtl={rtl}
-              />
-              <DetailRow
-                label={t('profile.familyBackground')}
-                value={(profile as RishtaListingProfile).familyBackground}
-                rtl={rtl}
-                last
-              />
+          {kind === 'dating' && (profile as DiscoverProfile).vibeTags?.length > 0 && (
+            <View style={styles.chipRow}>
+              {(profile as DiscoverProfile).vibeTags.map((tag) => (
+                <Chip key={tag} label={tag} tone="dating" selected />
+              ))}
             </View>
           )}
 
-          <View style={styles.lockedSection}>
-            <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('profile.insightsSection')}</Text>
-            <View style={styles.chipRow}>
-              <Badge label={t('profile.aiScoreValue', { score: compatibilityScore })} tone={compatibilityTone} icon="sparkles" />
-              <Badge
-                label={profile.bureauVerified ? t('profile.bureau') : t('profile.bureauNotVerified')}
-                tone={profile.bureauVerified ? 'success' : 'neutral'}
-              />
-            </View>
-          </View>
+          {profile.bio && (
+            <>
+              <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('profile.about')}</Text>
+              <Text style={[styles.bio, rtl && styles.rtlText]}>{profile.bio}</Text>
+            </>
+          )}
+
+          {profile.familyBackground && (
+            <>
+              <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('rishtaProfile.title')}</Text>
+              <Text style={[styles.bio, rtl && styles.rtlText]}>{profile.familyBackground}</Text>
+            </>
+          )}
+
+          <MidProfilePhoto photos={profile.photos} onPress={() => setPreviewUri(profile.photos[1])} />
+          <IntroMediaSection profile={profile} />
+
+          <AboutMeSection profile={profile} />
+          <MarriageIntentionsCard profile={profile} />
+          <FaithSection profile={profile} />
+          <FuturePlansSection profile={profile} />
+          <EducationCareerSection profile={profile} />
+          <LanguagesBackgroundSection profile={profile} />
+          <VerificationSection profile={profile} />
         </Animated.View>
       </ScrollView>
 
@@ -222,6 +239,12 @@ export function ProfileDetailScreen({ navigation, route }: Props) {
         </View>
       </Animated.View>
 
+      <Modal visible={Boolean(previewUri)} transparent animationType="fade" onRequestClose={() => setPreviewUri(null)}>
+        <Pressable style={styles.previewOverlay} onPress={() => setPreviewUri(null)}>
+          {previewUri && <Image source={{ uri: previewUri }} style={styles.previewImage} resizeMode="contain" />}
+        </Pressable>
+      </Modal>
+
       <MatchCelebration
         visible={Boolean(celebration)}
         name={celebration?.name ?? ''}
@@ -234,29 +257,6 @@ export function ProfileDetailScreen({ navigation, route }: Props) {
     </SafeAreaView>
   );
 }
-
-function DetailRow({ label, value, rtl, last }: { label: string; value: string; rtl: boolean; last?: boolean }) {
-  const { colors } = useTheme();
-  return (
-    <View
-      style={[
-        detailStyles.row,
-        !last && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.borderSoft },
-        rtl && { flexDirection: 'row-reverse' },
-      ]}
-    >
-      <Text style={[detailStyles.label, { color: colors.textSecondary }, rtl && detailStyles.rtlText]}>{label}</Text>
-      <Text style={[detailStyles.value, { color: colors.textPrimary }, rtl && detailStyles.rtlText]}>{value}</Text>
-    </View>
-  );
-}
-
-const detailStyles = StyleSheet.create({
-  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.sm },
-  label: { ...typography.body },
-  value: { ...typography.bodyBold, flexShrink: 1, textAlign: 'right', marginLeft: spacing.md },
-  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
-});
 
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
@@ -286,15 +286,18 @@ const makeStyles = (colors: Palette) =>
     sectionTitle: { ...typography.label, color: colors.textSecondary, textTransform: 'uppercase', marginTop: spacing.lg, marginBottom: spacing.sm },
     bio: { ...typography.body, color: colors.textPrimary },
     chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
-    detailCard: {
-      backgroundColor: colors.surface,
+    compatibilityBanner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      backgroundColor: colors.goldSoft,
       borderRadius: radius.lg,
-      borderWidth: 1,
-      borderColor: colors.border,
-      paddingHorizontal: spacing.md,
-      marginTop: spacing.sm,
+      padding: spacing.md,
+      marginTop: spacing.md,
     },
-    lockedSection: { marginTop: spacing.md },
+    compatibilityTitle: { ...typography.bodyBold, color: colors.gold },
+    previewOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', alignItems: 'center', justifyContent: 'center' },
+    previewImage: { width: '100%', height: '80%' },
     actionBar: {
       position: 'absolute',
       left: 0,

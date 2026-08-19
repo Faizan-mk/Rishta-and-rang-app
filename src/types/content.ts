@@ -11,6 +11,9 @@ interface BrowseProfileFields {
   bureauVerified?: boolean;
   photosBlurred?: boolean;
   selfieVerified?: boolean;
+  voiceIntroUri?: string;
+  voiceIntroDurationSec?: number;
+  videoIntroUri?: string;
   // About me
   heightCm?: number;
   maritalStatus?: 'single' | 'divorced' | 'widowed';
@@ -100,6 +103,15 @@ export interface Match {
   // Links back to the Discover/Rishta listing this match was created from, so
   // "Message" on a profile can find (or create) the same match instead of duplicating it.
   sourceProfileId?: string;
+}
+
+export interface CommunityEvent {
+  id: string;
+  title: string;
+  city: string;
+  dateLabel: string;
+  description: string;
+  image: string;
 }
 
 export type ChatMessageKind = 'text' | 'voice' | 'image';

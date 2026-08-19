@@ -21,13 +21,15 @@ import { radius, spacing, typography } from '../../theme';
 import type { Palette } from '../../theme/palettes';
 
 type Props = AppStackScreenProps<'ExplorePlus'>;
-type Plan = 'monthly' | 'yearly';
+type Plan = 'trial' | 'monthly' | 'yearly';
 
 function isoDateInDays(days: number): string {
   const d = new Date();
   d.setDate(d.getDate() + days);
   return d.toISOString().slice(0, 10);
 }
+
+const PLAN_DAYS: Record<Plan, number> = { trial: 7, monthly: 30, yearly: 365 };
 
 export function ExplorePlusScreen({ navigation }: Props) {
   const { colors, isDark } = useTheme();
@@ -41,6 +43,7 @@ export function ExplorePlusScreen({ navigation }: Props) {
   const [upgrading, setUpgrading] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [plan, setPlan] = useState<Plan>('monthly');
+  const canTrial = !user?.hasUsedTrial;
 
   const blockedProfileIds = useMemo(
     () => new Set(blockedProfiles.map((b) => b.sourceProfileId).filter(Boolean)),
@@ -66,10 +69,14 @@ export function ExplorePlusScreen({ navigation }: Props) {
       ...user,
       isExplorePlus: true,
       subscriptionPlan: plan,
-      subscriptionRenewsAt: isoDateInDays(plan === 'monthly' ? 30 : 365),
+      subscriptionRenewsAt: isoDateInDays(PLAN_DAYS[plan]),
+      hasUsedTrial: user.hasUsedTrial || plan === 'trial',
     });
     setUpgrading(false);
-    await notify({ title: t('explorePlus.upgradeSuccessTitle'), message: t('explorePlus.upgradeSuccessBody') });
+    await notify({
+      title: t('explorePlus.upgradeSuccessTitle'),
+      message: plan === 'trial' ? t('explorePlus.trialStartedBody') : t('explorePlus.upgradeSuccessBody'),
+    });
   };
 
   const onCancel = async () => {
@@ -98,6 +105,18 @@ export function ExplorePlusScreen({ navigation }: Props) {
       {!isPro && (
         <Animated.View entering={FadeInUp.duration(360)} style={styles.priceCard}>
           <View style={styles.planToggle}>
+            {canTrial && (
+              <Pressable
+                onPress={() => setPlan('trial')}
+                style={[styles.planOption, plan === 'trial' && styles.planOptionSelected]}
+              >
+                <View style={[styles.saveBadge, styles.trialBadge]}>
+                  <Text style={styles.saveBadgeText}>{t('explorePlus.trialBadge')}</Text>
+                </View>
+                <Text style={[styles.planLabel, plan === 'trial' && styles.planLabelSelected]}>{t('explorePlus.trial')}</Text>
+                <Text style={[styles.planPrice, plan === 'trial' && styles.planLabelSelected]}>{t('explorePlus.trialPrice')}</Text>
+              </Pressable>
+            )}
             <Pressable
               onPress={() => setPlan('monthly')}
               style={[styles.planOption, plan === 'monthly' && styles.planOptionSelected]}
@@ -116,6 +135,9 @@ export function ExplorePlusScreen({ navigation }: Props) {
               <Text style={[styles.planPrice, plan === 'yearly' && styles.planLabelSelected]}>{t('explorePlus.yearlyPrice')}</Text>
             </Pressable>
           </View>
+          {plan === 'trial' && (
+            <Text style={[styles.trialHint, rtl && styles.rtlText]}>{t('explorePlus.trialHint')}</Text>
+          )}
 
           <View style={styles.featureRow}>
             <Ionicons name="checkmark-circle" size={18} color={colors.success} />
@@ -133,7 +155,12 @@ export function ExplorePlusScreen({ navigation }: Props) {
             </Text>
           </View>
 
-          <Button label={t('explorePlus.upgrade')} onPress={onUpgrade} loading={upgrading} style={styles.upgradeButton} />
+          <Button
+            label={plan === 'trial' ? t('explorePlus.startTrial') : t('explorePlus.upgrade')}
+            onPress={onUpgrade}
+            loading={upgrading}
+            style={styles.upgradeButton}
+          />
         </Animated.View>
       )}
 
@@ -147,7 +174,11 @@ export function ExplorePlusScreen({ navigation }: Props) {
           <View style={styles.manageRow}>
             <Text style={[styles.manageLabel, rtl && styles.rtlText]}>{t('explorePlus.currentPlan')}</Text>
             <Text style={styles.manageValue}>
-              {user.subscriptionPlan === 'yearly' ? t('explorePlus.yearly') : t('explorePlus.monthly')}
+              {user.subscriptionPlan === 'yearly'
+                ? t('explorePlus.yearly')
+                : user.subscriptionPlan === 'trial'
+                ? t('explorePlus.trial')
+                : t('explorePlus.monthly')}
             </Text>
           </View>
           {user.subscriptionRenewsAt && (
@@ -240,6 +271,8 @@ const makeStyles = (colors: Palette) =>
       paddingVertical: 2,
     },
     saveBadgeText: { ...typography.caption, color: '#FFFFFF', fontWeight: '700' },
+    trialBadge: { backgroundColor: colors.success },
+    trialHint: { ...typography.caption, color: colors.textSecondary, textAlign: 'center', marginTop: -spacing.xs, marginBottom: spacing.md },
     featureRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
     featureText: { ...typography.body, color: colors.textPrimary },
     limitCard: {

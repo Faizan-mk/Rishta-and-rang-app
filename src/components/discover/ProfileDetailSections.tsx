@@ -1,11 +1,100 @@
 import React, { useMemo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useEvent } from 'expo';
+import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import type { BrowseProfile } from '../../types/content';
 import { radius, spacing, typography } from '../../theme';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
+
+function formatDuration(totalSeconds: number): string {
+  const sec = Math.max(0, Math.floor(totalSeconds || 0));
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+export function IntroMediaSection({ profile }: { profile: BrowseProfile }) {
+  const { colors } = useTheme();
+  const { t, rtl } = useLanguage();
+  const styles = useMemo(() => makeIntroStyles(colors), [colors]);
+
+  const audioPlayer = useAudioPlayer(profile.voiceIntroUri ? { uri: profile.voiceIntroUri } : undefined);
+  const audioStatus = useAudioPlayerStatus(audioPlayer);
+  const videoPlayer = useVideoPlayer(profile.videoIntroUri ?? null, (p) => {
+    p.loop = true;
+  });
+  const { isPlaying: videoPlaying } = useEvent(videoPlayer, 'playingChange', { isPlaying: videoPlayer.playing });
+
+  if (!profile.voiceIntroUri && !profile.videoIntroUri) return null;
+
+  const toggleVoice = () => {
+    if (audioStatus.playing) audioPlayer.pause();
+    else audioPlayer.play();
+  };
+
+  const toggleVideo = () => {
+    if (videoPlaying) videoPlayer.pause();
+    else videoPlayer.play();
+  };
+
+  return (
+    <Section title={t('discover.introMediaTitle')}>
+      {profile.voiceIntroUri && (
+        <Pressable onPress={toggleVoice} style={styles.voiceCard}>
+          <View style={[styles.voicePlayButton, { backgroundColor: colors.teal }]}>
+            <Ionicons name={audioStatus.playing ? 'pause' : 'play'} size={16} color="#FFFFFF" />
+          </View>
+          <View style={styles.voiceBars} pointerEvents="none">
+            {Array.from({ length: 22 }).map((_, i) => (
+              <View
+                key={i}
+                style={[
+                  styles.voiceBar,
+                  { height: 5 + ((i * 11) % 17), backgroundColor: colors.teal, opacity: audioStatus.playing ? 1 : 0.5 },
+                ]}
+              />
+            ))}
+          </View>
+          <Text style={[styles.voiceDuration, rtl && styles.rtlText]}>
+            {formatDuration(profile.voiceIntroDurationSec ?? audioStatus.duration ?? 0)}
+          </Text>
+        </Pressable>
+      )}
+
+      {profile.videoIntroUri && (
+        <Pressable onPress={toggleVideo} style={styles.videoWrap}>
+          <VideoView player={videoPlayer} style={styles.video} contentFit="cover" nativeControls={false} />
+          {!videoPlaying && (
+            <View style={[StyleSheet.absoluteFill, styles.videoPlayOverlay]} pointerEvents="none">
+              <Ionicons name="play-circle" size={46} color="#FFFFFF" />
+            </View>
+          )}
+        </Pressable>
+      )}
+    </Section>
+  );
+}
+
+export function MidProfilePhoto({ photos, onPress }: { photos: string[]; onPress?: (uri: string) => void }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeMidPhotoStyles(colors), [colors]);
+  const uri = photos?.[1];
+  if (!uri) return null;
+
+  return (
+    <Pressable onPress={() => onPress?.(uri)} style={styles.wrap}>
+      <Image source={{ uri }} style={styles.image} />
+      <View style={styles.badge}>
+        <Ionicons name="images-outline" size={12} color="#FFFFFF" />
+        <Text style={styles.badgeText}>2 / {photos.length}</Text>
+      </View>
+    </Pressable>
+  );
+}
 
 interface AttributeChipData {
   icon: keyof typeof Ionicons.glyphMap;
@@ -260,6 +349,62 @@ const intentionStyles = StyleSheet.create({
   labelRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.md },
   label: { ...typography.caption, flexShrink: 1, textAlign: 'center' },
 });
+
+const makeIntroStyles = (colors: Palette) =>
+  StyleSheet.create({
+    voiceCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radius.lg,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm + 2,
+    },
+    voicePlayButton: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
+    voiceBars: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 3, height: 22 },
+    voiceBar: { width: 3, borderRadius: 2 },
+    voiceDuration: { ...typography.caption, color: colors.textSecondary, fontWeight: '600' },
+    videoWrap: {
+      width: '100%',
+      aspectRatio: 16 / 9,
+      borderRadius: radius.lg,
+      overflow: 'hidden',
+      backgroundColor: colors.skeleton,
+      marginTop: spacing.sm,
+    },
+    video: { width: '100%', height: '100%' },
+    videoPlayOverlay: { alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(10,10,12,0.25)' },
+    rtlText: { textAlign: 'right', writingDirection: 'rtl' },
+  });
+
+const makeMidPhotoStyles = (colors: Palette) =>
+  StyleSheet.create({
+    wrap: {
+      width: '100%',
+      aspectRatio: 4 / 5,
+      borderRadius: radius.lg,
+      overflow: 'hidden',
+      backgroundColor: colors.skeleton,
+      marginTop: spacing.lg,
+    },
+    image: { width: '100%', height: '100%' },
+    badge: {
+      position: 'absolute',
+      bottom: spacing.sm,
+      right: spacing.sm,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      backgroundColor: 'rgba(10,10,12,0.55)',
+      borderRadius: radius.pill,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 4,
+    },
+    badgeText: { ...typography.caption, color: '#FFFFFF', fontWeight: '700' },
+  });
 
 const makeChipStyles = (colors: Palette) =>
   StyleSheet.create({

@@ -38,6 +38,39 @@ export interface UserProfile {
   dating: DatingProfile;
   rishta: RishtaProfile;
   activeMode: ProfileMode;
+  // Extended profile — same field shapes as the browsable Discover/Rishta profile
+  // detail sections, so a user's own profile can be edited here and rendered with
+  // the exact same section components used to view other people's profiles.
+  // About me
+  heightCm?: number;
+  maritalStatus?: 'single' | 'divorced' | 'widowed';
+  hasChildren?: boolean;
+  occupation?: string;
+  // Faith (beyond rishta.religion/sect, which stay editable from Rishta details)
+  practising?: boolean;
+  prayerHabits?: string;
+  halalOnly?: boolean;
+  smoking?: boolean;
+  drinking?: boolean;
+  religiousDress?: string;
+  // Future plans
+  openToRelocate?: boolean;
+  preferredCountry?: string;
+  careerPlans?: string;
+  // Education & career
+  educationLevel?: string;
+  degree?: string;
+  jobTitle?: string;
+  industry?: string;
+  // Languages & background
+  languages?: string[];
+  nationality?: string;
+  grewUpIn?: string;
+  country?: string;
+  // Voice/video intro, playable from the profile view mid-photo section.
+  voiceIntroUri?: string;
+  voiceIntroDurationSec?: number;
+  videoIntroUri?: string;
   // Verification tiers beyond the V1 selfie check. CNIC number + photo are collected
   // at signup (see OnboardingDraft) and validated on the spot — cnicVerified is set
   // true at account creation, not via a later profile-section flow.
@@ -51,7 +84,8 @@ export interface UserProfile {
   waliInvitedAt?: string;
   // V1 monetization — the single paid unlock (Explore+ lite) from the roadmap.
   isExplorePlus?: boolean;
-  subscriptionPlan?: 'monthly' | 'yearly';
+  subscriptionPlan?: 'trial' | 'monthly' | 'yearly';
+  hasUsedTrial?: boolean;
   subscriptionRenewsAt?: string;
   createdAt: string;
 }

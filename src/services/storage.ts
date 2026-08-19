@@ -13,6 +13,7 @@ const KEYS = {
   dailyLikes: 'rishta.dailyLikes.v1',
   privacyPrefs: 'rishta.privacyPrefs.v1',
   blockedUsers: 'rishta.blockedUsers.v1',
+  viewHistory: 'rishta.viewHistory.v1',
 } as const;
 
 async function getJSON<T>(key: string, fallback: T): Promise<T> {

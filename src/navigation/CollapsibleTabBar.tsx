@@ -13,6 +13,7 @@ import type { MainTabParamList } from './types';
 
 const ICONS: Record<keyof MainTabParamList, { active: keyof typeof Ionicons.glyphMap; inactive: keyof typeof Ionicons.glyphMap }> = {
   Home: { active: 'flame', inactive: 'flame-outline' },
+  Explore: { active: 'compass', inactive: 'compass-outline' },
   Matches: { active: 'chatbubbles', inactive: 'chatbubbles-outline' },
   Profile: { active: 'menu', inactive: 'menu-outline' },
 };

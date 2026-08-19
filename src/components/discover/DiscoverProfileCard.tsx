@@ -32,13 +32,21 @@ export const DiscoverProfileCard = React.memo(function DiscoverProfileCard({ pro
 
   return (
     <View style={styles.card} onLayout={onLayout}>
-      {galleryWidth > 0 && (
+      {/* Base photo — sized purely with CSS percentages so it renders immediately,
+          with no dependency on onLayout measurement (which can lag or never fire
+          on some platforms, leaving the card blank). The pager below, which does
+          need a measured pixel width to page correctly, layers on top of it once
+          ready and only when there's more than one photo to swipe between. */}
+      <Image source={{ uri: profile.photos[0] }} style={styles.photo} />
+
+      {profile.photos.length > 1 && galleryWidth > 0 && (
         <ScrollView
           horizontal
           pagingEnabled
           showsHorizontalScrollIndicator={false}
           onScroll={onGalleryScroll}
           scrollEventThrottle={16}
+          style={StyleSheet.absoluteFill}
         >
           {profile.photos.map((uri) => (
             <Pressable key={uri} onPress={() => onPressPhoto?.(uri)} style={{ width: galleryWidth }}>
@@ -46,6 +54,9 @@ export const DiscoverProfileCard = React.memo(function DiscoverProfileCard({ pro
             </Pressable>
           ))}
         </ScrollView>
+      )}
+      {profile.photos.length === 1 && (
+        <Pressable onPress={() => onPressPhoto?.(profile.photos[0])} style={StyleSheet.absoluteFill} />
       )}
 
       {photosHidden && (

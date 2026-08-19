@@ -13,6 +13,15 @@ import { Button } from '../../components/common/Button';
 import { IconButton } from '../../components/common/IconButton';
 import { SettingsRow } from '../../components/common/SettingsRow';
 import { ModeToggle } from '../../components/profile/ModeToggle';
+import {
+  AboutMeSection,
+  FaithSection,
+  FuturePlansSection,
+  EducationCareerSection,
+  LanguagesBackgroundSection,
+  VerificationSection,
+  IntroMediaSection,
+} from '../../components/discover/ProfileDetailSections';
 import { useLanguage } from '../../store/LanguageContext';
 import { useAuth } from '../../store/AuthContext';
 import { useTheme } from '../../store/ThemeContext';
@@ -44,6 +53,17 @@ export function ProfileScreen({ navigation }: Props) {
   const onScroll = useHideTabBarOnScroll();
 
   if (!user) return null;
+
+  // The shared profile-detail sections (built for browsing other people's profiles)
+  // read a BrowseProfile shape — adapt the signed-in user's own record into that
+  // shape so the exact same components render their own extended details here.
+  const browseProfile = {
+    ...user,
+    name: user.fullName,
+    age: ageFromDob(user.dob) ?? 0,
+    religion: user.rishta.religion || undefined,
+    sect: user.rishta.sect || undefined,
+  };
   const age = ageFromDob(user.dob);
   const completion = profileCompletion(user);
   const memberSince = new Date(user.createdAt).getFullYear();
@@ -201,6 +221,16 @@ export function ProfileScreen({ navigation }: Props) {
           </View>
         </View>
       )}
+
+      <View style={styles.section}>
+        <IntroMediaSection profile={browseProfile} />
+        <AboutMeSection profile={browseProfile} />
+        <FaithSection profile={browseProfile} />
+        <FuturePlansSection profile={browseProfile} />
+        <EducationCareerSection profile={browseProfile} />
+        <LanguagesBackgroundSection profile={browseProfile} />
+        <VerificationSection profile={browseProfile} />
+      </View>
 
       <View style={styles.section}>
         <View style={styles.quickLinks}>

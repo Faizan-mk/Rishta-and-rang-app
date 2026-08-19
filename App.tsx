@@ -8,6 +8,7 @@ import { AuthProvider } from './src/store/AuthContext';
 import { NotificationProvider } from './src/store/NotificationContext';
 import { MatchesProvider } from './src/store/MatchesContext';
 import { FavoritesProvider } from './src/store/FavoritesContext';
+import { ViewHistoryProvider } from './src/store/ViewHistoryContext';
 import { LikeLimitProvider } from './src/store/LikeLimitContext';
 import { PrivacyProvider } from './src/store/PrivacyContext';
 import { DialogProvider } from './src/store/DialogContext';
@@ -34,13 +35,15 @@ export default function App() {
               <NotificationProvider>
                 <MatchesProvider>
                   <FavoritesProvider>
-                    <LikeLimitProvider>
-                      <PrivacyProvider>
-                        <DialogProvider>
-                          <AppContent />
-                        </DialogProvider>
-                      </PrivacyProvider>
-                    </LikeLimitProvider>
+                    <ViewHistoryProvider>
+                      <LikeLimitProvider>
+                        <PrivacyProvider>
+                          <DialogProvider>
+                            <AppContent />
+                          </DialogProvider>
+                        </PrivacyProvider>
+                      </LikeLimitProvider>
+                    </ViewHistoryProvider>
                   </FavoritesProvider>
                 </MatchesProvider>
               </NotificationProvider>

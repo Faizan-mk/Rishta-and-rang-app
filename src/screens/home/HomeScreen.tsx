@@ -1,8 +1,15 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Image, Modal, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { FadeIn as ReanimatedFadeIn, FadeOut, ZoomIn } from 'react-native-reanimated';
+import Animated, {
+  FadeIn as ReanimatedFadeIn,
+  FadeOut,
+  ZoomIn,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 import type { MainTabScreenProps } from '../../navigation/types';
 import { DiscoverProfileCard } from '../../components/discover/DiscoverProfileCard';
 import { TAB_BAR_BASE_HEIGHT, useHideTabBarOnScroll } from '../../store/TabBarVisibilityContext';
@@ -16,8 +23,11 @@ import {
   EducationCareerSection,
   LanguagesBackgroundSection,
   VerificationSection,
+  MidProfilePhoto,
+  IntroMediaSection,
 } from '../../components/discover/ProfileDetailSections';
 import { ProfileActionsFooter } from '../../components/discover/ProfileActionsFooter';
+import { ProfileUtilityBar } from '../../components/discover/ProfileUtilityBar';
 import { ReportDialog } from '../../components/common/ReportDialog';
 import { Chip } from '../../components/common/Chip';
 import { Badge } from '../../components/common/Badge';
@@ -33,6 +43,7 @@ import { useDialog } from '../../store/DialogContext';
 import { useLikeLimit } from '../../store/LikeLimitContext';
 import { useMatches } from '../../store/MatchesContext';
 import { useNotifications } from '../../store/NotificationContext';
+import { useViewHistory } from '../../store/ViewHistoryContext';
 import { oppositeGenderProfiles } from '../../utils/genderMatch';
 import { datingCompatibility, rishtaCompatibility } from '../../utils/compatibility';
 import { radius, spacing, typography } from '../../theme';
@@ -52,6 +63,7 @@ export function HomeScreen({ navigation }: Props) {
   const { isUnlimited, remaining, recordLike } = useLikeLimit();
   const { blockedProfiles, getOrCreateMatchForProfile, blockMatch } = useMatches();
   const { addNotification } = useNotifications();
+  const { recordView } = useViewHistory();
   const [celebration, setCelebration] = useState<{ name: string; photo: string } | null>(null);
   const [datingCursor, setDatingCursor] = useState(0);
   const [rishtaCursor, setRishtaCursor] = useState(0);
@@ -87,6 +99,19 @@ export function HomeScreen({ navigation }: Props) {
   const currentProfile = visibleProfiles[safeCursor];
   const canUndo = safeCursor > 0;
 
+  useEffect(() => {
+    if (!currentProfile) return;
+    recordView({
+      id: currentProfile.id,
+      kind: mode,
+      name: currentProfile.name,
+      age: currentProfile.age,
+      city: currentProfile.city,
+      photo: currentProfile.photos[0],
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentProfile?.id, mode]);
+
   const compatibilityScore =
     user && currentProfile
       ? mode === 'dating'
@@ -117,7 +142,21 @@ export function HomeScreen({ navigation }: Props) {
   }, [user, currentProfile, mode, t]);
 
   const advance = () => setCursor((c) => Math.min(c + 1, visibleProfiles.length));
-  const onUndo = () => setCursor((c) => Math.max(c - 1, 0));
+
+  const onUndo = async () => {
+    if (!canUndo) return;
+    if (!user?.isExplorePlus) {
+      const wantsUpgrade = await confirm({
+        title: t('discover.rewindLockedTitle'),
+        message: t('discover.rewindLockedBody'),
+        confirmLabel: t('explorePlus.upgrade'),
+        cancelLabel: t('common.cancel'),
+      });
+      if (wantsUpgrade) navigation.navigate('ExplorePlus');
+      return;
+    }
+    setCursor((c) => Math.max(c - 1, 0));
+  };
 
   const onPass = () => {
     if (!currentProfile) return;
@@ -282,6 +321,9 @@ export function HomeScreen({ navigation }: Props) {
                 </>
               )}
 
+              <MidProfilePhoto photos={currentProfile.photos} onPress={setPreviewUri} />
+              <IntroMediaSection profile={currentProfile} />
+
               <AboutMeSection profile={currentProfile} />
               <MarriageIntentionsCard profile={currentProfile} />
               <FaithSection profile={currentProfile} />
@@ -290,15 +332,15 @@ export function HomeScreen({ navigation }: Props) {
               <LanguagesBackgroundSection profile={currentProfile} />
               <VerificationSection profile={currentProfile} />
 
-              <ProfileActionsFooter
-                name={currentProfile.name}
+              <ProfileUtilityBar
                 liked={isFavorite(currentProfile.id)}
-                onSendCompliment={onSendCompliment}
                 onShare={onShareProfile}
                 onToggleFavourite={onToggleFavourite}
                 onBlock={onBlockProfile}
                 onReport={() => setReportVisible(true)}
               />
+
+              <ProfileActionsFooter onSendCompliment={onSendCompliment} />
             </View>
           </ScrollView>
         </Animated.View>
@@ -311,15 +353,15 @@ export function HomeScreen({ navigation }: Props) {
 
       {currentProfile && (
         <View style={[styles.actionsRow, { paddingBottom: TAB_BAR_BASE_HEIGHT + insets.bottom }]}>
-          <Pressable onPress={onUndo} disabled={!canUndo} style={[styles.actionButton, styles.actionButtonSmall, !canUndo && styles.actionButtonDisabled]}>
+          <SwipeActionButton onPress={onUndo} disabled={!canUndo} size="small" colors={colors} locked={canUndo && !user.isExplorePlus}>
             <Ionicons name="arrow-undo" size={20} color={canUndo ? colors.gold : colors.textTertiary} />
-          </Pressable>
-          <Pressable onPress={onPass} style={[styles.actionButton, styles.actionButtonLarge]}>
+          </SwipeActionButton>
+          <SwipeActionButton onPress={onPass} size="large" colors={colors}>
             <Ionicons name="close" size={30} color={colors.textPrimary} />
-          </Pressable>
-          <Pressable onPress={onLike} style={[styles.actionButton, styles.actionButtonLarge, styles.actionButtonLike]}>
+          </SwipeActionButton>
+          <SwipeActionButton onPress={onLike} size="large" tone="like" colors={colors}>
             <Ionicons name="heart" size={26} color="#FFFFFF" />
-          </Pressable>
+          </SwipeActionButton>
         </View>
       )}
 
@@ -345,6 +387,83 @@ export function HomeScreen({ navigation }: Props) {
     </SafeAreaView>
   );
 }
+
+function SwipeActionButton({
+  onPress,
+  disabled,
+  size,
+  tone,
+  colors,
+  locked,
+  children,
+}: {
+  onPress: () => void;
+  disabled?: boolean;
+  size: 'small' | 'large';
+  tone?: 'like';
+  colors: Palette;
+  locked?: boolean;
+  children: React.ReactNode;
+}) {
+  const scale = useSharedValue(1);
+  const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  const dimension = size === 'small' ? 46 : 62;
+
+  return (
+    <Animated.View style={animatedStyle}>
+      <Pressable
+        onPress={onPress}
+        disabled={disabled}
+        onPressIn={() => {
+          if (disabled) return;
+          scale.value = withSpring(0.86, { damping: 14, stiffness: 260 });
+        }}
+        onPressOut={() => {
+          scale.value = withSpring(1, { damping: 10, stiffness: 220 });
+        }}
+        style={[
+          actionButtonStyles.button,
+          { width: dimension, height: dimension, backgroundColor: colors.surface, borderColor: colors.border },
+          tone === 'like' && { backgroundColor: colors.dating, borderColor: colors.dating },
+          disabled && actionButtonStyles.disabled,
+        ]}
+      >
+        {children}
+        {locked && (
+          <View style={[actionButtonStyles.lockBadge, { backgroundColor: colors.gold, borderColor: colors.background }]}>
+            <Ionicons name="lock-closed" size={9} color="#FFFFFF" />
+          </View>
+        )}
+      </Pressable>
+    </Animated.View>
+  );
+}
+
+const actionButtonStyles = StyleSheet.create({
+  button: {
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
+  },
+  disabled: { opacity: 0.4, shadowOpacity: 0 },
+  lockBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});
 
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
@@ -402,28 +521,9 @@ const makeStyles = (colors: Palette) =>
       alignItems: 'center',
       justifyContent: 'center',
       gap: spacing.lg,
-      paddingTop: spacing.md,
+      paddingVertical: spacing.md,
       backgroundColor: colors.background,
-      borderTopWidth: 1,
-      borderTopColor: colors.border,
     },
-    actionButton: {
-      borderRadius: radius.pill,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: colors.surface,
-      borderWidth: 1,
-      borderColor: colors.border,
-      shadowColor: '#000',
-      shadowOpacity: 0.12,
-      shadowRadius: 8,
-      shadowOffset: { width: 0, height: 3 },
-      elevation: 3,
-    },
-    actionButtonSmall: { width: 46, height: 46 },
-    actionButtonLarge: { width: 62, height: 62 },
-    actionButtonDisabled: { opacity: 0.4, shadowOpacity: 0 },
-    actionButtonLike: { backgroundColor: colors.dating, borderColor: colors.dating },
     previewOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', alignItems: 'center', justifyContent: 'center' },
     previewImage: { width: '100%', height: '80%' },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },
