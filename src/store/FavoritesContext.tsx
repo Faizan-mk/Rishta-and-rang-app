@@ -1,15 +1,9 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { storage } from '../services/storage';
-import type { ProfileMode } from '../types/user';
+import { favoritesService } from '../services/favoritesService';
+import type { FavoriteProfile } from '../types/content';
+import { useAuth } from './AuthContext';
 
-export interface FavoriteProfile {
-  id: string;
-  kind: ProfileMode;
-  name: string;
-  age: number;
-  city: string;
-  photo: string;
-}
+export type { FavoriteProfile };
 
 interface FavoritesContextValue {
   favorites: FavoriteProfile[];
@@ -21,30 +15,37 @@ interface FavoritesContextValue {
 const FavoritesContext = createContext<FavoritesContextValue | undefined>(undefined);
 
 export function FavoritesProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
   const [favorites, setFavorites] = useState<FavoriteProfile[]>([]);
 
   useEffect(() => {
-    storage.getJSON<FavoriteProfile[]>(storage.KEYS.favorites, []).then(setFavorites);
-  }, []);
-
-  const persist = (next: FavoriteProfile[]) => {
-    setFavorites(next);
-    storage.setJSON(storage.KEYS.favorites, next);
-  };
+    if (!user) {
+      setFavorites([]);
+      return;
+    }
+    favoritesService.fetchFavorites(user.id).then(setFavorites);
+  }, [user?.id]);
 
   const isFavorite = (id: string) => favorites.some((f) => f.id === id);
 
   const toggleFavorite = (profile: FavoriteProfile) => {
+    if (!user) return;
     if (isFavorite(profile.id)) {
-      persist(favorites.filter((f) => f.id !== profile.id));
+      setFavorites((prev) => prev.filter((f) => f.id !== profile.id));
+      favoritesService.removeFavorite(user.id, profile.id);
     } else {
-      persist([profile, ...favorites]);
+      setFavorites((prev) => [profile, ...prev]);
+      favoritesService.addFavorite(user.id, profile);
     }
   };
 
-  const removeFavorite = (id: string) => persist(favorites.filter((f) => f.id !== id));
+  const removeFavorite = (id: string) => {
+    if (!user) return;
+    setFavorites((prev) => prev.filter((f) => f.id !== id));
+    favoritesService.removeFavorite(user.id, id);
+  };
 
-  const value = useMemo(() => ({ favorites, isFavorite, toggleFavorite, removeFavorite }), [favorites]);
+  const value = useMemo(() => ({ favorites, isFavorite, toggleFavorite, removeFavorite }), [favorites, user?.id]);
 
   return <FavoritesContext.Provider value={value}>{children}</FavoritesContext.Provider>;
 }

@@ -1,0 +1,273 @@
+// Schema/migration tooling only. Prisma Client is a Node.js binary engine
+// and cannot run inside the Expo/Hermes runtime — the app keeps querying
+// Supabase through @supabase/supabase-js (see src/services/authService.ts).
+// This file exists so table shape changes go through `prisma migrate dev`
+// instead of hand-edited SQL. Things Prisma can't express (RLS, CHECK
+// constraints, storage buckets, the cross-schema FK to auth.users) live in
+// prisma/post-migrate.sql, applied once after each migration.
+//
+// Deliberately NOT adding `auth` to `schemas` here: Prisma then treats all
+// of Supabase's own auth.* tables as unmanaged drift and offers `migrate
+// reset`, which drops and recreates schemas — i.e. deletes every real user.
+// Keep Prisma scoped to `public` only.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Profile {
+  id         String   @id @db.Uuid
+  fullName   String   @map("full_name")
+  email      String
+  dob        DateTime @db.Date
+  gender     String
+  city       String
+  bio        String   @default("")
+  intent     String
+  language   String   @default("en")
+  activeMode String   @default("dating") @map("active_mode")
+
+  datingVibeTags       String[] @default([]) @map("dating_vibe_tags")
+  datingIntentionLabel String?  @map("dating_intention_label")
+
+  rishtaReligion         String   @default("") @map("rishta_religion")
+  rishtaSect             String   @default("") @map("rishta_sect")
+  rishtaFamilyBackground String   @default("") @map("rishta_family_background")
+  rishtaEducation        String   @default("") @map("rishta_education")
+  rishtaReadiness        String   @default("browsing") @map("rishta_readiness")
+  rishtaPrayerHabits     String?  @map("rishta_prayer_habits")
+  rishtaIncomeRange      String?  @map("rishta_income_range")
+  rishtaLivingAbroad     Boolean? @map("rishta_living_abroad")
+
+  heightCm      Int?
+  maritalStatus String?  @map("marital_status")
+  hasChildren   Boolean? @map("has_children")
+  occupation    String?
+
+  practising     Boolean?
+  prayerHabits   String?  @map("prayer_habits")
+  halalOnly      Boolean? @map("halal_only")
+  smoking        Boolean?
+  drinking       Boolean?
+  religiousDress String?  @map("religious_dress")
+
+  openToRelocate   Boolean? @map("open_to_relocate")
+  preferredCountry String?  @map("preferred_country")
+  careerPlans      String?  @map("career_plans")
+
+  educationLevel String? @map("education_level")
+  degree         String?
+  jobTitle       String? @map("job_title")
+  industry       String?
+
+  languages   String[]
+  nationality String?
+  grewUpIn    String? @map("grew_up_in")
+  country     String?
+
+  selfieVerified        Boolean @default(false) @map("selfie_verified")
+  voiceIntroPath        String? @map("voice_intro_path")
+  voiceIntroDurationSec Int?    @map("voice_intro_duration_sec")
+  videoIntroPath        String? @map("video_intro_path")
+
+  waliName      String?   @map("wali_name")
+  waliContact   String?   @map("wali_contact")
+  waliInvitedAt DateTime? @map("wali_invited_at") @db.Timestamptz
+
+  isExplorePlus        Boolean   @default(false) @map("is_explore_plus")
+  subscriptionPlan     String?   @map("subscription_plan")
+  hasUsedTrial          Boolean  @default(false) @map("has_used_trial")
+  subscriptionRenewsAt DateTime? @map("subscription_renews_at") @db.Timestamptz
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  verification      ProfileVerification?
+  photos            ProfilePhoto[]
+  matches           Match[]
+  chatMessages      ChatMessage[]
+  favorites         Favorite[]
+  notifications     Notification[]
+  notificationPrefs NotificationPrefs?
+  blockedUsers      BlockedUser[]
+  viewHistory       ViewHistoryEntry[]
+  dailyLikes        DailyLikes?
+  privacyPrefs      PrivacyPrefs?
+
+  @@map("profiles")
+}
+
+// ============================================================================
+// Everything below is per-user app data (matches, chat, favorites,
+// notifications, etc.). All of it is owner-only — RLS in post-migrate.sql
+// scopes every row to profile_id = auth.uid(), none of it is browsable by
+// other users. Matches/chat still model the counterpart side locally (this
+// app has no live second-user backend) — only the signed-in user's own rows
+// are persisted here, same behavior as the AsyncStorage version, just durable
+// and synced across devices now.
+// ============================================================================
+
+model Match {
+  id                   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profileId            String   @map("profile_id") @db.Uuid
+  name                 String
+  photo                String
+  lastMessage          String   @default("") @map("last_message")
+  lastMessageAt        DateTime @default(now()) @map("last_message_at") @db.Timestamptz
+  unread               Boolean  @default(false)
+  mode                 String
+  movedToRishta        Boolean  @default(false) @map("moved_to_rishta")
+  rishtaRequestPending Boolean  @default(false) @map("rishta_request_pending")
+  sourceProfileId      String?  @map("source_profile_id")
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  profile  Profile       @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  messages ChatMessage[]
+
+  @@map("matches")
+}
+
+model ChatMessage {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  matchId     String   @map("match_id") @db.Uuid
+  profileId   String   @map("profile_id") @db.Uuid
+  fromMe      Boolean  @map("from_me")
+  text        String   @default("")
+  kind        String   @default("text")
+  audioPath   String?  @map("audio_path")
+  durationSec Int?     @map("duration_sec")
+  imagePath   String?  @map("image_path")
+  sentAt      DateTime @default(now()) @map("sent_at") @db.Timestamptz
+
+  match   Match   @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@map("chat_messages")
+}
+
+model Favorite {
+  profileId String   @map("profile_id") @db.Uuid
+  targetId  String   @map("target_id")
+  kind      String
+  name      String
+  age       Int
+  city      String
+  photo     String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@id([profileId, targetId])
+  @@map("favorites")
+}
+
+model Notification {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profileId String   @map("profile_id") @db.Uuid
+  type      String
+  title     String
+  body      String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model NotificationPrefs {
+  profileId      String  @id @map("profile_id") @db.Uuid
+  newMatches     Boolean @default(true) @map("new_matches")
+  messages       Boolean @default(true)
+  likes          Boolean @default(true)
+  rishtaRequests Boolean @default(true) @map("rishta_requests")
+  productUpdates Boolean @default(false) @map("product_updates")
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@map("notification_prefs")
+}
+
+model BlockedUser {
+  profileId       String   @map("profile_id") @db.Uuid
+  blockedId       String   @map("blocked_id")
+  sourceProfileId String?  @map("source_profile_id")
+  name            String
+  photo           String
+  blockedAt       DateTime @default(now()) @map("blocked_at") @db.Timestamptz
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@id([profileId, blockedId])
+  @@map("blocked_users")
+}
+
+model ViewHistoryEntry {
+  profileId String   @map("profile_id") @db.Uuid
+  viewedId  String   @map("viewed_id")
+  kind      String
+  name      String
+  age       Int
+  city      String
+  photo     String
+  viewedAt  DateTime @default(now()) @map("viewed_at") @db.Timestamptz
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@id([profileId, viewedId])
+  @@map("view_history")
+}
+
+model DailyLikes {
+  profileId String @id @map("profile_id") @db.Uuid
+  date      String
+  count     Int    @default(0)
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@map("daily_likes")
+}
+
+model PrivacyPrefs {
+  profileId           String  @id @map("profile_id") @db.Uuid
+  profileVisible      Boolean @default(true) @map("profile_visible")
+  onlineStatusVisible Boolean @default(true) @map("online_status_visible")
+  blurPhotos          Boolean @default(false) @map("blur_photos")
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@map("privacy_prefs")
+}
+
+model ProfileVerification {
+  profileId       String   @id @map("profile_id") @db.Uuid
+  cnicNumber      String?  @map("cnic_number")
+  cnicPhotoPath   String?  @map("cnic_photo_path")
+  cnicVerified    Boolean  @default(false) @map("cnic_verified")
+  bureauVerified  Boolean  @default(false) @map("bureau_verified")
+  selfiePhotoPath String?  @map("selfie_photo_path")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@map("profile_verification")
+}
+
+model ProfilePhoto {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profileId   String   @map("profile_id") @db.Uuid
+  storagePath String   @map("storage_path")
+  position    Int      @default(0) @db.SmallInt
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, position])
+  @@map("profile_photos")
+}

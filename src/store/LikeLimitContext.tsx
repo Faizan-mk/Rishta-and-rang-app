@@ -1,13 +1,8 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { storage } from '../services/storage';
+import { likeLimitService, DailyLikeState } from '../services/likeLimitService';
 import { useAuth } from './AuthContext';
 
 export const DAILY_FREE_LIKES = 15;
-
-interface DailyLikeState {
-  date: string;
-  count: number;
-}
 
 interface LikeLimitContextValue {
   used: number;
@@ -29,10 +24,14 @@ export function LikeLimitProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<DailyLikeState>({ date: todayKey(), count: 0 });
 
   useEffect(() => {
-    storage.getJSON<DailyLikeState>(storage.KEYS.dailyLikes, { date: todayKey(), count: 0 }).then((stored) => {
-      setState(stored.date === todayKey() ? stored : { date: todayKey(), count: 0 });
+    if (!user) {
+      setState({ date: todayKey(), count: 0 });
+      return;
+    }
+    likeLimitService.fetchState(user.id).then((stored) => {
+      setState(stored && stored.date === todayKey() ? stored : { date: todayKey(), count: 0 });
     });
-  }, []);
+  }, [user?.id]);
 
   const isUnlimited = Boolean(user?.isExplorePlus);
   const used = state.date === todayKey() ? state.count : 0;
@@ -40,11 +39,12 @@ export function LikeLimitProvider({ children }: { children: React.ReactNode }) {
 
   const recordLike = (): boolean => {
     if (isUnlimited) return true;
+    if (!user) return false;
     const current = state.date === todayKey() ? state : { date: todayKey(), count: 0 };
     if (current.count >= DAILY_FREE_LIKES) return false;
     const next = { date: todayKey(), count: current.count + 1 };
     setState(next);
-    storage.setJSON(storage.KEYS.dailyLikes, next);
+    likeLimitService.setState(user.id, next);
     return true;
   };
 

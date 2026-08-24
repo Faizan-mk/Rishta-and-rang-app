@@ -223,7 +223,7 @@ export function HomeScreen({ navigation }: Props) {
       destructive: true,
     });
     if (!confirmed) return;
-    const match = getOrCreateMatchForProfile({ id: profile.id, name: profile.name, photo: profile.photos[0], mode });
+    const match = await getOrCreateMatchForProfile({ id: profile.id, name: profile.name, photo: profile.photos[0], mode });
     blockMatch(match.id);
   };
 

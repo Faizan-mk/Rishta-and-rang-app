@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { storage } from '../services/storage';
-import { mockNotifications } from '../data/mockNotifications';
+import { notificationsService } from '../services/notificationsService';
 import { DEFAULT_NOTIFICATION_PREFS, NotificationItem, NotificationPrefs } from '../types/content';
+import { useAuth } from './AuthContext';
 
 interface NotificationContextValue {
   prefs: NotificationPrefs;
@@ -26,52 +26,45 @@ const PREF_KEY_BY_TYPE: Record<NotificationItem['type'], keyof NotificationPrefs
 const NotificationContext = createContext<NotificationContextValue | undefined>(undefined);
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
   const [prefs, setPrefs] = useState<NotificationPrefs>(DEFAULT_NOTIFICATION_PREFS);
-  const [feed, setFeed] = useState<NotificationItem[]>(mockNotifications);
+  const [feed, setFeed] = useState<NotificationItem[]>([]);
 
   useEffect(() => {
-    storage.getJSON(storage.KEYS.notificationPrefs, DEFAULT_NOTIFICATION_PREFS).then(setPrefs);
-    storage.getJSON(storage.KEYS.notificationFeed, mockNotifications).then(setFeed);
-  }, []);
+    if (!user) {
+      setPrefs(DEFAULT_NOTIFICATION_PREFS);
+      setFeed([]);
+      return;
+    }
+    notificationsService.fetchPrefs(user.id).then(setPrefs);
+    notificationsService.fetchFeed(user.id).then(setFeed);
+  }, [user?.id]);
 
   const setPref = (key: keyof NotificationPrefs, value: boolean) => {
+    if (!user) return;
     setPrefs((prev) => {
       const next = { ...prev, [key]: value };
-      storage.setJSON(storage.KEYS.notificationPrefs, next);
+      notificationsService.setPref(user.id, next);
       return next;
     });
   };
 
   const markAllRead = () => {
-    setFeed((prev) => {
-      const next = prev.map((n) => ({ ...n, read: true }));
-      storage.setJSON(storage.KEYS.notificationFeed, next);
-      return next;
-    });
+    if (!user) return;
+    setFeed((prev) => prev.map((n) => ({ ...n, read: true })));
+    notificationsService.markAllRead(user.id);
   };
 
   const markRead = (id: string) => {
-    setFeed((prev) => {
-      const next = prev.map((n) => (n.id === id ? { ...n, read: true } : n));
-      storage.setJSON(storage.KEYS.notificationFeed, next);
-      return next;
-    });
+    if (!user) return;
+    setFeed((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+    notificationsService.markRead(id);
   };
 
   const addNotification = (type: NotificationItem['type'], title: string, body: string) => {
-    if (!prefs[PREF_KEY_BY_TYPE[type]]) return;
-    setFeed((prev) => {
-      const item: NotificationItem = {
-        id: `notif_${Date.now()}_${Math.floor(Math.random() * 1e6)}`,
-        type,
-        title,
-        body,
-        createdAt: new Date().toISOString(),
-        read: false,
-      };
-      const next = [item, ...prev];
-      storage.setJSON(storage.KEYS.notificationFeed, next);
-      return next;
+    if (!user || !prefs[PREF_KEY_BY_TYPE[type]]) return;
+    notificationsService.addNotification(user.id, type, title, body).then((item) => {
+      setFeed((prev) => [item, ...prev]);
     });
   };
 
@@ -79,7 +72,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   const value = useMemo(
     () => ({ prefs, setPref, feed, unreadCount, markAllRead, markRead, addNotification }),
-    [prefs, feed, unreadCount]
+    [prefs, feed, unreadCount, user?.id]
   );
 
   return <NotificationContext.Provider value={value}>{children}</NotificationContext.Provider>;

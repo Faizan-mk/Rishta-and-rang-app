@@ -154,3 +154,45 @@ export const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
   rishtaRequests: true,
   productUpdates: false,
 };
+
+export interface PrivacyPrefs {
+  profileVisible: boolean;
+  onlineStatusVisible: boolean;
+  blurPhotos: boolean;
+}
+
+export const DEFAULT_PRIVACY_PREFS: PrivacyPrefs = {
+  profileVisible: true,
+  onlineStatusVisible: true,
+  blurPhotos: false,
+};
+
+export interface FavoriteProfile {
+  id: string;
+  kind: ProfileMode;
+  name: string;
+  age: number;
+  city: string;
+  photo: string;
+}
+
+export interface ViewedProfile {
+  id: string;
+  kind: ProfileMode;
+  name: string;
+  age: number;
+  city: string;
+  photo: string;
+  viewedAt: string;
+}
+
+export interface BlockedProfile {
+  id: string;
+  // Links back to the Discover/Rishta listing this block originated from (if any),
+  // so Discover/Rishta decks can exclude the profile even though `id` here is the
+  // match's own id, not the listing's.
+  sourceProfileId?: string;
+  name: string;
+  photo: string;
+  blockedAt: string;
+}

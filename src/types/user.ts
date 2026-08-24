@@ -90,12 +90,6 @@ export interface UserProfile {
   createdAt: string;
 }
 
-export interface StoredCredential {
-  email: string;
-  passwordHash: string;
-  userId: string;
-}
-
 // Accumulated across the 3-step signup flow (Signup [account+personal] -> IntentPhotos -> Selfie)
 // before a single account is created at the end.
 export interface OnboardingDraft {

@@ -1,17 +1,10 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { storage } from '../services/storage';
+import { privacyService } from '../services/privacyService';
+import { DEFAULT_PRIVACY_PREFS, PrivacyPrefs } from '../types/content';
+import { useAuth } from './AuthContext';
 
-export interface PrivacyPrefs {
-  profileVisible: boolean;
-  onlineStatusVisible: boolean;
-  blurPhotos: boolean;
-}
-
-export const DEFAULT_PRIVACY_PREFS: PrivacyPrefs = {
-  profileVisible: true,
-  onlineStatusVisible: true,
-  blurPhotos: false,
-};
+export type { PrivacyPrefs };
+export { DEFAULT_PRIVACY_PREFS };
 
 interface PrivacyContextValue {
   prefs: PrivacyPrefs;
@@ -21,21 +14,27 @@ interface PrivacyContextValue {
 const PrivacyContext = createContext<PrivacyContextValue | undefined>(undefined);
 
 export function PrivacyProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
   const [prefs, setPrefs] = useState<PrivacyPrefs>(DEFAULT_PRIVACY_PREFS);
 
   useEffect(() => {
-    storage.getJSON(storage.KEYS.privacyPrefs, DEFAULT_PRIVACY_PREFS).then(setPrefs);
-  }, []);
+    if (!user) {
+      setPrefs(DEFAULT_PRIVACY_PREFS);
+      return;
+    }
+    privacyService.fetchPrefs(user.id).then(setPrefs);
+  }, [user?.id]);
 
   const setPref = (key: keyof PrivacyPrefs, value: boolean) => {
+    if (!user) return;
     setPrefs((prev) => {
       const next = { ...prev, [key]: value };
-      storage.setJSON(storage.KEYS.privacyPrefs, next);
+      privacyService.setPrefs(user.id, next);
       return next;
     });
   };
 
-  const value = useMemo(() => ({ prefs, setPref }), [prefs]);
+  const value = useMemo(() => ({ prefs, setPref }), [prefs, user?.id]);
 
   return <PrivacyContext.Provider value={value}>{children}</PrivacyContext.Provider>;
 }

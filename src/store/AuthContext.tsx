@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { authService, SignupInput } from '../services/authService';
+import { supabase } from '../services/supabase';
 import type { UserProfile } from '../types/user';
 
 interface AuthContextValue {
@@ -23,6 +24,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .getCurrentUser()
       .then(setUser)
       .finally(() => setInitializing(false));
+
+    // Catches session loss we didn't initiate ourselves (expired refresh
+    // token, revoked session) so the UI falls back to the auth flow.
+    const { data: subscription } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') setUser(null);
+    });
+    return () => subscription.subscription.unsubscribe();
   }, []);
 
   const signup = useCallback(async (input: SignupInput) => {
@@ -47,7 +55,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const deleteAccount = useCallback(async () => {
     if (!user) return;
-    await authService.deleteAccount(user.id, user.email);
+    await authService.deleteAccount(user.id);
     setUser(null);
   }, [user]);
 

@@ -98,8 +98,8 @@ export function ProfileDetailScreen({ navigation, route }: Props) {
     });
     navigation.goBack();
   };
-  const onMessage = () => {
-    const match = getOrCreateMatchForProfile({ id: profile.id, name: profile.name, photo: profile.photos[0], mode: kind });
+  const onMessage = async () => {
+    const match = await getOrCreateMatchForProfile({ id: profile.id, name: profile.name, photo: profile.photos[0], mode: kind });
     navigation.navigate('Chat', { matchId: match.id });
   };
   const onCall = () => {

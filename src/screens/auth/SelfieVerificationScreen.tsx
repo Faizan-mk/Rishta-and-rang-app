@@ -93,6 +93,7 @@ export function SelfieVerificationScreen({ navigation, route }: Props) {
         bio: draft.bio,
         photos: draft.photos ?? [],
         selfieVerified: Boolean(selfieUri),
+        selfieUri: selfieUri ?? undefined,
         cnicNumber: draft.cnicNumber,
         cnicPhotoUri: cnicPhotoUri ?? undefined,
       });

@@ -1,18 +1,9 @@
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { storage } from '../services/storage';
-import type { ProfileMode } from '../types/user';
+import { viewHistoryService } from '../services/viewHistoryService';
+import type { ViewedProfile } from '../types/content';
+import { useAuth } from './AuthContext';
 
-export interface ViewedProfile {
-  id: string;
-  kind: ProfileMode;
-  name: string;
-  age: number;
-  city: string;
-  photo: string;
-  viewedAt: string;
-}
-
-const MAX_HISTORY = 60;
+export type { ViewedProfile };
 
 interface ViewHistoryContextValue {
   history: ViewedProfile[];
@@ -23,35 +14,34 @@ interface ViewHistoryContextValue {
 const ViewHistoryContext = createContext<ViewHistoryContextValue | undefined>(undefined);
 
 export function ViewHistoryProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
   const [history, setHistory] = useState<ViewedProfile[]>([]);
   // Avoids re-recording the same profile over and over while it just sits on screen.
   const lastRecordedId = useRef<string | null>(null);
 
   useEffect(() => {
-    storage.getJSON<ViewedProfile[]>(storage.KEYS.viewHistory, []).then(setHistory);
-  }, []);
-
-  const persist = (next: ViewedProfile[]) => {
-    setHistory(next);
-    storage.setJSON(storage.KEYS.viewHistory, next);
-  };
+    if (!user) {
+      setHistory([]);
+      return;
+    }
+    viewHistoryService.fetchHistory(user.id).then(setHistory);
+  }, [user?.id]);
 
   const recordView = (profile: Omit<ViewedProfile, 'viewedAt'>) => {
-    if (lastRecordedId.current === profile.id) return;
+    if (!user || lastRecordedId.current === profile.id) return;
     lastRecordedId.current = profile.id;
-    setHistory((prev) => {
-      const next = [{ ...profile, viewedAt: new Date().toISOString() }, ...prev.filter((p) => p.id !== profile.id)].slice(
-        0,
-        MAX_HISTORY
-      );
-      storage.setJSON(storage.KEYS.viewHistory, next);
-      return next;
-    });
+    const viewedAt = new Date().toISOString();
+    setHistory((prev) => [{ ...profile, viewedAt }, ...prev.filter((p) => p.id !== profile.id)]);
+    viewHistoryService.recordView(user.id, profile);
   };
 
-  const clearHistory = () => persist([]);
+  const clearHistory = () => {
+    if (!user) return;
+    setHistory([]);
+    viewHistoryService.clearHistory(user.id);
+  };
 
-  const value = useMemo(() => ({ history, recordView, clearHistory }), [history]);
+  const value = useMemo(() => ({ history, recordView, clearHistory }), [history, user?.id]);
 
   return <ViewHistoryContext.Provider value={value}>{children}</ViewHistoryContext.Provider>;
 }
