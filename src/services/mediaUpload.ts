@@ -3,6 +3,26 @@ import { supabase } from './supabase';
 const PUBLIC_BUCKET = 'public-media';
 const VERIFICATION_BUCKET = 'private-verification';
 
+const bucketsEnsured = new Set<string>();
+
+async function ensureBucket(bucket: string): Promise<void> {
+  if (bucketsEnsured.has(bucket)) return;
+
+  const { error } = await supabase.storage.getBucket(bucket);
+  if (error && error.message.includes('Bucket not found')) {
+    const isPublic = bucket === PUBLIC_BUCKET;
+    const { error: createError } = await supabase.storage.createBucket(bucket, {
+      public: isPublic,
+      fileSizeLimit: 10 * 1024 * 1024,
+    });
+    if (createError) {
+      console.warn(`[mediaUpload] createBucket "${bucket}" failed (may already exist or needs manual creation):`, createError.message);
+    }
+  }
+
+  bucketsEnsured.add(bucket);
+}
+
 // A local asset picked via expo-image-picker/expo-audio (file://, content://, ph://, ...).
 // Anything else is treated as an already-uploaded remote URL.
 export function isLocalUri(uri: string): boolean {
@@ -15,6 +35,7 @@ function extFromUri(uri: string, fallback: string): string {
 }
 
 async function uploadToBucket(bucket: string, path: string, localUri: string, contentType: string): Promise<void> {
+  await ensureBucket(bucket);
   const arraybuffer = await fetch(localUri).then((res) => res.arrayBuffer());
   const { error } = await supabase.storage.from(bucket).upload(path, arraybuffer, { contentType, upsert: true });
   if (error) throw error;
@@ -77,6 +98,7 @@ function pathFromPublicUrl(url: string): string {
 }
 
 async function signedVerificationUrl(path: string, expiresInSec = 60 * 60 * 24): Promise<string> {
+  await ensureBucket(VERIFICATION_BUCKET);
   const { data, error } = await supabase.storage.from(VERIFICATION_BUCKET).createSignedUrl(path, expiresInSec);
   if (error) throw error;
   return data.signedUrl;
@@ -84,6 +106,7 @@ async function signedVerificationUrl(path: string, expiresInSec = 60 * 60 * 24):
 
 async function removePhotos(paths: string[]): Promise<void> {
   if (!paths.length) return;
+  await ensureBucket(PUBLIC_BUCKET);
   await supabase.storage.from(PUBLIC_BUCKET).remove(paths);
 }
 

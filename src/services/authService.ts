@@ -1,6 +1,31 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import bcrypt from 'bcryptjs';
 import { supabase } from './supabase';
 import { mediaUpload } from './mediaUpload';
 import type { AppLanguage, Intent, ProfileMode, UserProfile } from '../types/user';
+
+const DRAFT_KEY_PREFIX = 'signup_draft_';
+
+async function saveSignupDraft(email: string, input: SignupInput): Promise<void> {
+  const key = DRAFT_KEY_PREFIX + email.trim().toLowerCase();
+  await AsyncStorage.setItem(key, JSON.stringify(input));
+}
+
+async function loadSignupDraft(email: string): Promise<SignupInput | null> {
+  const key = DRAFT_KEY_PREFIX + email.trim().toLowerCase();
+  const raw = await AsyncStorage.getItem(key);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as SignupInput;
+  } catch {
+    return null;
+  }
+}
+
+async function clearSignupDraft(email: string): Promise<void> {
+  const key = DRAFT_KEY_PREFIX + email.trim().toLowerCase();
+  await AsyncStorage.removeItem(key);
+}
 
 export interface SignupInput {
   fullName: string;
@@ -73,6 +98,7 @@ interface ProfileRow {
   has_used_trial: boolean;
   subscription_renews_at: string | null;
   created_at: string;
+  password_hash: string | null;
 }
 
 interface VerificationRow {
@@ -184,12 +210,35 @@ async function emailExists(email: string): Promise<boolean> {
 
 async function signup(input: SignupInput): Promise<UserProfile> {
   const email = input.email.trim().toLowerCase();
-  const { data: authData, error: authError } = await supabase.auth.signUp({ email, password: input.password });
+  const { data: authData, error: authError } = await supabase.auth.signUp({
+    email,
+    password: input.password,
+    options: {
+      data: {
+        full_name: input.fullName.trim(),
+        dob: input.dob,
+        gender: input.gender,
+        city: input.city.trim(),
+        bio: input.bio?.trim() ?? '',
+        intent: input.intent,
+        language: input.language,
+        cnic_number: input.cnicNumber,
+      },
+    },
+  });
   if (authError) throw new Error(authError.message);
 
   const userId = authData.user?.id;
-  if (!userId || !authData.session) {
-    throw new Error('Account created — check your inbox to confirm your email, then log in.');
+  if (!userId) {
+    throw new Error('Signup failed — no user ID returned.');
+  }
+
+  // If email confirmation is enabled, session will be null. The user must
+  // confirm their email first; profile creation will happen on first login.
+  // Save the onboarding draft so we can create the full profile on login.
+  if (!authData.session) {
+    await saveSignupDraft(email, input);
+    throw new Error('ACCOUNT_CREATED_NO_SESSION');
   }
 
   const [photoPaths, cnicPhotoPath, selfiePhotoPath] = await Promise.all([
@@ -200,6 +249,8 @@ async function signup(input: SignupInput): Promise<UserProfile> {
 
   const activeMode: ProfileMode = input.intent === 'matrimonial' ? 'rishta' : 'dating';
 
+  const passwordHash = await bcrypt.hash(input.password, 10);
+
   // upsert (not insert): if a prior signup attempt for this same auth user got
   // this far and then failed partway (network drop, app kill), retrying here
   // completes the row instead of dying on a duplicate-key error.
@@ -208,6 +259,7 @@ async function signup(input: SignupInput): Promise<UserProfile> {
       id: userId,
       full_name: input.fullName.trim(),
       email,
+      password_hash: passwordHash,
       dob: input.dob,
       gender: input.gender,
       city: input.city.trim(),
@@ -216,6 +268,13 @@ async function signup(input: SignupInput): Promise<UserProfile> {
       language: input.language,
       active_mode: activeMode,
       selfie_verified: Boolean(input.selfieVerified),
+      rishta_religion: '',
+      rishta_sect: '',
+      rishta_family_background: '',
+      rishta_education: '',
+      rishta_readiness: 'browsing',
+      is_explore_plus: false,
+      has_used_trial: false,
     },
     { onConflict: 'id' }
   );
@@ -251,10 +310,111 @@ async function login(email: string, password: string): Promise<UserProfile> {
     email: email.trim().toLowerCase(),
     password,
   });
-  if (error || !data.user) throw new Error('Incorrect email or password.');
+  if (error) {
+    if (error.message.includes('Email not confirmed')) {
+      throw new Error('EMAIL_NOT_CONFIRMED');
+    }
+    throw new Error('Incorrect email or password.');
+  }
+  if (!data.user) throw new Error('Incorrect email or password.');
 
-  const profile = await fetchFullProfile(data.user.id);
-  if (!profile) throw new Error('Account data could not be found.');
+  let profile = await fetchFullProfile(data.user.id);
+
+  // If auth user exists but profile row is missing, check for a saved
+  // onboarding draft (from a signup that was interrupted by email confirmation).
+  if (!profile) {
+    const draft = await loadSignupDraft(email);
+
+    if (draft) {
+      // Upload media from the saved draft now that we have a session.
+      const [photoPaths, cnicPhotoPath, selfiePhotoPath] = await Promise.all([
+        Promise.all((draft.photos ?? []).map((uri) => mediaUpload.uploadPhoto(data.user!.id, uri))),
+        draft.cnicPhotoUri ? mediaUpload.uploadCnicPhoto(data.user!.id, draft.cnicPhotoUri) : Promise.resolve(null),
+        draft.selfieUri ? mediaUpload.uploadSelfiePhoto(data.user!.id, draft.selfieUri) : Promise.resolve(null),
+      ]);
+
+      const activeMode: ProfileMode = draft.intent === 'matrimonial' ? 'rishta' : 'dating';
+
+      const passwordHash = await bcrypt.hash(draft.password, 10);
+
+      await supabase.from('profiles').upsert(
+        {
+          id: data.user!.id,
+          full_name: draft.fullName.trim(),
+          email,
+          password_hash: passwordHash,
+          dob: draft.dob,
+          gender: draft.gender,
+          city: draft.city.trim(),
+          bio: draft.bio?.trim() ?? '',
+          intent: draft.intent,
+          language: draft.language,
+          active_mode: activeMode,
+          selfie_verified: Boolean(draft.selfieVerified),
+          rishta_religion: '',
+          rishta_sect: '',
+          rishta_family_background: '',
+          rishta_education: '',
+          rishta_readiness: 'browsing',
+          is_explore_plus: false,
+          has_used_trial: false,
+        },
+        { onConflict: 'id' }
+      );
+
+      await supabase.from('profile_photos').delete().eq('profile_id', data.user!.id);
+      if (photoPaths.length) {
+        await supabase
+          .from('profile_photos')
+          .insert(photoPaths.map((storage_path, position) => ({ profile_id: data.user!.id, storage_path, position })));
+      }
+
+      await supabase.from('profile_verification').upsert(
+        {
+          profile_id: data.user!.id,
+          cnic_number: draft.cnicNumber,
+          cnic_photo_path: cnicPhotoPath,
+          cnic_verified: true,
+          selfie_photo_path: selfiePhotoPath,
+        },
+        { onConflict: 'profile_id' }
+      );
+
+      await clearSignupDraft(email);
+      profile = await fetchFullProfile(data.user.id);
+    } else {
+      // No draft — create a minimal profile so the user isn't stuck.
+      const meta = data.user.user_metadata ?? {};
+      await supabase.from('profiles').upsert(
+        {
+          id: data.user.id,
+          full_name: meta.full_name ?? data.user.email?.split('@')[0] ?? 'User',
+          email: data.user.email ?? email,
+          password_hash: null,
+          dob: meta.dob ?? '2000-01-01',
+          gender: meta.gender ?? 'other',
+          city: meta.city ?? '',
+          bio: '',
+          intent: 'casual',
+          language: 'en',
+          active_mode: 'dating',
+          selfie_verified: false,
+          rishta_religion: '',
+          rishta_sect: '',
+          rishta_family_background: '',
+          rishta_education: '',
+          rishta_readiness: 'browsing',
+          is_explore_plus: false,
+          has_used_trial: false,
+        },
+        { onConflict: 'id' }
+      );
+      profile = await fetchFullProfile(data.user.id);
+    }
+
+    if (!profile) throw new Error('Could not create profile.');
+  }
+
   return profile;
 }
 

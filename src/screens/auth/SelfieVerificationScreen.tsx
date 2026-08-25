@@ -99,7 +99,14 @@ export function SelfieVerificationScreen({ navigation, route }: Props) {
       });
       // RootNavigator swaps to AppNavigator automatically once `user` is set.
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Something went wrong.');
+      const msg = e instanceof Error ? e.message : 'Something went wrong.';
+      if (msg === 'ACCOUNT_CREATED_NO_SESSION') {
+        setError(t('signup.emailConfirmRequired') || 'Account created! Check your email to confirm, then log in.');
+        // Navigate back to login after a short delay
+        setTimeout(() => navigation.navigate('Login'), 3000);
+      } else {
+        setError(msg);
+      }
       setSubmitting(false);
     }
   };

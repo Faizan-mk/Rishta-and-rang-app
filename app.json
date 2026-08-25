@@ -56,7 +56,8 @@
           "backgroundColor": "#E6F4FE"
         }
       ],
-      "expo-video"
+      "expo-video",
+      "expo-asset"
     ]
   }
 }
