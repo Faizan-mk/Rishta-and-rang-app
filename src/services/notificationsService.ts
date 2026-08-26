@@ -1,72 +1,34 @@
-import { supabase } from './supabase';
+import { addDoc, getDoc, getDocs, orderBy, query, setDoc, updateDoc, writeBatch } from 'firebase/firestore';
+import { db } from './firebase';
+import { notificationDoc, notificationPrefsDoc, notificationsCollection } from './firestorePaths';
 import { DEFAULT_NOTIFICATION_PREFS, NotificationItem, NotificationPrefs } from '../types/content';
 
-interface NotificationRow {
-  id: string;
+interface NotificationDoc {
   type: NotificationItem['type'];
   title: string;
   body: string;
-  created_at: string;
+  createdAt: string;
   read: boolean;
 }
 
-interface NotificationPrefsRow {
-  new_matches: boolean;
-  messages: boolean;
-  likes: boolean;
-  rishta_requests: boolean;
-  product_updates: boolean;
-}
-
-function mapNotification(row: NotificationRow): NotificationItem {
-  return { id: row.id, type: row.type, title: row.title, body: row.body, createdAt: row.created_at, read: row.read };
-}
-
-function mapPrefs(row: NotificationPrefsRow | null): NotificationPrefs {
-  if (!row) return DEFAULT_NOTIFICATION_PREFS;
-  return {
-    newMatches: row.new_matches,
-    messages: row.messages,
-    likes: row.likes,
-    rishtaRequests: row.rishta_requests,
-    productUpdates: row.product_updates,
-  };
+function mapNotification(id: string, data: NotificationDoc): NotificationItem {
+  return { id, type: data.type, title: data.title, body: data.body, createdAt: data.createdAt, read: data.read };
 }
 
 async function fetchFeed(profileId: string): Promise<NotificationItem[]> {
-  const { data, error } = await supabase
-    .from('notifications')
-    .select('id, type, title, body, created_at, read')
-    .eq('profile_id', profileId)
-    .order('created_at', { ascending: false })
-    .returns<NotificationRow[]>();
-  if (error) throw error;
-  return (data ?? []).map(mapNotification);
+  const snap = await getDocs(query(notificationsCollection(profileId), orderBy('createdAt', 'desc')));
+  return snap.docs.map((entry) => mapNotification(entry.id, entry.data() as NotificationDoc));
 }
 
 async function fetchPrefs(profileId: string): Promise<NotificationPrefs> {
-  const { data, error } = await supabase
-    .from('notification_prefs')
-    .select('new_matches, messages, likes, rishta_requests, product_updates')
-    .eq('profile_id', profileId)
-    .maybeSingle<NotificationPrefsRow>();
-  if (error) throw error;
-  return mapPrefs(data);
+  const snap = await getDoc(notificationPrefsDoc(profileId));
+  if (!snap.exists()) return DEFAULT_NOTIFICATION_PREFS;
+  const data = snap.data() as Partial<NotificationPrefs>;
+  return { ...DEFAULT_NOTIFICATION_PREFS, ...data };
 }
 
 async function setPref(profileId: string, next: NotificationPrefs): Promise<void> {
-  const { error } = await supabase.from('notification_prefs').upsert(
-    {
-      profile_id: profileId,
-      new_matches: next.newMatches,
-      messages: next.messages,
-      likes: next.likes,
-      rishta_requests: next.rishtaRequests,
-      product_updates: next.productUpdates,
-    },
-    { onConflict: 'profile_id' }
-  );
-  if (error) throw error;
+  await setDoc(notificationPrefsDoc(profileId), next);
 }
 
 async function addNotification(
@@ -75,23 +37,27 @@ async function addNotification(
   title: string,
   body: string
 ): Promise<NotificationItem> {
-  const { data, error } = await supabase
-    .from('notifications')
-    .insert({ profile_id: profileId, type, title, body })
-    .select('id, type, title, body, created_at, read')
-    .single<NotificationRow>();
-  if (error) throw error;
-  return mapNotification(data);
+  const data: NotificationDoc = { type, title, body, createdAt: new Date().toISOString(), read: false };
+  const ref = await addDoc(notificationsCollection(profileId), data);
+  return mapNotification(ref.id, data);
 }
 
 async function markAllRead(profileId: string): Promise<void> {
-  const { error } = await supabase.from('notifications').update({ read: true }).eq('profile_id', profileId);
-  if (error) throw error;
+  const snap = await getDocs(notificationsCollection(profileId));
+  const unread = snap.docs.filter((entry) => !(entry.data() as NotificationDoc).read);
+  if (!unread.length) return;
+
+  // Firestore has no "update where"; batch the individual writes instead.
+  // 500 is the hard per-batch limit.
+  for (let i = 0; i < unread.length; i += 500) {
+    const batch = writeBatch(db);
+    for (const entry of unread.slice(i, i + 500)) batch.update(entry.ref, { read: true });
+    await batch.commit();
+  }
 }
 
-async function markRead(id: string): Promise<void> {
-  const { error } = await supabase.from('notifications').update({ read: true }).eq('id', id);
-  if (error) throw error;
+async function markRead(profileId: string, id: string): Promise<void> {
+  await updateDoc(notificationDoc(profileId, id), { read: true });
 }
 
 export const notificationsService = { fetchFeed, fetchPrefs, setPref, addNotification, markAllRead, markRead };

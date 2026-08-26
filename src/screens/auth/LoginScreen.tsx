@@ -41,12 +41,7 @@ export function LoginScreen({ navigation }: Props) {
       await login(email, password);
       // RootNavigator swaps to AppNavigator automatically once `user` is set.
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Something went wrong.';
-      if (msg === 'EMAIL_NOT_CONFIRMED') {
-        setError(t('login.emailNotConfirmed') || 'Please confirm your email first. Check your inbox for the confirmation link.');
-      } else {
-        setError(msg);
-      }
+      setError(e instanceof Error ? e.message : 'Something went wrong.');
     } finally {
       setLoading(false);
     }

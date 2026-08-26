@@ -87,7 +87,7 @@
   },
   "language": {
     "title": "Choose your language",
-    "subtitle": "Dating and rishta, in one app.",
+    "subtitle": "Friends and rishta, in one app.",
     "english": "English",
     "urdu": "اردو",
     "roman": "Roman English"
@@ -111,7 +111,7 @@
     "browseRishta": "Browse Rishta",
     "editProfile": "Edit profile",
     "moveToRishtaTitle": "The signature move",
-    "moveToRishtaBody": "When a dating conversation gets serious, either of you can send a 'Move to Rishta' request right from chat.",
+    "moveToRishtaBody": "When a friendship conversation gets serious, either of you can send a 'Move to Rishta' request right from chat.",
     "recentActivity": "Recent activity",
     "likesWidgetTitle": "Daily likes",
     "likesUsed": "{used} of {limit} likes used today",
@@ -121,7 +121,7 @@
   },
   "discover": {
     "title": "Discover",
-    "subtitle": "Dating Mode",
+    "subtitle": "Friend Mode",
     "empty": "You're all caught up. Check back soon for new profiles.",
     "like": "Like",
     "pass": "Pass",
@@ -214,7 +214,7 @@
   "profile": {
     "title": "Profile",
     "editProfile": "Edit profile",
-    "datingMode": "Dating",
+    "datingMode": "Friend",
     "rishtaMode": "Rishta",
     "about": "About",
     "vibeTags": "Vibe tags",
@@ -332,7 +332,10 @@
     "deleteAccount": "Delete account",
     "deleteAccountConfirmTitle": "Delete your account?",
     "deleteAccountConfirmBody": "This permanently removes your profile, matches, and messages. This can't be undone.",
-    "deleteAccountConfirmLabel": "Delete account"
+    "deleteAccountConfirmLabel": "Delete account",
+    "deleteAccountFailedTitle": "Could not delete account",
+    "deleteAccountReauth": "For your security, log out and log back in, then try deleting your account again. Nothing has been deleted yet.",
+    "deleteAccountFailedBody": "Something went wrong while deleting your account. Please try again."
   },
   "cnic": {
     "title": "CNIC / ID verification",
@@ -362,7 +365,7 @@
   },
   "wali": {
     "title": "Wali Dashboard",
-    "explainer": "Invite a wali (guardian) to stay in the loop on your rishta-stage matches — the conversations that have moved from dating to a serious, family-involved stage.",
+    "explainer": "Invite a wali (guardian) to stay in the loop on your rishta-stage matches — the conversations that have moved from friendship to a serious, family-involved stage.",
     "name": "Wali's name",
     "namePlaceholder": "e.g. Abu Bakr",
     "contact": "Wali's contact",

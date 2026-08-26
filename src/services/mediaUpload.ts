@@ -1,27 +1,21 @@
-import { supabase } from './supabase';
-
-const PUBLIC_BUCKET = 'public-media';
-const VERIFICATION_BUCKET = 'private-verification';
-
-const bucketsEnsured = new Set<string>();
-
-async function ensureBucket(bucket: string): Promise<void> {
-  if (bucketsEnsured.has(bucket)) return;
-
-  const { error } = await supabase.storage.getBucket(bucket);
-  if (error && error.message.includes('Bucket not found')) {
-    const isPublic = bucket === PUBLIC_BUCKET;
-    const { error: createError } = await supabase.storage.createBucket(bucket, {
-      public: isPublic,
-      fileSizeLimit: 10 * 1024 * 1024,
-    });
-    if (createError) {
-      console.warn(`[mediaUpload] createBucket "${bucket}" failed (may already exist or needs manual creation):`, createError.message);
-    }
-  }
-
-  bucketsEnsured.add(bucket);
-}
+// ---------------------------------------------------------------------------
+// TEMPORARY PLACEHOLDER — no remote storage is wired up yet.
+//
+// Firebase Cloud Storage needs the paid Blaze plan, and we haven't picked a
+// free alternative yet. So that auth, profiles, discovery and chat can be built
+// and tested in the meantime, every "upload" here just hands the local device
+// URI straight back, and that URI is what gets written to Firestore.
+//
+// What this means while the placeholder is in place:
+//   · Photos, intros and chat media only render on the device that picked them.
+//     Another device (or a reinstall) sees a broken/blank image.
+//   · Nothing is actually deleted when a photo is removed.
+//   · CNIC/selfie images are NOT stored anywhere off-device.
+//
+// Everything that consumes media goes through this module and nothing else, so
+// swapping in a real backend later means rewriting only this file — no changes
+// to authService, matchesService, discoveryService or any screen.
+// ---------------------------------------------------------------------------
 
 // A local asset picked via expo-image-picker/expo-audio (file://, content://, ph://, ...).
 // Anything else is treated as an already-uploaded remote URL.
@@ -29,98 +23,41 @@ export function isLocalUri(uri: string): boolean {
   return !/^https?:\/\//i.test(uri);
 }
 
-function extFromUri(uri: string, fallback: string): string {
-  const match = /\.([a-zA-Z0-9]+)(\?.*)?$/.exec(uri);
-  return match ? match[1].toLowerCase() : fallback;
+/** Placeholder: returns the local URI unchanged instead of uploading. */
+async function passthrough(_userId: string, localUri: string): Promise<string> {
+  return localUri;
 }
 
-async function uploadToBucket(bucket: string, path: string, localUri: string, contentType: string): Promise<void> {
-  await ensureBucket(bucket);
-  const arraybuffer = await fetch(localUri).then((res) => res.arrayBuffer());
-  const { error } = await supabase.storage.from(bucket).upload(path, arraybuffer, { contentType, upsert: true });
-  if (error) throw error;
+/** Placeholder: returns the local URI unchanged instead of uploading. */
+async function passthroughChat(_userId: string, _matchId: string, localUri: string): Promise<string> {
+  return localUri;
 }
 
-async function uploadPhoto(userId: string, localUri: string): Promise<string> {
-  const path = `${userId}/photos/${Date.now()}_${Math.floor(Math.random() * 1e6)}.${extFromUri(localUri, 'jpg')}`;
-  await uploadToBucket(PUBLIC_BUCKET, path, localUri, 'image/jpeg');
-  return path;
-}
-
-async function uploadVideoIntro(userId: string, localUri: string): Promise<string> {
-  const path = `${userId}/video-intro/${Date.now()}.${extFromUri(localUri, 'mp4')}`;
-  await uploadToBucket(PUBLIC_BUCKET, path, localUri, 'video/mp4');
-  return path;
-}
-
-async function uploadVoiceIntro(userId: string, localUri: string): Promise<string> {
-  const path = `${userId}/voice-intro/${Date.now()}.${extFromUri(localUri, 'm4a')}`;
-  await uploadToBucket(PUBLIC_BUCKET, path, localUri, 'audio/m4a');
-  return path;
-}
-
-async function uploadCnicPhoto(userId: string, localUri: string): Promise<string> {
-  const path = `${userId}/cnic.${extFromUri(localUri, 'jpg')}`;
-  await uploadToBucket(VERIFICATION_BUCKET, path, localUri, 'image/jpeg');
-  return path;
-}
-
-async function uploadSelfiePhoto(userId: string, localUri: string): Promise<string> {
-  const path = `${userId}/selfie.${extFromUri(localUri, 'jpg')}`;
-  await uploadToBucket(VERIFICATION_BUCKET, path, localUri, 'image/jpeg');
-  return path;
-}
-
-async function uploadChatImage(userId: string, matchId: string, localUri: string): Promise<string> {
-  const path = `${userId}/chat/${matchId}/${Date.now()}_${Math.floor(Math.random() * 1e6)}.${extFromUri(localUri, 'jpg')}`;
-  await uploadToBucket(PUBLIC_BUCKET, path, localUri, 'image/jpeg');
-  return path;
-}
-
-async function uploadChatAudio(userId: string, matchId: string, localUri: string): Promise<string> {
-  const path = `${userId}/chat/${matchId}/${Date.now()}_${Math.floor(Math.random() * 1e6)}.${extFromUri(localUri, 'm4a')}`;
-  await uploadToBucket(PUBLIC_BUCKET, path, localUri, 'audio/m4a');
-  return path;
-}
-
+/** Placeholder: paths and URLs are the same thing while media stays local. */
 function publicUrl(path: string): string {
-  return supabase.storage.from(PUBLIC_BUCKET).getPublicUrl(path).data.publicUrl;
+  return path;
 }
 
-// Public-media paths are exposed to the app as full public URLs. When a
-// profile is re-saved with an unchanged photo, we need the storage path back
-// to avoid re-uploading — this reverses publicUrl().
-function pathFromPublicUrl(url: string): string {
-  const marker = `/object/public/${PUBLIC_BUCKET}/`;
-  const index = url.indexOf(marker);
-  if (index === -1) throw new Error(`Not a ${PUBLIC_BUCKET} public URL: ${url}`);
-  return url.slice(index + marker.length);
+/** Placeholder: verification media is never uploaded, so the path is the URI. */
+async function verificationUrl(path: string): Promise<string | undefined> {
+  return path || undefined;
 }
 
-async function signedVerificationUrl(path: string, expiresInSec = 60 * 60 * 24): Promise<string> {
-  await ensureBucket(VERIFICATION_BUCKET);
-  const { data, error } = await supabase.storage.from(VERIFICATION_BUCKET).createSignedUrl(path, expiresInSec);
-  if (error) throw error;
-  return data.signedUrl;
-}
-
-async function removePhotos(paths: string[]): Promise<void> {
-  if (!paths.length) return;
-  await ensureBucket(PUBLIC_BUCKET);
-  await supabase.storage.from(PUBLIC_BUCKET).remove(paths);
+/** Placeholder: nothing was uploaded, so there is nothing to delete. */
+async function removeFiles(_urls: string[]): Promise<void> {
+  // no-op
 }
 
 export const mediaUpload = {
-  uploadPhoto,
-  uploadVideoIntro,
-  uploadVoiceIntro,
-  uploadCnicPhoto,
-  uploadSelfiePhoto,
-  uploadChatImage,
-  uploadChatAudio,
+  uploadPhoto: passthrough,
+  uploadVideoIntro: passthrough,
+  uploadVoiceIntro: passthrough,
+  uploadCnicPhoto: passthrough,
+  uploadSelfiePhoto: passthrough,
+  uploadChatImage: passthroughChat,
+  uploadChatAudio: passthroughChat,
   publicUrl,
-  pathFromPublicUrl,
-  signedVerificationUrl,
-  removePhotos,
+  verificationUrl,
+  removeFiles,
   isLocalUri,
 };

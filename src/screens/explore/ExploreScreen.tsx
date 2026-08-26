@@ -8,10 +8,9 @@ import type { MainTabScreenProps } from '../../navigation/types';
 import { TAB_BAR_BASE_HEIGHT, useHideTabBarOnScroll } from '../../store/TabBarVisibilityContext';
 import { Button } from '../../components/common/Button';
 import { StatCard } from '../../components/dashboard/StatCard';
-import { mockDiscoverProfiles } from '../../data/mockDiscover';
-import { mockRishtaProfiles } from '../../data/mockRishta';
 import { mockEvents } from '../../data/mockEvents';
 import type { DiscoverProfile, RishtaListingProfile } from '../../types/content';
+import { useDiscovery } from '../../store/DiscoveryContext';
 import { useLanguage } from '../../store/LanguageContext';
 import { useTheme } from '../../store/ThemeContext';
 import { useAuth } from '../../store/AuthContext';
@@ -46,6 +45,7 @@ export function ExploreScreen({ navigation }: Props) {
   const { prefs } = usePrivacy();
   const { history, clearHistory } = useViewHistory();
   const { confirm } = useDialog();
+  const { datingProfiles, rishtaProfiles } = useDiscovery();
   const [tab, setTab] = useState<ExploreTab>('forYou');
   const [activeEvent, setActiveEvent] = useState<(typeof mockEvents)[number] | null>(null);
   const insets = useSafeAreaInsets();
@@ -59,14 +59,14 @@ export function ExploreScreen({ navigation }: Props) {
   );
 
   const combinedPool: ExploreProfile[] = useMemo(() => {
-    const dating = oppositeGenderProfiles(mockDiscoverProfiles, user?.gender)
+    const dating = oppositeGenderProfiles(datingProfiles, user?.gender)
       .filter((p) => !blockedProfileIds.has(p.id))
       .map((p) => ({ ...p, kind: 'dating' as const }));
-    const rishta = oppositeGenderProfiles(mockRishtaProfiles, user?.gender)
+    const rishta = oppositeGenderProfiles(rishtaProfiles, user?.gender)
       .filter((p) => !blockedProfileIds.has(p.id))
       .map((p) => ({ ...p, kind: 'rishta' as const }));
     return [...dating, ...rishta];
-  }, [user?.gender, blockedProfileIds]);
+  }, [user?.gender, blockedProfileIds, datingProfiles, rishtaProfiles]);
 
   const likesInFilters = prefs.profileVisible ? combinedPool.slice(0, 4) : [];
   const currentlyAvailable = combinedPool.slice(4, 8);
@@ -345,7 +345,7 @@ const makeStyles = (colors: Palette) =>
       backgroundColor: colors.skeleton,
       marginBottom: spacing.lg,
     },
-    teaserImage: StyleSheet.absoluteFill,
+    teaserImage: { ...StyleSheet.absoluteFillObject },
     teaserGradient: {
       flex: 1,
       justifyContent: 'flex-end',

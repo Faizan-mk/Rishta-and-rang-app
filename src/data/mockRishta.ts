@@ -1,8 +1,7 @@
 import type { RishtaListingProfile } from '../types/content';
 
-function gallery(...imgs: number[]): string[] {
-  return imgs.map((n) => `https://i.pravatar.cc/600?img=${n}`);
-}
+const W = (n: number) => `https://randomuser.me/api/portraits/women/${n}.jpg`;
+const M = (n: number) => `https://randomuser.me/api/portraits/men/${n}.jpg`;
 
 // Placeholder demo data only — a real backend would replace this with actual
 // matrimonial listings filtered server-side.
@@ -18,7 +17,7 @@ const rawRishtaProfiles: RishtaListingProfile[] = [
     education: 'MBA, LUMS',
     familyBackground: 'Small family, settled in Lahore, father is a retired army officer.',
     readiness: 'ready_now',
-    photos: gallery(25, 26),
+    photos: [W(25), W(26)],
   },
   {
     id: 'r2',
@@ -31,7 +30,7 @@ const rawRishtaProfiles: RishtaListingProfile[] = [
     education: 'BSc Computer Science, FAST',
     familyBackground: 'Joint family, business background, two siblings.',
     readiness: 'few_months',
-    photos: gallery(33, 34),
+    photos: [M(33), M(34)],
   },
   {
     id: 'r3',
@@ -44,7 +43,7 @@ const rawRishtaProfiles: RishtaListingProfile[] = [
     education: 'MSc Economics',
     familyBackground: 'Nuclear family, both parents retired government officers.',
     readiness: 'ready_now',
-    photos: gallery(48, 49),
+    photos: [W(48), W(49)],
   },
   {
     id: 'r4',
@@ -57,7 +56,7 @@ const rawRishtaProfiles: RishtaListingProfile[] = [
     education: 'Chartered Accountant',
     familyBackground: 'Small family, settled in DHA, father runs a textile business.',
     readiness: 'browsing',
-    photos: gallery(15, 16),
+    photos: [M(15), M(16)],
   },
   {
     id: 'r5',
@@ -70,7 +69,7 @@ const rawRishtaProfiles: RishtaListingProfile[] = [
     education: 'Doctor, King Edward Medical University',
     familyBackground: 'Large joint family, both parents in medicine.',
     readiness: 'few_months',
-    photos: gallery(44, 45),
+    photos: [W(44), W(45)],
   },
   {
     id: 'r6',
@@ -83,7 +82,7 @@ const rawRishtaProfiles: RishtaListingProfile[] = [
     education: 'BBA, IBA',
     familyBackground: 'Small family, both parents in business.',
     readiness: 'ready_now',
-    photos: gallery(29, 30),
+    photos: [W(29), W(30)],
   },
   {
     id: 'r7',
@@ -96,7 +95,7 @@ const rawRishtaProfiles: RishtaListingProfile[] = [
     education: 'MPhil Islamic Studies',
     familyBackground: 'Religious family, father is a khateeb.',
     readiness: 'few_months',
-    photos: gallery(17, 18),
+    photos: [M(17), M(18)],
   },
   {
     id: 'r8',
@@ -109,7 +108,7 @@ const rawRishtaProfiles: RishtaListingProfile[] = [
     education: 'MPhil Chemistry, PU',
     familyBackground: 'Nuclear family, father is a university professor, one younger brother.',
     readiness: 'ready_now',
-    photos: gallery(36, 37),
+    photos: [W(36), W(37)],
     heightCm: 158,
     maritalStatus: 'single',
     hasChildren: false,
@@ -138,7 +137,7 @@ const rawRishtaProfiles: RishtaListingProfile[] = [
     education: 'MBBS, Dow Medical College',
     familyBackground: 'Small family, settled in Karachi, both parents doctors.',
     readiness: 'few_months',
-    photos: gallery(38, 39),
+    photos: [M(38), M(39)],
     heightCm: 180,
     maritalStatus: 'single',
     hasChildren: false,
@@ -163,7 +162,7 @@ const rawRishtaProfiles: RishtaListingProfile[] = [
     education: 'LLB, Punjab University',
     familyBackground: 'Joint family, father is a lawyer, close-knit extended family in Multan.',
     readiness: 'browsing',
-    photos: gallery(40, 41),
+    photos: [W(40), W(41)],
     heightCm: 162,
     maritalStatus: 'widowed',
     hasChildren: true,

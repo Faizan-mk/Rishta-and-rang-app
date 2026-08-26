@@ -1,0 +1,46 @@
+rules_version = '2';
+
+// ---------------------------------------------------------------------------
+// Rishta & Rang — Cloud Storage security rules
+//
+// Deploy: npx firebase deploy --only storage
+//
+//   public/{uid}/...        profile photos, voice/video intros, chat media.
+//                           Readable by any signed-in member (discovery decks
+//                           and chat render other people's media); writable
+//                           only by the owner.
+//   verification/{uid}/...  CNIC scan + selfie. Owner-only, both ways — this is
+//                           the replacement for the private Supabase bucket.
+// ---------------------------------------------------------------------------
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isAllowedMedia() {
+      return request.resource.size < 25 * 1024 * 1024
+        && (request.resource.contentType.matches('image/.*')
+            || request.resource.contentType.matches('audio/.*')
+            || request.resource.contentType.matches('video/.*'));
+    }
+
+    match /public/{uid}/{allPaths=**} {
+      allow read: if isSignedIn();
+      allow write: if isOwner(uid) && isAllowedMedia();
+      allow delete: if isOwner(uid);
+    }
+
+    match /verification/{uid}/{allPaths=**} {
+      allow read: if isOwner(uid);
+      allow write: if isOwner(uid) && isAllowedMedia();
+      allow delete: if isOwner(uid);
+    }
+  }
+}

@@ -7,7 +7,7 @@ import Animated, { FadeInUp } from 'react-native-reanimated';
 import type { AppStackScreenProps } from '../../navigation/types';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { Button } from '../../components/common/Button';
-import { mockDiscoverProfiles } from '../../data/mockDiscover';
+import { useDiscovery } from '../../store/DiscoveryContext';
 import { useLanguage } from '../../store/LanguageContext';
 import { useAuth } from '../../store/AuthContext';
 import { useTheme } from '../../store/ThemeContext';
@@ -40,6 +40,7 @@ export function ExplorePlusScreen({ navigation }: Props) {
   const { used, limit } = useLikeLimit();
   const { prefs } = usePrivacy();
   const { blockedProfiles } = useMatches();
+  const { datingProfiles } = useDiscovery();
   const [upgrading, setUpgrading] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [plan, setPlan] = useState<Plan>('monthly');
@@ -53,11 +54,11 @@ export function ExplorePlusScreen({ navigation }: Props) {
   const admirers = useMemo(
     () =>
       prefs.profileVisible
-        ? oppositeGenderProfiles(mockDiscoverProfiles, user?.gender)
+        ? oppositeGenderProfiles(datingProfiles, user?.gender)
             .filter((p) => !blockedProfileIds.has(p.id))
             .slice(0, 4)
         : [],
-    [user?.gender, prefs.profileVisible, blockedProfileIds]
+    [user?.gender, prefs.profileVisible, blockedProfileIds, datingProfiles]
   );
 
   if (!user) return null;

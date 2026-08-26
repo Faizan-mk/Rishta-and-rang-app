@@ -9,6 +9,7 @@ dist/
 web-build/
 expo-env.d.ts
 .claude
+
 # Native
 .kotlin/
 *.orig.*
@@ -40,3 +41,8 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Firebase
+service-account*.json
+.firebase/
+firebase-debug.log

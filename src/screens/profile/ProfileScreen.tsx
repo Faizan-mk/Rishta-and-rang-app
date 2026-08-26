@@ -31,7 +31,6 @@ import { ageFromDob } from '../../utils/date';
 import { profileCompletion } from '../../utils/profileCompletion';
 import { radius, spacing, typography } from '../../theme';
 import type { Palette } from '../../theme/palettes';
-import type { ProfileMode } from '../../types/user';
 
 type Props = MainTabScreenProps<'Profile'>;
 
@@ -45,7 +44,7 @@ export function ProfileScreen({ navigation }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
-  const { user, updateUser, logout } = useAuth();
+  const { user, updateUser, setActiveMode, logout } = useAuth();
   const { confirm, notify } = useDialog();
   const { unreadCount } = useNotifications();
   const [requestingBureau, setRequestingBureau] = useState(false);
@@ -67,10 +66,6 @@ export function ProfileScreen({ navigation }: Props) {
   const age = ageFromDob(user.dob);
   const completion = profileCompletion(user);
   const memberSince = new Date(user.createdAt).getFullYear();
-
-  const setMode = (mode: ProfileMode) => {
-    updateUser({ ...user, activeMode: mode });
-  };
 
   const onLogout = async () => {
     const confirmed = await confirm({
@@ -185,7 +180,7 @@ export function ProfileScreen({ navigation }: Props) {
       </View>
 
       <View style={styles.section}>
-        <ModeToggle mode={user.activeMode} onChange={setMode} datingLabel={t('profile.datingMode')} rishtaLabel={t('profile.rishtaMode')} />
+        <ModeToggle mode={user.activeMode} onChange={setActiveMode} datingLabel={t('profile.datingMode')} rishtaLabel={t('profile.rishtaMode')} />
       </View>
 
       {user.bio ? (

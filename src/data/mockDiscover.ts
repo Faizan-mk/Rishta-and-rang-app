@@ -1,8 +1,7 @@
 import type { DiscoverProfile } from '../types/content';
 
-function gallery(...imgs: number[]): string[] {
-  return imgs.map((n) => `https://i.pravatar.cc/600?img=${n}`);
-}
+const W = (n: number) => `https://randomuser.me/api/portraits/women/${n}.jpg`;
+const M = (n: number) => `https://randomuser.me/api/portraits/men/${n}.jpg`;
 
 // Placeholder demo data only — a real backend would replace this with actual
 // candidate profiles from the matching service.
@@ -15,7 +14,7 @@ const rawDiscoverProfiles: DiscoverProfile[] = [
     city: 'Lahore',
     bio: 'Coffee over cold brew debates, weekend hiker, and a sucker for old Urdu poetry.',
     vibeTags: ['bookworm', 'traveller', 'deen-focused'],
-    photos: gallery(47, 48, 49),
+    photos: [W(47), W(48), W(49)],
     heightCm: 163,
     maritalStatus: 'single',
     hasChildren: false,
@@ -49,7 +48,7 @@ const rawDiscoverProfiles: DiscoverProfile[] = [
     city: 'Karachi',
     bio: 'Software engineer by day, amateur chef by night. Still looking for the perfect biryani recipe.',
     vibeTags: ['foodie', 'cricket fan', 'early riser'],
-    photos: gallery(12, 13),
+    photos: [M(12), M(13)],
     maritalStatus: 'single',
     hasChildren: false,
     occupation: 'Software Engineer',
@@ -73,7 +72,7 @@ const rawDiscoverProfiles: DiscoverProfile[] = [
     city: 'Islamabad',
     bio: 'Design student, plant mom, and terminally online about K-dramas.',
     vibeTags: ['creative', 'homebody', 'ambivert'],
-    photos: gallery(32, 33, 34),
+    photos: [W(32), W(33), W(34)],
     maritalStatus: 'single',
     hasChildren: false,
     occupation: 'Design Student',
@@ -93,7 +92,7 @@ const rawDiscoverProfiles: DiscoverProfile[] = [
     city: 'Lahore',
     bio: 'Weekend cricketer, deen-focused, believes the best conversations happen over chai.',
     vibeTags: ['deen-focused', 'sporty', 'family-oriented'],
-    photos: gallery(51, 52),
+    photos: [M(51), M(52)],
     maritalStatus: 'single',
     hasChildren: false,
     occupation: 'Marketing Manager',
@@ -121,7 +120,7 @@ const rawDiscoverProfiles: DiscoverProfile[] = [
     city: 'Faisalabad',
     bio: 'Doctor, dog person, and firmly of the opinion that dessert is a food group.',
     vibeTags: ['ambitious', 'dog lover', 'traveller'],
-    photos: gallery(45, 46),
+    photos: [W(45), W(46)],
     maritalStatus: 'divorced',
     hasChildren: false,
     occupation: 'Doctor',
@@ -147,7 +146,7 @@ const rawDiscoverProfiles: DiscoverProfile[] = [
     city: 'Multan',
     bio: 'Entrepreneur building a logistics startup. Looking for someone who gets the hustle.',
     vibeTags: ['entrepreneur', 'deen-focused', 'night owl'],
-    photos: gallery(14, 15),
+    photos: [M(14), M(15)],
     maritalStatus: 'single',
     hasChildren: false,
     occupation: 'Entrepreneur',
@@ -173,7 +172,7 @@ const rawDiscoverProfiles: DiscoverProfile[] = [
     city: 'Karachi',
     bio: 'Marine biology grad turned science teacher. Ask me about sharks, I will not stop talking.',
     vibeTags: ['nerdy', 'traveller', 'animal lover'],
-    photos: gallery(20, 21, 22),
+    photos: [W(20), W(21), W(22)],
     heightCm: 160,
     maritalStatus: 'single',
     hasChildren: false,
@@ -201,7 +200,7 @@ const rawDiscoverProfiles: DiscoverProfile[] = [
     city: 'Islamabad',
     bio: 'Civil servant, gym regular, and a firm believer that the best biryani is homemade.',
     vibeTags: ['fitness', 'family-oriented', 'foodie'],
-    photos: gallery(51, 33),
+    photos: [M(51), M(33)],
     heightCm: 178,
     maritalStatus: 'single',
     hasChildren: false,
@@ -231,7 +230,7 @@ const rawDiscoverProfiles: DiscoverProfile[] = [
     city: 'Lahore',
     bio: 'Fashion design student who sews her own clothes and definitely over-plans every trip.',
     vibeTags: ['creative', 'organizer', 'traveller'],
-    photos: gallery(23, 24),
+    photos: [W(23), W(24)],
     heightCm: 165,
     maritalStatus: 'single',
     hasChildren: false,
@@ -253,7 +252,7 @@ const rawDiscoverProfiles: DiscoverProfile[] = [
     city: 'Faisalabad',
     bio: 'Textile business owner, weekend photographer, and a very serious tea connoisseur.',
     vibeTags: ['entrepreneur', 'creative', 'calm'],
-    photos: gallery(53, 54),
+    photos: [M(53), M(54)],
     heightCm: 175,
     maritalStatus: 'divorced',
     hasChildren: true,

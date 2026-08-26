@@ -1,0 +1,44 @@
+rules_version = '2';
+
+// ---------------------------------------------------------------------------
+// Rishta & Rang — Firestore security rules
+//
+// Deploy: npx firebase deploy --only firestore:rules
+//
+// These replace Postgres row-level security. The split matters: `profiles` is
+// the member card every signed-in user is allowed to see (the equivalent of the
+// old `discover_profiles` view), and everything under `users/{uid}` — email,
+// CNIC, chats, favourites — is readable only by its owner.
+// ---------------------------------------------------------------------------
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    // Public member card. Discovery lists these, so any signed-in user can read
+    // one; only the member themself can create, edit or remove their own.
+    match /profiles/{uid} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isOwner(uid);
+    }
+
+    // Everything private: users/{uid}/private/*, matches, messages, blocked,
+    // favorites, viewHistory, notifications. Owner-only, no exceptions.
+    match /users/{uid} {
+      allow read, write: if isOwner(uid);
+
+      match /{document=**} {
+        allow read, write: if isOwner(uid);
+      }
+    }
+
+    // Anything not matched above is denied.
+  }
+}

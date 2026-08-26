@@ -58,7 +58,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const markRead = (id: string) => {
     if (!user) return;
     setFeed((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
-    notificationsService.markRead(id);
+    notificationsService.markRead(user.id, id);
   };
 
   const addNotification = (type: NotificationItem['type'], title: string, body: string) => {

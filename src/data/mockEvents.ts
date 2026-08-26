@@ -26,7 +26,7 @@ export const mockEvents: CommunityEvent[] = [
     title: 'Young Professionals Coffee Hour',
     city: 'Islamabad',
     dateLabel: '28 September, 4:00 PM',
-    description: 'A casual, low-pressure meetup for members exploring the Dating Mode community in Islamabad.',
+    description: 'A casual, low-pressure meetup for members exploring the Friend Mode community in Islamabad.',
     image: 'https://images.unsplash.com/photo-1521017432531-fbd92d768814?w=800',
   },
 ];

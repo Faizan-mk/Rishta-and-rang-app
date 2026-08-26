@@ -11,6 +11,7 @@ import { FavoritesProvider } from './src/store/FavoritesContext';
 import { ViewHistoryProvider } from './src/store/ViewHistoryContext';
 import { LikeLimitProvider } from './src/store/LikeLimitContext';
 import { PrivacyProvider } from './src/store/PrivacyContext';
+import { DiscoveryProvider } from './src/store/DiscoveryContext';
 import { DialogProvider } from './src/store/DialogContext';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { ResponsiveFrame } from './src/components/common/ResponsiveFrame';
@@ -38,9 +39,11 @@ export default function App() {
                     <ViewHistoryProvider>
                       <LikeLimitProvider>
                         <PrivacyProvider>
-                          <DialogProvider>
-                            <AppContent />
-                          </DialogProvider>
+                          <DiscoveryProvider>
+                            <DialogProvider>
+                              <AppContent />
+                            </DialogProvider>
+                          </DiscoveryProvider>
                         </PrivacyProvider>
                       </LikeLimitProvider>
                     </ViewHistoryProvider>

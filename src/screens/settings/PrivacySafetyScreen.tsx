@@ -21,7 +21,7 @@ export function PrivacySafetyScreen({ navigation }: Props) {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
   const { deleteAccount } = useAuth();
-  const { confirm } = useDialog();
+  const { confirm, notify } = useDialog();
   const { prefs, setPref } = usePrivacy();
   const { blockedProfiles } = useMatches();
 
@@ -33,8 +33,17 @@ export function PrivacySafetyScreen({ navigation }: Props) {
       cancelLabel: t('common.cancel'),
       destructive: true,
     });
-    if (confirmed) {
+    if (!confirmed) return;
+    try {
       await deleteAccount();
+    } catch (e) {
+      // Firebase won't delete an account behind a session older than a few
+      // minutes. Nothing was removed, so the member can log in again and retry.
+      const reauth = e instanceof Error && e.message === 'REAUTH_REQUIRED';
+      await notify({
+        title: t('privacy.deleteAccountFailedTitle'),
+        message: reauth ? t('privacy.deleteAccountReauth') : t('privacy.deleteAccountFailedBody'),
+      });
     }
   };
 

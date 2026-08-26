@@ -1,30 +1,20 @@
-import { supabase } from './supabase';
+import { getDoc, setDoc } from 'firebase/firestore';
+import { dailyLikesDoc } from './firestorePaths';
 
 interface DailyLikeState {
   date: string;
   count: number;
 }
 
-interface DailyLikesRow {
-  date: string;
-  count: number;
-}
-
 async function fetchState(profileId: string): Promise<DailyLikeState | null> {
-  const { data, error } = await supabase
-    .from('daily_likes')
-    .select('date, count')
-    .eq('profile_id', profileId)
-    .maybeSingle<DailyLikesRow>();
-  if (error) throw error;
-  return data ? { date: data.date, count: data.count } : null;
+  const snap = await getDoc(dailyLikesDoc(profileId));
+  if (!snap.exists()) return null;
+  const data = snap.data() as DailyLikeState;
+  return { date: data.date, count: data.count };
 }
 
 async function setState(profileId: string, next: DailyLikeState): Promise<void> {
-  const { error } = await supabase
-    .from('daily_likes')
-    .upsert({ profile_id: profileId, date: next.date, count: next.count }, { onConflict: 'profile_id' });
-  if (error) throw error;
+  await setDoc(dailyLikesDoc(profileId), { date: next.date, count: next.count } satisfies DailyLikeState);
 }
 
 export const likeLimitService = { fetchState, setState };

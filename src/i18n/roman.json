@@ -87,7 +87,7 @@
   },
   "language": {
     "title": "Apni Zaban Muntakhib Karein",
-    "subtitle": "Dating aur rishta, ek hi app mein.",
+    "subtitle": "Friends aur rishta, ek hi app mein.",
     "english": "English",
     "urdu": "اردو",
     "roman": "Roman English"
@@ -111,7 +111,7 @@
     "browseRishta": "Rishta Dekhein",
     "editProfile": "Profile Edit Karein",
     "moveToRishtaTitle": "Khaas Feature",
-    "moveToRishtaBody": "Jab dating baat cheet sanjeeda ho jaye to koi bhi chat se 'Move to Rishta' request bhej sakta hai.",
+    "moveToRishtaBody": "Jab friends mein baat cheet sanjeeda ho jaye to koi bhi chat se 'Move to Rishta' request bhej sakta hai.",
     "recentActivity": "Haleeya Sargarmi",
     "likesWidgetTitle": "Rozana Likes",
     "likesUsed": "Aaj {limit} mein se {used} likes istemal hui",
@@ -121,7 +121,7 @@
   },
   "discover": {
     "title": "Discover",
-    "subtitle": "Dating Mode",
+    "subtitle": "Friend Mode",
     "empty": "Filhaal koi nayi profile nahi. Baad mein dobara dekhein.",
     "like": "Pasand",
     "pass": "Nazar Andaz",
@@ -214,7 +214,7 @@
   "profile": {
     "title": "Profile",
     "editProfile": "Profile Edit Karein",
-    "datingMode": "Dating",
+    "datingMode": "Friend",
     "rishtaMode": "Rishta",
     "about": "Tafseel",
     "vibeTags": "Dilchaspiyan",
@@ -332,7 +332,10 @@
     "deleteAccount": "Account Delete Karein",
     "deleteAccountConfirmTitle": "Apna account delete karein?",
     "deleteAccountConfirmBody": "Is se aapki profile, matches, aur paigham hamesha ke liye delete ho jayenge. Yeh wapas nahi liya ja sakta.",
-    "deleteAccountConfirmLabel": "Account Delete Karein"
+    "deleteAccountConfirmLabel": "Account Delete Karein",
+    "deleteAccountFailedTitle": "Account delete nahi ho saka",
+    "deleteAccountReauth": "Apni security ke liye, logout kar ke dobara login karein, phir account delete karne ki koshish karein. Abhi tak kuch delete nahi hua.",
+    "deleteAccountFailedBody": "Account delete karte waqt kuch ghalat ho gaya. Baraye meherbani dobara koshish karein."
   },
   "cnic": {
     "title": "CNIC / ID Tasdeeq",
@@ -362,7 +365,7 @@
   },
   "wali": {
     "title": "Wali Dashboard",
-    "explainer": "Apne rishta-marhala matches ke baare mein aagah rakhne ke liye ek wali (sarparast) ko madoo karein — woh guftagu jo dating se ek sanjeeda, khandani marhale ki taraf barh chuki hain.",
+    "explainer": "Apne rishta-marhala matches ke baare mein aagah rakhne ke liye ek wali (sarparast) ko madoo karein — woh guftagu jo friends se ek sanjeeda, khandani marhale ki taraf barh chuki hain.",
     "name": "Wali ka Naam",
     "namePlaceholder": "misaal ke tor par Abu Bakr",
     "contact": "Wali ka Rabta",

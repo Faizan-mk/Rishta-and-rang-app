@@ -1,31 +1,23 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import bcrypt from 'bcryptjs';
-import { supabase } from './supabase';
+import {
+  createUserWithEmailAndPassword,
+  deleteUser,
+  fetchSignInMethodsForEmail,
+  signInWithEmailAndPassword,
+  signOut,
+  updateProfile,
+} from 'firebase/auth';
+import { deleteDoc, getDoc, getDocs, setDoc, updateDoc } from 'firebase/firestore';
+import { auth } from './firebase';
 import { mediaUpload } from './mediaUpload';
+import {
+  privateDoc,
+  profileDoc,
+  USER_SUBCOLLECTIONS,
+  userCollection,
+  userDoc,
+  verificationDoc,
+} from './firestorePaths';
 import type { AppLanguage, Intent, ProfileMode, UserProfile } from '../types/user';
-
-const DRAFT_KEY_PREFIX = 'signup_draft_';
-
-async function saveSignupDraft(email: string, input: SignupInput): Promise<void> {
-  const key = DRAFT_KEY_PREFIX + email.trim().toLowerCase();
-  await AsyncStorage.setItem(key, JSON.stringify(input));
-}
-
-async function loadSignupDraft(email: string): Promise<SignupInput | null> {
-  const key = DRAFT_KEY_PREFIX + email.trim().toLowerCase();
-  const raw = await AsyncStorage.getItem(key);
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw) as SignupInput;
-  } catch {
-    return null;
-  }
-}
-
-async function clearSignupDraft(email: string): Promise<void> {
-  const key = DRAFT_KEY_PREFIX + email.trim().toLowerCase();
-  await AsyncStorage.removeItem(key);
-}
 
 export interface SignupInput {
   fullName: string;
@@ -44,374 +36,346 @@ export interface SignupInput {
   cnicPhotoUri?: string;
 }
 
-interface ProfileRow {
-  id: string;
-  full_name: string;
-  email: string;
+/**
+ * The publicly discoverable half of a member. Any signed-in user can read these
+ * docs (see firestore.rules) — this is the Firestore equivalent of the
+ * `discover_profiles` view, so nothing sensitive belongs here. Email, CNIC and
+ * wali contact live under `users/{uid}/private/*` instead.
+ */
+export interface ProfileDoc {
+  fullName: string;
   dob: string;
   gender: UserProfile['gender'];
   city: string;
   bio: string;
   intent: Intent;
   language: AppLanguage;
-  active_mode: ProfileMode;
-  dating_vibe_tags: string[] | null;
-  dating_intention_label: NonNullable<UserProfile['dating']>['intentionLabel'] | null;
-  rishta_religion: string;
-  rishta_sect: string;
-  rishta_family_background: string;
-  rishta_education: string;
-  rishta_readiness: UserProfile['rishta']['readiness'];
-  rishta_prayer_habits: string | null;
-  rishta_income_range: string | null;
-  rishta_living_abroad: boolean | null;
-  height_cm: number | null;
-  marital_status: UserProfile['maritalStatus'] | null;
-  has_children: boolean | null;
+  activeMode: ProfileMode;
+  datingVibeTags: string[] | null;
+  datingIntentionLabel: NonNullable<UserProfile['dating']>['intentionLabel'] | null;
+  rishtaReligion: string;
+  rishtaSect: string;
+  rishtaFamilyBackground: string;
+  rishtaEducation: string;
+  rishtaReadiness: UserProfile['rishta']['readiness'];
+  rishtaPrayerHabits: string | null;
+  rishtaIncomeRange: string | null;
+  rishtaLivingAbroad: boolean | null;
+  heightCm: number | null;
+  maritalStatus: UserProfile['maritalStatus'] | null;
+  hasChildren: boolean | null;
   occupation: string | null;
   practising: boolean | null;
-  prayer_habits: string | null;
-  halal_only: boolean | null;
+  prayerHabits: string | null;
+  halalOnly: boolean | null;
   smoking: boolean | null;
   drinking: boolean | null;
-  religious_dress: string | null;
-  open_to_relocate: boolean | null;
-  preferred_country: string | null;
-  career_plans: string | null;
-  education_level: string | null;
+  religiousDress: string | null;
+  openToRelocate: boolean | null;
+  preferredCountry: string | null;
+  careerPlans: string | null;
+  educationLevel: string | null;
   degree: string | null;
-  job_title: string | null;
+  jobTitle: string | null;
   industry: string | null;
   languages: string[] | null;
   nationality: string | null;
-  grew_up_in: string | null;
+  grewUpIn: string | null;
   country: string | null;
-  selfie_verified: boolean;
-  voice_intro_path: string | null;
-  voice_intro_duration_sec: number | null;
-  video_intro_path: string | null;
-  wali_name: string | null;
-  wali_contact: string | null;
-  wali_invited_at: string | null;
-  is_explore_plus: boolean;
-  subscription_plan: UserProfile['subscriptionPlan'] | null;
-  has_used_trial: boolean;
-  subscription_renews_at: string | null;
-  created_at: string;
-  password_hash: string | null;
+  selfieVerified: boolean;
+  /** Ordered download URLs — replaces the old `profile_photos` table. */
+  photos: string[];
+  voiceIntroUrl: string | null;
+  voiceIntroDurationSec: number | null;
+  videoIntroUrl: string | null;
+  waliName: string | null;
+  waliInvitedAt: string | null;
+  isExplorePlus: boolean;
+  subscriptionPlan: UserProfile['subscriptionPlan'] | null;
+  hasUsedTrial: boolean;
+  subscriptionRenewsAt: string | null;
+  createdAt: string;
 }
 
-interface VerificationRow {
-  profile_id: string;
-  cnic_number: string | null;
-  cnic_photo_path: string | null;
-  cnic_verified: boolean;
-  bureau_verified: boolean;
-  selfie_photo_path: string | null;
+interface PrivateDoc {
+  email: string;
+  waliContact: string | null;
 }
 
-interface PhotoRow {
-  storage_path: string;
-  position: number;
+interface VerificationDoc {
+  cnicNumber: string | null;
+  cnicPhotoPath: string | null;
+  cnicVerified: boolean;
+  bureauVerified: boolean;
+  selfiePhotoPath: string | null;
 }
 
 async function mapToUserProfile(
-  row: ProfileRow,
-  verification: VerificationRow | null,
-  photos: PhotoRow[]
+  id: string,
+  data: ProfileDoc,
+  privateData: PrivateDoc | null,
+  verification: VerificationDoc | null
 ): Promise<UserProfile> {
-  const sortedPhotoPaths = [...photos].sort((a, b) => a.position - b.position).map((p) => p.storage_path);
-  const cnicPhotoUri = verification?.cnic_photo_path
-    ? await mediaUpload.signedVerificationUrl(verification.cnic_photo_path)
+  const cnicPhotoUri = verification?.cnicPhotoPath
+    ? await mediaUpload.verificationUrl(verification.cnicPhotoPath)
     : undefined;
 
   return {
-    id: row.id,
-    fullName: row.full_name,
-    email: row.email,
-    dob: row.dob,
-    gender: row.gender,
-    city: row.city,
-    bio: row.bio,
-    photos: sortedPhotoPaths.map((path) => mediaUpload.publicUrl(path)),
-    selfieVerified: row.selfie_verified,
-    intent: row.intent,
-    language: row.language,
-    activeMode: row.active_mode,
+    id,
+    fullName: data.fullName,
+    email: privateData?.email ?? auth.currentUser?.email ?? '',
+    dob: data.dob,
+    gender: data.gender,
+    city: data.city,
+    bio: data.bio,
+    photos: data.photos ?? [],
+    selfieVerified: data.selfieVerified,
+    intent: data.intent,
+    language: data.language,
+    activeMode: data.activeMode,
     dating: {
-      vibeTags: row.dating_vibe_tags ?? [],
-      intentionLabel: row.dating_intention_label ?? undefined,
+      vibeTags: data.datingVibeTags ?? [],
+      intentionLabel: data.datingIntentionLabel ?? undefined,
     },
     rishta: {
-      religion: row.rishta_religion,
-      sect: row.rishta_sect,
-      familyBackground: row.rishta_family_background,
-      education: row.rishta_education,
-      readiness: row.rishta_readiness,
-      prayerHabits: row.rishta_prayer_habits ?? undefined,
-      incomeRange: row.rishta_income_range ?? undefined,
-      livingAbroad: row.rishta_living_abroad ?? undefined,
+      religion: data.rishtaReligion,
+      sect: data.rishtaSect,
+      familyBackground: data.rishtaFamilyBackground,
+      education: data.rishtaEducation,
+      readiness: data.rishtaReadiness,
+      prayerHabits: data.rishtaPrayerHabits ?? undefined,
+      incomeRange: data.rishtaIncomeRange ?? undefined,
+      livingAbroad: data.rishtaLivingAbroad ?? undefined,
     },
-    heightCm: row.height_cm ?? undefined,
-    maritalStatus: row.marital_status ?? undefined,
-    hasChildren: row.has_children ?? undefined,
-    occupation: row.occupation ?? undefined,
-    practising: row.practising ?? undefined,
-    prayerHabits: row.prayer_habits ?? undefined,
-    halalOnly: row.halal_only ?? undefined,
-    smoking: row.smoking ?? undefined,
-    drinking: row.drinking ?? undefined,
-    religiousDress: row.religious_dress ?? undefined,
-    openToRelocate: row.open_to_relocate ?? undefined,
-    preferredCountry: row.preferred_country ?? undefined,
-    careerPlans: row.career_plans ?? undefined,
-    educationLevel: row.education_level ?? undefined,
-    degree: row.degree ?? undefined,
-    jobTitle: row.job_title ?? undefined,
-    industry: row.industry ?? undefined,
-    languages: row.languages ?? undefined,
-    nationality: row.nationality ?? undefined,
-    grewUpIn: row.grew_up_in ?? undefined,
-    country: row.country ?? undefined,
-    voiceIntroUri: row.voice_intro_path ? mediaUpload.publicUrl(row.voice_intro_path) : undefined,
-    voiceIntroDurationSec: row.voice_intro_duration_sec ?? undefined,
-    videoIntroUri: row.video_intro_path ? mediaUpload.publicUrl(row.video_intro_path) : undefined,
-    cnicVerified: verification?.cnic_verified ?? false,
-    cnicNumber: verification?.cnic_number ?? undefined,
+    heightCm: data.heightCm ?? undefined,
+    maritalStatus: data.maritalStatus ?? undefined,
+    hasChildren: data.hasChildren ?? undefined,
+    occupation: data.occupation ?? undefined,
+    practising: data.practising ?? undefined,
+    prayerHabits: data.prayerHabits ?? undefined,
+    halalOnly: data.halalOnly ?? undefined,
+    smoking: data.smoking ?? undefined,
+    drinking: data.drinking ?? undefined,
+    religiousDress: data.religiousDress ?? undefined,
+    openToRelocate: data.openToRelocate ?? undefined,
+    preferredCountry: data.preferredCountry ?? undefined,
+    careerPlans: data.careerPlans ?? undefined,
+    educationLevel: data.educationLevel ?? undefined,
+    degree: data.degree ?? undefined,
+    jobTitle: data.jobTitle ?? undefined,
+    industry: data.industry ?? undefined,
+    languages: data.languages ?? undefined,
+    nationality: data.nationality ?? undefined,
+    grewUpIn: data.grewUpIn ?? undefined,
+    country: data.country ?? undefined,
+    voiceIntroUri: data.voiceIntroUrl ?? undefined,
+    voiceIntroDurationSec: data.voiceIntroDurationSec ?? undefined,
+    videoIntroUri: data.videoIntroUrl ?? undefined,
+    cnicVerified: verification?.cnicVerified ?? false,
+    cnicNumber: verification?.cnicNumber ?? undefined,
     cnicPhotoUri,
-    bureauVerified: verification?.bureau_verified ?? false,
-    waliName: row.wali_name ?? undefined,
-    waliContact: row.wali_contact ?? undefined,
-    waliInvitedAt: row.wali_invited_at ?? undefined,
-    isExplorePlus: row.is_explore_plus,
-    subscriptionPlan: row.subscription_plan ?? undefined,
-    hasUsedTrial: row.has_used_trial,
-    subscriptionRenewsAt: row.subscription_renews_at ?? undefined,
-    createdAt: row.created_at,
+    bureauVerified: verification?.bureauVerified ?? false,
+    waliName: data.waliName ?? undefined,
+    waliContact: privateData?.waliContact ?? undefined,
+    waliInvitedAt: data.waliInvitedAt ?? undefined,
+    isExplorePlus: data.isExplorePlus,
+    subscriptionPlan: data.subscriptionPlan ?? undefined,
+    hasUsedTrial: data.hasUsedTrial,
+    subscriptionRenewsAt: data.subscriptionRenewsAt ?? undefined,
+    createdAt: data.createdAt,
   };
 }
 
 async function fetchFullProfile(userId: string): Promise<UserProfile | null> {
-  const [profileRes, verificationRes, photosRes] = await Promise.all([
-    supabase.from('profiles').select('*').eq('id', userId).maybeSingle<ProfileRow>(),
-    supabase.from('profile_verification').select('*').eq('profile_id', userId).maybeSingle<VerificationRow>(),
-    supabase.from('profile_photos').select('storage_path, position').eq('profile_id', userId).returns<PhotoRow[]>(),
+  const [profileSnap, privateSnap, verificationSnap] = await Promise.all([
+    getDoc(profileDoc(userId)),
+    getDoc(privateDoc(userId)),
+    getDoc(verificationDoc(userId)),
   ]);
-  if (profileRes.error) throw profileRes.error;
-  if (!profileRes.data) return null;
-  return mapToUserProfile(profileRes.data, verificationRes.data ?? null, photosRes.data ?? []);
+  if (!profileSnap.exists()) return null;
+  return mapToUserProfile(
+    userId,
+    profileSnap.data() as ProfileDoc,
+    (privateSnap.data() as PrivateDoc | undefined) ?? null,
+    (verificationSnap.data() as VerificationDoc | undefined) ?? null
+  );
 }
 
+/**
+ * Best-effort "is this address taken?" check for step 1 of signup.
+ *
+ * Firebase projects created with email-enumeration protection enabled (the
+ * default) always return an empty list here, so this can report `false` for an
+ * address that is in fact taken. `signup` catches `auth/email-already-in-use`
+ * and reports it properly either way — this is purely a nicer early warning.
+ */
 async function emailExists(email: string): Promise<boolean> {
-  const { data, error } = await supabase.rpc('email_exists', { check_email: email.trim().toLowerCase() });
-  if (error) throw error;
-  return Boolean(data);
+  try {
+    const methods = await fetchSignInMethodsForEmail(auth, email.trim().toLowerCase());
+    return methods.length > 0;
+  } catch {
+    return false;
+  }
+}
+
+function blankProfileDoc(input: {
+  fullName: string;
+  dob: string;
+  gender: UserProfile['gender'];
+  city: string;
+  bio?: string;
+  intent: Intent;
+  language: AppLanguage;
+  selfieVerified?: boolean;
+  photos: string[];
+}): ProfileDoc {
+  return {
+    fullName: input.fullName.trim(),
+    dob: input.dob,
+    gender: input.gender,
+    city: input.city.trim(),
+    bio: input.bio?.trim() ?? '',
+    intent: input.intent,
+    language: input.language,
+    activeMode: input.intent === 'matrimonial' ? 'rishta' : 'dating',
+    datingVibeTags: [],
+    datingIntentionLabel: null,
+    rishtaReligion: '',
+    rishtaSect: '',
+    rishtaFamilyBackground: '',
+    rishtaEducation: '',
+    rishtaReadiness: 'browsing',
+    rishtaPrayerHabits: null,
+    rishtaIncomeRange: null,
+    rishtaLivingAbroad: null,
+    heightCm: null,
+    maritalStatus: null,
+    hasChildren: null,
+    occupation: null,
+    practising: null,
+    prayerHabits: null,
+    halalOnly: null,
+    smoking: null,
+    drinking: null,
+    religiousDress: null,
+    openToRelocate: null,
+    preferredCountry: null,
+    careerPlans: null,
+    educationLevel: null,
+    degree: null,
+    jobTitle: null,
+    industry: null,
+    languages: null,
+    nationality: null,
+    grewUpIn: null,
+    country: null,
+    selfieVerified: Boolean(input.selfieVerified),
+    photos: input.photos,
+    voiceIntroUrl: null,
+    voiceIntroDurationSec: null,
+    videoIntroUrl: null,
+    waliName: null,
+    waliInvitedAt: null,
+    isExplorePlus: false,
+    subscriptionPlan: null,
+    hasUsedTrial: false,
+    subscriptionRenewsAt: null,
+    createdAt: new Date().toISOString(),
+  };
+}
+
+function signupErrorMessage(err: unknown): string {
+  const code = (err as { code?: string })?.code ?? '';
+  if (code === 'auth/email-already-in-use') return 'That email is already registered. Try logging in instead.';
+  if (code === 'auth/invalid-email') return 'That email address looks invalid.';
+  if (code === 'auth/weak-password') return 'Password is too weak — use at least 6 characters.';
+  return (err as { message?: string })?.message ?? 'Could not create the account.';
 }
 
 async function signup(input: SignupInput): Promise<UserProfile> {
   const email = input.email.trim().toLowerCase();
-  const { data: authData, error: authError } = await supabase.auth.signUp({
-    email,
-    password: input.password,
-    options: {
-      data: {
-        full_name: input.fullName.trim(),
-        dob: input.dob,
-        gender: input.gender,
-        city: input.city.trim(),
-        bio: input.bio?.trim() ?? '',
-        intent: input.intent,
-        language: input.language,
-        cnic_number: input.cnicNumber,
-      },
-    },
-  });
-  if (authError) throw new Error(authError.message);
 
-  const userId = authData.user?.id;
-  if (!userId) {
-    throw new Error('Signup failed — no user ID returned.');
+  let userId: string;
+  try {
+    const credential = await createUserWithEmailAndPassword(auth, email, input.password);
+    userId = credential.user.uid;
+    await updateProfile(credential.user, { displayName: input.fullName.trim() });
+  } catch (err) {
+    throw new Error(signupErrorMessage(err));
   }
 
-  // If email confirmation is enabled, session will be null. The user must
-  // confirm their email first; profile creation will happen on first login.
-  // Save the onboarding draft so we can create the full profile on login.
-  if (!authData.session) {
-    await saveSignupDraft(email, input);
-    throw new Error('ACCOUNT_CREATED_NO_SESSION');
-  }
-
-  const [photoPaths, cnicPhotoPath, selfiePhotoPath] = await Promise.all([
+  // Uploads run against the freshly created session, so storage rules see the
+  // right uid.
+  const [photoUrls, cnicPhotoPath, selfiePhotoPath] = await Promise.all([
     Promise.all((input.photos ?? []).map((uri) => mediaUpload.uploadPhoto(userId, uri))),
     input.cnicPhotoUri ? mediaUpload.uploadCnicPhoto(userId, input.cnicPhotoUri) : Promise.resolve(null),
     input.selfieUri ? mediaUpload.uploadSelfiePhoto(userId, input.selfieUri) : Promise.resolve(null),
   ]);
 
-  const activeMode: ProfileMode = input.intent === 'matrimonial' ? 'rishta' : 'dating';
-
-  const passwordHash = await bcrypt.hash(input.password, 10);
-
-  // upsert (not insert): if a prior signup attempt for this same auth user got
-  // this far and then failed partway (network drop, app kill), retrying here
-  // completes the row instead of dying on a duplicate-key error.
-  const { error: profileError } = await supabase.from('profiles').upsert(
-    {
-      id: userId,
-      full_name: input.fullName.trim(),
-      email,
-      password_hash: passwordHash,
-      dob: input.dob,
-      gender: input.gender,
-      city: input.city.trim(),
-      bio: input.bio?.trim() ?? '',
-      intent: input.intent,
-      language: input.language,
-      active_mode: activeMode,
-      selfie_verified: Boolean(input.selfieVerified),
-      rishta_religion: '',
-      rishta_sect: '',
-      rishta_family_background: '',
-      rishta_education: '',
-      rishta_readiness: 'browsing',
-      is_explore_plus: false,
-      has_used_trial: false,
-    },
-    { onConflict: 'id' }
-  );
-  if (profileError) throw profileError;
-
-  await supabase.from('profile_photos').delete().eq('profile_id', userId);
-  if (photoPaths.length) {
-    const { error: photosError } = await supabase
-      .from('profile_photos')
-      .insert(photoPaths.map((storage_path, position) => ({ profile_id: userId, storage_path, position })));
-    if (photosError) throw photosError;
-  }
-
-  const { error: verificationError } = await supabase.from('profile_verification').upsert(
-    {
-      profile_id: userId,
-      cnic_number: input.cnicNumber,
-      cnic_photo_path: cnicPhotoPath,
-      cnic_verified: true,
-      selfie_photo_path: selfiePhotoPath,
-    },
-    { onConflict: 'profile_id' }
-  );
-  if (verificationError) throw verificationError;
+  // setDoc (not addDoc/create-only): if an earlier attempt for this same auth
+  // user died partway through (network drop, app kill), retrying completes the
+  // documents instead of failing on an already-exists error.
+  await Promise.all([
+    setDoc(profileDoc(userId), blankProfileDoc({ ...input, photos: photoUrls })),
+    setDoc(privateDoc(userId), { email, waliContact: null } satisfies PrivateDoc),
+    setDoc(verificationDoc(userId), {
+      cnicNumber: input.cnicNumber,
+      cnicPhotoPath,
+      cnicVerified: true,
+      bureauVerified: false,
+      selfiePhotoPath,
+    } satisfies VerificationDoc),
+  ]);
 
   const profile = await fetchFullProfile(userId);
   if (!profile) throw new Error('Could not load the account that was just created.');
   return profile;
 }
 
+function loginErrorMessage(err: unknown): string {
+  const code = (err as { code?: string })?.code ?? '';
+  if (code === 'auth/too-many-requests') return 'Too many attempts. Try again in a few minutes.';
+  if (code === 'auth/user-disabled') return 'This account has been disabled.';
+  // invalid-credential / user-not-found / wrong-password all collapse to one
+  // message so the form doesn't reveal which addresses are registered.
+  return 'Incorrect email or password.';
+}
+
 async function login(email: string, password: string): Promise<UserProfile> {
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email: email.trim().toLowerCase(),
-    password,
-  });
-  if (error) {
-    if (error.message.includes('Email not confirmed')) {
-      throw new Error('EMAIL_NOT_CONFIRMED');
-    }
-    throw new Error('Incorrect email or password.');
+  const normalized = email.trim().toLowerCase();
+
+  let userId: string;
+  let displayName: string | null;
+  try {
+    const credential = await signInWithEmailAndPassword(auth, normalized, password);
+    userId = credential.user.uid;
+    displayName = credential.user.displayName;
+  } catch (err) {
+    throw new Error(loginErrorMessage(err));
   }
-  if (!data.user) throw new Error('Incorrect email or password.');
 
-  let profile = await fetchFullProfile(data.user.id);
+  let profile = await fetchFullProfile(userId);
 
-  // If auth user exists but profile row is missing, check for a saved
-  // onboarding draft (from a signup that was interrupted by email confirmation).
+  // Auth user exists but the profile documents don't — a signup that died
+  // between account creation and the Firestore writes. Seed a minimal profile
+  // so the member isn't stuck at a blank app.
   if (!profile) {
-    const draft = await loadSignupDraft(email);
-
-    if (draft) {
-      // Upload media from the saved draft now that we have a session.
-      const [photoPaths, cnicPhotoPath, selfiePhotoPath] = await Promise.all([
-        Promise.all((draft.photos ?? []).map((uri) => mediaUpload.uploadPhoto(data.user!.id, uri))),
-        draft.cnicPhotoUri ? mediaUpload.uploadCnicPhoto(data.user!.id, draft.cnicPhotoUri) : Promise.resolve(null),
-        draft.selfieUri ? mediaUpload.uploadSelfiePhoto(data.user!.id, draft.selfieUri) : Promise.resolve(null),
-      ]);
-
-      const activeMode: ProfileMode = draft.intent === 'matrimonial' ? 'rishta' : 'dating';
-
-      const passwordHash = await bcrypt.hash(draft.password, 10);
-
-      await supabase.from('profiles').upsert(
-        {
-          id: data.user!.id,
-          full_name: draft.fullName.trim(),
-          email,
-          password_hash: passwordHash,
-          dob: draft.dob,
-          gender: draft.gender,
-          city: draft.city.trim(),
-          bio: draft.bio?.trim() ?? '',
-          intent: draft.intent,
-          language: draft.language,
-          active_mode: activeMode,
-          selfie_verified: Boolean(draft.selfieVerified),
-          rishta_religion: '',
-          rishta_sect: '',
-          rishta_family_background: '',
-          rishta_education: '',
-          rishta_readiness: 'browsing',
-          is_explore_plus: false,
-          has_used_trial: false,
-        },
-        { onConflict: 'id' }
-      );
-
-      await supabase.from('profile_photos').delete().eq('profile_id', data.user!.id);
-      if (photoPaths.length) {
-        await supabase
-          .from('profile_photos')
-          .insert(photoPaths.map((storage_path, position) => ({ profile_id: data.user!.id, storage_path, position })));
-      }
-
-      await supabase.from('profile_verification').upsert(
-        {
-          profile_id: data.user!.id,
-          cnic_number: draft.cnicNumber,
-          cnic_photo_path: cnicPhotoPath,
-          cnic_verified: true,
-          selfie_photo_path: selfiePhotoPath,
-        },
-        { onConflict: 'profile_id' }
-      );
-
-      await clearSignupDraft(email);
-      profile = await fetchFullProfile(data.user.id);
-    } else {
-      // No draft — create a minimal profile so the user isn't stuck.
-      const meta = data.user.user_metadata ?? {};
-      await supabase.from('profiles').upsert(
-        {
-          id: data.user.id,
-          full_name: meta.full_name ?? data.user.email?.split('@')[0] ?? 'User',
-          email: data.user.email ?? email,
-          password_hash: null,
-          dob: meta.dob ?? '2000-01-01',
-          gender: meta.gender ?? 'other',
-          city: meta.city ?? '',
-          bio: '',
+    await Promise.all([
+      setDoc(
+        profileDoc(userId),
+        blankProfileDoc({
+          fullName: displayName ?? normalized.split('@')[0] ?? 'User',
+          dob: '2000-01-01',
+          gender: 'other',
+          city: '',
           intent: 'casual',
           language: 'en',
-          active_mode: 'dating',
-          selfie_verified: false,
-          rishta_religion: '',
-          rishta_sect: '',
-          rishta_family_background: '',
-          rishta_education: '',
-          rishta_readiness: 'browsing',
-          is_explore_plus: false,
-          has_used_trial: false,
-        },
-        { onConflict: 'id' }
-      );
-      profile = await fetchFullProfile(data.user.id);
-    }
-
+          photos: [],
+        })
+      ),
+      setDoc(privateDoc(userId), { email: normalized, waliContact: null } satisfies PrivateDoc),
+    ]);
+    profile = await fetchFullProfile(userId);
     if (!profile) throw new Error('Could not create profile.');
   }
 
@@ -419,12 +383,11 @@ async function login(email: string, password: string): Promise<UserProfile> {
 }
 
 async function logout(): Promise<void> {
-  await supabase.auth.signOut();
+  await signOut(auth);
 }
 
 async function getCurrentUser(): Promise<UserProfile | null> {
-  const { data } = await supabase.auth.getSession();
-  const userId = data.session?.user.id;
+  const userId = auth.currentUser?.uid;
   if (!userId) return null;
   return fetchFullProfile(userId);
 }
@@ -432,137 +395,181 @@ async function getCurrentUser(): Promise<UserProfile | null> {
 async function updateUser(updated: UserProfile): Promise<UserProfile> {
   const userId = updated.id;
 
-  const { data: existingPhotoRows } = await supabase
-    .from('profile_photos')
-    .select('storage_path')
-    .eq('profile_id', userId)
-    .returns<{ storage_path: string }[]>();
-  const existingPaths = new Set((existingPhotoRows ?? []).map((r) => r.storage_path));
+  const existingSnap = await getDoc(profileDoc(userId));
+  const existingPhotos: string[] = (existingSnap.data() as ProfileDoc | undefined)?.photos ?? [];
 
-  const newPhotoPaths = await Promise.all(
-    updated.photos.map((uri) =>
-      mediaUpload.isLocalUri(uri) ? mediaUpload.uploadPhoto(userId, uri) : mediaUpload.pathFromPublicUrl(uri)
-    )
+  // Local URIs are fresh picks that need uploading; anything already remote is
+  // a download URL we stored last save and can be kept as-is.
+  const photoUrls = await Promise.all(
+    updated.photos.map((uri) => (mediaUpload.isLocalUri(uri) ? mediaUpload.uploadPhoto(userId, uri) : uri))
   );
 
-  const videoIntroPath = updated.videoIntroUri
+  const videoIntroUrl = updated.videoIntroUri
     ? mediaUpload.isLocalUri(updated.videoIntroUri)
       ? await mediaUpload.uploadVideoIntro(userId, updated.videoIntroUri)
-      : mediaUpload.pathFromPublicUrl(updated.videoIntroUri)
+      : updated.videoIntroUri
     : null;
 
-  const voiceIntroPath = updated.voiceIntroUri
+  const voiceIntroUrl = updated.voiceIntroUri
     ? mediaUpload.isLocalUri(updated.voiceIntroUri)
       ? await mediaUpload.uploadVoiceIntro(userId, updated.voiceIntroUri)
-      : mediaUpload.pathFromPublicUrl(updated.voiceIntroUri)
+      : updated.voiceIntroUri
     : null;
 
-  const { error: profileError } = await supabase
-    .from('profiles')
-    .update({
-      full_name: updated.fullName,
-      city: updated.city,
-      bio: updated.bio,
-      language: updated.language,
-      active_mode: updated.activeMode,
-      dating_vibe_tags: updated.dating.vibeTags,
-      dating_intention_label: updated.dating.intentionLabel ?? null,
-      rishta_religion: updated.rishta.religion,
-      rishta_sect: updated.rishta.sect,
-      rishta_family_background: updated.rishta.familyBackground,
-      rishta_education: updated.rishta.education,
-      rishta_readiness: updated.rishta.readiness,
-      rishta_prayer_habits: updated.rishta.prayerHabits ?? null,
-      rishta_income_range: updated.rishta.incomeRange ?? null,
-      rishta_living_abroad: updated.rishta.livingAbroad ?? null,
-      height_cm: updated.heightCm ?? null,
-      marital_status: updated.maritalStatus ?? null,
-      has_children: updated.hasChildren ?? null,
-      occupation: updated.occupation ?? null,
-      practising: updated.practising ?? null,
-      prayer_habits: updated.prayerHabits ?? null,
-      halal_only: updated.halalOnly ?? null,
-      smoking: updated.smoking ?? null,
-      drinking: updated.drinking ?? null,
-      religious_dress: updated.religiousDress ?? null,
-      open_to_relocate: updated.openToRelocate ?? null,
-      preferred_country: updated.preferredCountry ?? null,
-      career_plans: updated.careerPlans ?? null,
-      education_level: updated.educationLevel ?? null,
-      degree: updated.degree ?? null,
-      job_title: updated.jobTitle ?? null,
-      industry: updated.industry ?? null,
-      languages: updated.languages ?? null,
-      nationality: updated.nationality ?? null,
-      grew_up_in: updated.grewUpIn ?? null,
-      country: updated.country ?? null,
-      selfie_verified: updated.selfieVerified,
-      voice_intro_path: voiceIntroPath,
-      voice_intro_duration_sec: updated.voiceIntroDurationSec ?? null,
-      video_intro_path: videoIntroPath,
-      wali_name: updated.waliName ?? null,
-      wali_contact: updated.waliContact ?? null,
-      wali_invited_at: updated.waliInvitedAt ?? null,
-      is_explore_plus: updated.isExplorePlus ?? false,
-      subscription_plan: updated.subscriptionPlan ?? null,
-      has_used_trial: updated.hasUsedTrial ?? false,
-      subscription_renews_at: updated.subscriptionRenewsAt ?? null,
-    })
-    .eq('id', userId);
-  if (profileError) throw profileError;
+  const patch: Partial<ProfileDoc> = {
+    fullName: updated.fullName,
+    city: updated.city,
+    bio: updated.bio,
+    language: updated.language,
+    activeMode: updated.activeMode,
+    datingVibeTags: updated.dating.vibeTags,
+    datingIntentionLabel: updated.dating.intentionLabel ?? null,
+    rishtaReligion: updated.rishta.religion,
+    rishtaSect: updated.rishta.sect,
+    rishtaFamilyBackground: updated.rishta.familyBackground,
+    rishtaEducation: updated.rishta.education,
+    rishtaReadiness: updated.rishta.readiness,
+    rishtaPrayerHabits: updated.rishta.prayerHabits ?? null,
+    rishtaIncomeRange: updated.rishta.incomeRange ?? null,
+    rishtaLivingAbroad: updated.rishta.livingAbroad ?? null,
+    heightCm: updated.heightCm ?? null,
+    maritalStatus: updated.maritalStatus ?? null,
+    hasChildren: updated.hasChildren ?? null,
+    occupation: updated.occupation ?? null,
+    practising: updated.practising ?? null,
+    prayerHabits: updated.prayerHabits ?? null,
+    halalOnly: updated.halalOnly ?? null,
+    smoking: updated.smoking ?? null,
+    drinking: updated.drinking ?? null,
+    religiousDress: updated.religiousDress ?? null,
+    openToRelocate: updated.openToRelocate ?? null,
+    preferredCountry: updated.preferredCountry ?? null,
+    careerPlans: updated.careerPlans ?? null,
+    educationLevel: updated.educationLevel ?? null,
+    degree: updated.degree ?? null,
+    jobTitle: updated.jobTitle ?? null,
+    industry: updated.industry ?? null,
+    languages: updated.languages ?? null,
+    nationality: updated.nationality ?? null,
+    grewUpIn: updated.grewUpIn ?? null,
+    country: updated.country ?? null,
+    selfieVerified: updated.selfieVerified,
+    photos: photoUrls,
+    voiceIntroUrl,
+    voiceIntroDurationSec: updated.voiceIntroDurationSec ?? null,
+    videoIntroUrl,
+    waliName: updated.waliName ?? null,
+    waliInvitedAt: updated.waliInvitedAt ?? null,
+    isExplorePlus: updated.isExplorePlus ?? false,
+    subscriptionPlan: updated.subscriptionPlan ?? null,
+    hasUsedTrial: updated.hasUsedTrial ?? false,
+    subscriptionRenewsAt: updated.subscriptionRenewsAt ?? null,
+  };
+
+  await updateDoc(profileDoc(userId), patch);
+  await setDoc(
+    privateDoc(userId),
+    { email: updated.email, waliContact: updated.waliContact ?? null } satisfies PrivateDoc,
+    { merge: true }
+  );
 
   if (updated.cnicNumber) {
-    // A local cnicPhotoUri means a fresh capture to upload; a remote one is
-    // the signed URL we handed back last fetch — leave the stored path alone.
+    // A local cnicPhotoUri means a fresh capture to upload; a remote one is the
+    // download URL we handed back last fetch — leave the stored path alone.
     const cnicPhotoPath =
       updated.cnicPhotoUri && mediaUpload.isLocalUri(updated.cnicPhotoUri)
         ? await mediaUpload.uploadCnicPhoto(userId, updated.cnicPhotoUri)
         : undefined;
 
-    const verificationUpdate: Record<string, unknown> = {
-      profile_id: userId,
-      cnic_number: updated.cnicNumber,
-      cnic_verified: updated.cnicVerified ?? true,
+    const verificationPatch: Partial<VerificationDoc> = {
+      cnicNumber: updated.cnicNumber,
+      cnicVerified: updated.cnicVerified ?? true,
     };
-    if (cnicPhotoPath) verificationUpdate.cnic_photo_path = cnicPhotoPath;
+    if (cnicPhotoPath) verificationPatch.cnicPhotoPath = cnicPhotoPath;
 
-    const { error: verificationError } = await supabase
-      .from('profile_verification')
-      .upsert(verificationUpdate, { onConflict: 'profile_id' });
-    if (verificationError) throw verificationError;
+    await setDoc(verificationDoc(userId), verificationPatch, { merge: true });
   }
 
-  await supabase.from('profile_photos').delete().eq('profile_id', userId);
-  if (newPhotoPaths.length) {
-    const { error: photosError } = await supabase
-      .from('profile_photos')
-      .insert(newPhotoPaths.map((storage_path, position) => ({ profile_id: userId, storage_path, position })));
-    if (photosError) throw photosError;
-  }
-
-  const removedPaths = [...existingPaths].filter((path) => !newPhotoPaths.includes(path));
-  if (removedPaths.length) await mediaUpload.removePhotos(removedPaths);
+  const removed = existingPhotos.filter((url) => !photoUrls.includes(url));
+  if (removed.length) await mediaUpload.removeFiles(removed);
 
   const profile = await fetchFullProfile(userId);
   if (!profile) throw new Error('Could not reload the updated profile.');
   return profile;
 }
 
-async function deleteAccount(userId: string): Promise<void> {
-  const { data: photoRows } = await supabase
-    .from('profile_photos')
-    .select('storage_path')
-    .eq('profile_id', userId)
-    .returns<{ storage_path: string }[]>();
-  const paths = (photoRows ?? []).map((r) => r.storage_path);
-  if (paths.length) await mediaUpload.removePhotos(paths);
-
-  // RLS lets the app remove its own profile/verification/photo rows (the
-  // profile delete cascades to both), but deleting the auth.users record
-  // itself needs the service-role key — that has to happen server-side
-  // (an Edge Function or the admin API), not from this client.
-  await supabase.from('profiles').delete().eq('id', userId);
-  await supabase.auth.signOut();
+/**
+ * Firestore doesn't cascade: deleting users/{uid} leaves its subcollections
+ * behind. Without a Cloud Function to recurse server-side, the signed-in client
+ * clears them itself while it still has permission to.
+ */
+async function deleteUserSubcollections(userId: string): Promise<void> {
+  await Promise.all(
+    USER_SUBCOLLECTIONS.map(async (name) => {
+      const snap = await getDocs(userCollection(userId, name));
+      await Promise.all(snap.docs.map((entry) => deleteDoc(entry.ref)));
+    })
+  );
 }
 
-export const authService = { signup, login, logout, getCurrentUser, updateUser, deleteAccount, emailExists };
+/** Firebase's window for "recently signed in" before it refuses destructive ops. */
+const RECENT_LOGIN_WINDOW_MS = 5 * 60 * 1000;
+
+async function deleteAccount(userId: string): Promise<void> {
+  const current = auth.currentUser;
+  if (!current || current.uid !== userId) throw new Error('Not signed in.');
+
+  // Checked up front, before anything is destroyed: Firebase rejects deleteUser
+  // behind a stale session, and the Firestore documents can only be removed
+  // while the user is still authenticated. Failing the whole operation early
+  // leaves the account intact and retryable instead of half-deleted.
+  const lastSignIn = current.metadata.lastSignInTime ? Date.parse(current.metadata.lastSignInTime) : 0;
+  if (!lastSignIn || Date.now() - lastSignIn > RECENT_LOGIN_WINDOW_MS) {
+    throw new Error('REAUTH_REQUIRED');
+  }
+
+  const snap = await getDoc(profileDoc(userId));
+  const photos: string[] = (snap.data() as ProfileDoc | undefined)?.photos ?? [];
+  if (photos.length) await mediaUpload.removeFiles(photos);
+
+  // Order matters: the documents have to go while the user is still signed in,
+  // because the rules key every write off request.auth.uid.
+  await deleteUserSubcollections(userId);
+  await Promise.all([deleteDoc(profileDoc(userId)), deleteDoc(userDoc(userId))]);
+
+  try {
+    await deleteUser(current);
+  } catch (err) {
+    // Backstop for the window check above racing the server's own clock. The
+    // documents are already gone at this point, so sign out and let the member
+    // re-authenticate to clear the leftover login record.
+    await signOut(auth);
+    if ((err as { code?: string })?.code === 'auth/requires-recent-login') {
+      throw new Error('REAUTH_REQUIRED');
+    }
+    throw err;
+  }
+}
+
+/**
+ * Single-field write for the dating/rishta toggle.
+ *
+ * Going through `updateUser` for this costs a read, three writes and a
+ * three-document reload — enough that the toggle visibly lagged behind the tap.
+ * Nothing else about the profile changes when the mode flips, so one `updateDoc`
+ * is all it needs.
+ */
+async function setActiveMode(userId: string, mode: ProfileMode): Promise<void> {
+  await updateDoc(profileDoc(userId), { activeMode: mode });
+}
+
+export const authService = {
+  signup,
+  login,
+  logout,
+  getCurrentUser,
+  updateUser,
+  setActiveMode,
+  deleteAccount,
+  emailExists,
+};

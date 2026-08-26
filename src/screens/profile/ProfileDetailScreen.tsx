@@ -21,8 +21,7 @@ import {
   MidProfilePhoto,
   IntroMediaSection,
 } from '../../components/discover/ProfileDetailSections';
-import { mockDiscoverProfiles } from '../../data/mockDiscover';
-import { mockRishtaProfiles } from '../../data/mockRishta';
+import { useDiscovery } from '../../store/DiscoveryContext';
 import type { DiscoverProfile, RishtaListingProfile } from '../../types/content';
 import { useLanguage } from '../../store/LanguageContext';
 import { useTheme } from '../../store/ThemeContext';
@@ -50,6 +49,7 @@ export function ProfileDetailScreen({ navigation, route }: Props) {
   const { user } = useAuth();
   const { notify } = useDialog();
   const { getOrCreateMatchForProfile } = useMatches();
+  const { datingProfiles, rishtaProfiles } = useDiscovery();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { recordView } = useViewHistory();
   const { kind, id } = route.params;
@@ -59,8 +59,8 @@ export function ProfileDetailScreen({ navigation, route }: Props) {
   const [celebration, setCelebration] = useState<{ name: string; photo: string } | null>(null);
   const [previewUri, setPreviewUri] = useState<string | null>(null);
 
-  const datingProfile = kind === 'dating' ? mockDiscoverProfiles.find((p) => p.id === id) : undefined;
-  const rishtaProfile = kind === 'rishta' ? mockRishtaProfiles.find((p) => p.id === id) : undefined;
+  const datingProfile = kind === 'dating' ? datingProfiles.find((p) => p.id === id) : undefined;
+  const rishtaProfile = kind === 'rishta' ? rishtaProfiles.find((p) => p.id === id) : undefined;
   const profile = datingProfile ?? rishtaProfile;
 
   useEffect(() => {

@@ -31,10 +31,9 @@ import { ProfileUtilityBar } from '../../components/discover/ProfileUtilityBar';
 import { ReportDialog } from '../../components/common/ReportDialog';
 import { Chip } from '../../components/common/Chip';
 import { Badge } from '../../components/common/Badge';
-import { mockDiscoverProfiles } from '../../data/mockDiscover';
-import { mockRishtaProfiles } from '../../data/mockRishta';
 import type { DiscoverProfile, RishtaListingProfile } from '../../types/content';
 import type { ProfileMode } from '../../types/user';
+import { useDiscovery } from '../../store/DiscoveryContext';
 import { useLanguage } from '../../store/LanguageContext';
 import { useTheme } from '../../store/ThemeContext';
 import { useAuth } from '../../store/AuthContext';
@@ -51,16 +50,15 @@ import type { Palette } from '../../theme/palettes';
 
 type Props = MainTabScreenProps<'Home'>;
 
-const ACTION_BAR_HEIGHT = 96;
-
 export function HomeScreen({ navigation }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
-  const { user, updateUser } = useAuth();
+  const { user, setActiveMode } = useAuth();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { confirm, notify } = useDialog();
   const { isUnlimited, remaining, recordLike } = useLikeLimit();
+  const { datingProfiles, rishtaProfiles } = useDiscovery();
   const { blockedProfiles, getOrCreateMatchForProfile, blockMatch } = useMatches();
   const { addNotification } = useNotifications();
   const { recordView } = useViewHistory();
@@ -73,9 +71,6 @@ export function HomeScreen({ navigation }: Props) {
   const onScroll = useHideTabBarOnScroll();
 
   const mode: ProfileMode = user?.activeMode ?? 'dating';
-  const setMode = (next: ProfileMode) => {
-    if (user) updateUser({ ...user, activeMode: next });
-  };
 
   const blockedProfileIds = useMemo(
     () => new Set(blockedProfiles.map((b) => b.sourceProfileId).filter(Boolean)),
@@ -83,12 +78,12 @@ export function HomeScreen({ navigation }: Props) {
   );
 
   const visibleDatingProfiles = useMemo(
-    () => oppositeGenderProfiles(mockDiscoverProfiles, user?.gender).filter((p) => !blockedProfileIds.has(p.id)),
-    [user?.gender, blockedProfileIds]
+    () => oppositeGenderProfiles(datingProfiles, user?.gender).filter((p) => !blockedProfileIds.has(p.id)),
+    [datingProfiles, user?.gender, blockedProfileIds]
   );
   const visibleRishtaProfiles = useMemo(
-    () => oppositeGenderProfiles(mockRishtaProfiles, user?.gender).filter((p) => !blockedProfileIds.has(p.id)),
-    [user?.gender, blockedProfileIds]
+    () => oppositeGenderProfiles(rishtaProfiles, user?.gender).filter((p) => !blockedProfileIds.has(p.id)),
+    [rishtaProfiles, user?.gender, blockedProfileIds]
   );
 
   const visibleProfiles: (DiscoverProfile | RishtaListingProfile)[] = mode === 'dating' ? visibleDatingProfiles : visibleRishtaProfiles;
@@ -253,17 +248,15 @@ export function HomeScreen({ navigation }: Props) {
       </View>
 
       <View style={styles.toggleWrap}>
-        <ModeToggle mode={mode} onChange={setMode} datingLabel={t('profile.datingMode')} rishtaLabel={t('profile.rishtaMode')} />
+        <ModeToggle mode={mode} onChange={setActiveMode} datingLabel={t('profile.datingMode')} rishtaLabel={t('profile.rishtaMode')} />
       </View>
 
       {currentProfile ? (
         <Animated.View key={`${mode}-${currentProfile.id}`} entering={ZoomIn.duration(200)} exiting={FadeOut.duration(100)} style={styles.flex}>
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            onScroll={onScroll}
-            scrollEventThrottle={16}
-            contentContainerStyle={{ paddingBottom: ACTION_BAR_HEIGHT + insets.bottom + spacing.lg }}
-          >
+          {/* No bottom padding to reserve here: the action row below is a normal
+              sibling in the column, not an overlay, so it can't cover the last
+              card. `styles.content` already ends with its own spacing.lg. */}
+          <ScrollView showsVerticalScrollIndicator={false} onScroll={onScroll} scrollEventThrottle={16}>
             <DiscoverProfileCard profile={currentProfile} liked={isFavorite(currentProfile.id)} onPressPhoto={setPreviewUri} />
 
             <View style={styles.content}>

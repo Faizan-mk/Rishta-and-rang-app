@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, type DimensionValue } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, {
   Easing,
@@ -12,7 +12,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 interface HeartSpec {
-  left: string;
+  left: DimensionValue;
   size: number;
   delay: number;
   duration: number;
@@ -21,7 +21,7 @@ interface HeartSpec {
 }
 
 function buildHearts(colors: string[]): HeartSpec[] {
-  const lefts = ['4%', '18%', '32%', '50%', '64%', '78%', '90%', '10%', '58%'];
+  const lefts = ['4%', '18%', '32%', '50%', '64%', '78%', '90%', '10%', '58%'] as const;
   return lefts.map((left, index) => ({
     left,
     size: 16 + ((index * 7) % 22),
