@@ -25,7 +25,10 @@
       },
       "predictiveBackGestureEnabled": false,
       "permissions": [
-        "READ_MEDIA_IMAGES"
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.CAMERA"
       ]
     },
     "web": {
@@ -58,6 +61,11 @@
       ],
       "expo-video",
       "expo-asset"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "97a190a0-85cd-4d3f-8365-caeed2805a90"
+      }
+    }
   }
 }
