@@ -1,27 +1,40 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Image, Modal, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { Image, Modal, Pressable, RefreshControl, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   FadeIn as ReanimatedFadeIn,
   FadeOut,
   ZoomIn,
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
 } from 'react-native-reanimated';
 import type { MainTabScreenProps } from '../../navigation/types';
 import { DiscoverProfileCard } from '../../components/discover/DiscoverProfileCard';
 import { TAB_BAR_BASE_HEIGHT, useHideTabBarOnScroll } from '../../store/TabBarVisibilityContext';
 import { MatchCelebration } from '../../components/discover/MatchCelebration';
-import { ModeToggle } from '../../components/profile/ModeToggle';
+import { HomeTopBar } from '../../components/discover/HomeTopBar';
+import { MatchScoreCard } from '../../components/discover/MatchScoreCard';
+import { SwipeableCard } from '../../components/discover/SwipeableCard';
+import { SwipeActionBar } from '../../components/discover/SwipeActionBar';
+import { BrowseFiltersSheet, BrowseSortSheet } from '../../components/discover/BrowseSheets';
+import { BoostSheet } from '../../components/discover/BoostSheet';
+import {
+  DEFAULT_BROWSE_FILTERS,
+  DEFAULT_BROWSE_SORT,
+  countActiveFilters,
+  type BrowseFilters,
+  type BrowseSortKey,
+} from '../../components/discover/browseOptions';
 import {
   AboutMeSection,
-  MarriageIntentionsCard,
+  BioSection,
+  ReadinessSection,
   FaithSection,
   FuturePlansSection,
+  InterestsSection,
+  PersonalitySection,
   EducationCareerSection,
   LanguagesBackgroundSection,
+  SimilaritiesSection,
   VerificationSection,
   MidProfilePhoto,
   IntroMediaSection,
@@ -29,10 +42,8 @@ import {
 import { ProfileActionsFooter } from '../../components/discover/ProfileActionsFooter';
 import { ProfileUtilityBar } from '../../components/discover/ProfileUtilityBar';
 import { ReportDialog } from '../../components/common/ReportDialog';
-import { Chip } from '../../components/common/Chip';
-import { Badge } from '../../components/common/Badge';
-import type { DiscoverProfile, RishtaListingProfile } from '../../types/content';
-import type { ProfileMode } from '../../types/user';
+import type { BrowseProfile, DiscoverProfile, RishtaListingProfile } from '../../types/content';
+import type { ProfileMode, UserProfile } from '../../types/user';
 import { useDiscovery } from '../../store/DiscoveryContext';
 import { useLanguage } from '../../store/LanguageContext';
 import { useTheme } from '../../store/ThemeContext';
@@ -40,37 +51,112 @@ import { useAuth } from '../../store/AuthContext';
 import { useFavorites } from '../../store/FavoritesContext';
 import { useDialog } from '../../store/DialogContext';
 import { useLikeLimit } from '../../store/LikeLimitContext';
+import { useBoost } from '../../store/BoostContext';
 import { useMatches } from '../../store/MatchesContext';
 import { useNotifications } from '../../store/NotificationContext';
 import { useViewHistory } from '../../store/ViewHistoryContext';
 import { oppositeGenderProfiles } from '../../utils/genderMatch';
 import { datingCompatibility, rishtaCompatibility } from '../../utils/compatibility';
+import { isActiveToday } from '../../utils/time';
 import { radius, spacing, typography } from '../../theme';
+import { scaleFont } from '../../theme/responsive';
 import type { Palette } from '../../theme/palettes';
 
 type Props = MainTabScreenProps<'Home'>;
+
+// Clearance under the scroll content so the floating action bar never covers the
+// last row of a profile.
+const ACTION_BAR_CLEARANCE = 92;
+
+interface SortContext {
+  user: UserProfile | null;
+  mode: ProfileMode;
+  // Profiles the member already has a chat thread with.
+  chattingWith: Set<string>;
+}
+
+function timestamp(iso?: string): number {
+  return iso ? new Date(iso).getTime() : 0;
+}
+
+function sortProfiles<T extends BrowseProfile>(profiles: T[], sort: BrowseSortKey, ctx: SortContext): T[] {
+  if (sort === 'recommended') return profiles;
+  const { user, mode, chattingWith } = ctx;
+  const sorted = [...profiles];
+
+  switch (sort) {
+    case 'bestMatch': {
+      if (!user) return profiles;
+      const score = (p: T) =>
+        mode === 'dating'
+          ? datingCompatibility(user, p as unknown as DiscoverProfile)
+          : rishtaCompatibility(user, p as unknown as RishtaListingProfile);
+      return sorted.sort((a, b) => score(b) - score(a));
+    }
+    case 'ageAsc':
+      return sorted.sort((a, b) => a.age - b.age);
+    case 'ageDesc':
+      return sorted.sort((a, b) => b.age - a.age);
+    case 'active':
+      return sorted.sort((a, b) => timestamp(b.lastActiveAt) - timestamp(a.lastActiveAt));
+    case 'justJoined':
+      return sorted.sort((a, b) => timestamp(b.joinedAt) - timestamp(a.joinedAt));
+    case 'freeToChat':
+      // Anyone there's no thread with yet comes first — they can still take a chat.
+      return sorted.sort((a, b) => Number(chattingWith.has(a.id)) - Number(chattingWith.has(b.id)));
+    case 'verified': {
+      const badges = (p: T) => Number(Boolean(p.selfieVerified)) + Number(Boolean(p.bureauVerified));
+      return sorted.sort((a, b) => badges(b) - badges(a));
+    }
+    case 'completeBio': {
+      const depth = (p: T) => (p.bio?.trim().length ?? 0) + (p.familyBackground?.trim().length ?? 0);
+      return sorted.sort((a, b) => depth(b) - depth(a));
+    }
+    case 'nearest':
+    default: {
+      // Real distances first, then anyone sharing the member's city, then the rest.
+      const rank = (p: T) => {
+        if (p.distanceKm !== undefined) return p.distanceKm;
+        if (user?.city && p.city?.toLowerCase() === user.city.toLowerCase()) return 1_000;
+        return 1_000_000;
+      };
+      return sorted.sort((a, b) => rank(a) - rank(b));
+    }
+  }
+}
 
 export function HomeScreen({ navigation }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
-  const { user, setActiveMode } = useAuth();
+  const { user } = useAuth();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { confirm, notify } = useDialog();
-  const { isUnlimited, remaining, recordLike } = useLikeLimit();
-  const { datingProfiles, rishtaProfiles } = useDiscovery();
-  const { blockedProfiles, getOrCreateMatchForProfile, blockMatch } = useMatches();
-  const { addNotification } = useNotifications();
+  const { recordLike } = useLikeLimit();
+  const { isBoostActive } = useBoost();
+  const { datingProfiles, rishtaProfiles, loading, reload } = useDiscovery();
+  const { matches, blockedProfiles, getOrCreateMatchForProfile, blockMatch } = useMatches();
+  const { addNotification, unreadCount } = useNotifications();
   const { recordView } = useViewHistory();
   const [celebration, setCelebration] = useState<{ name: string; photo: string } | null>(null);
   const [datingCursor, setDatingCursor] = useState(0);
   const [rishtaCursor, setRishtaCursor] = useState(0);
   const [previewUri, setPreviewUri] = useState<string | null>(null);
   const [reportVisible, setReportVisible] = useState(false);
+  const [filtersVisible, setFiltersVisible] = useState(false);
+  const [sortVisible, setSortVisible] = useState(false);
+  const [boostVisible, setBoostVisible] = useState(false);
+  const [filters, setFilters] = useState<BrowseFilters>(DEFAULT_BROWSE_FILTERS);
+  const [sort, setSort] = useState<BrowseSortKey>(DEFAULT_BROWSE_SORT);
   const insets = useSafeAreaInsets();
   const onScroll = useHideTabBarOnScroll();
 
   const mode: ProfileMode = user?.activeMode ?? 'dating';
+
+  const chattingWith = useMemo(
+    () => new Set(matches.map((m) => m.sourceProfileId).filter((id): id is string => Boolean(id))),
+    [matches]
+  );
 
   const blockedProfileIds = useMemo(
     () => new Set(blockedProfiles.map((b) => b.sourceProfileId).filter(Boolean)),
@@ -86,13 +172,40 @@ export function HomeScreen({ navigation }: Props) {
     [rishtaProfiles, user?.gender, blockedProfileIds]
   );
 
-  const visibleProfiles: (DiscoverProfile | RishtaListingProfile)[] = mode === 'dating' ? visibleDatingProfiles : visibleRishtaProfiles;
+  const deck: (DiscoverProfile | RishtaListingProfile)[] = mode === 'dating' ? visibleDatingProfiles : visibleRishtaProfiles;
+
+  // The browse bar's filters and sort are applied on top of the mode's own deck.
+  const visibleProfiles = useMemo(() => {
+    let list = deck.filter((p) => p.age >= filters.ageMin && p.age <= filters.ageMax);
+    if (filters.city) {
+      const city = filters.city.toLowerCase();
+      list = list.filter((p) => p.city?.toLowerCase() === city);
+    }
+    if (filters.intent) list = list.filter((p) => p.intent === filters.intent);
+    if (mode === 'rishta' && filters.sect) {
+      const sect = filters.sect.toLowerCase();
+      list = list.filter((p) => p.sect?.toLowerCase() === sect);
+    }
+    if (mode === 'rishta' && filters.readiness) list = list.filter((p) => p.readiness === filters.readiness);
+    if (filters.verifiedOnly) list = list.filter((p) => p.selfieVerified || p.bureauVerified);
+    if (filters.activeToday) list = list.filter((p) => isActiveToday(p.lastActiveAt));
+    return sortProfiles(list, sort, { user: user ?? null, mode, chattingWith });
+  }, [deck, filters, sort, user, mode, chattingWith]);
+
   const cursor = mode === 'dating' ? datingCursor : rishtaCursor;
   const setCursor = mode === 'dating' ? setDatingCursor : setRishtaCursor;
 
   const safeCursor = Math.min(cursor, visibleProfiles.length);
   const currentProfile = visibleProfiles[safeCursor];
   const canUndo = safeCursor > 0;
+  const filtersActive = countActiveFilters(filters);
+
+  // A re-filtered or re-sorted deck is a different deck — start it from the top
+  // instead of landing mid-way through it.
+  useEffect(() => {
+    setDatingCursor(0);
+    setRishtaCursor(0);
+  }, [filters, sort]);
 
   useEffect(() => {
     if (!currentProfile) return;
@@ -138,16 +251,22 @@ export function HomeScreen({ navigation }: Props) {
 
   const advance = () => setCursor((c) => Math.min(c + 1, visibleProfiles.length));
 
+  // Every locked control funnels through the same upsell prompt.
+  const promptUpgrade = async (title: string, message: string) => {
+    const wantsUpgrade = await confirm({
+      title,
+      message,
+      confirmLabel: t('explorePlus.upgrade'),
+      cancelLabel: t('common.cancel'),
+    });
+    if (wantsUpgrade) navigation.navigate('ExplorePlus');
+    return wantsUpgrade;
+  };
+
   const onUndo = async () => {
     if (!canUndo) return;
     if (!user?.isExplorePlus) {
-      const wantsUpgrade = await confirm({
-        title: t('discover.rewindLockedTitle'),
-        message: t('discover.rewindLockedBody'),
-        confirmLabel: t('explorePlus.upgrade'),
-        cancelLabel: t('common.cancel'),
-      });
-      if (wantsUpgrade) navigation.navigate('ExplorePlus');
+      await promptUpgrade(t('discover.rewindLockedTitle'), t('discover.rewindLockedBody'));
       return;
     }
     setCursor((c) => Math.max(c - 1, 0));
@@ -158,6 +277,18 @@ export function HomeScreen({ navigation }: Props) {
     advance();
   };
 
+  const onOpenMatchScore = async () => {
+    if (!currentProfile) return;
+    if (!user?.isExplorePlus) {
+      await promptUpgrade(
+        t('discover.matchScoreLockedTitle'),
+        t('discover.matchScoreLockedBody', { name: currentProfile.name })
+      );
+      return;
+    }
+    navigation.navigate('ProfileDetail', { kind: mode, id: currentProfile.id });
+  };
+
   const onLike = async () => {
     if (!currentProfile) return;
     const profile = currentProfile;
@@ -165,16 +296,8 @@ export function HomeScreen({ navigation }: Props) {
     if (!wasLiked) {
       const allowed = recordLike();
       if (!allowed) {
-        const wantsUpgrade = await confirm({
-          title: t('discover.limitReachedTitle'),
-          message: t('discover.limitReachedBody'),
-          confirmLabel: t('explorePlus.upgrade'),
-          cancelLabel: t('common.cancel'),
-        });
-        if (wantsUpgrade) {
-          navigation.navigate('ExplorePlus');
-          return;
-        }
+        const wantsUpgrade = await promptUpgrade(t('discover.limitReachedTitle'), t('discover.limitReachedBody'));
+        if (wantsUpgrade) return;
         advance();
         return;
       }
@@ -235,95 +358,65 @@ export function HomeScreen({ navigation }: Props) {
 
   if (!user) return null;
 
+  const actionBarBottom = TAB_BAR_BASE_HEIGHT + insets.bottom + spacing.sm;
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <View style={styles.header}>
-        <Text style={[styles.title, rtl && styles.rtlText]}>{t('nav.home')}</Text>
-        {mode === 'dating' && !isUnlimited && (
-          <View style={styles.likesBadge}>
-            <Ionicons name="heart" size={12} color={colors.teal} />
-            <Text style={styles.likesBadgeText}>{t('discover.likesRemaining', { count: remaining })}</Text>
-          </View>
-        )}
-      </View>
-
-      <View style={styles.toggleWrap}>
-        <ModeToggle mode={mode} onChange={setActiveMode} datingLabel={t('profile.datingMode')} rishtaLabel={t('profile.rishtaMode')} />
-      </View>
+      <HomeTopBar
+        activeFilterCount={filtersActive}
+        onOpenFilters={() => setFiltersVisible(true)}
+        onOpenSort={() => setSortVisible(true)}
+        onBoost={() => setBoostVisible(true)}
+        boostActive={isBoostActive}
+        notificationCount={unreadCount}
+        onNotifications={() => navigation.navigate('Notifications')}
+      />
 
       {currentProfile ? (
         <Animated.View key={`${mode}-${currentProfile.id}`} entering={ZoomIn.duration(200)} exiting={FadeOut.duration(100)} style={styles.flex}>
-          {/* No bottom padding to reserve here: the action row below is a normal
-              sibling in the column, not an overlay, so it can't cover the last
-              card. `styles.content` already ends with its own spacing.lg. */}
-          <ScrollView showsVerticalScrollIndicator={false} onScroll={onScroll} scrollEventThrottle={16}>
-            <DiscoverProfileCard profile={currentProfile} liked={isFavorite(currentProfile.id)} onPressPhoto={setPreviewUri} />
+          {/* The action bar floats over this scroll view, so the content reserves
+              its height (plus the tab bar) at the bottom instead of ending flush. */}
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            onScroll={onScroll}
+            scrollEventThrottle={16}
+            contentContainerStyle={{ paddingBottom: actionBarBottom + ACTION_BAR_CLEARANCE }}
+            refreshControl={
+              /* The deck is cached per sign-in, so a pull is how a member picks up
+                 profiles edited or added since the app opened. */
+              <RefreshControl refreshing={loading} onRefresh={reload} tintColor={colors.teal} colors={[colors.teal]} />
+            }
+          >
+            <SwipeableCard profileId={currentProfile.id} onSwipeRight={onLike} onSwipeLeft={onPass}>
+              <DiscoverProfileCard profile={currentProfile} liked={isFavorite(currentProfile.id)} onPressPhoto={setPreviewUri} />
+            </SwipeableCard>
+
+            <MatchScoreCard
+              name={currentProfile.name}
+              score={compatibilityScore}
+              bureauVerified={Boolean(currentProfile.bureauVerified)}
+              onPress={onOpenMatchScore}
+            />
 
             <View style={styles.content}>
-              {(currentProfile.vibeTags ?? []).length > 0 && (
-                <View style={styles.chipRow}>
-                  {(currentProfile.vibeTags ?? []).map((tag) => (
-                    <Chip key={tag} label={tag} tone={mode === 'dating' ? 'dating' : 'rishta'} selected />
-                  ))}
-                </View>
-              )}
+              <SimilaritiesSection name={currentProfile.name} items={similarities} />
 
-              <View style={styles.compatibilityBanner}>
-                <Ionicons name="sparkles" size={18} color={colors.gold} />
-                <View style={styles.compatibilityTextWrap}>
-                  <Text style={[styles.compatibilityTitle, rtl && styles.rtlText]}>
-                    {t('profile.aiScoreValue', { score: compatibilityScore })}
-                  </Text>
-                  <Badge
-                    label={currentProfile.bureauVerified ? t('profile.bureau') : t('profile.bureauNotVerified')}
-                    tone={currentProfile.bureauVerified ? 'success' : 'neutral'}
-                  />
-                </View>
-              </View>
-
-              <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('discover.similaritiesTitle')}</Text>
-              {similarities.length > 0 ? (
-                <>
-                  <Text style={[styles.sectionSubtitle, rtl && styles.rtlText]}>
-                    {t('discover.similaritiesSubtitle', { name: currentProfile.name })}
-                  </Text>
-                  <View style={styles.chipRow}>
-                    {similarities.map((label) => (
-                      <View key={label} style={styles.similarityChip}>
-                        <Ionicons name="checkmark-circle" size={14} color={colors.success} />
-                        <Text style={styles.similarityChipText}>{label}</Text>
-                      </View>
-                    ))}
-                  </View>
-                </>
-              ) : (
-                <Text style={[styles.sectionSubtitle, rtl && styles.rtlText]}>{t('discover.similaritiesEmpty')}</Text>
-              )}
-
-              {currentProfile.bio && (
-                <>
-                  <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('profile.about')}</Text>
-                  <Text style={[styles.bio, rtl && styles.rtlText]}>{currentProfile.bio}</Text>
-                </>
-              )}
-
-              {currentProfile.familyBackground && (
-                <>
-                  <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('rishtaProfile.title')}</Text>
-                  <Text style={[styles.bio, rtl && styles.rtlText]}>{currentProfile.familyBackground}</Text>
-                </>
-              )}
+              <AboutMeSection profile={currentProfile} />
+              <ReadinessSection profile={currentProfile} />
 
               <MidProfilePhoto photos={currentProfile.photos} onPress={setPreviewUri} />
               <IntroMediaSection profile={currentProfile} />
 
-              <AboutMeSection profile={currentProfile} />
-              <MarriageIntentionsCard profile={currentProfile} />
               <FaithSection profile={currentProfile} />
               <FuturePlansSection profile={currentProfile} />
+              <InterestsSection profile={currentProfile} />
+              <PersonalitySection profile={currentProfile} />
               <EducationCareerSection profile={currentProfile} />
               <LanguagesBackgroundSection profile={currentProfile} />
+              <BioSection profile={currentProfile} />
               <VerificationSection profile={currentProfile} />
+
+              <ProfileActionsFooter name={currentProfile.name} onSendCompliment={onSendCompliment} />
 
               <ProfileUtilityBar
                 liked={isFavorite(currentProfile.id)}
@@ -332,31 +425,50 @@ export function HomeScreen({ navigation }: Props) {
                 onBlock={onBlockProfile}
                 onReport={() => setReportVisible(true)}
               />
-
-              <ProfileActionsFooter onSendCompliment={onSendCompliment} />
             </View>
           </ScrollView>
+
+          <SwipeActionBar
+            canUndo={canUndo}
+            locked={!user.isExplorePlus}
+            onUndo={onUndo}
+            onPass={onPass}
+            onLike={onLike}
+            bottomInset={actionBarBottom}
+          />
         </Animated.View>
       ) : (
         <Animated.View entering={ReanimatedFadeIn.duration(240)} style={styles.emptyState}>
           <Ionicons name="sparkles-outline" size={32} color={colors.textTertiary} />
-          <Text style={[styles.emptyText, rtl && styles.rtlText]}>{t('discover.outOfProfiles')}</Text>
+          <Text style={[styles.emptyText, rtl && styles.rtlText]}>
+            {filtersActive > 0 ? t('discover.filtersEmpty') : t('discover.outOfProfiles')}
+          </Text>
+          {filtersActive > 0 && (
+            <Pressable onPress={() => setFilters(DEFAULT_BROWSE_FILTERS)} style={styles.emptyResetButton}>
+              <Text style={styles.emptyResetLabel}>{t('discover.filtersReset')}</Text>
+            </Pressable>
+          )}
         </Animated.View>
       )}
 
-      {currentProfile && (
-        <View style={[styles.actionsRow, { paddingBottom: TAB_BAR_BASE_HEIGHT + insets.bottom }]}>
-          <SwipeActionButton onPress={onUndo} disabled={!canUndo} size="small" colors={colors} locked={canUndo && !user.isExplorePlus}>
-            <Ionicons name="arrow-undo" size={20} color={canUndo ? colors.gold : colors.textTertiary} />
-          </SwipeActionButton>
-          <SwipeActionButton onPress={onPass} size="large" colors={colors}>
-            <Ionicons name="close" size={30} color={colors.textPrimary} />
-          </SwipeActionButton>
-          <SwipeActionButton onPress={onLike} size="large" tone="like" colors={colors}>
-            <Ionicons name="heart" size={26} color="#FFFFFF" />
-          </SwipeActionButton>
-        </View>
-      )}
+      <BrowseFiltersSheet
+        visible={filtersVisible}
+        filters={filters}
+        mode={mode}
+        onChange={setFilters}
+        onClose={() => setFiltersVisible(false)}
+      />
+
+      <BrowseSortSheet visible={sortVisible} sort={sort} onChange={setSort} onClose={() => setSortVisible(false)} />
+
+      <BoostSheet
+        visible={boostVisible}
+        onClose={() => setBoostVisible(false)}
+        onGetMore={() => {
+          setBoostVisible(false);
+          navigation.navigate('ExplorePlus');
+        }}
+      />
 
       <Modal visible={Boolean(previewUri)} transparent animationType="fade" onRequestClose={() => setPreviewUri(null)}>
         <Pressable style={styles.previewOverlay} onPress={() => setPreviewUri(null)}>
@@ -381,142 +493,21 @@ export function HomeScreen({ navigation }: Props) {
   );
 }
 
-function SwipeActionButton({
-  onPress,
-  disabled,
-  size,
-  tone,
-  colors,
-  locked,
-  children,
-}: {
-  onPress: () => void;
-  disabled?: boolean;
-  size: 'small' | 'large';
-  tone?: 'like';
-  colors: Palette;
-  locked?: boolean;
-  children: React.ReactNode;
-}) {
-  const scale = useSharedValue(1);
-  const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
-  const dimension = size === 'small' ? 46 : 62;
-
-  return (
-    <Animated.View style={animatedStyle}>
-      <Pressable
-        onPress={onPress}
-        disabled={disabled}
-        onPressIn={() => {
-          if (disabled) return;
-          scale.value = withSpring(0.86, { damping: 14, stiffness: 260 });
-        }}
-        onPressOut={() => {
-          scale.value = withSpring(1, { damping: 10, stiffness: 220 });
-        }}
-        style={[
-          actionButtonStyles.button,
-          { width: dimension, height: dimension, backgroundColor: colors.surface, borderColor: colors.border },
-          tone === 'like' && { backgroundColor: colors.dating, borderColor: colors.dating },
-          disabled && actionButtonStyles.disabled,
-        ]}
-      >
-        {children}
-        {locked && (
-          <View style={[actionButtonStyles.lockBadge, { backgroundColor: colors.gold, borderColor: colors.background }]}>
-            <Ionicons name="lock-closed" size={9} color="#FFFFFF" />
-          </View>
-        )}
-      </Pressable>
-    </Animated.View>
-  );
-}
-
-const actionButtonStyles = StyleSheet.create({
-  button: {
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 3,
-  },
-  disabled: { opacity: 0.4, shadowOpacity: 0 },
-  lockBadge: {
-    position: 'absolute',
-    bottom: -2,
-    right: -2,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    borderWidth: 1.5,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
-
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
     safeArea: { flex: 1, backgroundColor: colors.background },
     flex: { flex: 1 },
-    header: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      paddingHorizontal: spacing.lg,
-      paddingBottom: spacing.sm,
-    },
-    title: { ...typography.h1, color: colors.textPrimary },
-    likesBadge: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 4,
-      backgroundColor: colors.tealSoft,
-      borderRadius: radius.pill,
-      paddingHorizontal: spacing.sm,
-      paddingVertical: 4,
-    },
-    likesBadgeText: { ...typography.caption, color: colors.teal, fontWeight: '700' },
-    toggleWrap: { paddingHorizontal: spacing.lg, paddingBottom: spacing.md },
-    content: { padding: spacing.lg },
-    chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
-    compatibilityBanner: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.sm,
-      backgroundColor: colors.goldSoft,
-      borderRadius: radius.lg,
-      padding: spacing.md,
-      marginTop: spacing.lg,
-    },
-    compatibilityTextWrap: { flex: 1, gap: spacing.xs },
-    compatibilityTitle: { ...typography.bodyBold, color: colors.gold },
-    sectionTitle: { ...typography.label, color: colors.textSecondary, textTransform: 'uppercase', marginTop: spacing.lg, marginBottom: spacing.xs },
-    sectionSubtitle: { ...typography.caption, color: colors.textSecondary, marginBottom: spacing.sm },
-    similarityChip: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 4,
-      backgroundColor: colors.successSoft,
-      borderRadius: radius.pill,
-      paddingHorizontal: spacing.sm,
-      paddingVertical: 6,
-    },
-    similarityChipText: { ...typography.caption, color: colors.success, fontWeight: '600' },
-    bio: { ...typography.body, color: colors.textPrimary },
+    content: { paddingHorizontal: spacing.md, paddingTop: spacing.xs },
     emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, paddingHorizontal: spacing.xl },
     emptyText: { ...typography.body, color: colors.textSecondary, textAlign: 'center' },
-    actionsRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: spacing.lg,
-      paddingVertical: spacing.md,
-      backgroundColor: colors.background,
+    emptyResetButton: {
+      borderRadius: radius.pill,
+      borderWidth: 1.5,
+      borderColor: colors.teal,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.sm,
     },
+    emptyResetLabel: { ...typography.label, color: colors.teal, fontWeight: '700', fontSize: scaleFont(13) },
     previewOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', alignItems: 'center', justifyContent: 'center' },
     previewImage: { width: '100%', height: '80%' },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },

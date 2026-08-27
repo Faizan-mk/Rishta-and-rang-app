@@ -1,8 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { TextField } from '../common/TextField';
-import { Button } from '../common/Button';
-import { spacing, typography } from '../../theme';
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { spacing, radius, typography } from '../../theme';
+import { scaleFont } from '../../theme/responsive';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
@@ -10,47 +9,101 @@ import { useLanguage } from '../../store/LanguageContext';
 const COMPLIMENT_MAX_LENGTH = 200;
 
 interface ProfileActionsFooterProps {
+  name: string;
   onSendCompliment: (text: string) => Promise<void>;
 }
 
-export function ProfileActionsFooter({ onSendCompliment }: ProfileActionsFooterProps) {
+// The salaam block at the end of a profile: a short, respectful opener that
+// reaches the other side even before a match, in the greeting people here
+// actually start conversations with.
+export function ProfileActionsFooter({ name, onSendCompliment }: ProfileActionsFooterProps) {
   const { colors } = useTheme();
   const { t, rtl } = useLanguage();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [compliment, setCompliment] = useState('');
   const [sending, setSending] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const canSubmit = compliment.trim().length > 0 && !sending;
 
   const onSubmitCompliment = async () => {
-    const trimmed = compliment.trim();
-    if (!trimmed || sending) return;
+    if (!canSubmit) return;
     setSending(true);
-    await onSendCompliment(trimmed);
+    await onSendCompliment(compliment.trim());
     setSending(false);
     setCompliment('');
   };
 
   return (
     <View style={styles.section}>
-      <TextField
-        label={t('discover.complimentTitle')}
+      <Text style={[styles.eyebrow, rtl && styles.rtlText]}>{t('discover.salaamLabel')}</Text>
+      <Text style={[styles.heading, rtl && styles.rtlText]}>{t('discover.salaamHeading', { name })}</Text>
+
+      <TextInput
         value={compliment}
         onChangeText={setCompliment}
-        placeholder={t('discover.complimentPlaceholder')}
+        placeholder={t('discover.salaamPlaceholder')}
+        placeholderTextColor={colors.textTertiary}
         multiline
-        numberOfLines={3}
         maxLength={COMPLIMENT_MAX_LENGTH}
-        style={styles.complimentInput}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        style={[styles.input, focused && styles.inputFocused, rtl && styles.rtlText]}
       />
-      <Text style={[styles.charCount, rtl && styles.rtlText]}>{compliment.length}/{COMPLIMENT_MAX_LENGTH}</Text>
-      <Button label={t('discover.complimentSend')} onPress={onSubmitCompliment} loading={sending} disabled={!compliment.trim()} />
+      <Text style={[styles.charCount, rtl && styles.charCountRtl]}>
+        {compliment.length}/{COMPLIMENT_MAX_LENGTH}
+      </Text>
+
+      <Pressable
+        onPress={onSubmitCompliment}
+        disabled={!canSubmit}
+        style={[styles.submit, !canSubmit && styles.submitDisabled]}
+      >
+        {sending ? (
+          <ActivityIndicator color="#FFFFFF" />
+        ) : (
+          <Text style={styles.submitLabel}>{t('discover.salaamSend')}</Text>
+        )}
+      </Pressable>
     </View>
   );
 }
 
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
-    section: { marginTop: spacing.lg },
-    complimentInput: { minHeight: 70, textAlignVertical: 'top' },
-    charCount: { ...typography.caption, color: colors.textTertiary, textAlign: 'right', marginTop: -spacing.sm, marginBottom: spacing.sm },
+    section: { marginTop: spacing.xl },
+    eyebrow: {
+      color: colors.textTertiary,
+      fontSize: scaleFont(11),
+      fontWeight: '700',
+      letterSpacing: 1.4,
+      textTransform: 'uppercase',
+    },
+    heading: { ...typography.h2, color: colors.textPrimary, marginTop: spacing.xs, marginBottom: spacing.md },
+    input: {
+      minHeight: 96,
+      borderWidth: 1.5,
+      borderColor: colors.border,
+      borderRadius: radius.md,
+      backgroundColor: colors.surface,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm + 4,
+      fontSize: typography.body.fontSize,
+      color: colors.textPrimary,
+      textAlignVertical: 'top',
+    },
+    inputFocused: { borderColor: colors.teal },
+    charCount: { ...typography.caption, color: colors.textTertiary, textAlign: 'right', marginTop: spacing.xs },
+    charCountRtl: { textAlign: 'left' },
+    submit: {
+      marginTop: spacing.sm,
+      borderRadius: radius.pill,
+      backgroundColor: colors.teal,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: spacing.md,
+      minHeight: 48,
+    },
+    submitDisabled: { backgroundColor: colors.textTertiary, opacity: 0.6 },
+    submitLabel: { ...typography.h3, color: '#FFFFFF', fontWeight: '700' },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   });

@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { favoritesService } from '../services/favoritesService';
+import { likesService } from '../services/likesService';
+import { ageFromDob } from '../utils/date';
 import { cache, CACHE_KEYS } from '../services/cache';
 import type { FavoriteProfile } from '../types/content';
 import { useAuth } from './AuthContext';
@@ -64,9 +66,23 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
     if (isFavorite(profile.id)) {
       setFavorites((prev) => prev.filter((f) => f.id !== profile.id));
       favoritesService.removeFavorite(user.id, profile.id);
+      // Taking a like back also takes it off the other member's "who liked you".
+      likesService.withdrawLike(profile.id, user.id).catch(() => undefined);
     } else {
       setFavorites((prev) => [profile, ...prev]);
       favoritesService.addFavorite(user.id, profile);
+      // The other side can't read our favourites, so the like is mirrored onto
+      // their own record — that list is what Explore+ unlocks.
+      likesService
+        .sendLike(profile.id, {
+          id: user.id,
+          kind: profile.kind,
+          name: user.fullName,
+          age: ageFromDob(user.dob) ?? 0,
+          city: user.city ?? '',
+          photo: user.photos?.[0] ?? '',
+        })
+        .catch(() => undefined);
     }
   };
 

@@ -172,7 +172,7 @@ export function EditProfileScreen({ navigation }: Props) {
     }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
-      quality: 0.7,
+      quality: 0.9,
       allowsEditing: true,
       aspect: [3, 4],
     });

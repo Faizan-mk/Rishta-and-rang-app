@@ -1,4 +1,4 @@
-import type { Gender, ProfileMode, RishtaReadiness } from './user';
+import type { Gender, Intent, ProfileMode, RishtaReadiness } from './user';
 
 // Fields that both the Dating (Discover) and Rishta browsing experiences render
 // through the same shared profile-detail UI. Each side only requires the fields
@@ -6,8 +6,20 @@ import type { Gender, ProfileMode, RishtaReadiness } from './user';
 // education/familyBackground/readiness for Rishta) — everything else is optional
 // and simply doesn't render its section when absent, on either side.
 interface BrowseProfileFields {
+  // What the member said they're here for at sign-up (casual / serious / matrimonial).
+  intent?: Intent;
   bio?: string;
   vibeTags?: string[];
+  // Muzz-style profile chips. `interests` falls back to `vibeTags` when a record
+  // predates the split; `personality` has no fallback and simply hides its section.
+  interests?: string[];
+  personality?: string[];
+  // Straight-line distance from the signed-in user, when the backend can work it
+  // out. Absent for demo/legacy records — the card then shows city/country only.
+  distanceKm?: number;
+  lastActiveAt?: string;
+  // When the member signed up, for the "Just joined" sort.
+  joinedAt?: string;
   bureauVerified?: boolean;
   photosBlurred?: boolean;
   selfieVerified?: boolean;

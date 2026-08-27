@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import Animated, { SlideInDown } from 'react-native-reanimated';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { BottomSheet } from './BottomSheet';
 import { Button } from './Button';
 import { radius, spacing, typography } from '../../theme';
 import type { Palette } from '../../theme/palettes';
@@ -22,48 +22,28 @@ export function FilterSheet({ visible, title, onClose, onApply, onReset, childre
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={styles.overlay} onPress={onClose}>
-        <Animated.View entering={SlideInDown.duration(300).springify().damping(19)} style={styles.sheet}>
-          <Pressable onPress={(e) => e.stopPropagation()}>
-            <View style={styles.sheetHandle} />
-            <View style={styles.headerRow}>
-              <Text style={[styles.title, rtl && styles.rtlText]}>{title}</Text>
-              <Pressable onPress={onReset}>
-                <Text style={styles.resetText}>{t('common.reset')}</Text>
-              </Pressable>
-            </View>
-
-            <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-              {children}
-            </ScrollView>
-
-            <Button label={t('common.apply')} onPress={onApply} style={styles.applyButton} />
+    <BottomSheet visible={visible} onClose={onClose}>
+      <View style={styles.body}>
+        <View style={styles.headerRow}>
+          <Text style={[styles.title, rtl && styles.rtlText]}>{title}</Text>
+          <Pressable onPress={onReset} hitSlop={8}>
+            <Text style={styles.resetText}>{t('common.reset')}</Text>
           </Pressable>
-        </Animated.View>
-      </Pressable>
-    </Modal>
+        </View>
+
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+          {children}
+        </ScrollView>
+
+        <Button label={t('common.apply')} onPress={onApply} style={styles.applyButton} />
+      </View>
+    </BottomSheet>
   );
 }
 
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
-    overlay: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' },
-    sheet: {
-      backgroundColor: colors.surface,
-      borderTopLeftRadius: radius.lg,
-      borderTopRightRadius: radius.lg,
-      padding: spacing.lg,
-      maxHeight: '85%',
-    },
-    sheetHandle: {
-      width: 40,
-      height: 4,
-      borderRadius: 2,
-      backgroundColor: colors.border,
-      alignSelf: 'center',
-      marginBottom: spacing.md,
-    },
+    body: { paddingHorizontal: spacing.lg, paddingBottom: spacing.lg },
     headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md },
     title: { ...typography.h3, color: colors.textPrimary },
     resetText: { ...typography.caption, color: colors.teal, fontWeight: '700' },

@@ -3,7 +3,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { authService, SignupInput } from '../services/authService';
 import { auth } from '../services/firebase';
 import { cache, CACHE_KEYS } from '../services/cache';
-import type { ProfileMode, UserProfile } from '../types/user';
+import type { Intent, ProfileMode, RishtaReadiness, UserProfile } from '../types/user';
 
 interface AuthContextValue {
   user: UserProfile | null;
@@ -13,6 +13,8 @@ interface AuthContextValue {
   logout: () => Promise<void>;
   updateUser: (updated: UserProfile) => Promise<void>;
   setActiveMode: (mode: ProfileMode) => void;
+  setIntent: (intent: Intent) => void;
+  setReadiness: (readiness: RishtaReadiness) => void;
   deleteAccount: () => Promise<void>;
 }
 
@@ -42,6 +44,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Show the last known profile immediately, so a returning user lands in
       // the app instead of on the splash while three documents come down the
       // wire. The fresh copy replaces it a moment later.
+      // Fire-and-forget: the badge other members see is only as honest as this.
+      authService.touchLastActive(firebaseUser.uid).catch(() => undefined);
+
       const cached = await cache.read<UserProfile>(firebaseUser.uid, CACHE_KEYS.profile);
       if (cached) {
         setUser(cached);
@@ -116,6 +121,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [user]
   );
 
+  // Same optimistic shape as setActiveMode: the chip moves on the tap, the
+  // one-field write follows, and a failure puts the old value back.
+  const setIntent = useCallback(
+    (intent: Intent) => {
+      if (!user || user.intent === intent) return;
+      const previous = user;
+      // Intent picks the deck: matrimonial browses rishta, everything else dating.
+      const activeMode: ProfileMode = intent === 'matrimonial' ? 'rishta' : 'dating';
+      const optimistic = { ...user, intent, activeMode };
+      setUser(optimistic);
+      cache.write(optimistic.id, CACHE_KEYS.profile, optimistic);
+      authService.setIntent(optimistic.id, intent, activeMode).catch(() => {
+        setUser(previous);
+        cache.write(previous.id, CACHE_KEYS.profile, previous);
+      });
+    },
+    [user]
+  );
+
+  const setReadiness = useCallback(
+    (readiness: RishtaReadiness) => {
+      if (!user || user.rishta.readiness === readiness) return;
+      const previous = user;
+      const optimistic = { ...user, rishta: { ...user.rishta, readiness } };
+      setUser(optimistic);
+      cache.write(optimistic.id, CACHE_KEYS.profile, optimistic);
+      authService.setReadiness(optimistic.id, readiness).catch(() => {
+        setUser(previous);
+        cache.write(previous.id, CACHE_KEYS.profile, previous);
+      });
+    },
+    [user]
+  );
+
   const deleteAccount = useCallback(async () => {
     if (!user) return;
     await authService.deleteAccount(user.id);
@@ -124,8 +163,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user]);
 
   const value = useMemo(
-    () => ({ user, initializing, signup, login, logout, updateUser, setActiveMode, deleteAccount }),
-    [user, initializing, signup, login, logout, updateUser, setActiveMode, deleteAccount]
+    () => ({ user, initializing, signup, login, logout, updateUser, setActiveMode, setIntent, setReadiness, deleteAccount }),
+    [user, initializing, signup, login, logout, updateUser, setActiveMode, setIntent, setReadiness, deleteAccount]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

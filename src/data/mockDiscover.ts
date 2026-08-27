@@ -1,7 +1,16 @@
 import type { DiscoverProfile } from '../types/content';
+import type { Intent } from '../types/user';
 
-const W = (n: number) => `https://randomuser.me/api/portraits/women/${n}.jpg`;
-const M = (n: number) => `https://randomuser.me/api/portraits/men/${n}.jpg`;
+// Demo portraits. The old randomuser.me endpoint only serves 128px thumbnails,
+// which looked blurry stretched across a full-bleed card, so these come from a
+// 1000px source instead. Indices are hand-picked adult portraits per gender, and
+// W()/M() wrap around them so any call number stays gender-correct.
+const FEMALE_FACES = [5, 16, 19, 20, 21, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 34, 35, 36, 38, 43, 44, 45, 47, 49];
+const MALE_FACES = [3, 8, 11, 12, 13, 14, 18, 51, 52, 53, 54, 56, 58, 59, 60, 68];
+
+const portrait = (id: number) => `https://i.pravatar.cc/1000?img=${id}`;
+const W = (n: number) => portrait(FEMALE_FACES[n % FEMALE_FACES.length]);
+const M = (n: number) => portrait(MALE_FACES[n % MALE_FACES.length]);
 
 // Placeholder demo data only — a real backend would replace this with actual
 // candidate profiles from the matching service.
@@ -273,10 +282,50 @@ const rawDiscoverProfiles: DiscoverProfile[] = [
   },
 ];
 
-// Bureau verification + photo-blur privacy demoed on a subset of profiles for variety.
+
+// Personality traits demoed off a shared pool so every card has a Personality
+// section to render; a real backend would store the member's own picks.
+const PERSONALITY_POOL = [
+  'Active Listener',
+  'Adventurous',
+  'Affectionate',
+  'Animal lover',
+  'Cheerful',
+  'Ambitious',
+  'Thoughtful',
+  'Funny',
+];
+
+function demoPersonality(i: number): string[] {
+  return [0, 1, 2].map((n) => PERSONALITY_POOL[(i * 3 + n) % PERSONALITY_POOL.length]);
+}
+
+// Intent spread so the intent filter has something to bite on.
+const DEMO_INTENTS: Intent[] = ['casual', 'serious', 'matrimonial'];
+
+// Join dates spread over the last few months so "Just joined" has something to
+// order; index 0 is the newest member.
+function demoJoinedAt(i: number): string {
+  return new Date(Date.now() - (i * 9 + 2) * 24 * 60 * 60 * 1000).toISOString();
+}
+
+// Roughly "seen N hours ago" — every other profile lands inside the 24h window
+// that drives the "Active today" badge.
+function demoLastActive(i: number): string {
+  const hoursAgo = i % 2 === 0 ? (i % 12) + 1 : 26 + i * 5;
+  return new Date(Date.now() - hoursAgo * 60 * 60 * 1000).toISOString();
+}
+
+// Bureau verification demoed on a subset of profiles for variety. `photosBlurred`
+// is deliberately left off here: it's a real member's privacy choice, and faking it
+// on the demo deck just makes the cards look like broken/low-quality photos.
 export const mockDiscoverProfiles: DiscoverProfile[] = rawDiscoverProfiles.map((p, i) => ({
   ...p,
   bureauVerified: i % 3 === 0,
   selfieVerified: i % 2 === 0,
-  photosBlurred: i % 4 === 1,
+  distanceKm: i * 7 + 3,
+  lastActiveAt: demoLastActive(i),
+  joinedAt: demoJoinedAt(i),
+  intent: DEMO_INTENTS[i % DEMO_INTENTS.length],
+  personality: demoPersonality(i),
 }));

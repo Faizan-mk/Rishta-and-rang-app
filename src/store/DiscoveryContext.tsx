@@ -14,8 +14,7 @@ import { useAuth } from './AuthContext';
 
 // Guaranteed-to-load placeholder, used so no card/avatar is ever blank even if
 // a member signed up without uploading photos yet.
-const FALLBACK_AVATAR =
-  'https://randomuser.me/api/portraits/lego/5.jpg';
+const FALLBACK_AVATAR = 'https://placehold.co/900x1200/EDE9E1/8B9A9C/png?text=No+Photo';
 
 function withPhotos<T extends { photos: string[] }>(profiles: T[]): T[] {
   return profiles.map((p) => {

@@ -83,6 +83,14 @@ export interface ProfileDoc {
   grewUpIn: string | null;
   country: string | null;
   selfieVerified: boolean;
+  /**
+   * Just the badge, not the CNIC record behind it: other members have to be able
+   * to see that a profile is bureau-verified, and `users/{uid}/private/verification`
+   * is owner-only. The number and photo stay in that private doc.
+   */
+  bureauVerified: boolean;
+  /** Last time this member opened the app — drives the activity badge and sorts. */
+  lastActiveAt: string | null;
   /** Ordered download URLs — replaces the old `profile_photos` table. */
   photos: string[];
   voiceIntroUrl: string | null;
@@ -174,7 +182,7 @@ async function mapToUserProfile(
     cnicVerified: verification?.cnicVerified ?? false,
     cnicNumber: verification?.cnicNumber ?? undefined,
     cnicPhotoUri,
-    bureauVerified: verification?.bureauVerified ?? false,
+    bureauVerified: data.bureauVerified ?? verification?.bureauVerified ?? false,
     waliName: data.waliName ?? undefined,
     waliContact: privateData?.waliContact ?? undefined,
     waliInvitedAt: data.waliInvitedAt ?? undefined,
@@ -270,6 +278,8 @@ function blankProfileDoc(input: {
     grewUpIn: null,
     country: null,
     selfieVerified: Boolean(input.selfieVerified),
+    bureauVerified: false,
+    lastActiveAt: new Date().toISOString(),
     photos: input.photos,
     voiceIntroUrl: null,
     voiceIntroDurationSec: null,
@@ -382,6 +392,11 @@ async function login(email: string, password: string): Promise<UserProfile> {
   return profile;
 }
 
+/** Stamps "seen just now" on the public card. Fire-and-forget on app start. */
+async function touchLastActive(userId: string): Promise<void> {
+  await updateDoc(profileDoc(userId), { lastActiveAt: new Date().toISOString() });
+}
+
 async function logout(): Promise<void> {
   await signOut(auth);
 }
@@ -418,6 +433,7 @@ async function updateUser(updated: UserProfile): Promise<UserProfile> {
 
   const patch: Partial<ProfileDoc> = {
     fullName: updated.fullName,
+    intent: updated.intent,
     city: updated.city,
     bio: updated.bio,
     language: updated.language,
@@ -454,6 +470,7 @@ async function updateUser(updated: UserProfile): Promise<UserProfile> {
     grewUpIn: updated.grewUpIn ?? null,
     country: updated.country ?? null,
     selfieVerified: updated.selfieVerified,
+    bureauVerified: updated.bureauVerified ?? false,
     photos: photoUrls,
     voiceIntroUrl,
     voiceIntroDurationSec: updated.voiceIntroDurationSec ?? null,
@@ -484,6 +501,7 @@ async function updateUser(updated: UserProfile): Promise<UserProfile> {
     const verificationPatch: Partial<VerificationDoc> = {
       cnicNumber: updated.cnicNumber,
       cnicVerified: updated.cnicVerified ?? true,
+      bureauVerified: updated.bureauVerified ?? false,
     };
     if (cnicPhotoPath) verificationPatch.cnicPhotoPath = cnicPhotoPath;
 
@@ -563,7 +581,22 @@ async function setActiveMode(userId: string, mode: ProfileMode): Promise<void> {
   await updateDoc(profileDoc(userId), { activeMode: mode });
 }
 
+/**
+ * One-field writes for the taps that must feel instant. Going through updateUser
+ * would re-upload photos and rewrite every document just to change one enum.
+ */
+async function setIntent(userId: string, intent: Intent, activeMode: ProfileMode): Promise<void> {
+  await updateDoc(profileDoc(userId), { intent, activeMode });
+}
+
+async function setReadiness(userId: string, readiness: UserProfile['rishta']['readiness']): Promise<void> {
+  await updateDoc(profileDoc(userId), { rishtaReadiness: readiness });
+}
+
 export const authService = {
+  touchLastActive,
+  setIntent,
+  setReadiness,
   signup,
   login,
   logout,

@@ -2,7 +2,7 @@ import React, { useEffect, useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring } from 'react-native-reanimated';
-import { radius, spacing, typography } from '../../theme';
+import { spacing, typography } from '../../theme';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
@@ -15,24 +15,34 @@ interface ProfileUtilityBarProps {
   onReport: () => void;
 }
 
+// Quiet, borderless footer actions: a full-width share row, then the three
+// per-profile controls people only reach for occasionally.
 export function ProfileUtilityBar({ liked, onShare, onToggleFavourite, onBlock, onReport }: ProfileUtilityBarProps) {
   const { colors } = useTheme();
   const { t } = useLanguage();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   return (
-    <View style={styles.utilityRow}>
-      <UtilityAction icon="share-outline" label={t('discover.share')} onPress={onShare} colors={colors} />
-      <UtilityAction
-        icon={liked ? 'star' : 'star-outline'}
-        label={liked ? t('discover.favourited') : t('discover.favourite')}
-        onPress={onToggleFavourite}
-        colors={colors}
-        active={liked}
-        pop
-      />
-      <UtilityAction icon="hand-left-outline" label={t('discover.block')} onPress={onBlock} colors={colors} />
-      <UtilityAction icon="flag-outline" label={t('discover.report')} onPress={onReport} colors={colors} />
+    <View style={styles.wrap}>
+      <Pressable onPress={onShare} style={styles.shareRow}>
+        <Ionicons name="share-social-outline" size={19} color={colors.textPrimary} />
+        <Text style={styles.shareLabel}>{t('discover.shareProfile')}</Text>
+      </Pressable>
+
+      <View style={styles.divider} />
+
+      <View style={styles.utilityRow}>
+        <UtilityAction
+          icon={liked ? 'star' : 'star-outline'}
+          label={liked ? t('discover.favourited') : t('discover.favourite')}
+          onPress={onToggleFavourite}
+          colors={colors}
+          active={liked}
+          pop
+        />
+        <UtilityAction icon="ban-outline" label={t('discover.block')} onPress={onBlock} colors={colors} />
+        <UtilityAction icon="flag-outline" label={t('discover.report')} onPress={onReport} colors={colors} />
+      </View>
     </View>
   );
 }
@@ -75,28 +85,23 @@ function UtilityAction({
       onPressOut={() => {
         scale.value = withSpring(1, { damping: 10, stiffness: 220 });
       }}
-      style={[styles.utilityButton, active && styles.utilityButtonActive]}
+      style={styles.utilityButton}
     >
       <Animated.View style={animatedStyle}>
-        <Ionicons name={icon} size={19} color={active ? colors.gold : colors.textSecondary} />
+        <Ionicons name={icon} size={22} color={active ? colors.gold : colors.textPrimary} />
       </Animated.View>
-      <Text style={[styles.utilityLabel, { color: active ? colors.gold : colors.textSecondary }]}>{label}</Text>
+      <Text style={[styles.utilityLabel, { color: active ? colors.gold : colors.textPrimary }]}>{label}</Text>
     </Pressable>
   );
 }
 
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
-    utilityRow: {
-      flexDirection: 'row',
-      backgroundColor: colors.surface,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: radius.lg,
-      overflow: 'hidden',
-      marginTop: spacing.lg,
-    },
-    utilityButton: { flex: 1, alignItems: 'center', gap: 3, paddingVertical: spacing.sm },
-    utilityButtonActive: { backgroundColor: colors.goldSoft },
-    utilityLabel: { ...typography.caption, fontWeight: '600' },
+    wrap: { marginTop: spacing.xl },
+    shareRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, paddingVertical: spacing.md },
+    shareLabel: { ...typography.h3, color: colors.textPrimary, fontWeight: '600' },
+    divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border, marginVertical: spacing.sm },
+    utilityRow: { flexDirection: 'row', paddingVertical: spacing.md },
+    utilityButton: { flex: 1, alignItems: 'center', gap: spacing.sm },
+    utilityLabel: { ...typography.body, fontWeight: '600' },
   });

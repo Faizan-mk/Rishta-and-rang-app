@@ -6,6 +6,7 @@ import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import type { BrowseProfile } from '../../types/content';
 import { radius, spacing, typography } from '../../theme';
+import { scaleFont } from '../../theme/responsive';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
@@ -106,21 +107,49 @@ function AttributeChip({ icon, label }: AttributeChipData) {
   const styles = useMemo(() => makeChipStyles(colors), [colors]);
   return (
     <View style={styles.chip}>
-      <Ionicons name={icon} size={14} color={colors.textSecondary} />
+      <Ionicons name={icon} size={15} color={colors.textSecondary} />
       <Text style={styles.chipText}>{label}</Text>
     </View>
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   const { colors } = useTheme();
   const { rtl } = useLanguage();
   const styles = useMemo(() => makeSectionStyles(colors), [colors]);
   return (
     <View style={styles.section}>
       <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{title}</Text>
+      {subtitle ? <Text style={[styles.sectionSubtitle, rtl && styles.rtlText]}>{subtitle}</Text> : null}
       {children}
     </View>
+  );
+}
+
+// Things the signed-in member and the profile already have in common, shown as
+// the first thing under the photo because it's the best icebreaker on the screen.
+export function SimilaritiesSection({ name, items }: { name: string; items: string[] }) {
+  const { colors } = useTheme();
+  const { t, rtl } = useLanguage();
+  const styles = useMemo(() => makeSectionStyles(colors), [colors]);
+  const similarityStyles = useMemo(() => makeSimilarityStyles(colors), [colors]);
+
+  return (
+    <Section
+      title={t('discover.similaritiesTitle')}
+      subtitle={items.length > 0 ? t('discover.similaritiesSubtitle', { name }) : t('discover.similaritiesEmpty')}
+    >
+      {items.length > 0 && (
+        <View style={styles.chipRow}>
+          {items.map((label) => (
+            <View key={label} style={similarityStyles.chip}>
+              <Ionicons name="checkmark-circle" size={15} color={colors.success} />
+              <Text style={[similarityStyles.chipText, rtl && styles.rtlText]}>{label}</Text>
+            </View>
+          ))}
+        </View>
+      )}
+    </Section>
   );
 }
 
@@ -130,47 +159,47 @@ const READINESS_STEPS: { key: NonNullable<BrowseProfile['readiness']>; labelKey:
   { key: 'ready_now', labelKey: 'profile.readinessNow' },
 ];
 
-export function MarriageIntentionsCard({ profile }: { profile: BrowseProfile }) {
+// The roadmap's Rishta Readiness signal, drawn as a three-segment meter: how far
+// along the marriage journey this member says they are.
+export function ReadinessSection({ profile }: { profile: BrowseProfile }) {
   const { colors } = useTheme();
   const { t, rtl } = useLanguage();
   const styles = useMemo(() => makeSectionStyles(colors), [colors]);
+  const meter = useMemo(() => makeReadinessStyles(colors), [colors]);
   if (!profile.readiness) return null;
-  const activeIndex = READINESS_STEPS.findIndex((s) => s.key === profile.readiness);
+  const activeIndex = READINESS_STEPS.findIndex((step) => step.key === profile.readiness);
 
   return (
-    <Section title={t('discover.marriageIntentionsTitle')}>
-      <View style={intentionStyles.track}>
-        <View style={[intentionStyles.trackFill, { width: `${(activeIndex / (READINESS_STEPS.length - 1)) * 100}%`, backgroundColor: colors.rishta }]} />
+    <View style={meter.card}>
+      <Text style={[meter.title, rtl && styles.rtlText]}>{t('discover.readinessTitle')}</Text>
+      <Text style={[meter.caption, rtl && styles.rtlText]}>
+        {t('discover.readinessCaption', { name: profile.name })}
+      </Text>
+
+      <View style={meter.segmentRow}>
         {READINESS_STEPS.map((step, i) => (
-          <View
-            key={step.key}
-            style={[
-              intentionStyles.dot,
-              { left: `${(i / (READINESS_STEPS.length - 1)) * 100}%`, backgroundColor: i <= activeIndex ? colors.rishta : colors.border },
-            ]}
-          />
+          <View key={step.key} style={[meter.segment, i <= activeIndex && meter.segmentFilled]} />
         ))}
       </View>
-      <View style={intentionStyles.labelRow}>
+
+      <View style={meter.labelRow}>
         {READINESS_STEPS.map((step, i) => (
           <Text
             key={step.key}
-            style={[
-              intentionStyles.label,
-              { color: i === activeIndex ? colors.rishta : colors.textTertiary, fontWeight: i === activeIndex ? '700' : '400' },
-              rtl && styles.rtlText,
-            ]}
+            style={[meter.stepLabel, i === activeIndex && meter.stepLabelActive]}
+            numberOfLines={2}
           >
             {t(step.labelKey)}
           </Text>
         ))}
       </View>
-      {profile.openToRelocate !== undefined && (
-        <View style={styles.chipRow}>
-          {profile.openToRelocate && <AttributeChip icon="airplane-outline" label={t('discover.openToRelocate')} />}
+
+      {profile.openToRelocate && (
+        <View style={[styles.chipRow, meter.chipRow]}>
+          <AttributeChip icon="airplane-outline" label={t('discover.openToRelocate')} />
         </View>
       )}
-    </Section>
+    </View>
   );
 }
 
@@ -240,6 +269,7 @@ export function FuturePlansSection({ profile }: { profile: BrowseProfile }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeSectionStyles(colors), [colors]);
   const chips: AttributeChipData[] = [];
+  if (profile.hasChildren === false) chips.push({ icon: 'happy-outline', label: t('attributes.hasChildrenNo') });
   if (profile.openToRelocate) chips.push({ icon: 'airplane-outline', label: t('discover.openToRelocate') });
   if (profile.preferredCountry) chips.push({ icon: 'flag-outline', label: profile.preferredCountry });
   if (profile.careerPlans) chips.push({ icon: 'trending-up-outline', label: profile.careerPlans });
@@ -250,6 +280,44 @@ export function FuturePlansSection({ profile }: { profile: BrowseProfile }) {
       <View style={styles.chipRow}>
         {chips.map((chip) => (
           <AttributeChip key={chip.label} {...chip} />
+        ))}
+      </View>
+    </Section>
+  );
+}
+
+// Interests fall back to the older single `vibeTags` list, so profiles created
+// before the two lists were split still fill this section.
+export function InterestsSection({ profile }: { profile: BrowseProfile }) {
+  const { t } = useLanguage();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeSectionStyles(colors), [colors]);
+  const interests = profile.interests ?? profile.vibeTags ?? [];
+  if (interests.length === 0) return null;
+
+  return (
+    <Section title={t('discover.interestsTitle')}>
+      <View style={styles.chipRow}>
+        {interests.map((label) => (
+          <AttributeChip key={label} icon="sparkles-outline" label={label} />
+        ))}
+      </View>
+    </Section>
+  );
+}
+
+export function PersonalitySection({ profile }: { profile: BrowseProfile }) {
+  const { t } = useLanguage();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeSectionStyles(colors), [colors]);
+  const traits = profile.personality ?? [];
+  if (traits.length === 0) return null;
+
+  return (
+    <Section title={t('discover.personalityTitle')}>
+      <View style={styles.chipRow}>
+        {traits.map((label) => (
+          <AttributeChip key={label} icon="happy-outline" label={label} />
         ))}
       </View>
     </Section>
@@ -300,32 +368,57 @@ export function LanguagesBackgroundSection({ profile }: { profile: BrowseProfile
   );
 }
 
+export function BioSection({ profile }: { profile: BrowseProfile }) {
+  const { t, rtl } = useLanguage();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeSectionStyles(colors), [colors]);
+  const text = [profile.bio, profile.familyBackground].filter(Boolean).join('\n\n');
+  if (!text) return null;
+
+  return (
+    <Section title={t('discover.bioTitle')}>
+      <Text style={[styles.bodyText, rtl && styles.rtlText]}>{text}</Text>
+    </Section>
+  );
+}
+
 export function VerificationSection({ profile }: { profile: BrowseProfile }) {
   const { t, rtl } = useLanguage();
   const { colors } = useTheme();
   const styles = useMemo(() => makeSectionStyles(colors), [colors]);
 
-  const items: { icon: keyof typeof Ionicons.glyphMap; label: string; verified: boolean }[] = [
-    { icon: 'person-circle-outline', label: t('profile.verified'), verified: Boolean(profile.selfieVerified) },
-    { icon: 'shield-checkmark-outline', label: t('profile.bureau'), verified: Boolean(profile.bureauVerified) },
+  const items = [
+    {
+      verified: Boolean(profile.selfieVerified),
+      text: profile.selfieVerified
+        ? t('discover.verifiedPhotoDone', { name: profile.name })
+        : t('discover.verifiedPhotoPending', { name: profile.name }),
+    },
+    {
+      verified: Boolean(profile.bureauVerified),
+      text: profile.bureauVerified
+        ? t('discover.bureauDone', { name: profile.name })
+        : t('discover.bureauPending', { name: profile.name }),
+    },
   ];
 
   return (
-    <Section title={t('discover.verificationTitle')}>
-      <View style={styles.verificationCard}>
-        {items.map((item, i) => (
-          <View key={item.label} style={[styles.verificationRow, i > 0 && styles.verificationRowBorder]}>
-            <Ionicons name={item.icon} size={18} color={item.verified ? colors.success : colors.textTertiary} />
-            <Text style={[styles.verificationLabel, rtl && styles.rtlText]}>{item.label}</Text>
-            <Ionicons
-              name={item.verified ? 'checkmark-circle' : 'close-circle-outline'}
-              size={18}
-              color={item.verified ? colors.success : colors.textTertiary}
-            />
-          </View>
-        ))}
+    <View style={styles.verificationCard}>
+      <View style={styles.verificationHeader}>
+        <Text style={[styles.verificationTitle, rtl && styles.rtlText]}>{t('discover.verifiedProfileTitle')}</Text>
+        <Ionicons name="information-circle-outline" size={16} color={colors.textTertiary} />
       </View>
-    </Section>
+      {items.map((item) => (
+        <View key={item.text} style={styles.verificationRow}>
+          <Ionicons
+            name={item.verified ? 'checkmark-circle' : 'ellipse-outline'}
+            size={18}
+            color={item.verified ? VERIFIED_BLUE : colors.textTertiary}
+          />
+          <Text style={[styles.verificationLabel, rtl && styles.rtlText]}>{item.text}</Text>
+        </View>
+      ))}
+    </View>
   );
 }
 
@@ -333,22 +426,43 @@ function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-const intentionStyles = StyleSheet.create({
-  track: { height: 4, borderRadius: 2, backgroundColor: 'transparent', marginTop: spacing.md, marginHorizontal: 6, position: 'relative' },
-  trackFill: { position: 'absolute', height: 4, borderRadius: 2, top: 0, left: 0 },
-  dot: {
-    position: 'absolute',
-    top: -6,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    marginLeft: -8,
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-  },
-  labelRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.md },
-  label: { ...typography.caption, flexShrink: 1, textAlign: 'center' },
-});
+// Verification blue reads the same in both themes, so it isn't a palette token.
+const VERIFIED_BLUE = '#3B9DF8';
+
+const makeReadinessStyles = (colors: Palette) =>
+  StyleSheet.create({
+    card: {
+      backgroundColor: colors.sageLight,
+      borderRadius: radius.lg,
+      padding: spacing.md,
+      marginTop: spacing.lg,
+    },
+    title: { ...typography.h3, color: colors.textPrimary },
+    caption: { ...typography.caption, color: colors.textSecondary, marginTop: 2, marginBottom: spacing.md },
+    segmentRow: { flexDirection: 'row', gap: 6 },
+    segment: { flex: 1, height: 8, borderRadius: 4, backgroundColor: colors.border },
+    segmentFilled: { backgroundColor: colors.sage },
+    labelRow: { flexDirection: 'row', gap: 6, marginTop: spacing.sm },
+    stepLabel: { ...typography.caption, color: colors.textSecondary, flex: 1, textAlign: 'center' },
+    stepLabelActive: { color: colors.sage, fontWeight: '800' },
+    chipRow: { marginTop: spacing.md },
+  });
+
+const makeSimilarityStyles = (colors: Palette) =>
+  StyleSheet.create({
+    chip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.borderSoft,
+      borderRadius: radius.pill,
+      paddingHorizontal: spacing.sm + 4,
+      paddingVertical: spacing.xs + 3,
+    },
+    chipText: { ...typography.caption, color: colors.textPrimary, fontWeight: '600' },
+  });
 
 const makeIntroStyles = (colors: Palette) =>
   StyleSheet.create({
@@ -412,30 +526,31 @@ const makeChipStyles = (colors: Palette) =>
       flexDirection: 'row',
       alignItems: 'center',
       gap: 6,
-      backgroundColor: colors.surface,
-      borderWidth: 1,
-      borderColor: colors.border,
+      backgroundColor: colors.backgroundAlt,
       borderRadius: radius.pill,
-      paddingHorizontal: spacing.sm + 2,
-      paddingVertical: spacing.xs + 2,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
     },
-    chipText: { ...typography.caption, color: colors.textPrimary, fontWeight: '600' },
+    chipText: { ...typography.body, color: colors.textPrimary, fontWeight: '500' },
   });
 
 const makeSectionStyles = (colors: Palette) =>
   StyleSheet.create({
     section: { marginTop: spacing.lg },
-    sectionTitle: { ...typography.label, color: colors.textSecondary, textTransform: 'uppercase', marginBottom: spacing.sm },
-    chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+    sectionTitle: { ...typography.h2, color: colors.textPrimary, marginBottom: spacing.sm },
+    sectionSubtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.md },
+    chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+    bodyText: { ...typography.body, color: colors.textPrimary },
     verificationCard: {
-      backgroundColor: colors.surface,
+      backgroundColor: colors.backgroundAlt,
       borderRadius: radius.lg,
-      borderWidth: 1,
-      borderColor: colors.border,
-      paddingHorizontal: spacing.md,
+      padding: spacing.md,
+      marginTop: spacing.lg,
+      gap: spacing.sm,
     },
-    verificationRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm },
-    verificationRowBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.borderSoft },
+    verificationHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+    verificationTitle: { ...typography.h3, color: colors.textPrimary },
+    verificationRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
     verificationLabel: { ...typography.body, color: colors.textPrimary, flex: 1 },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   });

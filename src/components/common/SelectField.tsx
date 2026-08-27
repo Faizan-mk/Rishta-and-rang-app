@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
+import { BottomSheet } from './BottomSheet';
 import { radius, spacing, typography } from '../../theme';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
@@ -53,43 +53,40 @@ export function SelectField({ label, value, options, onChange, allowAll, allLabe
       </Pressable>
       {error ? <Text style={[styles.errorText, rtl && styles.rtlText]}>{error}</Text> : null}
 
-      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-        <Pressable style={styles.overlay} onPress={() => setOpen(false)}>
-          <Animated.View entering={SlideInDown.duration(280).springify().damping(18)} style={styles.sheet}>
-            <Pressable onPress={(e) => e.stopPropagation()}>
-              <View style={styles.sheetHandle} />
-              <Text style={[styles.sheetTitle, rtl && styles.rtlText]}>{label}</Text>
-              <View style={styles.searchRow}>
-                <Ionicons name="search" size={16} color={colors.textTertiary} />
-                <TextInput
-                  value={query}
-                  onChangeText={setQuery}
-                  placeholder="Search..."
-                  placeholderTextColor={colors.textTertiary}
-                  style={[styles.searchInput, rtl && styles.rtlText]}
-                  autoCapitalize="words"
-                />
-              </View>
-              <FlatList
-                data={filtered}
-                keyExtractor={(item) => item}
-                style={styles.list}
-                keyboardShouldPersistTaps="handled"
-                renderItem={({ item }) => {
-                  const isSelected = item === displayValue;
-                  return (
-                    <Pressable onPress={() => select(item)} style={styles.option}>
-                      <Text style={[styles.optionText, isSelected && styles.optionTextSelected, rtl && styles.rtlText]}>{item}</Text>
-                      {isSelected && <Ionicons name="checkmark" size={18} color={colors.teal} />}
-                    </Pressable>
-                  );
-                }}
-                ListEmptyComponent={<Text style={styles.emptyText}>{t('common.noResults')}</Text>}
-              />
-            </Pressable>
-          </Animated.View>
-        </Pressable>
-      </Modal>
+      <BottomSheet visible={open} onClose={() => setOpen(false)}>
+        <View style={styles.sheetBody}>
+          <Text style={[styles.sheetTitle, rtl && styles.rtlText]}>{label}</Text>
+          <View style={styles.searchRow}>
+            <Ionicons name="search" size={16} color={colors.textTertiary} />
+            <TextInput
+              value={query}
+              onChangeText={setQuery}
+              placeholder="Search..."
+              placeholderTextColor={colors.textTertiary}
+              style={[styles.searchInput, rtl && styles.rtlText]}
+              autoCapitalize="words"
+            />
+          </View>
+          <FlatList
+            data={filtered}
+            keyExtractor={(item) => item}
+            style={styles.list}
+            keyboardShouldPersistTaps="handled"
+            renderItem={({ item }) => {
+              const isSelected = item === displayValue;
+              return (
+                <Pressable onPress={() => select(item)} style={styles.option}>
+                  <Text style={[styles.optionText, isSelected && styles.optionTextSelected, rtl && styles.rtlText]}>
+                    {item}
+                  </Text>
+                  {isSelected && <Ionicons name="checkmark" size={18} color={colors.teal} />}
+                </Pressable>
+              );
+            }}
+            ListEmptyComponent={<Text style={styles.emptyText}>{t('common.noResults')}</Text>}
+          />
+        </View>
+      </BottomSheet>
     </View>
   );
 }
@@ -113,22 +110,8 @@ const makeStyles = (colors: Palette) =>
     value: { ...typography.body, color: colors.textPrimary },
     placeholder: { color: colors.textTertiary },
     errorText: { ...typography.caption, color: colors.danger, marginTop: spacing.xs },
-    overlay: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' },
-    sheet: {
-      backgroundColor: colors.surface,
-      borderTopLeftRadius: radius.lg,
-      borderTopRightRadius: radius.lg,
-      padding: spacing.lg,
-      maxHeight: '75%',
-    },
-    sheetHandle: {
-      width: 40,
-      height: 4,
-      borderRadius: 2,
-      backgroundColor: colors.border,
-      alignSelf: 'center',
-      marginBottom: spacing.md,
-    },
+    // The panel itself (backdrop, rounded top, handle, slide) is BottomSheet's.
+    sheetBody: { paddingHorizontal: spacing.lg, paddingBottom: spacing.lg },
     sheetTitle: { ...typography.h3, color: colors.textPrimary, marginBottom: spacing.md },
     searchRow: {
       flexDirection: 'row',

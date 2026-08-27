@@ -12,7 +12,7 @@ import { Chip } from '../../components/common/Chip';
 import { Button } from '../../components/common/Button';
 import { IconButton } from '../../components/common/IconButton';
 import { SettingsRow } from '../../components/common/SettingsRow';
-import { ModeToggle } from '../../components/profile/ModeToggle';
+import { INTENT_OPTIONS, READINESS_OPTIONS } from '../../components/discover/browseOptions';
 import {
   AboutMeSection,
   FaithSection,
@@ -34,17 +34,11 @@ import type { Palette } from '../../theme/palettes';
 
 type Props = MainTabScreenProps<'Profile'>;
 
-const READINESS_KEY: Record<string, string> = {
-  browsing: 'profile.readinessBrowsing',
-  few_months: 'profile.readinessFewMonths',
-  ready_now: 'profile.readinessNow',
-};
-
 export function ProfileScreen({ navigation }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
-  const { user, updateUser, setActiveMode, logout } = useAuth();
+  const { user, updateUser, setIntent, setReadiness, logout } = useAuth();
   const { confirm, notify } = useDialog();
   const { unreadCount } = useNotifications();
   const [requestingBureau, setRequestingBureau] = useState(false);
@@ -179,8 +173,51 @@ export function ProfileScreen({ navigation }: Props) {
         </View>
       </View>
 
+      {/* Intent replaces the old Friend/Rishta switch: picking Matrimonial puts
+          the member on the rishta deck, anything else on the dating deck. */}
       <View style={styles.section}>
-        <ModeToggle mode={user.activeMode} onChange={setActiveMode} datingLabel={t('profile.datingMode')} rishtaLabel={t('profile.rishtaMode')} />
+        <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('profile.intentSection')}</Text>
+        <Text style={[styles.sectionHint, rtl && styles.rtlText]}>{t('profile.intentHint')}</Text>
+        <View style={styles.optionCard}>
+          {INTENT_OPTIONS.map((option, index) => {
+            const selected = user.intent === option.key;
+            return (
+              <Pressable
+                key={option.key}
+                onPress={() => setIntent(option.key)}
+                style={[styles.optionRow, index > 0 && styles.optionRowBorder, rtl && styles.rowRtl]}
+              >
+                <View style={styles.optionText}>
+                  <Text style={[styles.optionTitle, selected && styles.optionTitleSelected, rtl && styles.rtlText]}>
+                    {t(option.labelKey)}
+                  </Text>
+                  <Text style={[styles.optionDesc, rtl && styles.rtlText]}>{t(`intent.${option.key}Desc`)}</Text>
+                </View>
+                <Ionicons
+                  name={selected ? 'radio-button-on' : 'radio-button-off'}
+                  size={20}
+                  color={selected ? colors.teal : colors.textTertiary}
+                />
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('profile.readiness')}</Text>
+        <Text style={[styles.sectionHint, rtl && styles.rtlText]}>{t('profile.readinessHint')}</Text>
+        <View style={styles.chipRow}>
+          {READINESS_OPTIONS.map((option) => (
+            <Chip
+              key={option.key}
+              label={t(option.labelKey)}
+              tone="rishta"
+              selected={user.rishta.readiness === option.key}
+              onPress={() => setReadiness(option.key)}
+            />
+          ))}
+        </View>
       </View>
 
       {user.bio ? (
@@ -208,7 +245,6 @@ export function ProfileScreen({ navigation }: Props) {
             <Button label={t('common.edit')} variant="ghost" onPress={() => navigation.navigate('RishtaProfile')} />
           </View>
           <View style={styles.detailCard}>
-            <ProfileRow label={t('profile.readiness')} value={t(READINESS_KEY[user.rishta.readiness])} rtl={rtl} />
             <ProfileRow label={t('profile.religion')} value={user.rishta.religion || '—'} rtl={rtl} />
             <ProfileRow label={t('profile.sect')} value={user.rishta.sect || '—'} rtl={rtl} />
             <ProfileRow label={t('profile.familyBackground')} value={user.rishta.familyBackground || '—'} rtl={rtl} />
@@ -353,6 +389,27 @@ const makeStyles = (colors: Palette) =>
     statLabel: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
     section: { marginTop: spacing.lg },
     sectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    optionCard: {
+      backgroundColor: colors.surface,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      overflow: 'hidden',
+    },
+    optionRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md,
+    },
+    optionRowBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.borderSoft },
+    optionText: { flex: 1 },
+    optionTitle: { ...typography.body, color: colors.textPrimary, fontWeight: '700' },
+    optionTitleSelected: { color: colors.teal },
+    optionDesc: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
+    rowRtl: { flexDirection: 'row-reverse' },
+    sectionHint: { ...typography.caption, color: colors.textSecondary, marginBottom: spacing.sm, marginTop: -spacing.xs },
     sectionTitle: { ...typography.label, color: colors.textSecondary, marginBottom: spacing.sm, textTransform: 'uppercase' },
     body: { ...typography.body, color: colors.textPrimary },
     chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },

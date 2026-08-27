@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -7,7 +7,8 @@ import Animated, { FadeInUp } from 'react-native-reanimated';
 import type { AppStackScreenProps } from '../../navigation/types';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { Button } from '../../components/common/Button';
-import { useDiscovery } from '../../store/DiscoveryContext';
+import { useBoost } from '../../store/BoostContext';
+import { likesService, type LikeReceived } from '../../services/likesService';
 import { useLanguage } from '../../store/LanguageContext';
 import { useAuth } from '../../store/AuthContext';
 import { useTheme } from '../../store/ThemeContext';
@@ -15,7 +16,6 @@ import { useDialog } from '../../store/DialogContext';
 import { useLikeLimit } from '../../store/LikeLimitContext';
 import { usePrivacy } from '../../store/PrivacyContext';
 import { useMatches } from '../../store/MatchesContext';
-import { oppositeGenderProfiles } from '../../utils/genderMatch';
 import { isoToDisplay } from '../../utils/date';
 import { radius, spacing, typography } from '../../theme';
 import type { Palette } from '../../theme/palettes';
@@ -31,16 +31,19 @@ function isoDateInDays(days: number): string {
 
 const PLAN_DAYS: Record<Plan, number> = { trial: 7, monthly: 30, yearly: 365 };
 
+// Profile boosts included with any paid plan.
+const BOOSTS_PER_SUBSCRIPTION = 5;
+
 export function ExplorePlusScreen({ navigation }: Props) {
   const { colors, isDark } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
   const { user, updateUser } = useAuth();
+  const { addBoosts } = useBoost();
   const { notify, confirm } = useDialog();
   const { used, limit } = useLikeLimit();
   const { prefs } = usePrivacy();
   const { blockedProfiles } = useMatches();
-  const { datingProfiles } = useDiscovery();
   const [upgrading, setUpgrading] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [plan, setPlan] = useState<Plan>('monthly');
@@ -51,15 +54,22 @@ export function ExplorePlusScreen({ navigation }: Props) {
     [blockedProfiles]
   );
 
-  const admirers = useMemo(
-    () =>
-      prefs.profileVisible
-        ? oppositeGenderProfiles(datingProfiles, user?.gender)
-            .filter((p) => !blockedProfileIds.has(p.id))
-            .slice(0, 4)
-        : [],
-    [user?.gender, prefs.profileVisible, blockedProfileIds, datingProfiles]
-  );
+  // The real list, not a slice of the deck: members who actually liked this
+  // profile, minus anyone since blocked.
+  const [admirers, setAdmirers] = useState<LikeReceived[]>([]);
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    likesService
+      .fetchLikesReceived(user.id)
+      .then((rows) => {
+        if (!cancelled) setAdmirers(rows.filter((row) => !blockedProfileIds.has(row.id)).slice(0, 4));
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, blockedProfileIds]);
 
   if (!user) return null;
   const isPro = Boolean(user.isExplorePlus);
@@ -73,6 +83,9 @@ export function ExplorePlusScreen({ navigation }: Props) {
       subscriptionRenewsAt: isoDateInDays(PLAN_DAYS[plan]),
       hasUsedTrial: user.hasUsedTrial || plan === 'trial',
     });
+    // A subscription comes with a pack of profile boosts — this is what the
+    // boost sheet's "Get more Boosts" button sends members here for.
+    addBoosts(BOOSTS_PER_SUBSCRIPTION);
     setUpgrading(false);
     await notify({
       title: t('explorePlus.upgradeSuccessTitle'),
@@ -209,7 +222,7 @@ export function ExplorePlusScreen({ navigation }: Props) {
           <View style={styles.grid}>
             {admirers.map((profile) => (
               <View key={profile.id} style={styles.admirerCard}>
-                <Image source={{ uri: profile.photos[0] }} style={styles.admirerPhoto} />
+                <Image source={{ uri: profile.photo }} style={styles.admirerPhoto} />
                 {!isPro && (
                   <BlurView intensity={40} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFill}>
                     <View style={styles.lockOverlay}>

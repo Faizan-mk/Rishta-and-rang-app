@@ -12,7 +12,7 @@ import { IconButton } from '../../components/common/IconButton';
 import { MatchCelebration } from '../../components/discover/MatchCelebration';
 import {
   AboutMeSection,
-  MarriageIntentionsCard,
+  ReadinessSection,
   FaithSection,
   FuturePlansSection,
   EducationCareerSection,
@@ -206,7 +206,7 @@ export function ProfileDetailScreen({ navigation, route }: Props) {
           <IntroMediaSection profile={profile} />
 
           <AboutMeSection profile={profile} />
-          <MarriageIntentionsCard profile={profile} />
+          <ReadinessSection profile={profile} />
           <FaithSection profile={profile} />
           <FuturePlansSection profile={profile} />
           <EducationCareerSection profile={profile} />

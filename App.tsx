@@ -10,6 +10,7 @@ import { MatchesProvider } from './src/store/MatchesContext';
 import { FavoritesProvider } from './src/store/FavoritesContext';
 import { ViewHistoryProvider } from './src/store/ViewHistoryContext';
 import { LikeLimitProvider } from './src/store/LikeLimitContext';
+import { BoostProvider } from './src/store/BoostContext';
 import { PrivacyProvider } from './src/store/PrivacyContext';
 import { DiscoveryProvider } from './src/store/DiscoveryContext';
 import { DialogProvider } from './src/store/DialogContext';
@@ -38,13 +39,15 @@ export default function App() {
                   <FavoritesProvider>
                     <ViewHistoryProvider>
                       <LikeLimitProvider>
-                        <PrivacyProvider>
-                          <DiscoveryProvider>
-                            <DialogProvider>
-                              <AppContent />
-                            </DialogProvider>
-                          </DiscoveryProvider>
-                        </PrivacyProvider>
+                        <BoostProvider>
+                          <PrivacyProvider>
+                            <DiscoveryProvider>
+                              <DialogProvider>
+                                <AppContent />
+                              </DialogProvider>
+                            </DiscoveryProvider>
+                          </PrivacyProvider>
+                        </BoostProvider>
                       </LikeLimitProvider>
                     </ViewHistoryProvider>
                   </FavoritesProvider>

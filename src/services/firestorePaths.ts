@@ -12,10 +12,14 @@ import { db } from './firebase';
 //   users/{uid}/private/notificationPrefs
 //   users/{uid}/private/privacyPrefs
 //   users/{uid}/private/dailyLikes
+//   users/{uid}/private/boost
 //   users/{uid}/matches/{matchId}
 //   users/{uid}/messages/{messageId}      chat messages, with a matchId field
 //   users/{uid}/blocked/{blockedId}
 //   users/{uid}/favorites/{targetId}
+//   users/{uid}/likesReceived/{likerId}   who liked this member — the only
+//                                         subcollection another signed-in user
+//                                         may write to (their own doc only)
 //   users/{uid}/viewHistory/{viewedId}
 //   users/{uid}/notifications/{id}
 //
@@ -31,6 +35,7 @@ export const USER_SUBCOLLECTIONS = [
   'messages',
   'blocked',
   'favorites',
+  'likesReceived',
   'viewHistory',
   'notifications',
 ] as const;
@@ -71,6 +76,10 @@ export function dailyLikesDoc(uid: string): DocumentReference {
   return doc(db, 'users', uid, 'private', 'dailyLikes');
 }
 
+export function boostDoc(uid: string): DocumentReference {
+  return doc(db, 'users', uid, 'private', 'boost');
+}
+
 export function matchesCollection(uid: string): CollectionReference {
   return userCollection(uid, 'matches');
 }
@@ -97,6 +106,14 @@ export function favoritesCollection(uid: string): CollectionReference {
 
 export function favoriteDoc(uid: string, targetId: string): DocumentReference {
   return doc(db, 'users', uid, 'favorites', targetId);
+}
+
+export function likesReceivedCollection(uid: string): CollectionReference {
+  return userCollection(uid, 'likesReceived');
+}
+
+export function likeReceivedDoc(uid: string, likerId: string): DocumentReference {
+  return doc(db, 'users', uid, 'likesReceived', likerId);
 }
 
 export function viewHistoryCollection(uid: string): CollectionReference {

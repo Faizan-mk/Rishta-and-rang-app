@@ -1,0 +1,45 @@
+# EAS uploads what this file allows, INSTEAD of what .gitignore allows.
+#
+# Why it exists: .env is git-ignored, so a cloud build never received the
+# EXPO_PUBLIC_FIREBASE_* keys — and src/services/firebase.ts throws on startup
+# when they're missing, which is why the installed APK died at launch. These are
+# the Firebase *web* config values, which ship inside the JS bundle by design
+# (Firestore/Storage rules are what protect the data), so shipping them to the
+# builder is safe. They still stay out of git.
+#
+# Keep this list in step with .gitignore — minus the .env line.
+
+node_modules/
+.git/
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+.claude/
+.vscode/
+docs/
+scripts/
+
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+.metro-health-check*
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+.DS_Store
+*.pem
+*.tsbuildinfo
+
+/ios
+/android
+
+# Server-only secrets must never reach the builder.
+service-account*.json
+.firebase/
+firebase-debug.log
