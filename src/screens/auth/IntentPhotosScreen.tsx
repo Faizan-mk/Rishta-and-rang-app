@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -52,6 +53,10 @@ export function IntentPhotosScreen({ navigation, route }: Props) {
     }
   };
 
+  // The first photo is the one everyone sees on the deck card, so it has to be
+  // choosable at sign-up — not only later in Edit Profile.
+  const setPrimaryPhoto = (uri: string) => setPhotos((prev) => [uri, ...prev.filter((p) => p !== uri)]);
+
   const removePhoto = (uri: string) => {
     setPhotos((prev) => prev.filter((p) => p !== uri));
   };
@@ -86,12 +91,23 @@ export function IntentPhotosScreen({ navigation, route }: Props) {
       <Text style={[styles.subtitle, rtl && styles.rtlText]}>{t('photos.subtitle')}</Text>
 
       <View style={styles.grid}>
-        {photos.map((uri) => (
-          <Pressable key={uri} onPress={() => removePhoto(uri)} style={styles.slot}>
+        {photos.map((uri, index) => (
+          <Pressable key={uri} onPress={() => setPrimaryPhoto(uri)} style={styles.slot}>
             <Image source={{ uri }} style={styles.photo} />
-            <View style={styles.removeBadge}>
+            {index === 0 ? (
+              <View style={styles.primaryBadge}>
+                <Ionicons name="star" size={10} color="#FFFFFF" />
+                <Text style={styles.badgeText}>{t('photos.primaryPhoto')}</Text>
+              </View>
+            ) : (
+              <Pressable onPress={() => setPrimaryPhoto(uri)} style={styles.makePrimaryBadge} hitSlop={6}>
+                <Ionicons name="star-outline" size={11} color="#FFFFFF" />
+                <Text style={styles.badgeText}>{t('photos.makePrimary')}</Text>
+              </Pressable>
+            )}
+            <Pressable onPress={() => removePhoto(uri)} style={styles.removeBadge} hitSlop={6}>
               <Text style={styles.removeText}>×</Text>
-            </View>
+            </Pressable>
           </Pressable>
         ))}
         {photos.length < MAX_PHOTOS && (
@@ -102,8 +118,10 @@ export function IntentPhotosScreen({ navigation, route }: Props) {
         )}
       </View>
 
-      {photos.length < MIN_PHOTOS && (
+      {photos.length < MIN_PHOTOS ? (
         <Text style={[styles.hint, rtl && styles.rtlText]}>{t('photos.minRequired')}</Text>
+      ) : (
+        <Text style={[styles.hint, styles.hintNeutral, rtl && styles.rtlText]}>{t('photos.primaryHint')}</Text>
       )}
 
       <Button label={t('common.next')} onPress={onNext} disabled={!canContinue} style={styles.submit} />
@@ -140,6 +158,33 @@ const makeStyles = (colors: Palette) =>
     photo: { width: '100%', height: '100%' },
     addPlus: { fontSize: scaleFont(32), color: colors.teal, marginBottom: 4 },
     addLabel: { ...typography.caption, color: colors.textSecondary },
+    primaryBadge: {
+      position: 'absolute',
+      bottom: 4,
+      left: 4,
+      right: 4,
+      flexDirection: 'row',
+      gap: 3,
+      backgroundColor: colors.teal,
+      borderRadius: radius.sm,
+      paddingVertical: 3,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    makePrimaryBadge: {
+      position: 'absolute',
+      bottom: 4,
+      left: 4,
+      right: 4,
+      flexDirection: 'row',
+      gap: 3,
+      backgroundColor: 'rgba(10,10,12,0.6)',
+      borderRadius: radius.sm,
+      paddingVertical: 3,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    badgeText: { color: '#FFFFFF', fontSize: scaleFont(9), fontWeight: '700' },
     removeBadge: {
       position: 'absolute',
       top: 6,
@@ -151,8 +196,9 @@ const makeStyles = (colors: Palette) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
-    removeText: { color: colors.textInverse, fontSize: scaleFont(16), lineHeight: scaleFont(18) },
+    removeText: { color: '#FFFFFF', fontSize: scaleFont(16), lineHeight: scaleFont(18) },
     hint: { ...typography.caption, color: colors.warning, marginTop: spacing.md },
+    hintNeutral: { color: colors.textSecondary },
     submit: { marginTop: spacing.lg },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   });

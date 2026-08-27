@@ -77,7 +77,10 @@
     "title": "Apni Tasveerein Shamil Karein",
     "subtitle": "2 se 4 tasveerein upload karein taake log aapko pehchan sakein.",
     "addPhoto": "Tasveer Shamil Karein",
-    "minRequired": "Jari rakhne ke liye kam az kam 2 tasveerein shamil karein"
+    "minRequired": "Jari rakhne ke liye kam az kam 2 tasveerein shamil karein",
+    "primaryPhoto": "Primary",
+    "makePrimary": "Primary banayein",
+    "primaryHint": "Primary photo wo hai jo log sab se pehle dekhte hain. Kisi photo ya uske star par tap kar ke usay primary banayein."
   },
   "selfie": {
     "title": "Fori Tasdeeqi Selfie",
@@ -332,7 +335,8 @@
     "languagesPlaceholder": "Urdu, English, Punjabi",
     "nationality": "Qaumiyat",
     "grewUpIn": "Kahan parwarish payi",
-    "country": "Mulk"
+    "country": "Mulk",
+    "makePrimary": "Primary banayein"
   },
   "rishtaProfile": {
     "title": "Rishtay ki Tafseelat",

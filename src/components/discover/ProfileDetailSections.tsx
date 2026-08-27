@@ -10,6 +10,7 @@ import { scaleFont } from '../../theme/responsive';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
+import { SmartImage } from '../common/SmartImage';
 
 function formatDuration(totalSeconds: number): string {
   const sec = Math.max(0, Math.floor(totalSeconds || 0));
@@ -88,7 +89,7 @@ export function MidProfilePhoto({ photos, onPress }: { photos: string[]; onPress
 
   return (
     <Pressable onPress={() => onPress?.(uri)} style={styles.wrap}>
-      <Image source={{ uri }} style={styles.image} />
+      <SmartImage uri={uri} style={styles.image} size={48} />
       <View style={styles.badge}>
         <Ionicons name="images-outline" size={12} color="#FFFFFF" />
         <Text style={styles.badgeText}>2 / {photos.length}</Text>

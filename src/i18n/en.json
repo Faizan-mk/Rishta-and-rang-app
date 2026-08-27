@@ -77,7 +77,10 @@
     "title": "Add your photos",
     "subtitle": "Upload 2-4 photos so people know it's really you.",
     "addPhoto": "Add photo",
-    "minRequired": "Add at least 2 photos to continue"
+    "minRequired": "Add at least 2 photos to continue",
+    "primaryPhoto": "Primary",
+    "makePrimary": "Make primary",
+    "primaryHint": "Your primary photo is the first one people see. Tap a photo, or its star, to make it primary."
   },
   "selfie": {
     "title": "Quick verification selfie",
@@ -332,7 +335,8 @@
     "languagesPlaceholder": "Urdu, English, Punjabi",
     "nationality": "Nationality",
     "grewUpIn": "Where you grew up",
-    "country": "Country"
+    "country": "Country",
+    "makePrimary": "Make primary"
   },
   "rishtaProfile": {
     "title": "Matrimonial details",

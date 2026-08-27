@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
+import { SmartImage } from '../common/SmartImage';
 import type { BrowseProfile } from '../../types/content';
 import { radius, spacing, typography } from '../../theme';
 import { scaleFont } from '../../theme/responsive';
@@ -53,7 +54,7 @@ export const DiscoverProfileCard = React.memo(function DiscoverProfileCard({ pro
       <View style={styles.photoFrame}>
         {/* Sized with percentages only, so it renders without waiting on an
             onLayout measurement (which can lag, or never fire, on some platforms). */}
-        <Image source={{ uri: profile.photos[activeIndex] ?? profile.photos[0] }} style={styles.photo} />
+        <SmartImage uri={profile.photos[activeIndex] ?? profile.photos[0]} name={profile.name} style={styles.photo} size={64} />
 
         {/* Tap zones rather than a nested horizontal pager: paging by drag would
             fight the card's own like/pass swipe. Sides step through the photos,

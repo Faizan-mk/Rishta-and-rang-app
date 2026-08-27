@@ -253,10 +253,18 @@ export function EditProfileScreen({ navigation }: Props) {
               {prefs.blurPhotos && (
                 <BlurView intensity={35} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
               )}
-              {index === 0 && (
+              {index === 0 ? (
                 <View style={styles.primaryBadge}>
+                  <Ionicons name="star" size={10} color="#FFFFFF" />
                   <Text style={styles.primaryBadgeText}>{t('editProfile.primaryPhoto')}</Text>
                 </View>
+              ) : (
+                // The whole tile already sets primary, but the action has to be
+                // visible — nobody discovers a tap-anywhere gesture on its own.
+                <Pressable onPress={() => setPrimaryPhoto(uri)} style={styles.makePrimaryBadge} hitSlop={6}>
+                  <Ionicons name="star-outline" size={11} color="#FFFFFF" />
+                  <Text style={styles.primaryBadgeText}>{t('editProfile.makePrimary')}</Text>
+                </Pressable>
               )}
               <Pressable onPress={() => removePhoto(uri)} style={styles.removeBadge} hitSlop={6}>
                 <Text style={styles.removeText}>×</Text>
@@ -269,7 +277,7 @@ export function EditProfileScreen({ navigation }: Props) {
             </Pressable>
           )}
         </View>
-        {photos.length > 1 && <Text style={[styles.hint, rtl && styles.rtlText]}>{t('editProfile.photoHint')}</Text>}
+        <Text style={[styles.hint, rtl && styles.rtlText]}>{t('photos.primaryHint')}</Text>
       </FadeIn>
 
       <FadeIn delay={60}>
@@ -478,12 +486,30 @@ const makeStyles = (colors: Palette) =>
       bottom: 4,
       left: 4,
       right: 4,
-      backgroundColor: colors.overlay,
+      flexDirection: 'row',
+      gap: 3,
+      // Sits on the photo, so it needs its own dark chip rather than a theme
+      // colour — `textInverse` on `overlay` was black-on-black in dark mode.
+      backgroundColor: colors.teal,
       borderRadius: radius.sm,
-      paddingVertical: 2,
+      paddingVertical: 3,
       alignItems: 'center',
+      justifyContent: 'center',
     },
-    primaryBadgeText: { color: colors.textInverse, fontSize: scaleFont(9), fontWeight: '700' },
+    makePrimaryBadge: {
+      position: 'absolute',
+      bottom: 4,
+      left: 4,
+      right: 4,
+      flexDirection: 'row',
+      gap: 3,
+      backgroundColor: 'rgba(10,10,12,0.6)',
+      borderRadius: radius.sm,
+      paddingVertical: 3,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    primaryBadgeText: { color: '#FFFFFF', fontSize: scaleFont(9), fontWeight: '700' },
     removeBadge: {
       position: 'absolute',
       top: 4,
@@ -495,7 +521,7 @@ const makeStyles = (colors: Palette) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
-    removeText: { color: colors.textInverse, fontSize: scaleFont(14), lineHeight: scaleFont(16) },
+    removeText: { color: '#FFFFFF', fontSize: scaleFont(14), lineHeight: scaleFont(16) },
     hint: { ...typography.caption, color: colors.textTertiary, marginTop: -spacing.xs, marginBottom: spacing.md },
     mediaButton: {
       flexDirection: 'row',

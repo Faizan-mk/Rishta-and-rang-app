@@ -16,6 +16,15 @@ import { useAuth } from './AuthContext';
 // a member signed up without uploading photos yet.
 const FALLBACK_AVATAR = 'https://placehold.co/900x1200/EDE9E1/8B9A9C/png?text=No+Photo';
 
+// Below this many real members, the demo deck is appended so there is always
+// something to browse. Demo profiles never overwrite real ones — they follow them.
+const MIN_DECK_SIZE = 8;
+
+function fillWithDemo<T extends { id: string }>(real: T[], demo: T[]): T[] {
+  if (real.length >= MIN_DECK_SIZE) return real;
+  return [...real, ...demo];
+}
+
 function withPhotos<T extends { photos: string[] }>(profiles: T[]): T[] {
   return profiles.map((p) => {
     if (p.photos.length > 0) return p;
@@ -56,8 +65,8 @@ export function DiscoveryProvider({ children }: { children: React.ReactNode }) {
       cache.read<RishtaListingProfile[]>(user.id, CACHE_KEYS.rishtaDeck),
     ]);
     if (cachedDating?.length && cachedRishta?.length) {
-      setDatingProfiles(withPhotos(cachedDating));
-      setRishtaProfiles(withPhotos(cachedRishta));
+      setDatingProfiles(withPhotos(fillWithDemo(cachedDating, mockDiscoverProfiles)));
+      setRishtaProfiles(withPhotos(fillWithDemo(cachedRishta, mockRishtaProfiles)));
       hydratedFor.current = user.id;
     }
 
@@ -67,10 +76,11 @@ export function DiscoveryProvider({ children }: { children: React.ReactNode }) {
         discoveryService.fetchDiscoverProfiles(user.gender, user.id),
         discoveryService.fetchRishtaProfiles(user.gender, user.id),
       ]);
-      // Real members first; demo decks only when there are none to show.
-      // Every profile is guaranteed at least one photo (blank-card guard).
-      setDatingProfiles(withPhotos(dating.length ? dating : mockDiscoverProfiles));
-      setRishtaProfiles(withPhotos(rishta.length ? rishta : mockRishtaProfiles));
+      // Real members first, then the demo deck behind them until there are
+      // enough real ones to fill a session — otherwise a project with two test
+      // accounts shows a deck that runs out after one swipe.
+      setDatingProfiles(withPhotos(fillWithDemo(dating, mockDiscoverProfiles)));
+      setRishtaProfiles(withPhotos(fillWithDemo(rishta, mockRishtaProfiles)));
       // Both decks read the same collection, so they fill or empty together.
       if (dating.length && rishta.length) hydratedFor.current = user.id;
     } catch {

@@ -1,16 +1,13 @@
+import { FEMALE_DEMO_PHOTOS, MALE_DEMO_PHOTOS } from './demoPhotos';
 import type { DiscoverProfile } from '../types/content';
 import type { Intent } from '../types/user';
 
-// Demo portraits. The old randomuser.me endpoint only serves 128px thumbnails,
-// which looked blurry stretched across a full-bleed card, so these come from a
-// 1000px source instead. Indices are hand-picked adult portraits per gender, and
-// W()/M() wrap around them so any call number stays gender-correct.
-const FEMALE_FACES = [5, 16, 19, 20, 21, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 34, 35, 36, 38, 43, 44, 45, 47, 49];
-const MALE_FACES = [3, 8, 11, 12, 13, 14, 18, 51, 52, 53, 54, 56, 58, 59, 60, 68];
-
-const portrait = (id: number) => `https://i.pravatar.cc/1000?img=${id}`;
-const W = (n: number) => portrait(FEMALE_FACES[n % FEMALE_FACES.length]);
-const M = (n: number) => portrait(MALE_FACES[n % MALE_FACES.length]);
+// Demo portraits come bundled (see demoPhotos.ts) rather than from a remote
+// avatar host: a blocked or slow third-party domain used to leave every demo
+// card blank. W()/M() wrap around their own gender's list, so any call number
+// stays gender-correct.
+const W = (n: number) => FEMALE_DEMO_PHOTOS[n % FEMALE_DEMO_PHOTOS.length];
+const M = (n: number) => MALE_DEMO_PHOTOS[n % MALE_DEMO_PHOTOS.length];
 
 // Placeholder demo data only — a real backend would replace this with actual
 // candidate profiles from the matching service.
@@ -23,7 +20,7 @@ const rawDiscoverProfiles: DiscoverProfile[] = [
     city: 'Lahore',
     bio: 'Coffee over cold brew debates, weekend hiker, and a sucker for old Urdu poetry.',
     vibeTags: ['bookworm', 'traveller', 'deen-focused'],
-    photos: [W(47), W(48), W(49)],
+    photos: [W(0), W(1), W(2)],
     heightCm: 163,
     maritalStatus: 'single',
     hasChildren: false,
@@ -57,7 +54,7 @@ const rawDiscoverProfiles: DiscoverProfile[] = [
     city: 'Karachi',
     bio: 'Software engineer by day, amateur chef by night. Still looking for the perfect biryani recipe.',
     vibeTags: ['foodie', 'cricket fan', 'early riser'],
-    photos: [M(12), M(13)],
+    photos: [M(0), M(1)],
     maritalStatus: 'single',
     hasChildren: false,
     occupation: 'Software Engineer',
@@ -81,7 +78,7 @@ const rawDiscoverProfiles: DiscoverProfile[] = [
     city: 'Islamabad',
     bio: 'Design student, plant mom, and terminally online about K-dramas.',
     vibeTags: ['creative', 'homebody', 'ambivert'],
-    photos: [W(32), W(33), W(34)],
+    photos: [W(3), W(4), W(5)],
     maritalStatus: 'single',
     hasChildren: false,
     occupation: 'Design Student',
@@ -101,7 +98,7 @@ const rawDiscoverProfiles: DiscoverProfile[] = [
     city: 'Lahore',
     bio: 'Weekend cricketer, deen-focused, believes the best conversations happen over chai.',
     vibeTags: ['deen-focused', 'sporty', 'family-oriented'],
-    photos: [M(51), M(52)],
+    photos: [M(2), M(3)],
     maritalStatus: 'single',
     hasChildren: false,
     occupation: 'Marketing Manager',
@@ -129,7 +126,7 @@ const rawDiscoverProfiles: DiscoverProfile[] = [
     city: 'Faisalabad',
     bio: 'Doctor, dog person, and firmly of the opinion that dessert is a food group.',
     vibeTags: ['ambitious', 'dog lover', 'traveller'],
-    photos: [W(45), W(46)],
+    photos: [W(6), W(7)],
     maritalStatus: 'divorced',
     hasChildren: false,
     occupation: 'Doctor',
@@ -155,7 +152,7 @@ const rawDiscoverProfiles: DiscoverProfile[] = [
     city: 'Multan',
     bio: 'Entrepreneur building a logistics startup. Looking for someone who gets the hustle.',
     vibeTags: ['entrepreneur', 'deen-focused', 'night owl'],
-    photos: [M(14), M(15)],
+    photos: [M(4), M(5)],
     maritalStatus: 'single',
     hasChildren: false,
     occupation: 'Entrepreneur',
@@ -181,7 +178,7 @@ const rawDiscoverProfiles: DiscoverProfile[] = [
     city: 'Karachi',
     bio: 'Marine biology grad turned science teacher. Ask me about sharks, I will not stop talking.',
     vibeTags: ['nerdy', 'traveller', 'animal lover'],
-    photos: [W(20), W(21), W(22)],
+    photos: [W(8), W(9), W(10)],
     heightCm: 160,
     maritalStatus: 'single',
     hasChildren: false,
@@ -209,7 +206,7 @@ const rawDiscoverProfiles: DiscoverProfile[] = [
     city: 'Islamabad',
     bio: 'Civil servant, gym regular, and a firm believer that the best biryani is homemade.',
     vibeTags: ['fitness', 'family-oriented', 'foodie'],
-    photos: [M(51), M(33)],
+    photos: [M(6), M(7)],
     heightCm: 178,
     maritalStatus: 'single',
     hasChildren: false,
@@ -239,7 +236,7 @@ const rawDiscoverProfiles: DiscoverProfile[] = [
     city: 'Lahore',
     bio: 'Fashion design student who sews her own clothes and definitely over-plans every trip.',
     vibeTags: ['creative', 'organizer', 'traveller'],
-    photos: [W(23), W(24)],
+    photos: [W(11), W(12)],
     heightCm: 165,
     maritalStatus: 'single',
     hasChildren: false,
@@ -261,7 +258,7 @@ const rawDiscoverProfiles: DiscoverProfile[] = [
     city: 'Faisalabad',
     bio: 'Textile business owner, weekend photographer, and a very serious tea connoisseur.',
     vibeTags: ['entrepreneur', 'creative', 'calm'],
-    photos: [M(53), M(54)],
+    photos: [M(8), M(9)],
     heightCm: 175,
     maritalStatus: 'divorced',
     hasChildren: true,

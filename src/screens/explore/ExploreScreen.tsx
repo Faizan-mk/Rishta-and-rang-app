@@ -7,6 +7,7 @@ import Animated, { FadeInUp } from 'react-native-reanimated';
 import type { MainTabScreenProps } from '../../navigation/types';
 import { TAB_BAR_BASE_HEIGHT, useHideTabBarOnScroll } from '../../store/TabBarVisibilityContext';
 import { Button } from '../../components/common/Button';
+import { SmartImage } from '../../components/common/SmartImage';
 import { BrowseFiltersSheet } from '../../components/discover/BrowseSheets';
 import {
   DEFAULT_BROWSE_FILTERS,
@@ -218,7 +219,7 @@ export function ExploreScreen({ navigation }: Props) {
                       onPress={() => navigation.navigate('ProfileDetail', { kind: like.kind, id: like.id })}
                       style={styles.gridCard}
                     >
-                      <Image source={{ uri: like.photo }} style={styles.gridPhoto} />
+                      <SmartImage uri={like.photo} name={like.name} style={styles.gridPhoto} size={30} />
                       <View style={styles.gridCaption}>
                         <Text style={styles.gridName} numberOfLines={1}>
                           {like.name}, {like.age}
@@ -333,7 +334,7 @@ export function ExploreScreen({ navigation }: Props) {
                     onPress={() => navigation.navigate('ProfileDetail', { kind: entry.kind, id: entry.id })}
                     style={[styles.historyRow, rtl && styles.rowRtl]}
                   >
-                    <Image source={{ uri: entry.photo }} style={styles.historyAvatar} />
+                    <SmartImage uri={entry.photo} name={entry.name} style={styles.historyAvatar} size={16} />
                     <View style={styles.historyTextWrap}>
                       <Text style={[styles.historyName, rtl && styles.rtlText]}>
                         {entry.name}, {entry.age}
@@ -425,7 +426,7 @@ function ProfileRow({
           {profiles.map((profile, index) => (
             <Animated.View key={profile.id} entering={FadeInUp.delay(index * 50).duration(280)} style={styles.gridSlot}>
               <Pressable onPress={() => onPressProfile(profile)} style={styles.gridCardFill}>
-                <Image source={{ uri: profile.photos[0] }} style={styles.gridPhoto} />
+                <SmartImage uri={profile.photos[0]} name={profile.name} style={styles.gridPhoto} size={30} />
                 {profile.selfieVerified && (
                   <View style={styles.gridVerified}>
                     <Ionicons name="checkmark-circle" size={16} color={colors.teal} />

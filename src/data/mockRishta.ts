@@ -1,16 +1,13 @@
+import { FEMALE_DEMO_PHOTOS, MALE_DEMO_PHOTOS } from './demoPhotos';
 import type { RishtaListingProfile } from '../types/content';
 import type { Intent } from '../types/user';
 
-// Demo portraits. The old randomuser.me endpoint only serves 128px thumbnails,
-// which looked blurry stretched across a full-bleed card, so these come from a
-// 1000px source instead. Indices are hand-picked adult portraits per gender, and
-// W()/M() wrap around them so any call number stays gender-correct.
-const FEMALE_FACES = [5, 16, 19, 20, 21, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 34, 35, 36, 38, 43, 44, 45, 47, 49];
-const MALE_FACES = [3, 8, 11, 12, 13, 14, 18, 51, 52, 53, 54, 56, 58, 59, 60, 68];
-
-const portrait = (id: number) => `https://i.pravatar.cc/1000?img=${id}`;
-const W = (n: number) => portrait(FEMALE_FACES[n % FEMALE_FACES.length]);
-const M = (n: number) => portrait(MALE_FACES[n % MALE_FACES.length]);
+// Demo portraits come bundled (see demoPhotos.ts) rather than from a remote
+// avatar host: a blocked or slow third-party domain used to leave every demo
+// card blank. W()/M() wrap around their own gender's list, so any call number
+// stays gender-correct.
+const W = (n: number) => FEMALE_DEMO_PHOTOS[n % FEMALE_DEMO_PHOTOS.length];
+const M = (n: number) => MALE_DEMO_PHOTOS[n % MALE_DEMO_PHOTOS.length];
 
 // Placeholder demo data only — a real backend would replace this with actual
 // matrimonial listings filtered server-side.
@@ -26,7 +23,7 @@ const rawRishtaProfiles: RishtaListingProfile[] = [
     education: 'MBA, LUMS',
     familyBackground: 'Small family, settled in Lahore, father is a retired army officer.',
     readiness: 'ready_now',
-    photos: [W(25), W(26)],
+    photos: [W(13), W(14)],
   },
   {
     id: 'r2',
@@ -39,7 +36,7 @@ const rawRishtaProfiles: RishtaListingProfile[] = [
     education: 'BSc Computer Science, FAST',
     familyBackground: 'Joint family, business background, two siblings.',
     readiness: 'few_months',
-    photos: [M(33), M(34)],
+    photos: [M(8), M(9)],
   },
   {
     id: 'r3',
@@ -52,7 +49,7 @@ const rawRishtaProfiles: RishtaListingProfile[] = [
     education: 'MSc Economics',
     familyBackground: 'Nuclear family, both parents retired government officers.',
     readiness: 'ready_now',
-    photos: [W(48), W(49)],
+    photos: [W(15), W(16)],
   },
   {
     id: 'r4',
@@ -65,7 +62,7 @@ const rawRishtaProfiles: RishtaListingProfile[] = [
     education: 'Chartered Accountant',
     familyBackground: 'Small family, settled in DHA, father runs a textile business.',
     readiness: 'browsing',
-    photos: [M(15), M(16)],
+    photos: [M(10), M(11)],
   },
   {
     id: 'r5',
@@ -78,7 +75,7 @@ const rawRishtaProfiles: RishtaListingProfile[] = [
     education: 'Doctor, King Edward Medical University',
     familyBackground: 'Large joint family, both parents in medicine.',
     readiness: 'few_months',
-    photos: [W(44), W(45)],
+    photos: [W(17), W(18)],
   },
   {
     id: 'r6',
@@ -91,7 +88,7 @@ const rawRishtaProfiles: RishtaListingProfile[] = [
     education: 'BBA, IBA',
     familyBackground: 'Small family, both parents in business.',
     readiness: 'ready_now',
-    photos: [W(29), W(30)],
+    photos: [W(19), W(20)],
   },
   {
     id: 'r7',
@@ -104,7 +101,7 @@ const rawRishtaProfiles: RishtaListingProfile[] = [
     education: 'MPhil Islamic Studies',
     familyBackground: 'Religious family, father is a khateeb.',
     readiness: 'few_months',
-    photos: [M(17), M(18)],
+    photos: [M(12), M(13)],
   },
   {
     id: 'r8',
@@ -117,7 +114,7 @@ const rawRishtaProfiles: RishtaListingProfile[] = [
     education: 'MPhil Chemistry, PU',
     familyBackground: 'Nuclear family, father is a university professor, one younger brother.',
     readiness: 'ready_now',
-    photos: [W(36), W(37)],
+    photos: [W(21), W(22)],
     heightCm: 158,
     maritalStatus: 'single',
     hasChildren: false,
@@ -146,7 +143,7 @@ const rawRishtaProfiles: RishtaListingProfile[] = [
     education: 'MBBS, Dow Medical College',
     familyBackground: 'Small family, settled in Karachi, both parents doctors.',
     readiness: 'few_months',
-    photos: [M(38), M(39)],
+    photos: [M(14), M(15)],
     heightCm: 180,
     maritalStatus: 'single',
     hasChildren: false,
@@ -171,7 +168,7 @@ const rawRishtaProfiles: RishtaListingProfile[] = [
     education: 'LLB, Punjab University',
     familyBackground: 'Joint family, father is a lawyer, close-knit extended family in Multan.',
     readiness: 'browsing',
-    photos: [W(40), W(41)],
+    photos: [W(23), W(24)],
     heightCm: 162,
     maritalStatus: 'widowed',
     hasChildren: true,
