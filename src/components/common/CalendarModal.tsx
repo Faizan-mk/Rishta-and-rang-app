@@ -75,9 +75,9 @@ export function CalendarModal({ visible, initialIso, maxDateIso, onSelect, onClo
   ];
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
       <Pressable style={styles.overlay} onPress={onClose}>
-        <Animated.View entering={SlideInDown.duration(280).springify().damping(18)} style={styles.sheet}>
+        <Animated.View entering={SlideInDown.duration(500).springify().damping(22).stiffness(120)} style={styles.sheet}>
           <Pressable onPress={(e) => e.stopPropagation()}>
             <View style={styles.sheetHandle} />
             <View style={styles.header}>

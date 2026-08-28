@@ -327,7 +327,7 @@ function QuickLinkRow({ icon, label, onPress, rtl, last }: { icon: keyof typeof 
   return (
     <Pressable onPress={onPress} style={[quickStyles.row, !last && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }, rtl && { flexDirection: 'row-reverse' }]}>
       <Ionicons name={icon} size={18} color={colors.textSecondary} />
-      <Text style={[quickStyles.label, rtl && quickStyles.rtlText]}>{label}</Text>
+      <Text style={[quickStyles.label, { color: colors.textPrimary }, rtl && quickStyles.rtlText]}>{label}</Text>
       <Ionicons name={rtl ? 'chevron-back' : 'chevron-forward'} size={16} color={colors.textTertiary} />
     </Pressable>
   );

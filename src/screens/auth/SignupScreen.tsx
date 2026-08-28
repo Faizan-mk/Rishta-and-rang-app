@@ -49,8 +49,8 @@ export function SignupScreen({ navigation }: Props) {
       setError(t('signup.invalidEmail'));
       return;
     }
-    if (password.length < 6) {
-      setError(t('signup.passwordTooShort'));
+    if (!isStrongPassword(password)) {
+      setError(t('signup.passwordRequirementsError'));
       return;
     }
     if (password !== confirmPassword) {
@@ -124,12 +124,18 @@ export function SignupScreen({ navigation }: Props) {
           secureTextEntry
           autoComplete="password-new"
         />
+        {password.length > 0 && <PasswordRequirements password={password} />}
         <TextField
           label={t('signup.confirmPassword')}
           value={confirmPassword}
           onChangeText={setConfirmPassword}
           secureTextEntry
         />
+        {confirmPassword.length > 0 && (
+          <Text style={[styles.passwordMatch, { color: confirmPassword === password ? colors.teal : colors.danger }, rtl && styles.rtlText]}>
+            {confirmPassword === password ? t('signup.passwordsMatch') : t('signup.passwordMismatch')}
+          </Text>
+        )}
 
         <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('personalDetails.title')}</Text>
 
@@ -183,6 +189,32 @@ export function SignupScreen({ navigation }: Props) {
   );
 }
 
+function isStrongPassword(password: string): boolean {
+  return password.length >= 8 && /[a-z]/.test(password) && /[A-Z]/.test(password) && /\d/.test(password) && /[^A-Za-z0-9]/.test(password);
+}
+
+function PasswordRequirements({ password }: { password: string }) {
+  const { colors } = useTheme();
+  const { t, rtl } = useLanguage();
+  const checks = [
+    [password.length >= 8, t('signup.passwordRequirementLength')],
+    [/[a-z]/.test(password), t('signup.passwordRequirementLower')],
+    [/[A-Z]/.test(password), t('signup.passwordRequirementUpper')],
+    [/\d/.test(password), t('signup.passwordRequirementNumber')],
+    [/[^A-Za-z0-9]/.test(password), t('signup.passwordRequirementSpecial')],
+  ] as const;
+
+  return (
+    <View style={{ marginTop: -spacing.sm, marginBottom: spacing.md }}>
+      {checks.map(([valid, label]) => (
+        <Text key={label} style={{ ...typography.caption, color: valid ? colors.teal : colors.textTertiary, marginBottom: 2, ...(rtl ? { textAlign: 'right', writingDirection: 'rtl' as const } : {}) }}>
+          {valid ? '✓' : '○'} {label}
+        </Text>
+      ))}
+    </View>
+  );
+}
+
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
     title: { ...typography.h1, color: colors.textPrimary, marginBottom: spacing.xs },
@@ -193,6 +225,7 @@ const makeStyles = (colors: Palette) =>
     bioInput: { minHeight: 70, textAlignVertical: 'top' },
     submit: { marginTop: spacing.sm },
     errorText: { ...typography.caption, color: colors.danger, marginBottom: spacing.sm },
+    passwordMatch: { ...typography.caption, marginTop: -spacing.sm, marginBottom: spacing.md },
     footer: { marginTop: spacing.lg, alignItems: 'center' },
     footerText: { ...typography.body, color: colors.textSecondary },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },

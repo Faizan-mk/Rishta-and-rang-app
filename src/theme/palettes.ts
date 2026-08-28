@@ -82,8 +82,8 @@ export const lightPalette: Palette = {
 
 // Matte-black dark theme: true near-black surfaces (not the old dark-teal tint) with a
 // brighter, more saturated accent set so teal/gold/rose/orchid actually pop off the black
-// instead of blending into it. Text sitting on accent buttons flips to near-black for
-// punch, since these accents are now bright enough to carry dark text comfortably.
+// instead of blending into it. Inverse labels stay light so text never disappears
+// against dark-theme controls or surfaces.
 export const darkPalette: Palette = {
   background: '#0A0A0C',
   backgroundAlt: '#000000',
@@ -95,7 +95,7 @@ export const darkPalette: Palette = {
   textPrimary: '#F5F5F7',
   textSecondary: '#A8A8AE',
   textTertiary: '#6E6E76',
-  textInverse: '#0A0A0C',
+  textInverse: '#FFFFFF',
 
   teal: '#2DD4BF',
   tealDark: '#0F766E',

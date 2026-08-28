@@ -84,6 +84,8 @@ const makeStyles = (colors: Palette) =>
       alignItems: 'center',
       gap: spacing.sm,
       paddingHorizontal: spacing.md,
+      // Keep the browse actions comfortably below the top safe area.
+      paddingTop: spacing.md,
       paddingBottom: spacing.sm,
     },
     rowRtl: { flexDirection: 'row-reverse' },

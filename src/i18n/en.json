@@ -42,8 +42,15 @@
     "logIn": "Log in",
     "invalidEmail": "Enter a valid email address.",
     "emailTaken": "An account with this email already exists. Try logging in instead.",
-    "passwordTooShort": "Password needs at least 6 characters.",
-    "passwordMismatch": "Passwords don't match."
+    "passwordTooShort": "Password needs at least 8 characters.",
+    "passwordMismatch": "Passwords don't match.",
+    "passwordsMatch": "Passwords match.",
+    "passwordRequirementsError": "Use 8+ characters with lowercase, uppercase, a number, and a special character.",
+    "passwordRequirementLength": "At least 8 characters",
+    "passwordRequirementLower": "One lowercase letter",
+    "passwordRequirementUpper": "One uppercase letter",
+    "passwordRequirementNumber": "One number",
+    "passwordRequirementSpecial": "One special character"
   },
   "personalDetails": {
     "title": "Personal details",

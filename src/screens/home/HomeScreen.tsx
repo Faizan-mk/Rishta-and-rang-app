@@ -430,6 +430,7 @@ export function HomeScreen({ navigation }: Props) {
 
           <SwipeActionBar
             canUndo={canUndo}
+            liked={isFavorite(currentProfile.id)}
             locked={!user.isExplorePlus}
             onUndo={onUndo}
             onPass={onPass}

@@ -9,6 +9,7 @@ import { useLanguage } from '../../store/LanguageContext';
 
 interface SwipeActionBarProps {
   canUndo: boolean;
+  liked: boolean;
   // Rewind is an Explore+ feature — a locked button still responds, it just
   // opens the upgrade prompt instead of acting.
   locked: boolean;
@@ -21,7 +22,7 @@ interface SwipeActionBarProps {
 
 // One floating dock holding the three deck actions, labelled so the meaning is
 // obvious in every language rather than relying on icon convention alone.
-export function SwipeActionBar({ canUndo, locked, onUndo, onPass, onLike, bottomInset }: SwipeActionBarProps) {
+export function SwipeActionBar({ canUndo, liked, locked, onUndo, onPass, onLike, bottomInset }: SwipeActionBarProps) {
   const { colors } = useTheme();
   const { t } = useLanguage();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -47,7 +48,14 @@ export function SwipeActionBar({ canUndo, locked, onUndo, onPass, onLike, bottom
           colors={colors}
         />
         <View style={styles.divider} />
-        <DockButton label={t('discover.like')} icon="heart" tint={colors.dating} onPress={onLike} colors={colors} primary />
+        <DockButton
+          label={t('discover.like')}
+          icon={liked ? 'heart' : 'heart-outline'}
+          tint={liked ? colors.dating : colors.textSecondary}
+          onPress={onLike}
+          colors={colors}
+          primary={liked}
+        />
       </View>
     </View>
   );

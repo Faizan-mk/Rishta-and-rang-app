@@ -28,6 +28,14 @@ type Props = AppStackScreenProps<'EditProfile'>;
 
 const MAX_PHOTOS = 4;
 const MARITAL_OPTIONS: NonNullable<UserProfile['maritalStatus']>[] = ['single', 'divorced', 'widowed'];
+const OTHER_OPTION = 'Other';
+const EDUCATION_LEVEL_OPTIONS = ['Matric / O-Level', 'Intermediate / A-Level', 'Bachelor\'s', 'Master\'s', 'MPhil', 'PhD', 'Diploma', 'Religious education', OTHER_OPTION];
+const DEGREE_OPTIONS = ['BA', 'B.Com', 'BBA', 'BS Computer Science', 'BS Engineering', 'LLB', 'MBBS', 'BDS', 'MA', 'M.Com', 'MBA', 'MS / MPhil', 'PhD', 'Other'];
+const JOB_TITLE_OPTIONS = ['Student', 'Software Engineer', 'Doctor', 'Engineer', 'Teacher', 'Business Owner', 'Banker', 'Lawyer', 'Government Officer', 'Healthcare Professional', 'Armed Forces', 'Homemaker', 'Retired', 'Other'];
+const INDUSTRY_OPTIONS = ['Information Technology', 'Healthcare', 'Education', 'Finance and Banking', 'Engineering', 'Law', 'Government', 'Business and Trade', 'Telecommunications', 'Manufacturing', 'Media and Marketing', 'Real Estate', 'Agriculture', 'Other'];
+const PAKISTANI_LANGUAGE_OPTIONS = ['Urdu', 'English', 'Punjabi', 'Sindhi', 'Pashto', 'Balochi', 'Saraiki', 'Hindko', 'Kashmiri', 'Arabic', OTHER_OPTION];
+const NATIONALITY_OPTIONS = ['Pakistani', 'Dual nationality', OTHER_OPTION];
+const COUNTRY_OPTIONS = ['Pakistan', 'United Arab Emirates', 'Saudi Arabia', 'Qatar', 'Bahrain', 'United Kingdom', 'United States', 'Canada', 'Australia', OTHER_OPTION];
 
 type DetailsState = {
   heightCm: string;
@@ -235,7 +243,7 @@ export function EditProfileScreen({ navigation }: Props) {
   };
 
   return (
-    <ScreenContainer>
+    <ScreenContainer style={styles.screenContent}>
       <FadeIn>
         <Text style={[styles.title, rtl && styles.rtlText]}>{t('editProfile.title')}</Text>
 
@@ -406,23 +414,24 @@ export function EditProfileScreen({ navigation }: Props) {
 
       <FadeIn delay={300}>
         <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('discover.educationCareerTitle')}</Text>
-        <TextField label={t('editProfile.educationLevel')} value={details.educationLevel} onChangeText={(v) => setField('educationLevel', v)} placeholder={t('editProfile.educationLevelPlaceholder')} />
-        <TextField label={t('editProfile.degree')} value={details.degree} onChangeText={(v) => setField('degree', v)} placeholder={t('editProfile.degreePlaceholder')} />
-        <TextField label={t('editProfile.jobTitle')} value={details.jobTitle} onChangeText={(v) => setField('jobTitle', v)} />
-        <TextField label={t('editProfile.industry')} value={details.industry} onChangeText={(v) => setField('industry', v)} />
+        <SelectOrOtherField label={t('editProfile.educationLevel')} value={details.educationLevel} options={EDUCATION_LEVEL_OPTIONS} onChange={(v) => setField('educationLevel', v)} placeholder={t('editProfile.educationLevelPlaceholder')} />
+        <SelectOrOtherField label={t('editProfile.degree')} value={details.degree} options={DEGREE_OPTIONS} onChange={(v) => setField('degree', v)} placeholder={t('editProfile.degreePlaceholder')} />
+        <SelectOrOtherField label={t('editProfile.jobTitle')} value={details.jobTitle} options={JOB_TITLE_OPTIONS} onChange={(v) => setField('jobTitle', v)} />
+        <SelectOrOtherField label={t('editProfile.industry')} value={details.industry} options={INDUSTRY_OPTIONS} onChange={(v) => setField('industry', v)} />
       </FadeIn>
 
       <FadeIn delay={340}>
         <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('discover.languagesBackgroundTitle')}</Text>
-        <TextField
+        <SelectOrOtherField
           label={t('editProfile.languages')}
           value={details.languagesText}
-          onChangeText={(v) => setField('languagesText', v)}
+          onChange={(v) => setField('languagesText', v)}
+          options={PAKISTANI_LANGUAGE_OPTIONS}
           placeholder={t('editProfile.languagesPlaceholder')}
         />
-        <TextField label={t('editProfile.nationality')} value={details.nationality} onChangeText={(v) => setField('nationality', v)} />
-        <TextField label={t('editProfile.grewUpIn')} value={details.grewUpIn} onChangeText={(v) => setField('grewUpIn', v)} />
-        <TextField label={t('editProfile.country')} value={details.country} onChangeText={(v) => setField('country', v)} />
+        <SelectOrOtherField label={t('editProfile.nationality')} value={details.nationality} options={NATIONALITY_OPTIONS} onChange={(v) => setField('nationality', v)} />
+        <SelectOrOtherField label={t('editProfile.grewUpIn')} value={details.grewUpIn} options={PAKISTAN_CITIES} onChange={(v) => setField('grewUpIn', v)} />
+        <SelectOrOtherField label={t('editProfile.country')} value={details.country} options={COUNTRY_OPTIONS} onChange={(v) => setField('country', v)} />
       </FadeIn>
 
       <Button label={t('common.save')} onPress={onSave} loading={saving} style={styles.submit} />
@@ -436,6 +445,43 @@ function formatDuration(totalSeconds: number): string {
   const m = Math.floor(sec / 60);
   const s = sec % 60;
   return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+function SelectOrOtherField({
+  label,
+  value,
+  options,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  options: string[];
+  onChange: (value: string) => void;
+  placeholder?: string;
+}) {
+  const selectedOption = value && options.includes(value) ? value : value ? OTHER_OPTION : null;
+  const isOther = selectedOption === OTHER_OPTION;
+
+  return (
+    <>
+      <SelectField
+        label={label}
+        value={selectedOption}
+        options={options}
+        onChange={(option) => onChange(option === OTHER_OPTION || option === null ? '' : option)}
+        placeholder={placeholder}
+      />
+      {isOther && (
+        <TextField
+          label={`${label} (Other)`}
+          value={options.includes(value) ? '' : value}
+          onChangeText={onChange}
+          placeholder="Enter your answer"
+        />
+      )}
+    </>
+  );
 }
 
 function BooleanRow({
@@ -463,6 +509,8 @@ function BooleanRow({
 
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
+    // Separate the form from the native navigation header on compact phones.
+    screenContent: { paddingTop: spacing.xl },
     title: { ...typography.h1, color: colors.textPrimary, marginBottom: spacing.lg },
     label: { ...typography.label, color: colors.textPrimary, marginBottom: spacing.sm },
     sectionTitle: { ...typography.label, color: colors.textSecondary, textTransform: 'uppercase', marginTop: spacing.lg, marginBottom: spacing.sm },

@@ -1,63 +1,49 @@
-// ---------------------------------------------------------------------------
-// TEMPORARY PLACEHOLDER — no remote storage is wired up yet.
-//
-// Firebase Cloud Storage needs the paid Blaze plan, and we haven't picked a
-// free alternative yet. So that auth, profiles, discovery and chat can be built
-// and tested in the meantime, every "upload" here just hands the local device
-// URI straight back, and that URI is what gets written to Firestore.
-//
-// What this means while the placeholder is in place:
-//   · Photos, intros and chat media only render on the device that picked them.
-//     Another device (or a reinstall) sees a broken/blank image.
-//   · Nothing is actually deleted when a photo is removed.
-//   · CNIC/selfie images are NOT stored anywhere off-device.
-//
-// Everything that consumes media goes through this module and nothing else, so
-// swapping in a real backend later means rewriting only this file — no changes
-// to authService, matchesService, discoveryService or any screen.
-// ---------------------------------------------------------------------------
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import { storage } from './firebase';
 
-// A local asset picked via expo-image-picker/expo-audio (file://, content://, ph://, ...).
-// Anything else is treated as an already-uploaded remote URL.
 export function isLocalUri(uri: string): boolean {
   return !/^https?:\/\//i.test(uri);
 }
 
-/** Placeholder: returns the local URI unchanged instead of uploading. */
-async function passthrough(_userId: string, localUri: string): Promise<string> {
-  return localUri;
+function contentTypeFor(uri: string): string {
+  if (/\.(mp4|mov|m4v)$/i.test(uri)) return 'video/mp4';
+  if (/\.(m4a|aac|mp3|wav)$/i.test(uri)) return 'audio/m4a';
+  return 'image/jpeg';
 }
 
-/** Placeholder: returns the local URI unchanged instead of uploading. */
-async function passthroughChat(_userId: string, _matchId: string, localUri: string): Promise<string> {
-  return localUri;
+async function upload(localUri: string, path: string): Promise<string> {
+  const response = await fetch(localUri);
+  if (!response.ok) throw new Error(`Could not read selected media (${response.status})`);
+  const blob = await response.blob();
+  const contentType = blob.type || contentTypeFor(localUri);
+  const storageRef = ref(storage, path);
+  await uploadBytes(storageRef, blob, { contentType });
+  return getDownloadURL(storageRef);
 }
 
-/** Placeholder: paths and URLs are the same thing while media stays local. */
-function publicUrl(path: string): string {
-  return path;
+function fileName(uri: string): string {
+  const extension = uri.match(/\.([a-z0-9]+)(?:\?|$)/i)?.[1] ?? 'jpg';
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}.${extension}`;
 }
 
-/** Placeholder: verification media is never uploaded, so the path is the URI. */
-async function verificationUrl(path: string): Promise<string | undefined> {
-  return path || undefined;
+async function uploadPublic(userId: string, localUri: string, folder: string): Promise<string> {
+  return upload(localUri, `public/${userId}/${folder}/${fileName(localUri)}`);
 }
 
-/** Placeholder: nothing was uploaded, so there is nothing to delete. */
-async function removeFiles(_urls: string[]): Promise<void> {
-  // no-op
+async function uploadVerification(userId: string, localUri: string, folder: string): Promise<string> {
+  return upload(localUri, `verification/${userId}/${folder}/${fileName(localUri)}`);
 }
 
 export const mediaUpload = {
-  uploadPhoto: passthrough,
-  uploadVideoIntro: passthrough,
-  uploadVoiceIntro: passthrough,
-  uploadCnicPhoto: passthrough,
-  uploadSelfiePhoto: passthrough,
-  uploadChatImage: passthroughChat,
-  uploadChatAudio: passthroughChat,
-  publicUrl,
-  verificationUrl,
-  removeFiles,
+  uploadPhoto: (userId: string, uri: string) => uploadPublic(userId, uri, 'photos'),
+  uploadVideoIntro: (userId: string, uri: string) => uploadPublic(userId, uri, 'video'),
+  uploadVoiceIntro: (userId: string, uri: string) => uploadPublic(userId, uri, 'voice'),
+  uploadCnicPhoto: (userId: string, uri: string) => uploadVerification(userId, uri, 'cnic'),
+  uploadSelfiePhoto: (userId: string, uri: string) => uploadVerification(userId, uri, 'selfie'),
+  uploadChatImage: (userId: string, matchId: string, uri: string) => upload(uri, `public/${userId}/chat/${matchId}/${fileName(uri)}`),
+  uploadChatAudio: (userId: string, matchId: string, uri: string) => upload(uri, `public/${userId}/chat/${matchId}/${fileName(uri)}`),
+  publicUrl: (path: string) => path,
+  verificationUrl: async (path: string) => path || undefined,
+  removeFiles: async (_urls: string[]) => undefined,
   isLocalUri,
 };

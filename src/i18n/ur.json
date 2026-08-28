@@ -42,8 +42,15 @@
     "logIn": "لاگ ان کریں",
     "invalidEmail": "درست ای میل ایڈریس درج کریں۔",
     "emailTaken": "اس ای میل سے پہلے ہی ایک اکاؤنٹ موجود ہے۔ اس کے بجائے لاگ ان کرنے کی کوشش کریں۔",
-    "passwordTooShort": "پاس ورڈ کم از کم 6 حروف کا ہونا چاہیے۔",
-    "passwordMismatch": "پاس ورڈز مماثل نہیں ہیں۔"
+    "passwordTooShort": "پاس ورڈ کم از کم 8 حروف کا ہونا چاہیے۔",
+    "passwordMismatch": "پاس ورڈز مماثل نہیں ہیں۔",
+    "passwordsMatch": "پاس ورڈز مماثل ہیں۔",
+    "passwordRequirementsError": "پاس ورڈ میں 8 یا زیادہ حروف، lowercase، uppercase، نمبر اور special character ہونا چاہیے۔",
+    "passwordRequirementLength": "کم از کم 8 حروف",
+    "passwordRequirementLower": "ایک lowercase حرف",
+    "passwordRequirementUpper": "ایک uppercase حرف",
+    "passwordRequirementNumber": "ایک نمبر",
+    "passwordRequirementSpecial": "ایک special character"
   },
   "personalDetails": {
     "title": "ذاتی تفصیلات",

@@ -58,8 +58,6 @@ export function SelfieVerificationScreen({ navigation, route }: Props) {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       quality: 0.7,
-      allowsEditing: true,
-      aspect: [16, 10],
     });
     if (result.canceled || !result.assets[0]) return;
 

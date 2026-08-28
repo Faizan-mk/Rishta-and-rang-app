@@ -42,8 +42,15 @@
     "logIn": "Login Karein",
     "invalidEmail": "Sahi email address darj karein.",
     "emailTaken": "Is email se pehle hi ek account maujood hai. Iske bajaye login karne ki koshish karein.",
-    "passwordTooShort": "Password kam az kam 6 characters ka hona chahiye.",
-    "passwordMismatch": "Passwords match nahi karte."
+    "passwordTooShort": "Password kam az kam 8 characters ka hona chahiye.",
+    "passwordMismatch": "Passwords match nahi karte.",
+    "passwordsMatch": "Passwords match karte hain.",
+    "passwordRequirementsError": "Password mein 8+ characters, lowercase, uppercase, number aur special character hona chahiye.",
+    "passwordRequirementLength": "Kam az kam 8 characters",
+    "passwordRequirementLower": "Ek lowercase letter",
+    "passwordRequirementUpper": "Ek uppercase letter",
+    "passwordRequirementNumber": "Ek number",
+    "passwordRequirementSpecial": "Ek special character"
   },
   "personalDetails": {
     "title": "Zaati Tafseelat",
