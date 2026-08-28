@@ -247,6 +247,10 @@
     "title": "Matches",
     "empty": "No matches yet — start swiping to find your people.",
     "movedToRishta": "Moved to Rishta",
+    "emptyFriends": "No Friends chats yet — start swiping to find your people.",
+    "emptyRishta": "No Rishta chats yet — send a 'Move to Rishta' from a friendship chat, or swipe in Rishta mode.",
+    "otherModeHint": "{count} waiting in {mode}.",
+    "switchTo": "Go to {mode}",
     "typeMessage": "Type a message...",
     "itsAMatch": "It's a Match!",
     "youAndLikedEachOther": "You and {name} liked each other."
@@ -270,6 +274,8 @@
   },
   "profile": {
     "title": "Profile",
+    "datingMode": "Friends",
+    "rishtaMode": "Rishta",
     "editProfile": "Edit profile",
     "about": "About",
     "vibeTags": "Vibe tags",

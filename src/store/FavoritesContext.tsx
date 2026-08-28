@@ -5,6 +5,7 @@ import { ageFromDob } from '../utils/date';
 import { cache, CACHE_KEYS } from '../services/cache';
 import type { FavoriteProfile } from '../types/content';
 import { useAuth } from './AuthContext';
+import { useMatches } from './MatchesContext';
 
 export type { FavoriteProfile };
 
@@ -19,6 +20,7 @@ const FavoritesContext = createContext<FavoritesContextValue | undefined>(undefi
 
 export function FavoritesProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
+  const { rishtaProfileIds } = useMatches();
   const [favorites, setFavorites] = useState<FavoriteProfile[]>([]);
 
   // Guards the cache write below, so one account's favourites can never be
@@ -58,6 +60,20 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
     if (!user || hydratedFor.current !== user.id) return;
     cache.write(user.id, CACHE_KEYS.favorites, favorites);
   }, [user?.id, favorites]);
+
+  // A favourite is tagged with whichever deck it was saved from, so without this
+  // it would keep showing "Friends" long after the conversation crossed over.
+  useEffect(() => {
+    if (!user || hydratedFor.current !== user.id) return;
+    const crossed = favorites.filter((f) => f.kind === 'dating' && rishtaProfileIds.has(f.id));
+    if (crossed.length === 0) return;
+    setFavorites((prev) =>
+      prev.map((f) => (f.kind === 'dating' && rishtaProfileIds.has(f.id) ? { ...f, kind: 'rishta' } : f))
+    );
+    crossed.forEach((f) => {
+      favoritesService.updateFavoriteKind(user.id, f.id, 'rishta').catch(() => undefined);
+    });
+  }, [rishtaProfileIds, favorites, user?.id]);
 
   const isFavorite = (id: string) => favorites.some((f) => f.id === id);
 

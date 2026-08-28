@@ -6,7 +6,7 @@ import { mockRishtaProfiles } from '../data/mockRishta';
 import type { DiscoverProfile, RishtaListingProfile } from '../types/content';
 import { useAuth } from './AuthContext';
 
-// Loads the real member pool from Firestore once per sign-in.
+// Loads the real member pool from Supabase once per sign-in.
 //
 // Screens read `datingProfiles` / `rishtaProfiles` instead of the static mock
 // arrays. When the backend has no real members yet, we fall back to the demo

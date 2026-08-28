@@ -1,7 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { onAuthStateChanged } from 'firebase/auth';
 import { authService, SignupInput } from '../services/authService';
-import { auth } from '../services/firebase';
+import { supabase } from '../services/supabase';
 import { cache, CACHE_KEYS } from '../services/cache';
 import type { Intent, ProfileMode, RishtaReadiness, UserProfile } from '../types/user';
 
@@ -24,47 +23,78 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [initializing, setInitializing] = useState(true);
 
-  // signup/login drive `user` themselves. Firebase fires onAuthStateChanged the
+  // signup/login drive `user` themselves. Supabase fires onAuthStateChange the
   // instant the credential is created — before signup has written the profile
-  // documents — so without this guard the listener would read back "no profile"
+  // rows — so without this guard the listener would read back "no profile"
   // and kick the user out of the flow they're halfway through.
   const authActionInFlight = useRef(false);
+  // getSession() and the SIGNED_IN listener can both fire for the same restored
+  // session; this keeps the profile fetch single-flight across them.
+  const hydratingId = useRef<string | null>(null);
+
+  const hydrate = useCallback(async (userId: string) => {
+    if (hydratingId.current === userId) return;
+    hydratingId.current = userId;
+
+    // Show the last known profile immediately, so a returning user lands in the
+    // app instead of on the splash while the rows come down the wire. The fresh
+    // copy replaces it a moment later.
+    // Fire-and-forget: the badge other members see is only as honest as this.
+    authService.touchLastActive(userId).catch(() => undefined);
+
+    const cached = await cache.read<UserProfile>(userId, CACHE_KEYS.profile);
+    if (cached) {
+      setUser(cached);
+      setInitializing(false);
+    }
+    try {
+      const fresh = await authService.getCurrentUser();
+      setUser(fresh);
+      if (fresh) await cache.write(userId, CACHE_KEYS.profile, fresh);
+    } catch {
+      // Offline with a cached profile is a usable state; offline without one
+      // is not, so only that case falls back to signed-out.
+      if (!cached) setUser(null);
+    } finally {
+      setInitializing(false);
+    }
+  }, []);
 
   useEffect(() => {
-    // Persistence is restored asynchronously, so the first callback is also what
-    // tells us whether there was a session to restore at all. It additionally
-    // catches session loss we didn't initiate (revoked or expired credentials).
-    return onAuthStateChanged(auth, async (firebaseUser) => {
+    let active = true;
+
+    // Session is restored asynchronously, so this listener plus getSession()
+    // tells us whether there was a session at all, and catches session loss we
+    // didn't initiate (revoked or expired credentials → SIGNED_OUT).
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!active) return;
+      if (event === 'TOKEN_REFRESHED') return;
       if (authActionInFlight.current) return;
-      if (!firebaseUser) {
+      if (!session?.user) {
         setUser(null);
         setInitializing(false);
         return;
       }
-      // Show the last known profile immediately, so a returning user lands in
-      // the app instead of on the splash while three documents come down the
-      // wire. The fresh copy replaces it a moment later.
-      // Fire-and-forget: the badge other members see is only as honest as this.
-      authService.touchLastActive(firebaseUser.uid).catch(() => undefined);
-
-      const cached = await cache.read<UserProfile>(firebaseUser.uid, CACHE_KEYS.profile);
-      if (cached) {
-        setUser(cached);
-        setInitializing(false);
-      }
-      try {
-        const fresh = await authService.getCurrentUser();
-        setUser(fresh);
-        if (fresh) await cache.write(firebaseUser.uid, CACHE_KEYS.profile, fresh);
-      } catch {
-        // Offline with a cached profile is a usable state; offline without one
-        // is not, so only that case falls back to signed-out.
-        if (!cached) setUser(null);
-      } finally {
-        setInitializing(false);
-      }
+      hydrate(session.user.id);
     });
-  }, []);
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!active) return;
+      if (!session?.user) {
+        setUser(null);
+        setInitializing(false);
+        return;
+      }
+      hydrate(session.user.id);
+    });
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, [hydrate]);
 
   const runAuthAction = useCallback(async (action: () => Promise<UserProfile | null>) => {
     authActionInFlight.current = true;

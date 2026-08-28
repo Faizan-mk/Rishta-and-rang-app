@@ -1,48 +1,75 @@
-import { deleteDoc, getDocs, limit, orderBy, query, setDoc } from 'firebase/firestore';
-import { viewHistoryCollection, viewHistoryDoc } from './firestorePaths';
+import { supabase } from './supabase';
 import type { ViewedProfile } from '../types/content';
 
 const MAX_HISTORY = 60;
 
-interface ViewHistoryDoc {
+interface ViewHistoryRow {
+  viewed_id: string;
   kind: ViewedProfile['kind'];
   name: string;
   age: number;
   city: string;
   photo: string;
-  viewedAt: string;
+  viewed_at: string;
 }
 
-function mapEntry(id: string, data: ViewHistoryDoc): ViewedProfile {
-  return { id, kind: data.kind, name: data.name, age: data.age, city: data.city, photo: data.photo, viewedAt: data.viewedAt };
+function mapEntry(row: ViewHistoryRow): ViewedProfile {
+  return {
+    id: row.viewed_id,
+    kind: row.kind,
+    name: row.name,
+    age: row.age,
+    city: row.city,
+    photo: row.photo,
+    viewedAt: row.viewed_at,
+  };
 }
 
 async function fetchHistory(profileId: string): Promise<ViewedProfile[]> {
-  const snap = await getDocs(query(viewHistoryCollection(profileId), orderBy('viewedAt', 'desc'), limit(MAX_HISTORY)));
-  return snap.docs.map((entry) => mapEntry(entry.id, entry.data() as ViewHistoryDoc));
+  const { data, error } = await supabase
+    .from('view_history')
+    .select('viewed_id, kind, name, age, city, photo, viewed_at')
+    .eq('profile_id', profileId)
+    .order('viewed_at', { ascending: false })
+    .limit(MAX_HISTORY);
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((row) => mapEntry(row as unknown as ViewHistoryRow));
 }
 
 async function recordView(profileId: string, profile: Omit<ViewedProfile, 'viewedAt'>): Promise<void> {
-  // Doc id is the viewed profile's id, so re-viewing bumps the timestamp on the
+  // Unique on (profile_id, viewed_id), so re-viewing bumps the timestamp on the
   // existing entry instead of adding a duplicate.
-  await setDoc(viewHistoryDoc(profileId, profile.id), {
-    kind: profile.kind,
-    name: profile.name,
-    age: profile.age,
-    city: profile.city,
-    photo: profile.photo,
-    viewedAt: new Date().toISOString(),
-  } satisfies ViewHistoryDoc);
+  const { error } = await supabase.from('view_history').upsert(
+    {
+      profile_id: profileId,
+      viewed_id: profile.id,
+      kind: profile.kind,
+      name: profile.name,
+      age: profile.age,
+      city: profile.city,
+      photo: profile.photo,
+      viewed_at: new Date().toISOString(),
+    },
+    { onConflict: 'profile_id,viewed_id' }
+  );
+  if (error) throw new Error(error.message);
 
   // Trim anything past the newest MAX_HISTORY entries.
-  const all = await getDocs(query(viewHistoryCollection(profileId), orderBy('viewedAt', 'desc')));
-  const overflow = all.docs.slice(MAX_HISTORY);
-  if (overflow.length) await Promise.all(overflow.map((entry) => deleteDoc(entry.ref)));
+  const { data, error: fetchError } = await supabase
+    .from('view_history')
+    .select('id')
+    .eq('profile_id', profileId)
+    .order('viewed_at', { ascending: false });
+  if (fetchError) throw new Error(fetchError.message);
+  const overflow = (data ?? []).slice(MAX_HISTORY).map((row) => row.id);
+  if (overflow.length) {
+    await supabase.from('view_history').delete().in('id', overflow).eq('profile_id', profileId);
+  }
 }
 
 async function clearHistory(profileId: string): Promise<void> {
-  const snap = await getDocs(viewHistoryCollection(profileId));
-  await Promise.all(snap.docs.map((entry) => deleteDoc(entry.ref)));
+  const { error } = await supabase.from('view_history').delete().eq('profile_id', profileId);
+  if (error) throw new Error(error.message);
 }
 
 export const viewHistoryService = { fetchHistory, recordView, clearHistory };

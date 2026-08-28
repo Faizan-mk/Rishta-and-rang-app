@@ -37,8 +37,8 @@ export function PrivacySafetyScreen({ navigation }: Props) {
     try {
       await deleteAccount();
     } catch (e) {
-      // Firebase won't delete an account behind a session older than a few
-      // minutes. Nothing was removed, so the member can log in again and retry.
+      // Supabase won't delete an account with a session older than a few minutes.
+      // Nothing was removed, so the member can log in again and retry.
       const reauth = e instanceof Error && e.message === 'REAUTH_REQUIRED';
       await notify({
         title: t('privacy.deleteAccountFailedTitle'),

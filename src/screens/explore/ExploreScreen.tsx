@@ -55,7 +55,7 @@ export function ExploreScreen({ navigation }: Props) {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
   const { user } = useAuth();
-  const { blockedProfiles } = useMatches();
+  const { rishtaProfileIds, blockedProfiles } = useMatches();
   const { history, clearHistory } = useViewHistory();
   const { confirm } = useDialog();
   const { datingProfiles, rishtaProfiles } = useDiscovery();
@@ -101,8 +101,11 @@ export function ExploreScreen({ navigation }: Props) {
       mode === 'dating' ? datingProfiles : rishtaProfiles;
     return oppositeGenderProfiles(source, user?.gender)
       .filter((p) => !blockedProfileIds.has(p.id))
+      // Same rule as the Home deck: a thread that moved to Rishta takes that
+      // member out of the Friends pool.
+      .filter((p) => mode === 'rishta' || !rishtaProfileIds.has(p.id))
       .map((p) => ({ ...p, kind: mode }));
-  }, [mode, datingProfiles, rishtaProfiles, user?.gender, blockedProfileIds]);
+  }, [mode, datingProfiles, rishtaProfiles, user?.gender, blockedProfileIds, rishtaProfileIds]);
 
   const filtered = useMemo(() => {
     let list = pool.filter((p) => p.age >= filters.ageMin && p.age <= filters.ageMax);

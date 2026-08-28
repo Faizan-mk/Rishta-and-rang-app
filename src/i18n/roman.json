@@ -247,6 +247,10 @@
     "title": "Matches",
     "empty": "Abhi tak koi match nahi — swiping shuru karein.",
     "movedToRishta": "Rishtay ki Taraf Muntaqil",
+    "emptyFriends": "Abhi koi Friends chat nahi — swipe karke apne log dhoondein.",
+    "emptyRishta": "Abhi koi Rishta chat nahi — kisi friendship chat se 'Move to Rishta' bhejein, ya Rishta mode mein swipe karein.",
+    "otherModeHint": "{mode} mein {count} maujood hain.",
+    "switchTo": "{mode} par jayen",
     "typeMessage": "Paigham likhein...",
     "itsAMatch": "Yeh Ek Match Hai!",
     "youAndLikedEachOther": "Aap aur {name} ne ek doosre ko pasand kiya."
@@ -270,6 +274,8 @@
   },
   "profile": {
     "title": "Profile",
+    "datingMode": "Friends",
+    "rishtaMode": "Rishta",
     "editProfile": "Profile Edit Karein",
     "about": "Tafseel",
     "vibeTags": "Dilchaspiyan",

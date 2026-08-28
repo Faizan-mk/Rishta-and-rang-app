@@ -41,8 +41,3 @@ yarn-error.*
 # generated native folders
 /ios
 /android
-
-# Firebase
-service-account*.json
-.firebase/
-firebase-debug.log

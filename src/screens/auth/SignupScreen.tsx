@@ -81,9 +81,12 @@ export function SignupScreen({ navigation }: Props) {
 
     setError(null);
     setChecking(true);
-    const exists = await authService.emailExists(email);
+    // 'resume' means this address is their own signup that died before the
+    // profile rows were written — that one gets waved through, so the flow can
+    // finish the account instead of walling them out of it forever.
+    const status = await authService.inspectEmail(email, password);
     setChecking(false);
-    if (exists) {
+    if (status === 'taken') {
       setError(t('signup.emailTaken'));
       return;
     }

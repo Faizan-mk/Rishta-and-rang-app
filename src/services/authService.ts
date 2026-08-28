@@ -1,22 +1,5 @@
-import {
-  createUserWithEmailAndPassword,
-  deleteUser,
-  fetchSignInMethodsForEmail,
-  signInWithEmailAndPassword,
-  signOut,
-  updateProfile,
-} from 'firebase/auth';
-import { deleteDoc, getDoc, getDocs, setDoc, updateDoc } from 'firebase/firestore';
-import { auth } from './firebase';
+import { supabase } from './supabase';
 import { mediaUpload } from './mediaUpload';
-import {
-  privateDoc,
-  profileDoc,
-  USER_SUBCOLLECTIONS,
-  userCollection,
-  userDoc,
-  verificationDoc,
-} from './firestorePaths';
 import type { AppLanguage, Intent, ProfileMode, UserProfile } from '../types/user';
 
 export interface SignupInput {
@@ -37,12 +20,14 @@ export interface SignupInput {
 }
 
 /**
- * The publicly discoverable half of a member. Any signed-in user can read these
- * docs (see firestore.rules) — this is the Firestore equivalent of the
- * `discover_profiles` view, so nothing sensitive belongs here. Email, CNIC and
- * wali contact live under `users/{uid}/private/*` instead.
+ * The publicly discoverable half of a member (the `profiles` table). Any
+ * signed-in user may read these rows (see supabase/2_profiles.sql RLS) — this is the
+ * Postgres equivalent of the `discover_profiles` view, so nothing sensitive
+ * belongs here. Email, CNIC and wali contact live in the owner-only
+ * `profile_private` / `profile_verification` tables instead.
  */
 export interface ProfileDoc {
+  id: string;
   fullName: string;
   dob: string;
   gender: UserProfile['gender'];
@@ -85,13 +70,13 @@ export interface ProfileDoc {
   selfieVerified: boolean;
   /**
    * Just the badge, not the CNIC record behind it: other members have to be able
-   * to see that a profile is bureau-verified, and `users/{uid}/private/verification`
-   * is owner-only. The number and photo stay in that private doc.
+   * to see that a profile is bureau-verified, and `profile_verification` is
+   * owner-only. The number and photo stay in that private table.
    */
   bureauVerified: boolean;
   /** Last time this member opened the app — drives the activity badge and sorts. */
   lastActiveAt: string | null;
-  /** Ordered download URLs — replaces the old `profile_photos` table. */
+  /** Ordered public URLs — the replaced `profile_photos` rows. */
   photos: string[];
   voiceIntroUrl: string | null;
   voiceIntroDurationSec: number | null;
@@ -118,6 +103,40 @@ interface VerificationDoc {
   selfiePhotoPath: string | null;
 }
 
+// Every column the app reads off `profiles`, aliased to the camelCase field
+// names ProfileDoc / the mapping functions below expect. Kept on one line: the
+// supabase-js type parser only understands a single-line select string.
+export const PROFILE_SELECT: string =
+  'id, fullName:full_name, dob, gender, city, bio, intent, language, activeMode:active_mode, datingVibeTags:dating_vibe_tags, datingIntentionLabel:dating_intention_label, rishtaReligion:rishta_religion, rishtaSect:rishta_sect, rishtaFamilyBackground:rishta_family_background, rishtaEducation:rishta_education, rishtaReadiness:rishta_readiness, rishtaPrayerHabits:rishta_prayer_habits, rishtaIncomeRange:rishta_income_range, rishtaLivingAbroad:rishta_living_abroad, heightCm:height_cm, maritalStatus:marital_status, hasChildren:has_children, occupation, practising, prayerHabits:prayer_habits, halalOnly:halal_only, smoking, drinking, religiousDress:religious_dress, openToRelocate:open_to_relocate, preferredCountry:preferred_country, careerPlans:career_plans, educationLevel:education_level, degree, jobTitle:job_title, industry, languages, nationality, grewUpIn:grew_up_in, country, selfieVerified:selfie_verified, bureauVerified:bureau_verified, lastActiveAt:last_active_at, photos, voiceIntroUrl:voice_intro_url, voiceIntroDurationSec:voice_intro_duration_sec, videoIntroUrl:video_intro_url, waliName:wali_name, waliInvitedAt:wali_invited_at, isExplorePlus:is_explore_plus, subscriptionPlan:subscription_plan, hasUsedTrial:has_used_trial, subscriptionRenewsAt:subscription_renews_at, createdAt:created_at';
+
+export async function fetchProfileRow(userId: string): Promise<ProfileDoc | null> {
+  const { data, error } = await supabase.from('profiles').select(PROFILE_SELECT).eq('id', userId).maybeSingle();
+  if (error) throw new Error(error.message);
+  return (data as ProfileDoc | null) ?? null;
+}
+
+async function fetchPrivateRow(userId: string): Promise<PrivateDoc | null> {
+  const { data, error } = await supabase
+    .from('profile_private')
+    .select('id, email, waliContact:wali_contact')
+    .eq('id', userId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return (data as PrivateDoc | null) ?? null;
+}
+
+async function fetchVerificationRow(userId: string): Promise<VerificationDoc | null> {
+  const { data, error } = await supabase
+    .from('profile_verification')
+    .select(
+      'id, cnicNumber:cnic_number, cnicPhotoPath:cnic_photo_path, cnicVerified:cnic_verified, bureauVerified:bureau_verified, selfiePhotoPath:selfie_photo_path'
+    )
+    .eq('id', userId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return (data as VerificationDoc | null) ?? null;
+}
+
 async function mapToUserProfile(
   id: string,
   data: ProfileDoc,
@@ -131,7 +150,7 @@ async function mapToUserProfile(
   return {
     id,
     fullName: data.fullName,
-    email: privateData?.email ?? auth.currentUser?.email ?? '',
+    email: privateData?.email ?? '',
     dob: data.dob,
     gender: data.gender,
     city: data.city,
@@ -195,35 +214,64 @@ async function mapToUserProfile(
 }
 
 async function fetchFullProfile(userId: string): Promise<UserProfile | null> {
-  const [profileSnap, privateSnap, verificationSnap] = await Promise.all([
-    getDoc(profileDoc(userId)),
-    getDoc(privateDoc(userId)),
-    getDoc(verificationDoc(userId)),
+  const [profile, privateData, verification] = await Promise.all([
+    fetchProfileRow(userId),
+    fetchPrivateRow(userId),
+    fetchVerificationRow(userId),
   ]);
-  if (!profileSnap.exists()) return null;
-  return mapToUserProfile(
-    userId,
-    profileSnap.data() as ProfileDoc,
-    (privateSnap.data() as PrivateDoc | undefined) ?? null,
-    (verificationSnap.data() as VerificationDoc | undefined) ?? null
-  );
+  if (!profile) return null;
+  return mapToUserProfile(userId, profile, privateData, verification);
 }
 
 /**
- * Best-effort "is this address taken?" check for step 1 of signup.
- *
- * Firebase projects created with email-enumeration protection enabled (the
- * default) always return an empty list here, so this can report `false` for an
- * address that is in fact taken. `signup` catches `auth/email-already-in-use`
- * and reports it properly either way — this is purely a nicer early warning.
+ * Best-effort "is this address taken?" check for step 1 of signup. The RPC
+ * reads auth.users directly, so (unlike a user-enumeration-resistant
+ * lookup) this is reliable. `signup` still catches a concurrent registration
+ * either way — this is purely a nicer early warning.
  */
 async function emailExists(email: string): Promise<boolean> {
   try {
-    const methods = await fetchSignInMethodsForEmail(auth, email.trim().toLowerCase());
-    return methods.length > 0;
+    const { data, error } = await supabase.rpc('email_exists', { p_email: email.trim().toLowerCase() });
+    if (error) return false;
+    return Boolean(data);
   } catch {
     return false;
   }
+}
+
+/**
+ * What a taken email address actually means for the person typing it.
+ *
+ *   'free'     nobody has it — carry on.
+ *   'resume'   their own half-finished signup: the auth user exists and the
+ *              password opens it, but the profile rows never landed. The flow
+ *              continues and `signup` fills in what the failed attempt missed.
+ *   'taken'    a complete account, or one whose password they don't have.
+ *
+ * The old check stopped at "does this address exist", which walled off the one
+ * case the wall hurt: a member whose signup died between creating the account
+ * and writing the profile could never get back in to finish it.
+ */
+async function inspectEmail(email: string, password: string): Promise<'free' | 'resume' | 'taken'> {
+  const normalized = email.trim().toLowerCase();
+  if (!(await emailExists(normalized))) return 'free';
+
+  const { data, error } = await supabase.auth.signInWithPassword({ email: normalized, password });
+  if (error || !data.user) return 'taken';
+
+  // A placeholder row doesn't count as a finished account — it is the marker of
+  // the very failure this path exists to undo, so it resumes like a missing one.
+  const profile = await fetchProfileRow(data.user.id).catch(() => null);
+  if (profile && !isPlaceholderProfile(profile, normalized)) {
+    // A finished account. Drop the session we just opened so the member stays
+    // on the signup screen and sees "already registered" rather than being
+    // teleported into the app by a form they were still filling in.
+    await supabase.auth.signOut({ scope: 'local' });
+    return 'taken';
+  }
+
+  // Session left open on purpose — the rest of the flow uploads against it.
+  return 'resume';
 }
 
 function blankProfileDoc(input: {
@@ -236,118 +284,269 @@ function blankProfileDoc(input: {
   language: AppLanguage;
   selfieVerified?: boolean;
   photos: string[];
-}): ProfileDoc {
+}): Record<string, unknown> {
   return {
-    fullName: input.fullName.trim(),
+    full_name: input.fullName.trim(),
     dob: input.dob,
     gender: input.gender,
     city: input.city.trim(),
     bio: input.bio?.trim() ?? '',
     intent: input.intent,
     language: input.language,
-    activeMode: input.intent === 'matrimonial' ? 'rishta' : 'dating',
-    datingVibeTags: [],
-    datingIntentionLabel: null,
-    rishtaReligion: '',
-    rishtaSect: '',
-    rishtaFamilyBackground: '',
-    rishtaEducation: '',
-    rishtaReadiness: 'browsing',
-    rishtaPrayerHabits: null,
-    rishtaIncomeRange: null,
-    rishtaLivingAbroad: null,
-    heightCm: null,
-    maritalStatus: null,
-    hasChildren: null,
+    active_mode: input.intent === 'matrimonial' ? 'rishta' : 'dating',
+    dating_vibe_tags: [],
+    dating_intention_label: null,
+    rishta_religion: '',
+    rishta_sect: '',
+    rishta_family_background: '',
+    rishta_education: '',
+    rishta_readiness: 'browsing',
+    rishta_prayer_habits: null,
+    rishta_income_range: null,
+    rishta_living_abroad: null,
+    height_cm: null,
+    marital_status: null,
+    has_children: null,
     occupation: null,
     practising: null,
-    prayerHabits: null,
-    halalOnly: null,
+    prayer_habits: null,
+    halal_only: null,
     smoking: null,
     drinking: null,
-    religiousDress: null,
-    openToRelocate: null,
-    preferredCountry: null,
-    careerPlans: null,
-    educationLevel: null,
+    religious_dress: null,
+    open_to_relocate: null,
+    preferred_country: null,
+    career_plans: null,
+    education_level: null,
     degree: null,
-    jobTitle: null,
+    job_title: null,
     industry: null,
     languages: null,
     nationality: null,
-    grewUpIn: null,
+    grew_up_in: null,
     country: null,
-    selfieVerified: Boolean(input.selfieVerified),
-    bureauVerified: false,
-    lastActiveAt: new Date().toISOString(),
+    selfie_verified: Boolean(input.selfieVerified),
+    bureau_verified: false,
+    last_active_at: new Date().toISOString(),
     photos: input.photos,
-    voiceIntroUrl: null,
-    voiceIntroDurationSec: null,
-    videoIntroUrl: null,
-    waliName: null,
-    waliInvitedAt: null,
-    isExplorePlus: false,
-    subscriptionPlan: null,
-    hasUsedTrial: false,
-    subscriptionRenewsAt: null,
-    createdAt: new Date().toISOString(),
+    voice_intro_url: null,
+    voice_intro_duration_sec: null,
+    video_intro_url: null,
+    wali_name: null,
+    wali_invited_at: null,
+    is_explore_plus: false,
+    subscription_plan: null,
+    has_used_trial: false,
+    subscription_renews_at: null,
   };
+}
+
+/**
+ * The stand-in row `login` seeds when it finds an auth user with no profile —
+ * a signup that died between creating the account and writing its rows.
+ *
+ * Nothing in it came from the member: the name is their email's local part, the
+ * date of birth is a sentinel and the gender is 'other'. It exists so they land
+ * in the app rather than on a blank screen, and it is meant to be replaced the
+ * moment they finish signing up. Kept in one place so `inspectEmail` can
+ * recognise its own handiwork and let that signup be finished.
+ */
+const PLACEHOLDER_DOB = '2000-01-01';
+
+function placeholderNameFor(email: string): string {
+  return email.split('@')[0] || 'User';
+}
+
+function placeholderProfileDoc(email: string): Record<string, unknown> {
+  return blankProfileDoc({
+    fullName: placeholderNameFor(email),
+    dob: PLACEHOLDER_DOB,
+    gender: 'other',
+    city: '',
+    intent: 'casual',
+    language: 'en',
+    photos: [],
+  });
+}
+
+/** True only for a row that `login`'s fallback could have written. */
+function isPlaceholderProfile(profile: ProfileDoc, email: string): boolean {
+  return (
+    profile.dob === PLACEHOLDER_DOB &&
+    profile.gender === 'other' &&
+    profile.fullName === placeholderNameFor(email) &&
+    (profile.photos?.length ?? 0) === 0
+  );
 }
 
 function signupErrorMessage(err: unknown): string {
   const code = (err as { code?: string })?.code ?? '';
-  if (code === 'auth/email-already-in-use') return 'That email is already registered. Try logging in instead.';
-  if (code === 'auth/invalid-email') return 'That email address looks invalid.';
-  if (code === 'auth/weak-password') return 'Password is too weak — use at least 6 characters.';
-  return (err as { message?: string })?.message ?? 'Could not create the account.';
+  const message = (err as { message?: string })?.message ?? '';
+  if (code === 'email_exists' || /already registered/i.test(message)) {
+    return 'That email is already registered. Try logging in instead.';
+  }
+  if (code === 'weak_password' || message.includes('must be at least')) {
+    return 'Password is too weak — use at least 6 characters.';
+  }
+  if (code === 'invalid_email' || message.toLowerCase().includes('invalid email')) {
+    return 'That email address looks invalid.';
+  }
+  return message || 'Could not create the account.';
+}
+
+/**
+ * Creates the auth user and leaves a live session behind, or reuses the one an
+ * earlier attempt already created.
+ *
+ * The resume path matters: signup writes an auth user first and the Postgres
+ * rows after, so an attempt that died in between leaves an account that can
+ * sign in but has no profile. Retrying the form with the same credentials used
+ * to bounce off "already registered" forever; now it signs in and the caller
+ * finishes the rows it never got to write.
+ */
+async function createAccount(email: string, input: SignupInput): Promise<string> {
+  try {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password: input.password,
+      options: { data: { fullName: input.fullName.trim() } },
+    });
+    if (error) throw error;
+
+    // With enumeration protection on, signing up an address that already exists
+    // returns a decoy user with no identities rather than an error.
+    const alreadyRegistered = data.user && (data.user.identities?.length ?? 0) === 0;
+    if (alreadyRegistered) throw { code: 'email_exists' };
+
+    const createdUserId = data.user?.id;
+    if (!createdUserId) throw new Error('Could not create the account.');
+
+    // With email confirmation turned ON in the dashboard, signUp returns no
+    // session yet. The storage uploads below and the profile writes need a
+    // live session, so best-effort sign in (works once the address works).
+    if (!data.session) {
+      const { error: sessionError } = await supabase.auth.signInWithPassword({ email, password: input.password });
+      if (sessionError) {
+        throw new Error('Account created — check your email for the confirmation link before you continue.');
+      }
+    }
+    return createdUserId;
+  } catch (err) {
+    const code = (err as { code?: string })?.code ?? '';
+    const message = (err as { message?: string })?.message ?? '';
+    if (code === 'email_exists' || /already registered|already been registered/i.test(message)) {
+      // Same person retrying their own half-finished signup, or someone typing
+      // an address that isn't theirs — the password tells the two apart.
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password: input.password });
+      if (!error && data.user) return data.user.id;
+    }
+    throw new Error(signupErrorMessage(err));
+  }
+}
+
+interface SignupMedia {
+  photos: string[];
+  cnicPhotoPath: string | null;
+  selfiePhotoPath: string | null;
+}
+
+/**
+ * Uploads whatever the member picked, and reports what actually landed.
+ *
+ * Deliberately non-fatal. These uploads used to run before the profile rows and
+ * throw on failure, which registered the auth user and then abandoned the flow
+ * — the account existed, the profile didn't, and the member was left on the
+ * signup screen with no way in but a fresh login. Photos are re-addable from
+ * Edit Profile; being locked out of the app you just signed up for is not.
+ */
+async function uploadSignupMedia(userId: string, input: SignupInput): Promise<SignupMedia> {
+  const settle = <T,>(work: Promise<T>): Promise<T | null> => work.catch(() => null);
+
+  const [photos, cnicPhotoPath, selfiePhotoPath] = await Promise.all([
+    Promise.all((input.photos ?? []).map((uri) => settle(mediaUpload.uploadPhoto(userId, uri)))),
+    input.cnicPhotoUri ? settle(mediaUpload.uploadCnicPhoto(userId, input.cnicPhotoUri)) : Promise.resolve(null),
+    input.selfieUri ? settle(mediaUpload.uploadSelfiePhoto(userId, input.selfieUri)) : Promise.resolve(null),
+  ]);
+
+  return { photos: photos.filter((url): url is string => Boolean(url)), cnicPhotoPath, selfiePhotoPath };
 }
 
 async function signup(input: SignupInput): Promise<UserProfile> {
   const email = input.email.trim().toLowerCase();
+  const userId = await createAccount(email, input);
 
-  let userId: string;
-  try {
-    const credential = await createUserWithEmailAndPassword(auth, email, input.password);
-    userId = credential.user.uid;
-    await updateProfile(credential.user, { displayName: input.fullName.trim() });
-  } catch (err) {
-    throw new Error(signupErrorMessage(err));
+  // Rows before media. These three writes are what decide whether the member
+  // gets into the app at all, so they go first and the (much slower, much more
+  // failure-prone) uploads patch themselves in afterwards.
+  //
+  // Upsert (not insert): if an earlier attempt for this same auth user died
+  // partway through (network drop, app kill), retrying completes the rows
+  // instead of failing on an already-exists error.
+  const [profileResult, privateResult, verificationResult] = await Promise.all([
+    supabase
+      .from('profiles')
+      .upsert({ id: userId, ...blankProfileDoc({ ...input, photos: [] }) }, { onConflict: 'id' }),
+    supabase
+      .from('profile_private')
+      .upsert({ id: userId, email, wali_contact: null } satisfies Record<string, unknown>, { onConflict: 'id' }),
+    supabase
+      .from('profile_verification')
+      .upsert(
+        {
+          id: userId,
+          cnic_number: input.cnicNumber,
+          cnic_photo_path: null,
+          cnic_verified: true,
+          bureau_verified: false,
+          selfie_photo_path: null,
+        },
+        { onConflict: 'id' }
+      ),
+  ]);
+
+  const writeError = profileResult.error ?? privateResult.error ?? verificationResult.error;
+  if (writeError) throw new Error(writeError.message);
+
+  // Uploads run against the fresh session, so storage policies see the right uid.
+  const media = await uploadSignupMedia(userId, input);
+
+  if (media.photos.length) {
+    await supabase.from('profiles').update({ photos: media.photos }).eq('id', userId);
   }
-
-  // Uploads run against the freshly created session, so storage rules see the
-  // right uid.
-  const [photoUrls, cnicPhotoPath, selfiePhotoPath] = await Promise.all([
-    Promise.all((input.photos ?? []).map((uri) => mediaUpload.uploadPhoto(userId, uri))),
-    input.cnicPhotoUri ? mediaUpload.uploadCnicPhoto(userId, input.cnicPhotoUri) : Promise.resolve(null),
-    input.selfieUri ? mediaUpload.uploadSelfiePhoto(userId, input.selfieUri) : Promise.resolve(null),
-  ]);
-
-  // setDoc (not addDoc/create-only): if an earlier attempt for this same auth
-  // user died partway through (network drop, app kill), retrying completes the
-  // documents instead of failing on an already-exists error.
-  await Promise.all([
-    setDoc(profileDoc(userId), blankProfileDoc({ ...input, photos: photoUrls })),
-    setDoc(privateDoc(userId), { email, waliContact: null } satisfies PrivateDoc),
-    setDoc(verificationDoc(userId), {
-      cnicNumber: input.cnicNumber,
-      cnicPhotoPath,
-      cnicVerified: true,
-      bureauVerified: false,
-      selfiePhotoPath,
-    } satisfies VerificationDoc),
-  ]);
+  if (media.cnicPhotoPath || media.selfiePhotoPath) {
+    await supabase
+      .from('profile_verification')
+      .update({ cnic_photo_path: media.cnicPhotoPath, selfie_photo_path: media.selfiePhotoPath })
+      .eq('id', userId);
+  }
 
   const profile = await fetchFullProfile(userId);
   if (!profile) throw new Error('Could not load the account that was just created.');
   return profile;
 }
 
+/**
+ * The API rejects a token whose `iat`/`exp` don't line up with its own clock
+ * ("JWT issued at future" when the Supabase project's clock runs ahead of the
+ * gateway's). Sign-in itself has already succeeded by then, so without this the
+ * member is left holding a session every query rejects, behind a raw server
+ * string that reads like a password problem.
+ */
+function isJwtClockError(err: unknown): boolean {
+  const message = (err as { message?: string })?.message ?? '';
+  return /jwt (issued at future|expired)|token used before issued/i.test(message);
+}
+
 function loginErrorMessage(err: unknown): string {
   const code = (err as { code?: string })?.code ?? '';
-  if (code === 'auth/too-many-requests') return 'Too many attempts. Try again in a few minutes.';
-  if (code === 'auth/user-disabled') return 'This account has been disabled.';
-  // invalid-credential / user-not-found / wrong-password all collapse to one
-  // message so the form doesn't reveal which addresses are registered.
+  const message = (err as { message?: string })?.message ?? '';
+  if (code === 'email_not_confirmed' || message.includes('Email not confirmed')) {
+    return 'Confirm your email first — check your inbox and tap the link.';
+  }
+  if (/invalid login credentials|user not found/i.test(message)) {
+    return 'Incorrect email or password.';
+  }
+  if (code === 'user-disabled' || message.includes('has been disabled')) return 'This account has been disabled.';
   return 'Incorrect email or password.';
 }
 
@@ -355,35 +554,41 @@ async function login(email: string, password: string): Promise<UserProfile> {
   const normalized = email.trim().toLowerCase();
 
   let userId: string;
-  let displayName: string | null;
   try {
-    const credential = await signInWithEmailAndPassword(auth, normalized, password);
-    userId = credential.user.uid;
-    displayName = credential.user.displayName;
+    const { data, error } = await supabase.auth.signInWithPassword({ email: normalized, password });
+    if (error) throw error;
+    userId = data.user.id;
   } catch (err) {
     throw new Error(loginErrorMessage(err));
   }
 
-  let profile = await fetchFullProfile(userId);
+  let profile: UserProfile | null;
+  try {
+    profile = await fetchFullProfile(userId);
+  } catch (err) {
+    if (!isJwtClockError(err)) throw err;
+    // Drop the unusable session so the next attempt starts clean.
+    await supabase.auth.signOut({ scope: 'local' });
+    throw new Error("Couldn't verify your session — the server clock is out of sync. Try again in a minute.");
+  }
 
-  // Auth user exists but the profile documents don't — a signup that died
-  // between account creation and the Firestore writes. Seed a minimal profile
-  // so the member isn't stuck at a blank app.
+  // Auth user exists but the profile rows don't — a signup that died between
+  // account creation and the Postgres writes. Seed a minimal profile so the
+  // member isn't stuck at a blank app.
   if (!profile) {
     await Promise.all([
-      setDoc(
-        profileDoc(userId),
-        blankProfileDoc({
-          fullName: displayName ?? normalized.split('@')[0] ?? 'User',
-          dob: '2000-01-01',
-          gender: 'other',
-          city: '',
-          intent: 'casual',
-          language: 'en',
-          photos: [],
-        })
-      ),
-      setDoc(privateDoc(userId), { email: normalized, waliContact: null } satisfies PrivateDoc),
+      supabase
+        .from('profiles')
+        .upsert(
+          {
+            id: userId,
+            ...placeholderProfileDoc(normalized),
+          },
+          { onConflict: 'id' }
+        ),
+      supabase
+        .from('profile_private')
+        .upsert({ id: userId, email: normalized, wali_contact: null }, { onConflict: 'id' }),
     ]);
     profile = await fetchFullProfile(userId);
     if (!profile) throw new Error('Could not create profile.');
@@ -394,27 +599,27 @@ async function login(email: string, password: string): Promise<UserProfile> {
 
 /** Stamps "seen just now" on the public card. Fire-and-forget on app start. */
 async function touchLastActive(userId: string): Promise<void> {
-  await updateDoc(profileDoc(userId), { lastActiveAt: new Date().toISOString() });
+  await supabase.from('profiles').update({ last_active_at: new Date().toISOString() }).eq('id', userId);
 }
 
 async function logout(): Promise<void> {
-  await signOut(auth);
+  await supabase.auth.signOut();
 }
 
 async function getCurrentUser(): Promise<UserProfile | null> {
-  const userId = auth.currentUser?.uid;
-  if (!userId) return null;
-  return fetchFullProfile(userId);
+  const { data } = await supabase.auth.getUser();
+  if (!data.user) return null;
+  return fetchFullProfile(data.user.id);
 }
 
 async function updateUser(updated: UserProfile): Promise<UserProfile> {
   const userId = updated.id;
 
-  const existingSnap = await getDoc(profileDoc(userId));
-  const existingPhotos: string[] = (existingSnap.data() as ProfileDoc | undefined)?.photos ?? [];
+  const existing = await fetchProfileRow(userId);
+  const existingPhotos: string[] = existing?.photos ?? [];
 
   // Local URIs are fresh picks that need uploading; anything already remote is
-  // a download URL we stored last save and can be kept as-is.
+  // a public URL we stored last save and can be kept as-is.
   const photoUrls = await Promise.all(
     updated.photos.map((uri) => (mediaUpload.isLocalUri(uri) ? mediaUpload.uploadPhoto(userId, uri) : uri))
   );
@@ -431,81 +636,86 @@ async function updateUser(updated: UserProfile): Promise<UserProfile> {
       : updated.voiceIntroUri
     : null;
 
-  const patch: Partial<ProfileDoc> = {
-    fullName: updated.fullName,
+  const patch: Record<string, unknown> = {
+    full_name: updated.fullName,
     intent: updated.intent,
     city: updated.city,
     bio: updated.bio,
     language: updated.language,
-    activeMode: updated.activeMode,
-    datingVibeTags: updated.dating.vibeTags,
-    datingIntentionLabel: updated.dating.intentionLabel ?? null,
-    rishtaReligion: updated.rishta.religion,
-    rishtaSect: updated.rishta.sect,
-    rishtaFamilyBackground: updated.rishta.familyBackground,
-    rishtaEducation: updated.rishta.education,
-    rishtaReadiness: updated.rishta.readiness,
-    rishtaPrayerHabits: updated.rishta.prayerHabits ?? null,
-    rishtaIncomeRange: updated.rishta.incomeRange ?? null,
-    rishtaLivingAbroad: updated.rishta.livingAbroad ?? null,
-    heightCm: updated.heightCm ?? null,
-    maritalStatus: updated.maritalStatus ?? null,
-    hasChildren: updated.hasChildren ?? null,
+    active_mode: updated.activeMode,
+    dating_vibe_tags: updated.dating.vibeTags,
+    dating_intention_label: updated.dating.intentionLabel ?? null,
+    rishta_religion: updated.rishta.religion,
+    rishta_sect: updated.rishta.sect,
+    rishta_family_background: updated.rishta.familyBackground,
+    rishta_education: updated.rishta.education,
+    rishta_readiness: updated.rishta.readiness,
+    rishta_prayer_habits: updated.rishta.prayerHabits ?? null,
+    rishta_income_range: updated.rishta.incomeRange ?? null,
+    rishta_living_abroad: updated.rishta.livingAbroad ?? null,
+    height_cm: updated.heightCm ?? null,
+    marital_status: updated.maritalStatus ?? null,
+    has_children: updated.hasChildren ?? null,
     occupation: updated.occupation ?? null,
     practising: updated.practising ?? null,
-    prayerHabits: updated.prayerHabits ?? null,
-    halalOnly: updated.halalOnly ?? null,
+    prayer_habits: updated.prayerHabits ?? null,
+    halal_only: updated.halalOnly ?? null,
     smoking: updated.smoking ?? null,
     drinking: updated.drinking ?? null,
-    religiousDress: updated.religiousDress ?? null,
-    openToRelocate: updated.openToRelocate ?? null,
-    preferredCountry: updated.preferredCountry ?? null,
-    careerPlans: updated.careerPlans ?? null,
-    educationLevel: updated.educationLevel ?? null,
+    religious_dress: updated.religiousDress ?? null,
+    open_to_relocate: updated.openToRelocate ?? null,
+    preferred_country: updated.preferredCountry ?? null,
+    career_plans: updated.careerPlans ?? null,
+    education_level: updated.educationLevel ?? null,
     degree: updated.degree ?? null,
-    jobTitle: updated.jobTitle ?? null,
+    job_title: updated.jobTitle ?? null,
     industry: updated.industry ?? null,
     languages: updated.languages ?? null,
     nationality: updated.nationality ?? null,
-    grewUpIn: updated.grewUpIn ?? null,
+    grew_up_in: updated.grewUpIn ?? null,
     country: updated.country ?? null,
-    selfieVerified: updated.selfieVerified,
-    bureauVerified: updated.bureauVerified ?? false,
+    selfie_verified: updated.selfieVerified,
+    bureau_verified: updated.bureauVerified ?? false,
     photos: photoUrls,
-    voiceIntroUrl,
-    voiceIntroDurationSec: updated.voiceIntroDurationSec ?? null,
-    videoIntroUrl,
-    waliName: updated.waliName ?? null,
-    waliInvitedAt: updated.waliInvitedAt ?? null,
-    isExplorePlus: updated.isExplorePlus ?? false,
-    subscriptionPlan: updated.subscriptionPlan ?? null,
-    hasUsedTrial: updated.hasUsedTrial ?? false,
-    subscriptionRenewsAt: updated.subscriptionRenewsAt ?? null,
+    voice_intro_url: voiceIntroUrl,
+    voice_intro_duration_sec: updated.voiceIntroDurationSec ?? null,
+    video_intro_url: videoIntroUrl,
+    wali_name: updated.waliName ?? null,
+    wali_invited_at: updated.waliInvitedAt ?? null,
+    is_explore_plus: updated.isExplorePlus ?? false,
+    subscription_plan: updated.subscriptionPlan ?? null,
+    has_used_trial: updated.hasUsedTrial ?? false,
+    subscription_renews_at: updated.subscriptionRenewsAt ?? null,
   };
 
-  await updateDoc(profileDoc(userId), patch);
-  await setDoc(
-    privateDoc(userId),
-    { email: updated.email, waliContact: updated.waliContact ?? null } satisfies PrivateDoc,
-    { merge: true }
-  );
+  const { error: updateError } = await supabase.from('profiles').update(patch).eq('id', userId);
+  if (updateError) throw new Error(updateError.message);
+
+  const { error: privateError } = await supabase
+    .from('profile_private')
+    .upsert({ id: userId, email: updated.email, wali_contact: updated.waliContact ?? null }, { onConflict: 'id' });
+  if (privateError) throw new Error(privateError.message);
 
   if (updated.cnicNumber) {
     // A local cnicPhotoUri means a fresh capture to upload; a remote one is the
-    // download URL we handed back last fetch — leave the stored path alone.
+    // signed URL we handed back last fetch — leave the stored path alone.
     const cnicPhotoPath =
       updated.cnicPhotoUri && mediaUpload.isLocalUri(updated.cnicPhotoUri)
         ? await mediaUpload.uploadCnicPhoto(userId, updated.cnicPhotoUri)
         : undefined;
 
-    const verificationPatch: Partial<VerificationDoc> = {
-      cnicNumber: updated.cnicNumber,
-      cnicVerified: updated.cnicVerified ?? true,
-      bureauVerified: updated.bureauVerified ?? false,
+    const verificationPatch: Record<string, unknown> = {
+      id: userId,
+      cnic_number: updated.cnicNumber,
+      cnic_verified: updated.cnicVerified ?? true,
+      bureau_verified: updated.bureauVerified ?? false,
     };
-    if (cnicPhotoPath) verificationPatch.cnicPhotoPath = cnicPhotoPath;
+    if (cnicPhotoPath) verificationPatch.cnic_photo_path = cnicPhotoPath;
 
-    await setDoc(verificationDoc(userId), verificationPatch, { merge: true });
+    const { error: verificationError } = await supabase
+      .from('profile_verification')
+      .upsert(verificationPatch, { onConflict: 'id' });
+    if (verificationError) throw new Error(verificationError.message);
   }
 
   const removed = existingPhotos.filter((url) => !photoUrls.includes(url));
@@ -517,80 +727,47 @@ async function updateUser(updated: UserProfile): Promise<UserProfile> {
 }
 
 /**
- * Firestore doesn't cascade: deleting users/{uid} leaves its subcollections
- * behind. Without a Cloud Function to recurse server-side, the signed-in client
- * clears them itself while it still has permission to.
+ * Supabase cascades: every per-user table has `on delete cascade` on its FK to
+ * auth.users, and `delete_account()` removes the auth user itself (it runs as
+ * the function owner, so RLS can't block it). One call clears the whole
+ * account — the old per-subcollection cleanup is no longer needed.
  */
-async function deleteUserSubcollections(userId: string): Promise<void> {
-  await Promise.all(
-    USER_SUBCOLLECTIONS.map(async (name) => {
-      const snap = await getDocs(userCollection(userId, name));
-      await Promise.all(snap.docs.map((entry) => deleteDoc(entry.ref)));
-    })
-  );
-}
-
-/** Firebase's window for "recently signed in" before it refuses destructive ops. */
-const RECENT_LOGIN_WINDOW_MS = 5 * 60 * 1000;
-
 async function deleteAccount(userId: string): Promise<void> {
-  const current = auth.currentUser;
-  if (!current || current.uid !== userId) throw new Error('Not signed in.');
+  const { data } = await supabase.auth.getUser();
+  const current = data.user;
+  if (!current || current.id !== userId) throw new Error('Not signed in.');
 
-  // Checked up front, before anything is destroyed: Firebase rejects deleteUser
-  // behind a stale session, and the Firestore documents can only be removed
-  // while the user is still authenticated. Failing the whole operation early
-  // leaves the account intact and retryable instead of half-deleted.
-  const lastSignIn = current.metadata.lastSignInTime ? Date.parse(current.metadata.lastSignInTime) : 0;
-  if (!lastSignIn || Date.now() - lastSignIn > RECENT_LOGIN_WINDOW_MS) {
-    throw new Error('REAUTH_REQUIRED');
-  }
-
-  const snap = await getDoc(profileDoc(userId));
-  const photos: string[] = (snap.data() as ProfileDoc | undefined)?.photos ?? [];
+  // Public media on the card is stored outside Postgres, so it has to go first
+  // (while the session is still valid for the storage policies).
+  const profile = await fetchProfileRow(userId);
+  const photos: string[] = profile?.photos ?? [];
   if (photos.length) await mediaUpload.removeFiles(photos);
 
-  // Order matters: the documents have to go while the user is still signed in,
-  // because the rules key every write off request.auth.uid.
-  await deleteUserSubcollections(userId);
-  await Promise.all([deleteDoc(profileDoc(userId)), deleteDoc(userDoc(userId))]);
-
-  try {
-    await deleteUser(current);
-  } catch (err) {
-    // Backstop for the window check above racing the server's own clock. The
-    // documents are already gone at this point, so sign out and let the member
-    // re-authenticate to clear the leftover login record.
-    await signOut(auth);
-    if ((err as { code?: string })?.code === 'auth/requires-recent-login') {
-      throw new Error('REAUTH_REQUIRED');
-    }
-    throw err;
-  }
+  const { error } = await supabase.rpc('delete_account');
+  if (error) throw new Error(error.message);
 }
 
 /**
  * Single-field write for the dating/rishta toggle.
  *
- * Going through `updateUser` for this costs a read, three writes and a
- * three-document reload — enough that the toggle visibly lagged behind the tap.
- * Nothing else about the profile changes when the mode flips, so one `updateDoc`
- * is all it needs.
+ * Going through `updateUser` for this costs a read, a re-upload sweep and a
+ * full reload — enough that the toggle visibly lagged behind the tap. One
+ * `update` on `profiles` is all it needs.
  */
 async function setActiveMode(userId: string, mode: ProfileMode): Promise<void> {
-  await updateDoc(profileDoc(userId), { activeMode: mode });
+  await supabase.from('profiles').update({ active_mode: mode }).eq('id', userId);
 }
 
 /**
  * One-field writes for the taps that must feel instant. Going through updateUser
- * would re-upload photos and rewrite every document just to change one enum.
+ * would re-upload photos and rewrite every field just to change one enum.
  */
 async function setIntent(userId: string, intent: Intent, activeMode: ProfileMode): Promise<void> {
-  await updateDoc(profileDoc(userId), { intent, activeMode });
+  await supabase.from('profiles').update({ intent, active_mode: activeMode }).eq('id', userId);
 }
 
 async function setReadiness(userId: string, readiness: UserProfile['rishta']['readiness']): Promise<void> {
-  await updateDoc(profileDoc(userId), { rishtaReadiness: readiness });
+  await supabase.from('profiles').update({ rishta_readiness: readiness }).eq('id', userId);
 }
 
 export const authService = {
@@ -605,4 +782,5 @@ export const authService = {
   setActiveMode,
   deleteAccount,
   emailExists,
+  inspectEmail,
 };

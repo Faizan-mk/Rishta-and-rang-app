@@ -1,11 +1,11 @@
 # EAS uploads what this file allows, INSTEAD of what .gitignore allows.
 #
 # Why it exists: .env is git-ignored, so a cloud build never received the
-# EXPO_PUBLIC_FIREBASE_* keys — and src/services/firebase.ts throws on startup
-# when they're missing, which is why the installed APK died at launch. These are
-# the Firebase *web* config values, which ship inside the JS bundle by design
-# (Firestore/Storage rules are what protect the data), so shipping them to the
-# builder is safe. They still stay out of git.
+# EXPO_PUBLIC_SUPABASE_* keys — and src/services/supabase.ts throws on startup
+# when they're missing, which is why the installed APK would die at launch.
+# These are the Supabase project URL + anon public key, which ship inside the
+# JS bundle by design (RLS and storage policies are what protect the data), so
+# shipping them to the builder is safe. They still stay out of git.
 #
 # Keep this list in step with .gitignore — minus the .env line.
 
@@ -18,7 +18,7 @@ expo-env.d.ts
 .claude/
 .vscode/
 docs/
-scripts/
+supabase/
 
 .kotlin/
 *.orig.*
@@ -38,8 +38,3 @@ yarn-error.*
 
 /ios
 /android
-
-# Server-only secrets must never reach the builder.
-service-account*.json
-.firebase/
-firebase-debug.log

@@ -316,7 +316,96 @@ function demoLastActive(i: number): string {
 // Bureau verification demoed on a subset of profiles for variety. `photosBlurred`
 // is deliberately left off here: it's a real member's privacy choice, and faking it
 // on the demo deck just makes the cards look like broken/low-quality photos.
-export const mockDiscoverProfiles: DiscoverProfile[] = rawDiscoverProfiles.map((p, i) => ({
+// Extra demo members, one per pair of the bundled asset portraits added in
+// demoPhotos.ts. Written compactly rather than as two dozen more full records:
+// the mapper below fills in the same derived fields (verification, distance,
+// intent) the hand-written profiles get, so these behave identically in the deck.
+interface ExtraSeed {
+  name: string;
+  age: number;
+  city: string;
+  occupation: string;
+  bio: string;
+  vibeTags: string[];
+}
+
+const EXTRA_WOMEN: ExtraSeed[] = [
+  { name: 'Zoya', age: 24, city: 'Lahore', occupation: 'Graphic Designer', bio: 'Designs by day, thrifts old records by weekend. Ask me about my terrible plant survival rate.', vibeTags: ['creative', 'music lover', 'chai person'] },
+  { name: 'Areeba', age: 27, city: 'Karachi', occupation: 'Dentist', bio: 'Sea view walks and long drives on Sunday mornings. I laugh at my own jokes first.', vibeTags: ['foodie', 'beach walks', 'early riser'] },
+  { name: 'Mahnoor', age: 25, city: 'Islamabad', occupation: 'Content Writer', bio: 'Margalla trails, second-hand bookshops, and a very serious opinion on karak chai.', vibeTags: ['bookworm', 'hiker', 'writer'] },
+  { name: 'Sana', age: 29, city: 'Rawalpindi', occupation: 'Pharmacist', bio: 'Quiet evenings over loud plans. I bake when I am stressed, so my colleagues eat well.', vibeTags: ['baker', 'homebody', 'deen-focused'] },
+  { name: 'Iqra', age: 23, city: 'Faisalabad', occupation: 'Teacher', bio: 'Teaching grade five keeps me honest. Weekends belong to my nieces and to biryani.', vibeTags: ['family first', 'foodie', 'patient'] },
+  { name: 'Hafsa', age: 28, city: 'Multan', occupation: 'Bank Officer', bio: 'Numbers all week, gardening all weekend. Looking for someone who texts back.', vibeTags: ['gardener', 'organised', 'tea over coffee'] },
+  { name: 'Rabia', age: 26, city: 'Peshawar', occupation: 'Physiotherapist', bio: 'I will absolutely correct your posture unprompted. Sorry in advance.', vibeTags: ['fitness', 'outdoorsy', 'straight talker'] },
+  { name: 'Nimra', age: 30, city: 'Sialkot', occupation: 'Lawyer', bio: 'Argues for a living, cooks to unwind. Very committed to Sunday nihari.', vibeTags: ['ambitious', 'foodie', 'debater'] },
+  { name: 'Aiman', age: 24, city: 'Hyderabad', occupation: 'Software Engineer', bio: 'Building things that mostly work. Fluent in Urdu, English, and sarcasm.', vibeTags: ['techie', 'gamer', 'night owl'] },
+  { name: 'Kinza', age: 27, city: 'Gujranwala', occupation: 'Accountant', bio: 'Spreadsheets by day, embroidery by night. I keep my promises and my receipts.', vibeTags: ['crafty', 'reliable', 'homebody'] },
+  { name: 'Laiba', age: 25, city: 'Quetta', occupation: 'Lab Technician', bio: 'Mountains over malls. I take my camera everywhere and use it half the time.', vibeTags: ['photographer', 'traveller', 'nature'] },
+  { name: 'Maryam', age: 31, city: 'Lahore', occupation: 'School Principal', bio: 'Ran a school before I turned thirty. Still make time for poetry evenings.', vibeTags: ['leader', 'poetry', 'deen-focused'] },
+  { name: 'Fatima', age: 26, city: 'Karachi', occupation: 'Marketing Manager', bio: 'Campaigns, cricket, and coffee that is far too strong. Ask me for restaurant advice.', vibeTags: ['cricket fan', 'foodie', 'social'] },
+];
+
+const EXTRA_MEN: ExtraSeed[] = [
+  { name: 'Bilal', age: 28, city: 'Lahore', occupation: 'Civil Engineer', bio: 'Bridges by day, badminton by evening. I show up on time, every time.', vibeTags: ['sporty', 'punctual', 'family first'] },
+  { name: 'Usman', age: 31, city: 'Karachi', occupation: 'Doctor', bio: 'Long shifts, short attention span for small talk. Great with dad jokes.', vibeTags: ['caring', 'foodie', 'early riser'] },
+  { name: 'Ahsan', age: 26, city: 'Islamabad', occupation: 'Data Analyst', bio: 'I will find a pattern in anything, including your Spotify history.', vibeTags: ['techie', 'analytical', 'hiker'] },
+  { name: 'Zain', age: 29, city: 'Rawalpindi', occupation: 'Architect', bio: 'Sketches on napkins, builds in concrete. Weekend cyclist, weekday realist.', vibeTags: ['creative', 'cyclist', 'ambitious'] },
+  { name: 'Talha', age: 27, city: 'Faisalabad', occupation: 'Textile Manager', bio: 'Third generation in textiles, first in the family to burn the biryani.', vibeTags: ['family first', 'cook', 'grounded'] },
+  { name: 'Saad', age: 33, city: 'Multan', occupation: 'Business Owner', bio: 'Runs a small mango export business. Yes, I will bring you the good ones.', vibeTags: ['entrepreneur', 'foodie', 'generous'] },
+  { name: 'Hassan', age: 25, city: 'Peshawar', occupation: 'Journalist', bio: 'Chases stories and cricket scores with equal energy. Terrible at sitting still.', vibeTags: ['writer', 'cricket fan', 'curious'] },
+  { name: 'Umair', age: 30, city: 'Sialkot', occupation: 'Sports Goods Exporter', bio: 'I have handled more footballs than most footballers. Quiet, steady, straightforward.', vibeTags: ['calm', 'sporty', 'reliable'] },
+  { name: 'Danish', age: 26, city: 'Hyderabad', occupation: 'Teacher', bio: 'Teaches physics, believes in second attempts. Chai at Saddar is my love language.', vibeTags: ['patient', 'chai person', 'bookworm'] },
+  { name: 'Fahad', age: 32, city: 'Gujranwala', occupation: 'Pharmacist', bio: 'Runs the family pharmacy. Reads history books nobody asked about.', vibeTags: ['bookworm', 'family first', 'homebody'] },
+  { name: 'Arsalan', age: 28, city: 'Quetta', occupation: 'Geologist', bio: 'Spends half the month in the field. The other half catching up on sleep and family.', vibeTags: ['outdoorsy', 'traveller', 'independent'] },
+  { name: 'Rehan', age: 29, city: 'Lahore', occupation: 'Chartered Accountant', bio: 'Balances books and a very serious cricket fantasy league. Both take discipline.', vibeTags: ['organised', 'cricket fan', 'ambitious'] },
+];
+
+// The asset portraits sit after the base64 ones in each list, so the extras pick
+// up exactly where the hand-written profiles stop: two photos each, no overlap.
+const FIRST_ASSET_WOMAN = FEMALE_DEMO_PHOTOS.length - 26;
+const FIRST_ASSET_MAN = MALE_DEMO_PHOTOS.length - 24;
+
+const SHARED_EXTRA_FIELDS = {
+  maritalStatus: 'single' as const,
+  hasChildren: false,
+  religion: 'Islam',
+  nationality: 'Pakistani',
+  country: 'Pakistan',
+  languages: ['Urdu', 'English'],
+};
+
+// Takes from both lists in turn. Used twice below: once so the extra women and
+// men alternate instead of arriving in two blocks, and once so the extras sit
+// among the hand-written profiles rather than behind all of them — appended, a
+// member had to swipe the entire original deck before seeing a new face.
+function interleave<T>(a: T[], b: T[]): T[] {
+  const out: T[] = [];
+  for (let i = 0; i < Math.max(a.length, b.length); i += 1) {
+    if (i < a.length) out.push(a[i]);
+    if (i < b.length) out.push(b[i]);
+  }
+  return out;
+}
+
+const extraWomenProfiles: DiscoverProfile[] = EXTRA_WOMEN.map((seed, i) => ({
+  id: 'dx-w' + (i + 1),
+  gender: 'female' as const,
+  photos: [W(FIRST_ASSET_WOMAN + i * 2), W(FIRST_ASSET_WOMAN + i * 2 + 1)],
+  ...SHARED_EXTRA_FIELDS,
+  ...seed,
+}));
+
+const extraMenProfiles: DiscoverProfile[] = EXTRA_MEN.map((seed, i) => ({
+  id: 'dx-m' + (i + 1),
+  gender: 'male' as const,
+  photos: [M(FIRST_ASSET_MAN + i * 2), M(FIRST_ASSET_MAN + i * 2 + 1)],
+  ...SHARED_EXTRA_FIELDS,
+  ...seed,
+}));
+
+const extraDiscoverProfiles: DiscoverProfile[] = interleave(extraWomenProfiles, extraMenProfiles);
+
+export const mockDiscoverProfiles: DiscoverProfile[] = interleave(rawDiscoverProfiles, extraDiscoverProfiles).map((p, i) => ({
   ...p,
   bureauVerified: i % 3 === 0,
   selfieVerified: i % 2 === 0,

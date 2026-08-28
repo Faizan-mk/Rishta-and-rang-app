@@ -1,40 +1,65 @@
-import { deleteDoc, getDocs, orderBy, query, setDoc } from 'firebase/firestore';
-import { favoriteDoc, favoritesCollection } from './firestorePaths';
+import { supabase } from './supabase';
 import type { FavoriteProfile } from '../types/content';
 
-interface FavoriteDoc {
+interface FavoriteRow {
+  target_id: string;
   kind: FavoriteProfile['kind'];
   name: string;
   age: number;
   city: string;
   photo: string;
-  createdAt: string;
 }
 
-function mapFavorite(id: string, data: FavoriteDoc): FavoriteProfile {
-  return { id, kind: data.kind, name: data.name, age: data.age, city: data.city, photo: data.photo };
+function mapFavorite(row: FavoriteRow): FavoriteProfile {
+  return {
+    id: row.target_id,
+    kind: row.kind,
+    name: row.name,
+    age: row.age,
+    city: row.city,
+    photo: row.photo,
+  };
 }
 
 async function fetchFavorites(profileId: string): Promise<FavoriteProfile[]> {
-  const snap = await getDocs(query(favoritesCollection(profileId), orderBy('createdAt', 'desc')));
-  return snap.docs.map((entry) => mapFavorite(entry.id, entry.data() as FavoriteDoc));
+  const { data, error } = await supabase
+    .from('favorites')
+    .select('target_id, kind, name, age, city, photo, created_at')
+    .eq('profile_id', profileId)
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((row) => mapFavorite(row as unknown as FavoriteRow));
 }
 
 async function addFavorite(profileId: string, profile: FavoriteProfile): Promise<void> {
-  // Doc id is the target's id, so favouriting twice overwrites rather than
-  // stacking duplicates.
-  await setDoc(favoriteDoc(profileId, profile.id), {
-    kind: profile.kind,
-    name: profile.name,
-    age: profile.age,
-    city: profile.city,
-    photo: profile.photo,
-    createdAt: new Date().toISOString(),
-  } satisfies FavoriteDoc);
+  // Unique on (profile_id, target_id), so favouriting twice overwrites rather
+  // than stacking duplicates.
+  const { error } = await supabase.from('favorites').upsert(
+    {
+      profile_id: profileId,
+      target_id: profile.id,
+      kind: profile.kind,
+      name: profile.name,
+      age: profile.age,
+      city: profile.city,
+      photo: profile.photo,
+      created_at: new Date().toISOString(),
+    },
+    { onConflict: 'profile_id,target_id' }
+  );
+  if (error) throw new Error(error.message);
+}
+
+// Patches only `kind`, so a favourite that crosses into Rishta keeps its
+// original `created_at` and stays where it was in the list.
+async function updateFavoriteKind(profileId: string, targetId: string, kind: FavoriteProfile['kind']): Promise<void> {
+  const { error } = await supabase.from('favorites').update({ kind }).eq('profile_id', profileId).eq('target_id', targetId);
+  if (error) throw new Error(error.message);
 }
 
 async function removeFavorite(profileId: string, targetId: string): Promise<void> {
-  await deleteDoc(favoriteDoc(profileId, targetId));
+  const { error } = await supabase.from('favorites').delete().eq('profile_id', profileId).eq('target_id', targetId);
+  if (error) throw new Error(error.message);
 }
 
-export const favoritesService = { fetchFavorites, addFavorite, removeFavorite };
+export const favoritesService = { fetchFavorites, addFavorite, updateFavoriteKind, removeFavorite };

@@ -12,6 +12,7 @@ import { DiscoverProfileCard } from '../../components/discover/DiscoverProfileCa
 import { TAB_BAR_BASE_HEIGHT, useHideTabBarOnScroll } from '../../store/TabBarVisibilityContext';
 import { MatchCelebration } from '../../components/discover/MatchCelebration';
 import { HomeTopBar } from '../../components/discover/HomeTopBar';
+import { ModeToggle } from '../../components/profile/ModeToggle';
 import { MatchScoreCard } from '../../components/discover/MatchScoreCard';
 import { SwipeableCard } from '../../components/discover/SwipeableCard';
 import { SwipeActionBar } from '../../components/discover/SwipeActionBar';
@@ -129,13 +130,13 @@ export function HomeScreen({ navigation }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
-  const { user } = useAuth();
+  const { user, setActiveMode } = useAuth();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { confirm, notify } = useDialog();
   const { recordLike } = useLikeLimit();
   const { isBoostActive } = useBoost();
   const { datingProfiles, rishtaProfiles, loading, reload } = useDiscovery();
-  const { matches, blockedProfiles, getOrCreateMatchForProfile, blockMatch } = useMatches();
+  const { matches, rishtaProfileIds, blockedProfiles, getOrCreateMatchForProfile, blockMatch } = useMatches();
   const { addNotification, unreadCount } = useNotifications();
   const { recordView } = useViewHistory();
   const [celebration, setCelebration] = useState<{ name: string; photo: string } | null>(null);
@@ -163,9 +164,14 @@ export function HomeScreen({ navigation }: Props) {
     [blockedProfiles]
   );
 
+  // Anyone whose thread moved to Rishta is off the Friends deck for good — they
+  // only come round again on the Rishta side.
   const visibleDatingProfiles = useMemo(
-    () => oppositeGenderProfiles(datingProfiles, user?.gender).filter((p) => !blockedProfileIds.has(p.id)),
-    [datingProfiles, user?.gender, blockedProfileIds]
+    () =>
+      oppositeGenderProfiles(datingProfiles, user?.gender).filter(
+        (p) => !blockedProfileIds.has(p.id) && !rishtaProfileIds.has(p.id)
+      ),
+    [datingProfiles, user?.gender, blockedProfileIds, rishtaProfileIds]
   );
   const visibleRishtaProfiles = useMemo(
     () => oppositeGenderProfiles(rishtaProfiles, user?.gender).filter((p) => !blockedProfileIds.has(p.id)),
@@ -372,6 +378,17 @@ export function HomeScreen({ navigation }: Props) {
         onNotifications={() => navigation.navigate('Notifications')}
       />
 
+      {/* Friends / Rishta decks are separate — this is how a member switches
+          between them without leaving Home. */}
+      <View style={styles.toggleWrap}>
+        <ModeToggle
+          mode={mode}
+          onChange={setActiveMode}
+          datingLabel={t('profile.datingMode')}
+          rishtaLabel={t('profile.rishtaMode')}
+        />
+      </View>
+
       {currentProfile ? (
         <Animated.View key={`${mode}-${currentProfile.id}`} entering={ZoomIn.duration(200)} exiting={FadeOut.duration(100)} style={styles.flex}>
           {/* The action bar floats over this scroll view, so the content reserves
@@ -499,6 +516,7 @@ const makeStyles = (colors: Palette) =>
     safeArea: { flex: 1, backgroundColor: colors.background },
     flex: { flex: 1 },
     content: { paddingHorizontal: spacing.md, paddingTop: spacing.xs },
+    toggleWrap: { paddingHorizontal: spacing.lg, paddingBottom: spacing.md },
     emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, paddingHorizontal: spacing.xl },
     emptyText: { ...typography.body, color: colors.textSecondary, textAlign: 'center' },
     emptyResetButton: {

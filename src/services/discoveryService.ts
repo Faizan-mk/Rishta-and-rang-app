@@ -1,21 +1,19 @@
-import { getDoc, getDocs, query, where } from 'firebase/firestore';
-import { profileDoc, profilesCollection } from './firestorePaths';
+import { PROFILE_SELECT, fetchProfileRow, type ProfileDoc } from './authService';
+import { supabase } from './supabase';
 import { ageFromDob } from '../utils/date';
-import type { ProfileDoc } from './authService';
 import type { DiscoverProfile, RishtaListingProfile } from '../types/content';
 import type { Gender } from '../types/user';
 
 // ---------------------------------------------------------------------------
 // Real-discovery data source.
 //
-// Reads members from the `profiles` collection instead of the local mock files.
-// Every doc there is already safe to show to other members — email, CNIC and
-// wali contact live under users/{uid}/private/* and are owner-only (see
-// firestore.rules). That replaces the `discover_profiles` view the Postgres
-// version needed to work around row-level security.
+// Reads members from the `profiles` table instead of the local mock files.
+// Every row there is already safe to show to other members — email, CNIC and
+// wali contact live in the owner-only `profile_private` / `profile_verification`
+// tables (see supabase/2_profiles.sql RLS), so no `discover_profiles` view is needed.
 //
-// If the collection is empty (fresh project, no members yet) the screens fall
-// back to the demo deck via DiscoveryContext.
+// If the table is empty (fresh project, no members yet) the screens fall back
+// to the demo deck via DiscoveryContext.
 // ---------------------------------------------------------------------------
 
 interface ProfileEntry {
@@ -32,9 +30,14 @@ function targetGender(viewer?: Gender): Gender | undefined {
 
 async function fetchProfiles(viewer?: Gender): Promise<ProfileEntry[]> {
   const target = targetGender(viewer);
-  const ref = target ? query(profilesCollection(), where('gender', '==', target)) : profilesCollection();
-  const snap = await getDocs(ref);
-  return snap.docs.map((entry) => ({ id: entry.id, data: entry.data() as ProfileDoc }));
+  let query = supabase.from('profiles').select(PROFILE_SELECT);
+  if (target) query = query.eq('gender', target);
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((row) => {
+    const profile = row as unknown as ProfileDoc;
+    return { id: profile.id, data: profile };
+  });
 }
 
 function mapToDiscoverProfile({ id, data }: ProfileEntry): DiscoverProfile {
@@ -146,9 +149,9 @@ async function fetchProfileById(
   id: string,
   kind: 'dating' | 'rishta'
 ): Promise<DiscoverProfile | RishtaListingProfile | null> {
-  const snap = await getDoc(profileDoc(id));
-  if (!snap.exists()) return null;
-  const entry: ProfileEntry = { id: snap.id, data: snap.data() as ProfileDoc };
+  const data = await fetchProfileRow(id);
+  if (!data) return null;
+  const entry: ProfileEntry = { id, data };
   return kind === 'dating' ? mapToDiscoverProfile(entry) : mapToRishtaProfile(entry);
 }
 

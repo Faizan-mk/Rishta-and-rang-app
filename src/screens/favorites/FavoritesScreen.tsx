@@ -31,7 +31,12 @@ export function FavoritesScreen({ navigation }: Props) {
             {item.name}, {item.age}
           </Text>
           <Text style={[styles.meta, rtl && styles.rtlText]}>{item.city}</Text>
-          <Badge label={item.kind === 'dating' ? t('discover.subtitle') : t('rishtaBrowse.title')} tone={item.kind === 'dating' ? 'dating' : 'rishta'} />
+          {/* Same two labels the Home and Matches toggles use, so a saved
+              profile reads as the same mode everywhere. */}
+          <Badge
+            label={t(item.kind === 'dating' ? 'profile.datingMode' : 'profile.rishtaMode')}
+            tone={item.kind === 'dating' ? 'dating' : 'rishta'}
+          />
         </View>
         <Pressable onPress={() => removeFavorite(item.id)} hitSlop={8} style={styles.removeButton}>
           <Ionicons name="heart" size={20} color={colors.dating} />

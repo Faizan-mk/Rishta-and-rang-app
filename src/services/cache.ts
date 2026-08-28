@@ -5,7 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 //
 // The pattern everywhere it's used is stale-while-revalidate: a screen renders
 // whatever the last session saved — instantly, with no network — while the live
-// Firestore fetch runs behind it and replaces the data once it lands. Without
+// Supabase fetch runs behind it and replaces the data once it lands. Without
 // this, every sign-in re-downloads the whole profile, deck, match list and
 // favourites before anything can render.
 //

@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { onSnapshot, orderBy, query } from 'firebase/firestore';
-import { mapChatMessageSnapshot, matchesService } from '../services/matchesService';
-import { messagesCollection } from '../services/firestorePaths';
+import { matchesService } from '../services/matchesService';
+import { supabase } from '../services/supabase';
 import { cache, CACHE_KEYS } from '../services/cache';
 import type { BlockedProfile, ChatMessage, Match } from '../types/content';
 import type { ProfileMode } from '../types/user';
@@ -21,6 +20,10 @@ interface MatchesContextValue {
   matches: Match[];
   chatHistory: Record<string, ChatMessage[]>;
   unreadCount: number;
+  // Ids of the members whose thread has crossed into Rishta. Once a pair moves,
+  // that person stops belonging to Friends anywhere in the app — the Friends
+  // deck, Explore's Friends pool, and the Friends side of Matches all drop them.
+  rishtaProfileIds: Set<string>;
   blockedProfiles: BlockedProfile[];
   getMatch: (matchId: string) => Match | undefined;
   getMessages: (matchId: string) => ChatMessage[];
@@ -43,6 +46,21 @@ function previewFor(message: ChatMessage): string {
   return message.text;
 }
 
+/** A `chat_messages` row (snake_case, from PostgreSQL/Realtime) → ChatMessage. */
+function rowToMessage(row: Record<string, unknown>): ChatMessage {
+  return {
+    id: String(row.id),
+    matchId: String(row.match_id),
+    fromMe: Boolean(row.from_me),
+    text: (row.text as string) ?? '',
+    sentAt: (row.sent_at as string) ?? new Date().toISOString(),
+    kind: (row.kind as ChatMessage['kind']) ?? 'text',
+    audioUri: row.audio_path ? String(row.audio_path) : undefined,
+    durationSec: typeof row.duration_sec === 'number' ? row.duration_sec : undefined,
+    imageUri: row.image_path ? String(row.image_path) : undefined,
+  };
+}
+
 export function MatchesProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const { addNotification } = useNotifications();
@@ -59,10 +77,12 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
       hydratedFor.current = null;
       setMatches([]);
       setBlockedProfiles([]);
+      setChatHistory({});
       return;
     }
     const userId = user.id;
     let cancelled = false;
+
     (async () => {
       // The list from last session renders straight away; the server copy
       // replaces it as soon as it arrives.
@@ -77,77 +97,68 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
       }
       if (cachedBlocked) setBlockedProfiles(cachedBlocked);
 
-      const [freshMatches, freshBlocked] = await Promise.all([
+      const [freshMatches, freshBlocked, freshHistory] = await Promise.all([
         matchesService.fetchMatches(userId),
         matchesService.fetchBlocked(userId),
+        matchesService.fetchChatHistory(userId),
       ]);
       if (cancelled) return;
       setMatches(freshMatches);
       setBlockedProfiles(freshBlocked);
+      setChatHistory(freshHistory);
       hydratedFor.current = userId;
     })().catch(() => {
       // Offline: whatever the cache gave us stays on screen.
     });
+
+    // Live chat: Postgres Realtime streams new messages in (including ones sent
+    // from another device or session). The seed above supplies the history; the
+    // channel supplies everything after, de-duped by message id.
+    const applyMessage = (message: ChatMessage) => {
+      setChatHistory((prev) => {
+        const list = prev[message.matchId] ?? [];
+        if (list.some((existing) => existing.id === message.id)) return prev;
+        return {
+          ...prev,
+          [message.matchId]: [...list, message].sort((a, b) => a.sentAt.localeCompare(b.sentAt)),
+        };
+      });
+      setMatches((prev) =>
+        prev.map((match) => {
+          if (match.id !== message.matchId) return match;
+          return {
+            ...match,
+            lastMessage: previewFor(message),
+            lastMessageAt: message.sentAt,
+            unread: match.unread || !message.fromMe,
+          };
+        })
+      );
+    };
+
+    const channel = supabase
+      .channel(`chat_messages_${userId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: `profile_id=eq.${userId}` },
+        (payload) => applyMessage(rowToMessage(payload.new as Record<string, unknown>))
+      )
+      .subscribe();
+
     return () => {
       cancelled = true;
+      supabase.removeChannel(channel);
     };
   }, [user?.id]);
 
   // Catches the live listener's preview/unread updates and every local mutation,
   // so the cached list matches what was last on screen. Chat messages stay out
-  // of the cache on purpose — they're already streamed by onSnapshot below.
+  // of the cache on purpose — they're already streamed by the Realtime channel.
   useEffect(() => {
     if (!user || hydratedFor.current !== user.id) return;
     cache.write(user.id, CACHE_KEYS.matches, matches);
     cache.write(user.id, CACHE_KEYS.blocked, blockedProfiles);
   }, [user?.id, matches, blockedProfiles]);
-
-  // Live chat: onSnapshot both seeds the history and streams later messages,
-  // including ones sent from another device or session. Firestore's latency
-  // compensation surfaces our own writes here immediately too, so optimistic
-  // sends and the server copy converge on the same doc id without duplicating.
-  const seededRef = useRef(false);
-  useEffect(() => {
-    seededRef.current = false;
-    if (!user) {
-      setChatHistory({});
-      return;
-    }
-    const messagesQuery = query(messagesCollection(user.id), orderBy('sentAt', 'asc'));
-    const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
-      const history: Record<string, ChatMessage[]> = {};
-      for (const entry of snapshot.docs) {
-        const message = mapChatMessageSnapshot(entry);
-        (history[message.matchId] ??= []).push(message);
-      }
-      setChatHistory(history);
-
-      // Only messages that arrive after the first snapshot should bump a match's
-      // preview row — the initial load is just history catching up.
-      if (!seededRef.current) {
-        seededRef.current = true;
-        return;
-      }
-      const added = snapshot.docChanges().filter((change) => change.type === 'added');
-      if (!added.length) return;
-      setMatches((prev) =>
-        prev.map((match) => {
-          const latest = added
-            .map((change) => mapChatMessageSnapshot(change.doc))
-            .filter((message) => message.matchId === match.id)
-            .pop();
-          if (!latest) return match;
-          return {
-            ...match,
-            lastMessage: previewFor(latest),
-            lastMessageAt: latest.sentAt,
-            unread: match.unread || !latest.fromMe,
-          };
-        })
-      );
-    });
-    return unsubscribe;
-  }, [user?.id]);
 
   const getMatch = (matchId: string) => matches.find((m) => m.id === matchId);
   const getMessages = (matchId: string) => chatHistory[matchId] ?? [];
@@ -203,11 +214,21 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
         setMatches((prev) =>
           prev.map((m) =>
             m.id === matchId && m.rishtaRequestPending
-              ? { ...m, movedToRishta: true, rishtaRequestPending: false, lastMessage: acceptedText, lastMessageAt: acceptedMessage.sentAt }
+              ? {
+                  ...m,
+                  // The thread itself crosses over: a friendship match that both
+                  // sides moved is a rishta-stage match from here on.
+                  mode: 'rishta' as const,
+                  movedToRishta: true,
+                  rishtaRequestPending: false,
+                  lastMessage: acceptedText,
+                  lastMessageAt: acceptedMessage.sentAt,
+                }
               : m
           )
         );
         matchesService.updateMatch(userId, matchId, {
+          mode: 'rishta',
           movedToRishta: true,
           rishtaRequestPending: false,
           lastMessage: acceptedText,
@@ -264,11 +285,23 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
 
   const unreadCount = useMemo(() => matches.filter((m) => m.unread).length, [matches]);
 
+  const rishtaProfileIds = useMemo(
+    () =>
+      new Set(
+        matches
+          .filter((m) => m.movedToRishta)
+          .map((m) => m.sourceProfileId)
+          .filter((id): id is string => Boolean(id))
+      ),
+    [matches]
+  );
+
   const value = useMemo(
     () => ({
       matches,
       chatHistory,
       unreadCount,
+      rishtaProfileIds,
       blockedProfiles,
       getMatch,
       getMessages,
@@ -282,7 +315,7 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
       unblockUser,
       getOrCreateMatchForProfile,
     }),
-    [matches, chatHistory, unreadCount, blockedProfiles, user?.id]
+    [matches, chatHistory, unreadCount, rishtaProfileIds, blockedProfiles, user?.id]
   );
 
   return <MatchesContext.Provider value={value}>{children}</MatchesContext.Provider>;
