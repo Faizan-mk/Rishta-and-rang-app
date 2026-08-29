@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Image, Modal, Pressable, RefreshControl, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
@@ -7,7 +8,6 @@ import Animated, {
   FadeOut,
   ZoomIn,
 } from 'react-native-reanimated';
-import type { MainTabScreenProps } from '../../navigation/types';
 import { DiscoverProfileCard } from '../../components/discover/DiscoverProfileCard';
 import { TAB_BAR_BASE_HEIGHT, useHideTabBarOnScroll } from '../../store/TabBarVisibilityContext';
 import { MatchCelebration } from '../../components/discover/MatchCelebration';
@@ -62,8 +62,6 @@ import { isActiveToday } from '../../utils/time';
 import { radius, spacing, typography } from '../../theme';
 import { scaleFont } from '../../theme/responsive';
 import type { Palette } from '../../theme/palettes';
-
-type Props = MainTabScreenProps<'Home'>;
 
 // Clearance under the scroll content so the floating action bar never covers the
 // last row of a profile.
@@ -126,7 +124,8 @@ function sortProfiles<T extends BrowseProfile>(profiles: T[], sort: BrowseSortKe
   }
 }
 
-export function HomeScreen({ navigation }: Props) {
+export function HomeScreen() {
+  const router = useRouter();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
@@ -265,7 +264,7 @@ export function HomeScreen({ navigation }: Props) {
       confirmLabel: t('explorePlus.upgrade'),
       cancelLabel: t('common.cancel'),
     });
-    if (wantsUpgrade) navigation.navigate('ExplorePlus');
+    if (wantsUpgrade) router.push('/explore-plus');
     return wantsUpgrade;
   };
 
@@ -292,7 +291,7 @@ export function HomeScreen({ navigation }: Props) {
       );
       return;
     }
-    navigation.navigate('ProfileDetail', { kind: mode, id: currentProfile.id });
+    router.push({ pathname: '/profile-detail', params: { kind: mode, id: currentProfile.id } });
   };
 
   const onLike = async () => {
@@ -375,7 +374,7 @@ export function HomeScreen({ navigation }: Props) {
         onBoost={() => setBoostVisible(true)}
         boostActive={isBoostActive}
         notificationCount={unreadCount}
-        onNotifications={() => navigation.navigate('Notifications')}
+        onNotifications={() => router.push('/notifications')}
       />
 
       {/* Friends / Rishta decks are separate — this is how a member switches
@@ -484,7 +483,7 @@ export function HomeScreen({ navigation }: Props) {
         onClose={() => setBoostVisible(false)}
         onGetMore={() => {
           setBoostVisible(false);
-          navigation.navigate('ExplorePlus');
+          router.push('/explore-plus');
         }}
       />
 

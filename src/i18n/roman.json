@@ -29,7 +29,15 @@
     "emailPlaceholder": "you@example.com",
     "passwordPlaceholder": "Apna password darj karein",
     "invalidEmail": "Sahi email address darj karein.",
-    "missingPassword": "Apna password darj karein."
+    "missingPassword": "Apna password darj karein.",
+    "forgotPassword": "Password bhool gaye?"
+  },
+  "forgot": {
+    "title": "Password reset karein",
+    "subtitle": "Apna email darj karein, hum aap ko reset link bhejenge.",
+    "submit": "Reset link bhejein",
+    "sent": "Agar us email ka account mojood hai to reset link bhej diya gaya hai. Apna inbox aur spam folder dekhein.",
+    "backToLogin": "Wapas login par"
   },
   "signup": {
     "title": "Apna Account Banayein",

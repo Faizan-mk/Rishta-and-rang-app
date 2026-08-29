@@ -1,11 +1,10 @@
 import React, { useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import type { AuthStackParamList } from '../../navigation/types';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { TextField } from '../../components/common/TextField';
-import { Button } from '../../components/common/Button';
+import { Button } from '../../components/Button';
 import { SwingingLogo } from '../../components/common/SwingingLogo';
 import { useLanguage } from '../../store/LanguageContext';
 import { useAuth } from '../../store/AuthContext';
@@ -14,9 +13,8 @@ import { isValidEmail } from '../../utils/validation';
 import { spacing, typography } from '../../theme';
 import type { Palette } from '../../theme/palettes';
 
-type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
-
-export function LoginScreen({ navigation }: Props) {
+export function LoginScreen() {
+  const router = useRouter();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
@@ -75,11 +73,12 @@ export function LoginScreen({ navigation }: Props) {
         {error ? <Text style={[styles.errorText, rtl && styles.rtlText]}>{error}</Text> : null}
 
         <Button label={t('login.submit')} onPress={onSubmit} loading={loading} style={styles.submit} />
+        <Button label={t('login.forgotPassword')} variant="ghost" onPress={() => router.push('/forgot-password')} />
       </Animated.View>
 
       <View style={styles.footer}>
         <Text style={[styles.footerText, rtl && styles.rtlText]}>{t('login.noAccount')}</Text>
-        <Button label={t('login.createAccount')} variant="ghost" onPress={() => navigation.navigate('Signup')} />
+        <Button label={t('login.createAccount')} variant="ghost" onPress={() => router.push('/signup')} />
       </View>
     </ScreenContainer>
   );

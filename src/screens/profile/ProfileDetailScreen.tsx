@@ -1,13 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Image, LayoutChangeEvent, Modal, NativeScrollEvent, NativeSyntheticEvent, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
-import type { AppStackScreenProps } from '../../navigation/types';
 import { Badge } from '../../components/common/Badge';
 import { Chip } from '../../components/common/Chip';
-import { Button } from '../../components/common/Button';
+import { Button } from '../../components/Button';
 import { IconButton } from '../../components/common/IconButton';
 import { MatchCelebration } from '../../components/discover/MatchCelebration';
 import {
@@ -34,15 +34,14 @@ import { datingCompatibility, rishtaCompatibility } from '../../utils/compatibil
 import { radius, spacing, typography } from '../../theme';
 import type { Palette } from '../../theme/palettes';
 
-type Props = AppStackScreenProps<'ProfileDetail'>;
-
 const READINESS_KEY: Record<string, string> = {
   browsing: 'profile.readinessBrowsing',
   few_months: 'profile.readinessFewMonths',
   ready_now: 'profile.readinessNow',
 };
 
-export function ProfileDetailScreen({ navigation, route }: Props) {
+export function ProfileDetailScreen() {
+  const router = useRouter();
   const { colors, isDark } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
@@ -52,7 +51,7 @@ export function ProfileDetailScreen({ navigation, route }: Props) {
   const { datingProfiles, rishtaProfiles } = useDiscovery();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { recordView } = useViewHistory();
-  const { kind, id } = route.params;
+  const { kind, id } = useLocalSearchParams<{ kind: 'dating' | 'rishta'; id: string }>();
 
   const [galleryWidth, setGalleryWidth] = useState(0);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -85,7 +84,7 @@ export function ProfileDetailScreen({ navigation, route }: Props) {
     toggleFavorite({ id: profile.id, kind, name: profile.name, age: profile.age, city: profile.city, photo: profile.photos[0] });
   };
 
-  const onPass = () => navigation.goBack();
+  const onPass = () => router.back();
   const onLike = async () => {
     if (!isFavorite(profile.id)) onToggleFavorite();
     setCelebration({ name: profile.name, photo: profile.photos[0] });
@@ -96,14 +95,14 @@ export function ProfileDetailScreen({ navigation, route }: Props) {
       title: t('profileDetail.interestSentTitle'),
       message: t('profileDetail.interestSentBody', { name: profile.name }),
     });
-    navigation.goBack();
+    router.back();
   };
   const onMessage = async () => {
     const match = await getOrCreateMatchForProfile({ id: profile.id, name: profile.name, photo: profile.photos[0], mode: kind });
-    navigation.navigate('Chat', { matchId: match.id });
+    router.push(`/chat/${match.id}`);
   };
   const onCall = () => {
-    navigation.navigate('Call', { name: profile.name, photo: profile.photos[0] });
+    router.push({ pathname: '/call', params: { name: profile.name, photo: profile.photos[0] } });
   };
 
   return (
@@ -136,7 +135,7 @@ export function ProfileDetailScreen({ navigation, route }: Props) {
           <View style={styles.galleryOverlayTop}>
             <IconButton
               icon={rtl ? 'chevron-forward' : 'chevron-back'}
-              onPress={() => navigation.goBack()}
+              onPress={() => router.back()}
               background="rgba(0,0,0,0.35)"
               color="#FFFFFF"
               style={styles.noBorder}
@@ -251,7 +250,7 @@ export function ProfileDetailScreen({ navigation, route }: Props) {
         photo={celebration?.photo ?? ''}
         onClose={() => {
           setCelebration(null);
-          navigation.goBack();
+          router.back();
         }}
       />
     </SafeAreaView>

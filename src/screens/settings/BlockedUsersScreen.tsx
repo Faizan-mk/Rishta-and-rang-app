@@ -2,18 +2,15 @@ import React, { useMemo } from 'react';
 import { FlatList, Image, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInUp } from 'react-native-reanimated';
-import type { AppStackScreenProps } from '../../navigation/types';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
-import { Button } from '../../components/common/Button';
+import { Button } from '../../components/Button';
 import { useLanguage } from '../../store/LanguageContext';
 import { useTheme } from '../../store/ThemeContext';
 import { useMatches, BlockedProfile } from '../../store/MatchesContext';
 import { radius, spacing, typography } from '../../theme';
 import type { Palette } from '../../theme/palettes';
 
-type Props = AppStackScreenProps<'BlockedUsers'>;
-
-export function BlockedUsersScreen({}: Props) {
+export function BlockedUsersScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();

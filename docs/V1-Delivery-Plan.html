@@ -1,0 +1,640 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rishta &amp; Rang — V1 Delivery Plan</title>
+<style>
+  @page { size: A4; margin: 16mm 14mm 18mm 14mm; }
+
+  :root {
+    --ink:        #14232b;
+    --ink-soft:   #4a5f68;
+    --ink-faint:  #7d9099;
+    --teal:       #14606b;
+    --teal-deep:  #0d434b;
+    --gold:       #b07d2a;
+    --rose:       #a8324a;
+    --line:       #d9e2e5;
+    --line-soft:  #eaf0f2;
+    --wash:       #f4f8f9;
+    --wash-warm:  #fdf7ec;
+    --ok:         #1c6b4a;
+    --ok-bg:      #e6f4ec;
+    --warn:       #96601a;
+    --warn-bg:    #fbf0dc;
+    --stop:       #9a2b3f;
+    --stop-bg:    #fae9ec;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    font-size: 10pt;
+    line-height: 1.5;
+    color: var(--ink);
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* ---------- cover ---------- */
+  .cover {
+    border-top: 6px solid var(--teal);
+    padding: 26px 0 22px;
+    margin-bottom: 22px;
+    border-bottom: 1px solid var(--line);
+  }
+  .cover .eyebrow {
+    font-size: 8.5pt; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--gold); font-weight: 700; margin-bottom: 10px;
+  }
+  .cover h1 { font-size: 26pt; line-height: 1.12; margin: 0 0 6px; color: var(--teal-deep); letter-spacing: -.01em; }
+  .cover h2 { font-size: 12.5pt; font-weight: 500; margin: 0 0 18px; color: var(--ink-soft); }
+  .meta { display: flex; flex-wrap: wrap; gap: 0 34px; font-size: 9pt; color: var(--ink-soft); }
+  .meta div { margin-bottom: 3px; }
+  .meta b { color: var(--ink); font-weight: 600; }
+
+  /* ---------- structure ---------- */
+  h3 {
+    font-size: 14pt; color: var(--teal-deep); margin: 30px 0 4px;
+    padding-bottom: 6px; border-bottom: 2px solid var(--teal);
+    page-break-after: avoid;
+  }
+  h4 {
+    font-size: 10.5pt; color: var(--teal); margin: 20px 0 7px;
+    text-transform: uppercase; letter-spacing: .07em;
+    page-break-after: avoid;
+  }
+  p { margin: 0 0 9px; }
+  ul { margin: 0 0 9px; padding-left: 17px; }
+  li { margin-bottom: 3px; }
+  code {
+    font-family: "Cascadia Mono", Consolas, monospace; font-size: 8.6pt;
+    background: var(--wash); padding: 1px 4px; border-radius: 3px; color: var(--teal-deep);
+  }
+  .lead { font-size: 10.5pt; color: var(--ink-soft); }
+
+  /* ---------- callouts ---------- */
+  .callout {
+    border-left: 4px solid var(--teal); background: var(--wash);
+    padding: 11px 14px; margin: 12px 0 16px; border-radius: 0 5px 5px 0;
+    page-break-inside: avoid;
+  }
+  .callout.warm { border-left-color: var(--gold); background: var(--wash-warm); }
+  .callout.stop { border-left-color: var(--rose); background: var(--stop-bg); }
+  .callout p:last-child { margin-bottom: 0; }
+  .callout .h { font-weight: 700; display: block; margin-bottom: 4px; color: var(--teal-deep); }
+  .callout.warm .h { color: var(--gold); }
+  .callout.stop .h { color: var(--stop); }
+
+  /* ---------- scoreboard ---------- */
+  .score { display: flex; gap: 10px; margin: 16px 0 20px; page-break-inside: avoid; }
+  .score div {
+    flex: 1; border: 1px solid var(--line); border-radius: 6px;
+    padding: 12px 10px; text-align: center; background: #fff;
+  }
+  .score .n { font-size: 21pt; font-weight: 700; line-height: 1; color: var(--teal-deep); }
+  .score .l { font-size: 7.6pt; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-faint); margin-top: 6px; }
+  .score .done .n { color: var(--ok); }
+  .score .part .n { color: var(--warn); }
+  .score .miss .n { color: var(--stop); }
+
+  /* ---------- tables ---------- */
+  table {
+    width: 100%; border-collapse: collapse; margin: 8px 0 18px;
+    font-size: 8.9pt; page-break-inside: auto;
+  }
+  thead { display: table-header-group; }
+  tr { page-break-inside: avoid; page-break-after: auto; }
+  th {
+    background: var(--teal-deep); color: #fff; text-align: left;
+    padding: 7px 8px; font-weight: 600; font-size: 8.4pt;
+    letter-spacing: .04em; text-transform: uppercase;
+  }
+  td { padding: 7px 8px; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+  tbody tr:nth-child(even) td { background: #fafcfc; }
+  td.day { font-weight: 700; color: var(--teal-deep); white-space: nowrap; }
+  td.num { text-align: center; font-weight: 700; color: var(--teal-deep); white-space: nowrap; }
+
+  .pill {
+    display: inline-block; padding: 2px 7px; border-radius: 10px;
+    font-size: 7.6pt; font-weight: 700; white-space: nowrap;
+    letter-spacing: .03em; text-transform: uppercase;
+  }
+  .pill.ok   { background: var(--ok-bg);   color: var(--ok); }
+  .pill.part { background: var(--warn-bg); color: var(--warn); }
+  .pill.miss { background: var(--stop-bg); color: var(--stop); }
+  .pill.extra{ background: #eceef8;        color: #40488c; }
+
+  .sev { font-weight: 700; white-space: nowrap; }
+  .sev.p0 { color: var(--stop); }
+  .sev.p1 { color: var(--warn); }
+  .sev.p2 { color: var(--ink-faint); }
+
+  .phase-row td {
+    background: var(--teal) !important; color: #fff;
+    font-weight: 700; font-size: 8.4pt; letter-spacing: .08em; text-transform: uppercase;
+  }
+
+  .break { page-break-before: always; }
+  .keep  { page-break-inside: avoid; }
+
+  footer {
+    margin-top: 30px; padding-top: 10px; border-top: 1px solid var(--line);
+    font-size: 8pt; color: var(--ink-faint); text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div class="eyebrow">Project Status &amp; Completion Plan</div>
+  <h1>Rishta &amp; Rang</h1>
+  <h2>Version 1 (MVP) — Full Gap Audit &amp; 15-Day Delivery Plan</h2>
+  <div class="meta">
+    <div><b>Prepared</b> 29 August 2026</div>
+    <div><b>Plan window</b> 31 Aug – 18 Sep 2026 (15 working days)</div>
+    <div><b>Baseline</b> branch <code>dev-faizan</code></div>
+    <div><b>Stack</b> Expo SDK 54 / RN 0.81 · Supabase (Postgres + Auth + Storage + Realtime)</div>
+    <div><b>Scope</b> V1 MVP per <i>2-in-1 App Feature Roadmap V1→V2</i></div>
+  </div>
+</div>
+
+<h3>1. Executive Summary</h3>
+
+<p class="lead">The app is further along than a typical MVP: onboarding, profiles, discovery, filters,
+bilingual UI and the whole Supabase data layer are built and verified working end to end. What is
+<b>not</b> finished is the part the roadmap calls the core loop — <b>two people actually matching and
+talking to each other</b> — plus the commercial and compliance work needed to hand the build to a
+client and put it in the stores.</p>
+
+<div class="score">
+  <div class="done"><div class="n">10</div><div class="l">Complete</div></div>
+  <div class="part"><div class="n">4</div><div class="l">Partial</div></div>
+  <div class="miss"><div class="n">0</div><div class="l">Not started</div></div>
+  <div><div class="n">14</div><div class="l">V1 features</div></div>
+  <div><div class="n">12</div><div class="l">Open items</div></div>
+  <div><div class="n">15</div><div class="l">Working days</div></div>
+</div>
+
+<div class="callout stop">
+  <span class="h">The one thing that blocks everything else</span>
+  <p>Matching and messaging are currently <b>single-sided</b>. A match row and every chat message are
+  written only under the sender's own <code>profile_id</code>; the other person never receives them.
+  The "Move to Rishta" acceptance is a 2.2-second <code>setTimeout</code> simulation, and this is stated
+  plainly in the code itself (<code>src/store/MatchesContext.tsx</code>: <i>"There's no live backend/second
+  user in this app"</i>). Until this is rebuilt, the roadmap's central hypothesis — that Pakistani users
+  will move a conversation from Dating to Rishta — cannot be measured at all. Days 1–5 of this plan
+  exist to fix exactly that.</p>
+</div>
+
+<h4>What is genuinely finished and verified</h4>
+<ul>
+  <li><b>Backend, verified live against the production Supabase project.</b> All 14 tables plus both
+  storage buckets were written to and read back with a throwaway account: every one of the 54
+  <code>profiles</code> columns round-trips, media uploads return a public URL that renders without auth,
+  CNIC/selfie files are reachable only through a signed URL, and a second signed-in member sees the
+  first member's card with photos while being correctly blocked from their private tables.</li>
+  <li><b>Onboarding</b> — 3-step flow, 2–4 photos enforced, selfie and CNIC both mandatory.</li>
+  <li><b>Bilingual UI</b> — 541 keys in English, Urdu and Roman Urdu with RTL support; 6 Urdu strings
+  still fall back to English.</li>
+  <li><b>Discovery</b> — swipe deck, vibe tags, and manual filters covering age, city, intent, sect,
+  readiness, verified-only and active-today, with ten sort modes.</li>
+  <li><b>Rishta profile</b> — religion, sect, family background, education, readiness signal.</li>
+  <li><b>Free-tier like limit</b> — 15/day, persisted per user per date.</li>
+</ul>
+
+<h4>Fixed during this audit (already in the branch)</h4>
+<ul>
+  <li><b>Signup "Network request failed".</b> Uploads used <code>fetch('file://…')</code>, which React
+  Native cannot do. Media now reads through <code>expo-file-system</code> and uploads raw bytes.</li>
+  <li><b>Stranded accounts.</b> Signup now writes profile rows <i>before</i> media, treats an upload
+  failure as non-fatal, and a half-finished account can be completed by simply retrying signup.</li>
+  <li><b>Chat message identity.</b> <code>insertMessage</code> returned its own payload instead of the
+  inserted row, so the returned message carried <code>id: undefined</code> — the very field the Realtime
+  channel de-dupes on.</li>
+</ul>
+
+<div class="break"></div>
+<h3>2. Gap Analysis — What Still Stands Between Today and Client Sign-off</h3>
+
+<p>Twelve open items. Severity is from the client's point of view: <span class="sev p0">P0</span> blocks
+delivery, <span class="sev p1">P1</span> blocks a public launch, <span class="sev p2">P2</span> is
+quality and polish that should still land inside the window.</p>
+
+<table>
+  <thead>
+    <tr><th style="width:4%">#</th><th style="width:20%">Gap</th><th style="width:8%">Severity</th><th style="width:52%">What is wrong today</th><th style="width:16%">Fixed on</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="num">1</td><td><b>Mutual matching</b></td><td class="sev p0">P0</td>
+      <td>Liking someone writes a <code>likes_received</code> row on their record, but nothing ever detects that two people liked each other. A match is created unilaterally, whenever <i>you</i> open a chat.</td>
+      <td>Day 1–2</td>
+    </tr>
+    <tr>
+      <td class="num">2</td><td><b>Two-way messaging</b></td><td class="sev p0">P0</td>
+      <td><code>chat_messages</code> rows are owned by the sender and RLS restricts reads to <code>profile_id = auth.uid()</code>. The recipient can never read them. Realtime is filtered the same way.</td>
+      <td>Day 3</td>
+    </tr>
+    <tr>
+      <td class="num">3</td><td><b>"Move to Rishta" is simulated</b></td><td class="sev p0">P0</td>
+      <td>The request is inserted, then the app fakes the other side's acceptance after 2.2s. The signature feature of the whole product produces no real signal.</td>
+      <td>Day 5</td>
+    </tr>
+    <tr>
+      <td class="num">4</td><td><b>Report goes nowhere</b></td><td class="sev p0">P0</td>
+      <td><code>onSubmitReport</code> shows a confirmation toast and discards the reason. There is no <code>reports</code> table and no moderation path. Both stores require a working abuse report.</td>
+      <td>Day 6</td>
+    </tr>
+    <tr>
+      <td class="num">5</td><td><b>Block is one-directional</b></td><td class="sev p1">P1</td>
+      <td>Blocking hides them from your deck only. They keep seeing you and, once messaging is two-way, could still message you. <code>blocked_id</code> also stores the match row id rather than the person's id.</td>
+      <td>Day 7</td>
+    </tr>
+    <tr>
+      <td class="num">6</td><td><b>Explore+ has no payment</b></td><td class="sev p0">P0</td>
+      <td>"Upgrade" simply sets <code>isExplorePlus = true</code> on the user's own row. There is no billing integration, and the flag is client-writable, so the paid tier is free to anyone.</td>
+      <td>Day 8</td>
+    </tr>
+    <tr>
+      <td class="num">7</td><td><b>Entitlements are client-side</b></td><td class="sev p1">P1</td>
+      <td>The 15-likes-a-day cap and the Explore+ flag both live in app state and in rows the user can write themselves. Trivially bypassed.</td>
+      <td>Day 9</td>
+    </tr>
+    <tr>
+      <td class="num">8</td><td><b>No push notifications</b></td><td class="sev p1">P1</td>
+      <td><code>expo-notifications</code> is not installed. <code>notification_prefs</code> is fully built and stored but drives nothing outside the in-app feed — so a new match or message reaches nobody who has closed the app.</td>
+      <td>Day 10</td>
+    </tr>
+    <tr>
+      <td class="num">9</td><td><b>Demo data in the shipping build</b></td><td class="sev p1">P1</td>
+      <td>The deck appends mock profiles whenever fewer than 8 real members match, and the Explore "Events" tab is entirely hardcoded. A client demo will show fake people as if they were users.</td>
+      <td>Day 11</td>
+    </tr>
+    <tr>
+      <td class="num">10</td><td><b>Legal pages are placeholders</b></td><td class="sev p0">P0</td>
+      <td>The Legal screen renders a "placeholder notice". Given the app collects CNIC numbers and ID photographs, a real privacy policy is both a store requirement and a legal one.</td>
+      <td>Day 12</td>
+    </tr>
+    <tr>
+      <td class="num">11</td><td><b>No emoji reactions in chat</b></td><td class="sev p2">P2</td>
+      <td>The roadmap specifies "text chat with basic emoji reactions". No reaction storage or UI exists.</td>
+      <td>Day 4</td>
+    </tr>
+    <tr>
+      <td class="num">12</td><td><b>No automated tests, no CI</b></td><td class="sev p2">P2</td>
+      <td>Zero test files in the repository. Every regression is currently found by hand.</td>
+      <td>Day 13–14</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="callout warm">
+  <span class="h">Carried over from the audit, worth deciding on</span>
+  <p>The selfie photo is uploaded and its path stored, but nothing ever reads it back — only the
+  <code>selfieVerified</code> badge is shown. CNIC "verification" is a colour/aspect-ratio heuristic that
+  sets <code>cnic_verified = true</code> automatically; it is honest as a wrong-upload filter but must not
+  be presented to the client as identity verification. Neither is a defect, but both should be stated
+  plainly in the handover.</p>
+</div>
+
+<div class="break"></div>
+<h3>3. The 15-Day Plan</h3>
+
+<p class="lead">One developer, five working days a week, 31 August to 18 September 2026. The order is
+deliberate: the core loop is rebuilt first because every later item — notifications, reporting,
+entitlements, QA — depends on two real users being able to reach each other.</p>
+
+<table>
+  <thead>
+    <tr><th style="width:15%">Day</th><th style="width:23%">Focus</th><th style="width:42%">Work</th><th style="width:20%">Done when</th></tr>
+  </thead>
+  <tbody>
+    <tr class="phase-row"><td colspan="4">Phase 1 · Days 1–5 · Make the core loop real</td></tr>
+
+    <tr>
+      <td class="day">Day 1<br><span style="font-weight:400;color:#7d9099">Mon 31 Aug</span></td>
+      <td>Matching schema</td>
+      <td>New migration <code>19_matching.sql</code>: a <code>likes</code> table keyed on
+      <code>(liker_id, target_id, mode)</code>, and <code>matches</code> reshaped to a pair row
+      (<code>user_a</code>, <code>user_b</code>, ordered so the pair is unique). RLS: a row is readable by
+      either participant. Backfill/migrate the existing one-sided rows. Add both to the Realtime publication.</td>
+      <td>Two accounts can each see the same match row; a third account cannot.</td>
+    </tr>
+    <tr>
+      <td class="day">Day 2<br><span style="font-weight:400;color:#7d9099">Tue 1 Sep</span></td>
+      <td>Mutual like → match</td>
+      <td>A <code>like_profile(target, mode)</code> RPC that records the like, checks for the reciprocal
+      one, and creates the match atomically, returning whether it matched. Rewire
+      <code>FavoritesContext</code> and the swipe handlers onto it. Fire the match celebration on a real
+      mutual like instead of on every right-swipe.</td>
+      <td>A likes B, B likes A → both see the match and the celebration; A alone sees nothing.</td>
+    </tr>
+    <tr>
+      <td class="day">Day 3<br><span style="font-weight:400;color:#7d9099">Wed 2 Sep</span></td>
+      <td>Two-way chat</td>
+      <td><code>chat_messages</code> re-keyed to <code>match_id</code> + <code>sender_id</code>; RLS
+      becomes "you are a participant of this match". <code>from_me</code> derived from
+      <code>sender_id</code> at read time. Rewrite <code>matchesService</code> and the Realtime
+      subscription to filter on match membership. Per-side unread counters.</td>
+      <td>A message typed on device A appears on device B within a second, and unread clears per side.</td>
+    </tr>
+    <tr>
+      <td class="day">Day 4<br><span style="font-weight:400;color:#7d9099">Thu 3 Sep</span></td>
+      <td>Chat completeness</td>
+      <td><code>message_reactions</code> table + long-press reaction picker on <code>MessageBubble</code>
+      (roadmap: "basic emoji reactions"). History pagination so a long thread doesn't load whole. Delivered/
+      read state. Verify voice notes and image messages survive the new schema.</td>
+      <td>Both sides can react; a 500-message thread opens instantly.</td>
+    </tr>
+    <tr>
+      <td class="day">Day 5<br><span style="font-weight:400;color:#7d9099">Fri 4 Sep</span></td>
+      <td>Move to Rishta — for real</td>
+      <td>Delete the <code>setTimeout</code> simulation. The request becomes a state on the shared match
+      row; the other member sees a pending banner with Accept / Decline; accepting flips the mode for both
+      sides and notifies both. Rishta-mode profile fields gate the request.</td>
+      <td>The signature feature works between two real accounts and is measurable in the data.</td>
+    </tr>
+
+    <tr class="phase-row"><td colspan="4">Phase 2 · Days 6–9 · Safety, trust and money</td></tr>
+
+    <tr>
+      <td class="day">Day 6<br><span style="font-weight:400;color:#7d9099">Mon 7 Sep</span></td>
+      <td>Reporting</td>
+      <td><code>reports</code> table (reporter, target, reason, context, free text, status) with insert-only
+      RLS for members. Wire the existing <code>ReportDialog</code> in Home and Chat to it. Auto-hide a
+      profile from discovery after N distinct reports. A simple SQL/Studio review view for the client.</td>
+      <td>A report is a row someone can act on, not a toast.</td>
+    </tr>
+    <tr>
+      <td class="day">Day 7<br><span style="font-weight:400;color:#7d9099">Tue 8 Sep</span></td>
+      <td>Block hardening</td>
+      <td><code>blocked_id</code> becomes the person's uuid, not the match row id. Blocking is enforced
+      in the database: blocked pairs are excluded from discovery both ways, and message insert is refused
+      in either direction. Blocked people disappear from Explore, likes and matches for both sides.</td>
+      <td>After a block, neither member can see or reach the other from any surface.</td>
+    </tr>
+    <tr>
+      <td class="day">Day 8<br><span style="font-weight:400;color:#7d9099">Wed 9 Sep</span></td>
+      <td>Explore+ billing</td>
+      <td>Wire the single V1 paywall to real billing — Play Billing + StoreKit via RevenueCat is the
+      fastest defensible route; a local gateway (JazzCash / Easypaisa) is the alternative if the client
+      prefers PKR rails. Receipt validated server-side in an Edge Function that writes the subscription
+      state. <i>Client decision needed — see Risks.</i></td>
+      <td>A real purchase on a real device unlocks Explore+; cancelling revokes it.</td>
+    </tr>
+    <tr>
+      <td class="day">Day 9<br><span style="font-weight:400;color:#7d9099">Thu 10 Sep</span></td>
+      <td>Server-side entitlements</td>
+      <td>Move the 15/day like cap into the <code>like_profile</code> RPC so the count cannot be edited by
+      the client. Lock <code>is_explore_plus</code>, <code>subscription_plan</code> and
+      <code>subscription_renews_at</code> against direct user writes (trigger or column-level policy) so
+      only the verified-purchase function may set them.</td>
+      <td>A hand-crafted API call cannot grant itself Explore+ or extra likes.</td>
+    </tr>
+
+    <tr class="phase-row"><td colspan="4">Phase 3 · Days 10–12 · Reach, real content, compliance</td></tr>
+
+    <tr>
+      <td class="day">Day 10<br><span style="font-weight:400;color:#7d9099">Fri 11 Sep</span></td>
+      <td>Push notifications</td>
+      <td>Install <code>expo-notifications</code>, add a <code>push_tokens</code> table, and send from an
+      Edge Function triggered on new match / new message / new like. Every send honours the existing
+      <code>notification_prefs</code> row, which is already built and stored but currently drives nothing.</td>
+      <td>A message to a closed app arrives as a push, and turning the pref off stops it.</td>
+    </tr>
+    <tr>
+      <td class="day">Day 11<br><span style="font-weight:400;color:#7d9099">Mon 14 Sep</span></td>
+      <td>Real content only</td>
+      <td>Put the mock deck behind a dev-only flag so production never shows fabricated members. Replace
+      the hardcoded Explore "Events" with a real table, or hide the tab for V1. Write proper empty states
+      for an early, thin user base — the honest answer to a small deck, rather than filling it with fiction.</td>
+      <td>A production build shows only real people, or an honest empty state.</td>
+    </tr>
+    <tr>
+      <td class="day">Day 12<br><span style="font-weight:400;color:#7d9099">Tue 15 Sep</span></td>
+      <td>Legal &amp; store compliance</td>
+      <td>Real Privacy Policy and Terms covering CNIC collection, photo storage, retention and deletion,
+      hosted and linked in-app. 18+ age gate. Play Data Safety form and App Store privacy labels.
+      Confirm the in-app account deletion path (already built) meets both stores' requirements.</td>
+      <td>Both store review checklists pass on paper.</td>
+    </tr>
+
+    <tr class="phase-row"><td colspan="4">Phase 4 · Days 13–15 · Harden and hand over</td></tr>
+
+    <tr>
+      <td class="day">Day 13<br><span style="font-weight:400;color:#7d9099">Wed 16 Sep</span></td>
+      <td>QA pass 1</td>
+      <td>Two physical devices, two real accounts, every flow end to end: signup → match → chat → move to
+      rishta → block → report → subscribe → delete account. Add a smoke test suite over the services layer
+      (currently the repo has none). Log and fix.</td>
+      <td>The full journey passes twice with no P0/P1 open.</td>
+    </tr>
+    <tr>
+      <td class="day">Day 14<br><span style="font-weight:400;color:#7d9099">Thu 17 Sep</span></td>
+      <td>Polish &amp; performance</td>
+      <td>Deck pagination instead of fetching every profile, image caching, offline and error states on
+      every network call. Urdu/RTL sweep including the 6 untranslated strings. Accessibility labels.
+      Second QA pass on the fixes.</td>
+      <td>No untranslated string, no unhandled network error, deck scrolls smoothly at 500+ profiles.</td>
+    </tr>
+    <tr>
+      <td class="day">Day 15<br><span style="font-weight:400;color:#7d9099">Fri 18 Sep</span></td>
+      <td>Release &amp; handover</td>
+      <td>Production EAS builds for both platforms, store listings with Urdu and English screenshots,
+      internal testing track. Handover pack: Supabase SQL in order, environment variables, an operations
+      runbook, and a written statement of the known limits (heuristic CNIC check, selfie stored but not
+      displayed).</td>
+      <td>Client holds installable builds, database scripts, credentials and documentation.</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="break"></div>
+<h3>4. Risks &amp; Decisions Needed From the Client</h3>
+
+<table>
+  <thead><tr><th style="width:24%">Item</th><th style="width:52%">Why it matters</th><th style="width:24%">Needed by</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><b>Payment rails</b></td>
+      <td>Play/App Store billing is mandatory for digital goods on those stores and takes 15–30%. A local
+      gateway (JazzCash / Easypaisa) fits the PKR 999 price point and the Pakistani market far better but
+      is not permitted for in-app digital unlocks on either store. This choice changes Day 8 entirely.</td>
+      <td><b>Day 6</b> — before billing work starts</td>
+    </tr>
+    <tr>
+      <td><b>Store accounts</b></td>
+      <td>Google Play Console and Apple Developer enrolment can take days to clear, and Apple requires a
+      D-U-N-S number for an organisation account. If this is not already in place, Day 15 slips regardless
+      of the code being ready.</td>
+      <td><b>Day 1</b> — start immediately</td>
+    </tr>
+    <tr>
+      <td><b>Legal copy</b></td>
+      <td>The privacy policy and terms need a lawyer's eye because the app stores CNIC numbers and ID
+      photographs. Day 12 assumes copy is supplied or reviewed, not drafted from scratch by the developer.</td>
+      <td><b>Day 8</b></td>
+    </tr>
+    <tr>
+      <td><b>Moderation ownership</b></td>
+      <td>Day 6 creates the reports queue. Someone on the client's side has to actually read it. Without a
+      named owner, the store-required reporting path is a table nobody opens.</td>
+      <td><b>Day 6</b></td>
+    </tr>
+    <tr>
+      <td><b>Seed audience</b></td>
+      <td>Removing the demo deck on Day 11 leaves the app genuinely empty until real members join. A
+      launch plan for the first cohort is needed or the MVP cannot measure adoption — which is its entire
+      purpose.</td>
+      <td><b>Day 11</b></td>
+    </tr>
+    <tr>
+      <td><b>Single-developer risk</b></td>
+      <td>The plan is sized for one developer at full availability with no parallelism. Any sick day, or
+      an App Store review rejection in the final week, consumes the whole buffer. A one-week contingency
+      after Day 15 is realistic.</td>
+      <td>Plan for it now</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>5. Feature Status — V1 Roadmap</h3>
+
+<p>Every feature the roadmap places in Version 1, against the code as it stands today.</p>
+
+<table>
+  <thead>
+    <tr><th style="width:20%">Feature</th><th style="width:11%">Status</th><th style="width:49%">Where it stands</th><th style="width:20%">Remaining work</th></tr>
+  </thead>
+  <tbody>
+    <tr class="phase-row"><td colspan="4">Universal — both modes</td></tr>
+    <tr>
+      <td><b>Onboarding &amp; Intent Setting</b></td>
+      <td><span class="pill ok">Complete</span></td>
+      <td>Three steps: account and personal details, then intent plus photos, then selfie and CNIC. Intent drives the deck. Draft carried through and written in one transaction at the end.</td>
+      <td>—</td>
+    </tr>
+    <tr>
+      <td><b>Photo Upload &amp; Selfie Verification</b></td>
+      <td><span class="pill ok">Complete</span></td>
+      <td>2–4 photos enforced; selfie and CNIC photo both mandatory. Upload path fixed during this audit and verified against live storage.</td>
+      <td>—</td>
+    </tr>
+    <tr>
+      <td><b>Urdu + English UI</b></td>
+      <td><span class="pill ok">Complete</span></td>
+      <td>541 keys across English, Urdu and Roman Urdu, with RTL layout support throughout.</td>
+      <td>6 Urdu strings still English (Day 14)</td>
+    </tr>
+    <tr>
+      <td><b>In-App Text Messaging</b></td>
+      <td><span class="pill part">Partial</span></td>
+      <td>Chat UI, text/voice/image messages, Realtime stream and persistence all built — but every message is stored only under the sender and RLS stops the recipient reading it. No emoji reactions.</td>
+      <td>Two-way delivery (Day 3), reactions (Day 4)</td>
+    </tr>
+    <tr>
+      <td><b>Block &amp; Report</b></td>
+      <td><span class="pill part">Partial</span></td>
+      <td>Block works and persists, with a managed blocked-users list. Report has a complete dialog with six reasons whose result is discarded.</td>
+      <td>Reports table (Day 6), two-way block (Day 7)</td>
+    </tr>
+    <tr>
+      <td><b>Basic Match Suggestions</b></td>
+      <td><span class="pill ok">Complete</span></td>
+      <td>Filter-based, exactly as the roadmap specifies: age, city, intent, sect, readiness, verified-only and active-today, plus ten sort modes. No AI, as intended for V1.</td>
+      <td>Pagination at scale (Day 14)</td>
+    </tr>
+
+    <tr class="phase-row"><td colspan="4">Dating Mode</td></tr>
+    <tr>
+      <td><b>Swipe Discovery</b></td>
+      <td><span class="pill ok">Complete</span></td>
+      <td>Gesture-driven card deck with the action bar, celebration animation and profile detail sheet.</td>
+      <td>Celebration to fire on real mutual match (Day 2)</td>
+    </tr>
+    <tr>
+      <td><b>Vibe Tags</b></td>
+      <td><span class="pill ok">Complete</span></td>
+      <td>Editable on the profile, stored in <code>dating_vibe_tags</code>, rendered on cards and detail views.</td>
+      <td>—</td>
+    </tr>
+    <tr>
+      <td><b>"Move to Rishta" Button</b></td>
+      <td><span class="pill part">Partial</span></td>
+      <td>Full UI, request message, pending state and mode crossover are built — but the acceptance is simulated locally after 2.2 seconds. No counterparty is involved.</td>
+      <td>Real request/accept between two accounts (Day 5)</td>
+    </tr>
+
+    <tr class="phase-row"><td colspan="4">Rishta Mode</td></tr>
+    <tr>
+      <td><b>Basic Matrimonial Profile</b></td>
+      <td><span class="pill ok">Complete</span></td>
+      <td>Religion, sect, family background and education, editable and shown on rishta cards and detail views.</td>
+      <td>—</td>
+    </tr>
+    <tr>
+      <td><b>Rishta Readiness Signal</b></td>
+      <td><span class="pill ok">Complete</span></td>
+      <td>Browsing / few months / ready now, editable, visible to others and usable as a filter.</td>
+      <td>—</td>
+    </tr>
+    <tr>
+      <td><b>Manual Filters</b></td>
+      <td><span class="pill ok">Complete</span></td>
+      <td>Age, sect, city and readiness all present, with a reset and an active-filter count on the chip.</td>
+      <td>—</td>
+    </tr>
+
+    <tr class="phase-row"><td colspan="4">Monetization</td></tr>
+    <tr>
+      <td><b>Free Tier</b></td>
+      <td><span class="pill ok">Complete</span></td>
+      <td>Profile creation, both modes, matched chat and Urdu UI are free; 15 likes a day, persisted per user per date.</td>
+      <td>Enforce the cap server-side (Day 9)</td>
+    </tr>
+    <tr>
+      <td><b>Single Paid Unlock (Explore+ lite)</b></td>
+      <td><span class="pill part">Partial</span></td>
+      <td>"See who liked you" and unlimited likes both work, with plan selection, trial and cancel screens. There is no billing at all — the upgrade button sets a boolean the user's own device is allowed to write.</td>
+      <td>Real billing (Day 8), locked entitlements (Day 9)</td>
+    </tr>
+  </tbody>
+</table>
+
+<h4>Built ahead of the roadmap — Version 2 features already present</h4>
+
+<p>These were not required for V1. They are listed so the client knows what exists, and so nothing is
+mistaken for finished production work.</p>
+
+<table>
+  <thead><tr><th style="width:24%">V2 feature</th><th style="width:14%">State</th><th style="width:62%">Note</th></tr></thead>
+  <tbody>
+    <tr><td>CNIC / ID Verification</td><td><span class="pill extra">Built</span></td><td>Number validation, gender cross-check and an image heuristic. <b>Not</b> real identity verification — it sets <code>cnic_verified</code> automatically.</td></tr>
+    <tr><td>Voice notes &amp; video intro</td><td><span class="pill extra">Built</span></td><td>Recording, upload and playback all work; needs re-verification after the Day 3 chat schema change.</td></tr>
+    <tr><td>Voice / video calling</td><td><span class="pill part">UI only</span></td><td>Call screen exists but connects via a timer. No WebRTC. Should be hidden for V1 rather than shipped as a working feature.</td></tr>
+    <tr><td>Wali Dashboard</td><td><span class="pill extra">Built</span></td><td>Guardian name and contact captured and stored. No guardian-side access, which is the V2 substance.</td></tr>
+    <tr><td>Privacy controls</td><td><span class="pill extra">Built</span></td><td>Profile visibility, online status and photo blur are stored. Confirm each is actually enforced in discovery queries.</td></tr>
+    <tr><td>Compatibility score</td><td><span class="pill extra">Built</span></td><td>Local heuristic scoring with a match-score card. Not the V2 15-question assessment.</td></tr>
+    <tr><td>Profile boosts</td><td><span class="pill extra">Built</span></td><td>Wallet and sheet exist; not in either roadmap version. Decide whether V1 ships it.</td></tr>
+  </tbody>
+</table>
+
+<div class="callout">
+  <span class="h">Definition of done for V1</span>
+  <p>Two people who have never met can install the app, sign up in Urdu, find each other in the deck,
+  match by liking each other, chat, move that chat to Rishta, and — if either wants out — block or report
+  the other, with the report landing somewhere a human reads. One of them can pay for Explore+ and the
+  other cannot fake it. Both get a push when the other writes. Nothing in the app is a mock. That is the
+  bar Day 15 is measured against.</p>
+</div>
+
+<footer>
+  Rishta &amp; Rang — V1 Delivery Plan · Prepared 29 August 2026 · Baseline branch <code>dev-faizan</code><br>
+  Status verified against the live Supabase project on 28 August 2026 using a temporary test account, since deleted.
+</footer>
+
+</body>
+</html>

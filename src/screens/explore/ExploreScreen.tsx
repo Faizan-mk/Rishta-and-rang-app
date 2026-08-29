@@ -1,12 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Image, Modal, Pressable, RefreshControl, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInUp } from 'react-native-reanimated';
-import type { MainTabScreenProps } from '../../navigation/types';
 import { TAB_BAR_BASE_HEIGHT, useHideTabBarOnScroll } from '../../store/TabBarVisibilityContext';
-import { Button } from '../../components/common/Button';
+import { Button } from '../../components/Button';
 import { SmartImage } from '../../components/common/SmartImage';
 import { BrowseFiltersSheet } from '../../components/discover/BrowseSheets';
 import {
@@ -30,7 +30,6 @@ import { radius, spacing, typography } from '../../theme';
 import { scaleFont } from '../../theme/responsive';
 import type { Palette } from '../../theme/palettes';
 
-type Props = MainTabScreenProps<'Explore'>;
 type ExploreTab = 'forYou' | 'events' | 'history';
 type ExploreProfile = (DiscoverProfile | RishtaListingProfile) & { kind: 'dating' | 'rishta' };
 
@@ -50,7 +49,8 @@ function timestamp(iso?: string): number {
 // Grid browsing of the same member pool the Home deck swipes through: free for
 // everyone (the roadmap's "basic match suggestions"), with only the paid
 // "who liked you" list behind Explore+.
-export function ExploreScreen({ navigation }: Props) {
+export function ExploreScreen() {
+  const router = useRouter();
   const { colors, isDark } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
@@ -137,7 +137,7 @@ export function ExploreScreen({ navigation }: Props) {
   );
 
   const openProfile = (profile: ExploreProfile) => {
-    navigation.navigate('ProfileDetail', { kind: profile.kind, id: profile.id });
+    router.push({ pathname: '/profile-detail', params: { kind: profile.kind, id: profile.id } });
   };
 
   const onShareEvent = async (event: (typeof mockEvents)[number]) => {
@@ -219,7 +219,7 @@ export function ExploreScreen({ navigation }: Props) {
                   {likes.map((like) => (
                     <Pressable
                       key={like.id}
-                      onPress={() => navigation.navigate('ProfileDetail', { kind: like.kind, id: like.id })}
+                      onPress={() => router.push({ pathname: '/profile-detail', params: { kind: like.kind, id: like.id } })}
                       style={styles.gridCard}
                     >
                       <SmartImage uri={like.photo} name={like.name} style={styles.gridPhoto} size={30} />
@@ -235,7 +235,7 @@ export function ExploreScreen({ navigation }: Props) {
                   ))}
                 </View>
               ) : (
-                <Pressable onPress={() => navigation.navigate('ExplorePlus')} style={styles.lockedCard}>
+                <Pressable onPress={() => router.push('/explore-plus')} style={styles.lockedCard}>
                   <Image source={{ uri: likes[0].photo }} style={styles.lockedImage} blurRadius={22} />
                   <BlurView intensity={40} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
                   <View style={styles.lockedBody}>
@@ -334,7 +334,7 @@ export function ExploreScreen({ navigation }: Props) {
                 {history.map((entry) => (
                   <Pressable
                     key={entry.id}
-                    onPress={() => navigation.navigate('ProfileDetail', { kind: entry.kind, id: entry.id })}
+                    onPress={() => router.push({ pathname: '/profile-detail', params: { kind: entry.kind, id: entry.id } })}
                     style={[styles.historyRow, rtl && styles.rowRtl]}
                   >
                     <SmartImage uri={entry.photo} name={entry.name} style={styles.historyAvatar} size={16} />

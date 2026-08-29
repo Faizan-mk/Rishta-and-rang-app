@@ -4,9 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import Animated, { FadeInUp } from 'react-native-reanimated';
-import type { AppStackScreenProps } from '../../navigation/types';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
-import { Button } from '../../components/common/Button';
+import { Button } from '../../components/Button';
 import { useBoost } from '../../store/BoostContext';
 import { likesService, type LikeReceived } from '../../services/likesService';
 import { useLanguage } from '../../store/LanguageContext';
@@ -20,7 +19,6 @@ import { isoToDisplay } from '../../utils/date';
 import { radius, spacing, typography } from '../../theme';
 import type { Palette } from '../../theme/palettes';
 
-type Props = AppStackScreenProps<'ExplorePlus'>;
 type Plan = 'trial' | 'monthly' | 'yearly';
 
 function isoDateInDays(days: number): string {
@@ -34,7 +32,7 @@ const PLAN_DAYS: Record<Plan, number> = { trial: 7, monthly: 30, yearly: 365 };
 // Profile boosts included with any paid plan.
 const BOOSTS_PER_SUBSCRIPTION = 5;
 
-export function ExplorePlusScreen({ navigation }: Props) {
+export function ExplorePlusScreen() {
   const { colors, isDark } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();

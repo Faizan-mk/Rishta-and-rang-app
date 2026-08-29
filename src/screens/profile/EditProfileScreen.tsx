@@ -1,16 +1,16 @@
 import React, { useMemo, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { useEvent } from 'expo';
 import { useAudioPlayer, useAudioPlayerStatus, useAudioRecorder, RecordingPresets, requestRecordingPermissionsAsync } from 'expo-audio';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import type { AppStackScreenProps } from '../../navigation/types';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { TextField } from '../../components/common/TextField';
 import { SelectField } from '../../components/common/SelectField';
-import { Button } from '../../components/common/Button';
+import { Button } from '../../components/Button';
 import { Chip } from '../../components/common/Chip';
 import { FadeIn } from '../../components/common/FadeInUp';
 import { PAKISTAN_CITIES } from '../../data/locations';
@@ -23,8 +23,6 @@ import type { UserProfile } from '../../types/user';
 import { radius, spacing, typography } from '../../theme';
 import { scaleFont } from '../../theme/responsive';
 import type { Palette } from '../../theme/palettes';
-
-type Props = AppStackScreenProps<'EditProfile'>;
 
 const MAX_PHOTOS = 4;
 const MARITAL_OPTIONS: NonNullable<UserProfile['maritalStatus']>[] = ['single', 'divorced', 'widowed'];
@@ -87,7 +85,8 @@ function initDetails(user: UserProfile | null): DetailsState {
   };
 }
 
-export function EditProfileScreen({ navigation }: Props) {
+export function EditProfileScreen() {
+  const router = useRouter();
   const { colors, isDark } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
@@ -239,7 +238,7 @@ export function EditProfileScreen({ navigation }: Props) {
       videoIntroUri: videoUri,
     });
     setSaving(false);
-    navigation.goBack();
+    router.back();
   };
 
   return (
@@ -435,7 +434,7 @@ export function EditProfileScreen({ navigation }: Props) {
       </FadeIn>
 
       <Button label={t('common.save')} onPress={onSave} loading={saving} style={styles.submit} />
-      <Button label={t('common.cancel')} variant="ghost" onPress={() => navigation.goBack()} />
+      <Button label={t('common.cancel')} variant="ghost" onPress={() => router.back()} />
     </ScreenContainer>
   );
 }

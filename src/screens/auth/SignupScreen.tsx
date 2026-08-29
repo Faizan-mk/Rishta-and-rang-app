@@ -1,19 +1,19 @@
 import React, { useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import Animated, { FadeInUp } from 'react-native-reanimated';
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import type { AuthStackParamList } from '../../navigation/types';
 import type { Gender } from '../../types/user';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { TextField } from '../../components/common/TextField';
 import { DateField } from '../../components/common/DateField';
 import { SelectField } from '../../components/common/SelectField';
 import { Chip } from '../../components/common/Chip';
-import { Button } from '../../components/common/Button';
+import { Button } from '../../components/Button';
 import { StepHeader } from '../../components/common/StepHeader';
 import { PAKISTAN_CITIES } from '../../data/locations';
 import { useLanguage } from '../../store/LanguageContext';
 import { useTheme } from '../../store/ThemeContext';
+import { useOnboarding } from '../../store/onboardingStore';
 import { isValidEmail } from '../../utils/validation';
 import { ageFromDob, isValidDobFormat } from '../../utils/date';
 import { digitsToCnicDisplay, isValidCnicFormat, cnicMatchesGender } from '../../utils/cnic';
@@ -21,12 +21,12 @@ import { authService } from '../../services/authService';
 import { spacing, typography } from '../../theme';
 import type { Palette } from '../../theme/palettes';
 
-type Props = NativeStackScreenProps<AuthStackParamList, 'Signup'>;
-
-export function SignupScreen({ navigation }: Props) {
+export function SignupScreen() {
+  const router = useRouter();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
+  const { startDraft } = useOnboarding();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -91,23 +91,22 @@ export function SignupScreen({ navigation }: Props) {
       return;
     }
 
-    navigation.navigate('IntentPhotos', {
-      draft: {
-        email: email.trim(),
-        password,
-        fullName: fullName.trim(),
-        dob: dob.trim(),
-        gender,
-        city,
-        bio: bio.trim(),
-        cnicNumber,
-      },
+    startDraft({
+      email: email.trim(),
+      password,
+      fullName: fullName.trim(),
+      dob: dob.trim(),
+      gender,
+      city,
+      bio: bio.trim(),
+      cnicNumber,
     });
+    router.push('/intent-photos');
   };
 
   return (
     <ScreenContainer>
-      <StepHeader total={3} current={0} onBack={() => navigation.goBack()} />
+      <StepHeader total={3} current={0} onBack={() => router.back()} />
       <Animated.View entering={FadeInUp.duration(400)}>
         <Text style={[styles.title, rtl && styles.rtlText]}>{t('signup.title')}</Text>
         <Text style={[styles.subtitle, rtl && styles.rtlText]}>{t('signup.subtitle')}</Text>
@@ -186,7 +185,7 @@ export function SignupScreen({ navigation }: Props) {
 
       <View style={styles.footer}>
         <Text style={[styles.footerText, rtl && styles.rtlText]}>{t('signup.haveAccount')}</Text>
-        <Button label={t('signup.logIn')} variant="ghost" onPress={() => navigation.navigate('Login')} />
+        <Button label={t('signup.logIn')} variant="ghost" onPress={() => router.push('/login')} />
       </View>
     </ScreenContainer>
   );

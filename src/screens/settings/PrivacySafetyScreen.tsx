@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import type { AppStackScreenProps } from '../../navigation/types';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { SettingsRow } from '../../components/common/SettingsRow';
 import { FadeIn } from '../../components/common/FadeInUp';
@@ -14,9 +14,8 @@ import { useMatches } from '../../store/MatchesContext';
 import { radius, spacing, typography } from '../../theme';
 import type { Palette } from '../../theme/palettes';
 
-type Props = AppStackScreenProps<'PrivacySafety'>;
-
-export function PrivacySafetyScreen({ navigation }: Props) {
+export function PrivacySafetyScreen() {
+  const router = useRouter();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
@@ -88,7 +87,7 @@ export function PrivacySafetyScreen({ navigation }: Props) {
             label={t('privacy.blockedUsers')}
             description={String(blockedProfiles.length)}
             right="chevron"
-            onPress={() => navigation.navigate('BlockedUsers')}
+            onPress={() => router.push('/blocked-users')}
           />
         </View>
 

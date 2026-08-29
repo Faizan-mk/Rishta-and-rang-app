@@ -1,11 +1,10 @@
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import type { AuthStackParamList } from '../../navigation/types';
-import { Button } from '../../components/common/Button';
+import { Button } from '../../components/Button';
 import { FloatingHearts } from '../../components/common/FloatingHearts';
 import { SwingingLogo } from '../../components/common/SwingingLogo';
 import { spacing, typography, radius } from '../../theme';
@@ -13,9 +12,8 @@ import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
 
-type Props = NativeStackScreenProps<AuthStackParamList, 'Welcome'>;
-
-export function WelcomeScreen({ navigation }: Props) {
+export function WelcomeScreen() {
+  const router = useRouter();
   const { colors } = useTheme();
   const { language, setLanguage, t, rtl } = useLanguage();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -60,11 +58,11 @@ export function WelcomeScreen({ navigation }: Props) {
           </View>
 
           <View style={styles.actions}>
-            <Button label={t('login.submit')} onPress={() => navigation.navigate('Login')} />
+            <Button label={t('login.submit')} onPress={() => router.push('/login')} />
             <Button
               label={t('login.createAccount')}
               variant="ghost"
-              onPress={() => navigation.navigate('Signup')}
+              onPress={() => router.push('/signup')}
             />
           </View>
         </Animated.View>

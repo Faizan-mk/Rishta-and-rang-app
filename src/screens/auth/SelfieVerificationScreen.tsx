@@ -1,30 +1,29 @@
 import React, { useMemo, useState } from 'react';
 import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import type { AuthStackParamList } from '../../navigation/types';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
-import { Button } from '../../components/common/Button';
+import { Button } from '../../components/Button';
 import { StepHeader } from '../../components/common/StepHeader';
 import { FadeIn } from '../../components/common/FadeInUp';
 import { useLanguage } from '../../store/LanguageContext';
 import { useAuth } from '../../store/AuthContext';
 import { useTheme } from '../../store/ThemeContext';
 import { useDialog } from '../../store/DialogContext';
+import { useOnboarding } from '../../store/onboardingStore';
 import { analyzeIdCardPhoto } from '../../utils/idCardImageCheck';
 import { radius, spacing, typography } from '../../theme';
 import { scaleFont } from '../../theme/responsive';
 import type { Palette } from '../../theme/palettes';
 
-type Props = NativeStackScreenProps<AuthStackParamList, 'SelfieVerification'>;
-
-export function SelfieVerificationScreen({ navigation, route }: Props) {
+export function SelfieVerificationScreen() {
+  const router = useRouter();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl, language } = useLanguage();
   const { signup } = useAuth();
   const { notify } = useDialog();
-  const { draft } = route.params;
+  const { draft } = useOnboarding();
   const [selfieUri, setSelfieUri] = useState<string | null>(null);
   const [cnicPhotoUri, setCnicPhotoUri] = useState<string | null>(null);
   const [checkingCnicPhoto, setCheckingCnicPhoto] = useState(false);
@@ -75,7 +74,7 @@ export function SelfieVerificationScreen({ navigation, route }: Props) {
   };
 
   const onFinish = async () => {
-    if (!draft.intent) return;
+    if (!draft?.intent) return;
     setError(null);
     setSubmitting(true);
     try {
@@ -95,7 +94,7 @@ export function SelfieVerificationScreen({ navigation, route }: Props) {
         cnicNumber: draft.cnicNumber,
         cnicPhotoUri: cnicPhotoUri ?? undefined,
       });
-      // RootNavigator swaps to AppNavigator automatically once `user` is set.
+      // The root layout swaps to the (tabs) group automatically once `user` is set.
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong.');
       setSubmitting(false);
@@ -104,7 +103,7 @@ export function SelfieVerificationScreen({ navigation, route }: Props) {
 
   return (
     <ScreenContainer>
-      <StepHeader total={3} current={2} onBack={() => navigation.goBack()} />
+      <StepHeader total={3} current={2} onBack={() => router.back()} />
       <FadeIn>
         <Text style={[styles.title, rtl && styles.rtlText]}>{t('selfie.title')}</Text>
         <Text style={[styles.subtitle, rtl && styles.rtlText]}>{t('selfie.subtitle')}</Text>

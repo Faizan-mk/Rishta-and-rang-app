@@ -1,15 +1,15 @@
 import React, { useMemo, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import type { MainTabScreenProps } from '../../navigation/types';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { TAB_BAR_BASE_HEIGHT, useHideTabBarOnScroll } from '../../store/TabBarVisibilityContext';
 import { Badge } from '../../components/common/Badge';
 import { Chip } from '../../components/common/Chip';
-import { Button } from '../../components/common/Button';
+import { Button } from '../../components/Button';
 import { IconButton } from '../../components/common/IconButton';
 import { SettingsRow } from '../../components/common/SettingsRow';
 import { INTENT_OPTIONS, READINESS_OPTIONS } from '../../components/discover/browseOptions';
@@ -32,9 +32,8 @@ import { profileCompletion } from '../../utils/profileCompletion';
 import { radius, spacing, typography } from '../../theme';
 import type { Palette } from '../../theme/palettes';
 
-type Props = MainTabScreenProps<'Profile'>;
-
-export function ProfileScreen({ navigation }: Props) {
+export function ProfileScreen() {
+  const router = useRouter();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
@@ -103,7 +102,7 @@ export function ProfileScreen({ navigation }: Props) {
         <Animated.View entering={FadeInUp.delay(60).duration(320)} style={styles.bannerActions}>
           <IconButton
             icon="notifications-outline"
-            onPress={() => navigation.navigate('Notifications')}
+            onPress={() => router.push('/notifications')}
             background="rgba(255,255,255,0.2)"
             color="#FFFFFF"
             badge={unreadCount}
@@ -111,7 +110,7 @@ export function ProfileScreen({ navigation }: Props) {
           />
           <IconButton
             icon="settings-outline"
-            onPress={() => navigation.navigate('Settings')}
+            onPress={() => router.push('/settings')}
             background="rgba(255,255,255,0.2)"
             color="#FFFFFF"
             style={styles.noBorder}
@@ -145,7 +144,7 @@ export function ProfileScreen({ navigation }: Props) {
 
         <View style={styles.badgeRow}>
           {user.isExplorePlus && (
-            <Pressable onPress={() => navigation.navigate('ExplorePlus')}>
+            <Pressable onPress={() => router.push('/explore-plus')}>
               <Badge label={t('profile.premiumBadge')} tone="premium" icon="sparkles" />
             </Pressable>
           )}
@@ -153,7 +152,7 @@ export function ProfileScreen({ navigation }: Props) {
           <Badge label={t(`intent.${user.intent}Title`)} tone="neutral" />
         </View>
 
-        <Button label={t('profile.editProfile')} variant="secondary" onPress={() => navigation.navigate('EditProfile')} style={styles.editButton} />
+        <Button label={t('profile.editProfile')} variant="secondary" onPress={() => router.push('/edit-profile')} style={styles.editButton} />
       </Animated.View>
 
       <View style={styles.statsRow}>
@@ -242,7 +241,7 @@ export function ProfileScreen({ navigation }: Props) {
         <View style={styles.section}>
           <View style={styles.sectionHeaderRow}>
             <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('profile.rishtaDetails')}</Text>
-            <Button label={t('common.edit')} variant="ghost" onPress={() => navigation.navigate('RishtaProfile')} />
+            <Button label={t('common.edit')} variant="ghost" onPress={() => router.push('/rishta-profile')} />
           </View>
           <View style={styles.detailCard}>
             <ProfileRow label={t('profile.religion')} value={user.rishta.religion || '—'} rtl={rtl} />
@@ -265,10 +264,10 @@ export function ProfileScreen({ navigation }: Props) {
 
       <View style={styles.section}>
         <View style={styles.quickLinks}>
-          <QuickLinkRow icon="heart-outline" label={t('profile.favorites')} onPress={() => navigation.navigate('Favorites')} rtl={rtl} />
-          <QuickLinkRow icon="sparkles-outline" label={t('profile.subscription')} onPress={() => navigation.navigate('ExplorePlus')} rtl={rtl} />
-          <QuickLinkRow icon="notifications-outline" label={t('profile.notifications')} onPress={() => navigation.navigate('Notifications')} rtl={rtl} />
-          <QuickLinkRow icon="settings-outline" label={t('profile.settings')} onPress={() => navigation.navigate('Settings')} rtl={rtl} last />
+          <QuickLinkRow icon="heart-outline" label={t('profile.favorites')} onPress={() => router.push('/favorites')} rtl={rtl} />
+          <QuickLinkRow icon="sparkles-outline" label={t('profile.subscription')} onPress={() => router.push('/explore-plus')} rtl={rtl} />
+          <QuickLinkRow icon="notifications-outline" label={t('profile.notifications')} onPress={() => router.push('/notifications')} rtl={rtl} />
+          <QuickLinkRow icon="settings-outline" label={t('profile.settings')} onPress={() => router.push('/settings')} rtl={rtl} last />
         </View>
       </View>
 
@@ -280,7 +279,7 @@ export function ProfileScreen({ navigation }: Props) {
             label={t('profile.cnic')}
             description={user.cnicVerified ? t('profile.verified') : t('profile.notVerified')}
             right="chevron"
-            onPress={() => navigation.navigate('CnicVerification')}
+            onPress={() => router.push('/cnic-verification')}
           />
           <View style={styles.rowDivider} />
           <SettingsRow
@@ -296,7 +295,7 @@ export function ProfileScreen({ navigation }: Props) {
             label={t('profile.wali')}
             description={user.waliContact ? t('wali.statusInvited', { name: user.waliName ?? '' }) : t('wali.statusNotSet')}
             right="chevron"
-            onPress={() => navigation.navigate('WaliDashboard')}
+            onPress={() => router.push('/wali-dashboard')}
           />
         </View>
       </View>

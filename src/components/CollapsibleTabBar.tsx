@@ -9,13 +9,13 @@ import { useTabBarAnimatedStyle, TAB_BAR_BASE_HEIGHT } from '../store/TabBarVisi
 import { typography } from '../theme';
 import { scaleFont } from '../theme/responsive';
 import type { Palette } from '../theme/palettes';
-import type { MainTabParamList } from './types';
 
-const ICONS: Record<keyof MainTabParamList, { active: keyof typeof Ionicons.glyphMap; inactive: keyof typeof Ionicons.glyphMap }> = {
-  Home: { active: 'flame', inactive: 'flame-outline' },
-  Explore: { active: 'compass', inactive: 'compass-outline' },
-  Matches: { active: 'chatbubbles', inactive: 'chatbubbles-outline' },
-  Profile: { active: 'menu', inactive: 'menu-outline' },
+// Keyed by the file names under src/app/(tabs).
+const ICONS: Record<string, { active: keyof typeof Ionicons.glyphMap; inactive: keyof typeof Ionicons.glyphMap }> = {
+  home: { active: 'flame', inactive: 'flame-outline' },
+  explore: { active: 'compass', inactive: 'compass-outline' },
+  messages: { active: 'chatbubbles', inactive: 'chatbubbles-outline' },
+  profile: { active: 'menu', inactive: 'menu-outline' },
 };
 
 export function CollapsibleTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
@@ -31,7 +31,7 @@ export function CollapsibleTabBar({ state, descriptors, navigation }: BottomTabB
           const { options } = descriptors[route.key];
           const focused = state.index === index;
           const label = typeof options.title === 'string' ? options.title : route.name;
-          const iconSet = ICONS[route.name as keyof MainTabParamList];
+          const iconSet = ICONS[route.name] ?? { active: 'ellipse', inactive: 'ellipse-outline' };
           const badge = options.tabBarBadge;
           const tint = focused ? colors.teal : colors.textTertiary;
 

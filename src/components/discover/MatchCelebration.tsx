@@ -3,7 +3,7 @@ import { Image, Modal, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withSequence, withTiming } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
-import { Button } from '../common/Button';
+import { Button } from '../Button';
 import { radius, spacing, typography } from '../../theme';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';

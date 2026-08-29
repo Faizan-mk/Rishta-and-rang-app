@@ -2,9 +2,8 @@ import React, { useMemo, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import type { AppStackScreenProps } from '../../navigation/types';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
-import { Button } from '../../components/common/Button';
+import { Button } from '../../components/Button';
 import { TextField } from '../../components/common/TextField';
 import { FadeIn } from '../../components/common/FadeInUp';
 import { useLanguage } from '../../store/LanguageContext';
@@ -17,9 +16,7 @@ import { radius, spacing, typography } from '../../theme';
 import { scaleFont } from '../../theme/responsive';
 import type { Palette } from '../../theme/palettes';
 
-type Props = AppStackScreenProps<'CnicVerification'>;
-
-export function CnicVerificationScreen({}: Props) {
+export function CnicVerificationScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();

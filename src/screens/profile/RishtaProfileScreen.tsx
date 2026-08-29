@@ -1,11 +1,11 @@
 import React, { useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import type { AppStackScreenProps } from '../../navigation/types';
+import { useRouter } from 'expo-router';
 import type { RishtaReadiness } from '../../types/user';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { TextField } from '../../components/common/TextField';
 import { SelectField } from '../../components/common/SelectField';
-import { Button } from '../../components/common/Button';
+import { Button } from '../../components/Button';
 import { Chip } from '../../components/common/Chip';
 import { Badge } from '../../components/common/Badge';
 import { FadeIn } from '../../components/common/FadeInUp';
@@ -16,15 +16,14 @@ import { useTheme } from '../../store/ThemeContext';
 import { spacing, typography } from '../../theme';
 import type { Palette } from '../../theme/palettes';
 
-type Props = AppStackScreenProps<'RishtaProfile'>;
-
 const READINESS_OPTIONS: { key: RishtaReadiness; labelKey: string }[] = [
   { key: 'browsing', labelKey: 'profile.readinessBrowsing' },
   { key: 'few_months', labelKey: 'profile.readinessFewMonths' },
   { key: 'ready_now', labelKey: 'profile.readinessNow' },
 ];
 
-export function RishtaProfileScreen({ navigation }: Props) {
+export function RishtaProfileScreen() {
+  const router = useRouter();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
@@ -46,7 +45,7 @@ export function RishtaProfileScreen({ navigation }: Props) {
       rishta: { ...user.rishta, religion: religion ?? '', sect: sect ?? '', familyBackground, education, readiness },
     });
     setSaving(false);
-    navigation.goBack();
+    router.back();
   };
 
   return (
@@ -91,7 +90,7 @@ export function RishtaProfileScreen({ navigation }: Props) {
       </FadeIn>
 
       <Button label={t('common.save')} onPress={onSave} loading={saving} style={styles.submit} />
-      <Button label={t('common.cancel')} variant="ghost" onPress={() => navigation.goBack()} />
+      <Button label={t('common.cancel')} variant="ghost" onPress={() => router.back()} />
     </ScreenContainer>
   );
 }

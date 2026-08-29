@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { BottomSheet } from './BottomSheet';
-import { Button } from './Button';
+import { Button } from '../Button';
 import { radius, spacing, typography } from '../../theme';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';

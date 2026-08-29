@@ -1,22 +1,20 @@
 import React, { useMemo, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import Animated, { FadeInUp } from 'react-native-reanimated';
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import type { AuthStackParamList } from '../../navigation/types';
 import type { Intent } from '../../types/user';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
-import { Button } from '../../components/common/Button';
+import { Button } from '../../components/Button';
 import { StepHeader } from '../../components/common/StepHeader';
 import { useLanguage } from '../../store/LanguageContext';
 import { useTheme } from '../../store/ThemeContext';
 import { useDialog } from '../../store/DialogContext';
+import { useOnboarding } from '../../store/onboardingStore';
 import { radius, spacing, typography } from '../../theme';
 import { scaleFont } from '../../theme/responsive';
 import type { Palette } from '../../theme/palettes';
-
-type Props = NativeStackScreenProps<AuthStackParamList, 'IntentPhotos'>;
 
 const MAX_PHOTOS = 4;
 const MIN_PHOTOS = 2;
@@ -27,12 +25,13 @@ const OPTIONS: { key: Intent; titleKey: string; descKey: string }[] = [
   { key: 'matrimonial', titleKey: 'intent.matrimonialTitle', descKey: 'intent.matrimonialDesc' },
 ];
 
-export function IntentPhotosScreen({ navigation, route }: Props) {
+export function IntentPhotosScreen() {
+  const router = useRouter();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
   const { notify } = useDialog();
-  const { draft } = route.params;
+  const { draft, patchDraft } = useOnboarding();
   const [selected, setSelected] = useState<Intent | null>(null);
   const [photos, setPhotos] = useState<string[]>([]);
 
@@ -65,12 +64,13 @@ export function IntentPhotosScreen({ navigation, route }: Props) {
 
   const onNext = () => {
     if (!selected) return;
-    navigation.navigate('SelfieVerification', { draft: { ...draft, intent: selected, photos } });
+    patchDraft({ intent: selected, photos });
+    router.push('/selfie-verification');
   };
 
   return (
     <ScreenContainer>
-      <StepHeader total={3} current={1} onBack={() => navigation.goBack()} />
+      <StepHeader total={3} current={1} onBack={() => router.back()} />
 
       <Text style={[styles.title, rtl && styles.rtlText]}>{t('intent.title')}</Text>
       <Text style={[styles.subtitle, rtl && styles.rtlText]}>{t('intent.subtitle')}</Text>

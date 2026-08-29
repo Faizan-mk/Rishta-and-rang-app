@@ -1,3 +1,4 @@
+import * as Linking from 'expo-linking';
 import { supabase } from './supabase';
 import { mediaUpload } from './mediaUpload';
 import type { AppLanguage, Intent, ProfileMode, UserProfile } from '../types/user';
@@ -770,7 +771,17 @@ async function setReadiness(userId: string, readiness: UserProfile['rishta']['re
   await supabase.from('profiles').update({ rishta_readiness: readiness }).eq('id', userId);
 }
 
+// Sends the Supabase "reset password" email. Deliberately quiet about whether
+// the address is registered — telling an anonymous caller which emails have
+// accounts is an account-enumeration leak.
+async function requestPasswordReset(email: string): Promise<void> {
+  const redirectTo = Linking.createURL('/login');
+  const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), { redirectTo });
+  if (error && error.status !== 400 && error.status !== 422) throw error;
+}
+
 export const authService = {
+
   touchLastActive,
   setIntent,
   setReadiness,
@@ -783,4 +794,5 @@ export const authService = {
   deleteAccount,
   emailExists,
   inspectEmail,
+  requestPasswordReset,
 };

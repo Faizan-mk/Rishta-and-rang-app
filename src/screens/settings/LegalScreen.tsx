@@ -1,7 +1,6 @@
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import type { AppStackScreenProps } from '../../navigation/types';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { FadeIn } from '../../components/common/FadeInUp';
 import { useLanguage } from '../../store/LanguageContext';
@@ -9,9 +8,7 @@ import { useTheme } from '../../store/ThemeContext';
 import { radius, spacing, typography } from '../../theme';
 import type { Palette } from '../../theme/palettes';
 
-type Props = AppStackScreenProps<'Legal'>;
-
-export function LegalScreen({}: Props) {
+export function LegalScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();

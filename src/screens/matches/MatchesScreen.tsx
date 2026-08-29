@@ -1,9 +1,9 @@
 import React, { useMemo } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import type { MainTabScreenProps } from '../../navigation/types';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { TAB_BAR_BASE_HEIGHT, useHideTabBarOnScroll } from '../../store/TabBarVisibilityContext';
 import { MatchRow } from '../../components/matches/MatchRow';
@@ -18,8 +18,6 @@ import type { ProfileMode } from '../../types/user';
 import { radius, spacing, typography } from '../../theme';
 import type { Palette } from '../../theme/palettes';
 
-type Props = MainTabScreenProps<'Matches'>;
-
 // An accepted Move to Rishta is what decides the side a thread sits on. The flag
 // is the source of truth rather than `mode` alone, so threads moved before the
 // mode field started being flipped still land under Rishta.
@@ -27,7 +25,8 @@ function threadMode(match: Match): ProfileMode {
   return match.movedToRishta ? 'rishta' : match.mode;
 }
 
-export function MatchesScreen({ navigation }: Props) {
+export function MatchesScreen() {
+  const router = useRouter();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
@@ -67,7 +66,7 @@ export function MatchesScreen({ navigation }: Props) {
         keyExtractor={(item) => item.id}
         renderItem={({ item, index }) => (
           <Animated.View entering={FadeInUp.delay(Math.min(index * 60, 300)).duration(320)}>
-            <MatchRow match={item} onPress={() => navigation.navigate('Chat', { matchId: item.id })} />
+            <MatchRow match={item} onPress={() => router.push(`/chat/${item.id}`)} />
           </Animated.View>
         )}
         ItemSeparatorComponent={() => <View style={styles.separator} />}

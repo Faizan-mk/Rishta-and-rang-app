@@ -2,10 +2,9 @@ import React, { useMemo, useState } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInUp } from 'react-native-reanimated';
-import type { AppStackScreenProps } from '../../navigation/types';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { TextField } from '../../components/common/TextField';
-import { Button } from '../../components/common/Button';
+import { Button } from '../../components/Button';
 import { FadeIn } from '../../components/common/FadeInUp';
 import { useLanguage } from '../../store/LanguageContext';
 import { useAuth } from '../../store/AuthContext';
@@ -16,9 +15,7 @@ import { radius, spacing, typography } from '../../theme';
 import type { Palette } from '../../theme/palettes';
 import type { Match } from '../../types/content';
 
-type Props = AppStackScreenProps<'WaliDashboard'>;
-
-export function WaliDashboardScreen({}: Props) {
+export function WaliDashboardScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();

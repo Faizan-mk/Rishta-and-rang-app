@@ -1,10 +1,10 @@
 import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import type { AppStackScreenProps } from '../../navigation/types';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { SettingsRow } from '../../components/common/SettingsRow';
-import { Button } from '../../components/common/Button';
+import { Button } from '../../components/Button';
 import { FadeIn } from '../../components/common/FadeInUp';
 import { useLanguage } from '../../store/LanguageContext';
 import { useAuth } from '../../store/AuthContext';
@@ -14,8 +14,6 @@ import { useDialog } from '../../store/DialogContext';
 import { radius, spacing, typography } from '../../theme';
 import type { Palette } from '../../theme/palettes';
 import type { NotificationPrefs } from '../../types/content';
-
-type Props = AppStackScreenProps<'Settings'>;
 
 const THEME_OPTIONS: { key: ThemeMode; labelKey: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { key: 'light', labelKey: 'settings.light', icon: 'sunny-outline' },
@@ -31,7 +29,8 @@ const NOTIF_ROWS: { key: keyof NotificationPrefs; labelKey: string }[] = [
   { key: 'productUpdates', labelKey: 'settings.notifProductUpdates' },
 ];
 
-export function SettingsScreen({ navigation }: Props) {
+export function SettingsScreen() {
+  const router = useRouter();
   const { colors, mode, setMode } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl, language, setLanguage } = useLanguage();
@@ -110,15 +109,15 @@ export function SettingsScreen({ navigation }: Props) {
       <FadeIn delay={190}>
         <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('settings.account')}</Text>
         <View style={styles.card}>
-          <SettingsRow icon="sparkles-outline" label={t('settings.subscription')} right="chevron" onPress={() => navigation.navigate('ExplorePlus')} />
+          <SettingsRow icon="sparkles-outline" label={t('settings.subscription')} right="chevron" onPress={() => router.push('/explore-plus')} />
           <View style={styles.divider} />
-          <SettingsRow icon="heart-outline" label={t('profile.favorites')} right="chevron" onPress={() => navigation.navigate('Favorites')} />
+          <SettingsRow icon="heart-outline" label={t('profile.favorites')} right="chevron" onPress={() => router.push('/favorites')} />
           <View style={styles.divider} />
-          <SettingsRow icon="shield-checkmark-outline" label={t('settings.privacy')} right="chevron" onPress={() => navigation.navigate('PrivacySafety')} />
+          <SettingsRow icon="shield-checkmark-outline" label={t('settings.privacy')} right="chevron" onPress={() => router.push('/privacy-safety')} />
           <View style={styles.divider} />
-          <SettingsRow icon="help-circle-outline" label={t('settings.help')} right="chevron" onPress={() => navigation.navigate('HelpSupport')} />
+          <SettingsRow icon="help-circle-outline" label={t('settings.help')} right="chevron" onPress={() => router.push('/help-support')} />
           <View style={styles.divider} />
-          <SettingsRow icon="document-text-outline" label={t('settings.legal')} right="chevron" onPress={() => navigation.navigate('Legal')} />
+          <SettingsRow icon="document-text-outline" label={t('settings.legal')} right="chevron" onPress={() => router.push('/legal')} />
         </View>
       </FadeIn>
 

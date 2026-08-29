@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
-import { Button } from './Button';
+import { Button } from '../Button';
 import { radius, spacing, typography } from '../../theme';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';

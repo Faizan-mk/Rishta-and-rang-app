@@ -2,7 +2,6 @@ import React, { useMemo } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInUp } from 'react-native-reanimated';
-import type { AppStackScreenProps } from '../../navigation/types';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { NotificationRow } from '../../components/dashboard/NotificationRow';
 import { FadeIn } from '../../components/common/FadeInUp';
@@ -12,9 +11,7 @@ import { useNotifications } from '../../store/NotificationContext';
 import { spacing, typography } from '../../theme';
 import type { Palette } from '../../theme/palettes';
 
-type Props = AppStackScreenProps<'Notifications'>;
-
-export function NotificationsScreen(_props: Props) {
+export function NotificationsScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();

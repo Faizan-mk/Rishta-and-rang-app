@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { FlatList, Image, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import * as ImagePicker from 'expo-image-picker';
 import { useAudioRecorder, RecordingPresets, requestRecordingPermissionsAsync } from 'expo-audio';
-import type { AppStackScreenProps } from '../../navigation/types';
 import { MessageBubble } from '../../components/matches/MessageBubble';
 import { Badge } from '../../components/common/Badge';
 import { ReportDialog } from '../../components/common/ReportDialog';
@@ -17,14 +17,13 @@ import { useMatches } from '../../store/MatchesContext';
 import { radius, spacing, typography } from '../../theme';
 import type { Palette } from '../../theme/palettes';
 
-type Props = AppStackScreenProps<'Chat'>;
-
-export function ChatScreen({ navigation, route }: Props) {
+export function ChatScreen() {
+  const router = useRouter();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
   const { confirm, notify } = useDialog();
-  const { matchId } = route.params;
+  const { id: matchId } = useLocalSearchParams<{ id: string }>();
   const {
     getMatch,
     getMessages,
@@ -115,7 +114,7 @@ export function ChatScreen({ navigation, route }: Props) {
     });
     if (confirmed) {
       blockMatch(matchId);
-      navigation.goBack();
+      router.back();
     }
   };
 
@@ -129,7 +128,7 @@ export function ChatScreen({ navigation, route }: Props) {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <FadeIn style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
+        <Pressable onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name={rtl ? 'chevron-forward' : 'chevron-back'} size={22} color={colors.textPrimary} />
         </Pressable>
         <Image source={{ uri: match.photo }} style={styles.headerAvatar} />
@@ -137,10 +136,10 @@ export function ChatScreen({ navigation, route }: Props) {
           <Text style={styles.headerName}>{match.name}</Text>
           {match.movedToRishta && <Badge label={t('matches.movedToRishta')} tone="rishta" />}
         </View>
-        <Pressable onPress={() => navigation.navigate('Call', { name: match.name, photo: match.photo })} style={styles.headerIconButton}>
+        <Pressable onPress={() => router.push({ pathname: '/call', params: { name: match.name, photo: match.photo } })} style={styles.headerIconButton}>
           <Ionicons name="call-outline" size={20} color={colors.teal} />
         </Pressable>
-        <Pressable onPress={() => navigation.navigate('Call', { name: match.name, photo: match.photo, video: true })} style={styles.headerIconButton}>
+        <Pressable onPress={() => router.push({ pathname: '/call', params: { name: match.name, photo: match.photo, video: '1' } })} style={styles.headerIconButton}>
           <Ionicons name="videocam-outline" size={20} color={colors.teal} />
         </Pressable>
         <Pressable onPress={onBlock} style={styles.headerIconButton}>

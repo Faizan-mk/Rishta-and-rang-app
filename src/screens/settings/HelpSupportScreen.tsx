@@ -2,23 +2,20 @@ import React, { useMemo, useState } from 'react';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { FadeIn } from '../../components/common/FadeInUp';
-import type { AppStackScreenProps } from '../../navigation/types';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { TextField } from '../../components/common/TextField';
-import { Button } from '../../components/common/Button';
+import { Button } from '../../components/Button';
 import { useLanguage } from '../../store/LanguageContext';
 import { useTheme } from '../../store/ThemeContext';
 import { useDialog } from '../../store/DialogContext';
 import { radius, spacing, typography } from '../../theme';
 import type { Palette } from '../../theme/palettes';
 
-type Props = AppStackScreenProps<'HelpSupport'>;
-
 const FAQ_KEYS = ['selfie', 'subscription', 'reporting', 'changeDetails', 'deleteAccount', 'safety'];
 
 const SUPPORT_EMAIL = 'support@rishtaandrang.app';
 
-export function HelpSupportScreen({}: Props) {
+export function HelpSupportScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();

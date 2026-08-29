@@ -29,7 +29,15 @@
     "emailPlaceholder": "you@example.com",
     "passwordPlaceholder": "Enter your password",
     "invalidEmail": "Enter a valid email address.",
-    "missingPassword": "Enter your password."
+    "missingPassword": "Enter your password.",
+    "forgotPassword": "Forgot password?"
+  },
+  "forgot": {
+    "title": "Reset your password",
+    "subtitle": "Enter your email and we'll send you a reset link.",
+    "submit": "Send reset link",
+    "sent": "If an account exists for that email, a reset link is on its way. Check your inbox and spam folder.",
+    "backToLogin": "Back to log in"
   },
   "signup": {
     "title": "Create your account",

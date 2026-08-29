@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { CameraView, useCameraPermissions, type CameraType } from 'expo-camera';
@@ -13,15 +14,12 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import type { AppStackScreenProps } from '../../navigation/types';
-import { Button } from '../../components/common/Button';
+import { Button } from '../../components/Button';
 import { FadeIn } from '../../components/common/FadeInUp';
 import { useLanguage } from '../../store/LanguageContext';
 import { useTheme } from '../../store/ThemeContext';
 import { radius, spacing, typography } from '../../theme';
 import type { Palette } from '../../theme/palettes';
-
-type Props = AppStackScreenProps<'Call'>;
 
 function formatDuration(totalSeconds: number): string {
   const m = Math.floor(totalSeconds / 60);
@@ -29,11 +27,14 @@ function formatDuration(totalSeconds: number): string {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
-export function CallScreen({ navigation, route }: Props) {
+export function CallScreen() {
+  const router = useRouter();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
-  const { name, photo, video } = route.params;
+  const params = useLocalSearchParams<{ name: string; photo: string; video?: string }>();
+  const { name, photo } = params;
+  const video = params.video === '1';
 
   const [connected, setConnected] = useState(false);
   const [seconds, setSeconds] = useState(0);
@@ -73,7 +74,7 @@ export function CallScreen({ navigation, route }: Props) {
     opacity: ringOpacity.value,
   }));
 
-  const endCall = () => navigation.goBack();
+  const endCall = () => router.back();
   const flipCamera = () => setFacing((f) => (f === 'front' ? 'back' : 'front'));
 
   const isVideo = Boolean(video);
