@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
@@ -10,7 +11,8 @@ import { useLanguage } from '../../store/LanguageContext';
 import { useTheme } from '../../store/ThemeContext';
 import { isValidEmail } from '../../utils/validation';
 import { authService } from '../../services/authService';
-import { spacing, typography } from '../../theme';
+import { radius, spacing, typography } from '../../theme';
+import { withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 
 export function ForgotPasswordScreen() {
@@ -58,10 +60,26 @@ export function ForgotPasswordScreen() {
           keyboardType="email-address"
         />
 
-        {error ? <Text style={[styles.errorText, rtl && styles.rtlText]}>{error}</Text> : null}
-        {sent ? <Text style={[styles.sentText, rtl && styles.rtlText]}>{t('forgot.sent')}</Text> : null}
+        {error ? (
+          <View style={[styles.noticeCard, styles.errorCard]}>
+            <Ionicons name="alert-circle" size={16} color={colors.danger} />
+            <Text style={[styles.errorText, rtl && styles.rtlText]}>{error}</Text>
+          </View>
+        ) : null}
+        {sent ? (
+          <View style={[styles.noticeCard, styles.sentCard]}>
+            <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+            <Text style={[styles.sentText, rtl && styles.rtlText]}>{t('forgot.sent')}</Text>
+          </View>
+        ) : null}
 
-        <Button label={t('forgot.submit')} onPress={onSubmit} loading={loading} style={styles.submit} />
+        <Button
+          label={t('forgot.submit')}
+          onPress={onSubmit}
+          loading={loading}
+          gradient={[colors.teal, colors.sage]}
+          style={styles.submit}
+        />
         <Button label={t('forgot.backToLogin')} variant="ghost" onPress={() => router.back()} />
       </Animated.View>
     </ScreenContainer>
@@ -72,7 +90,19 @@ const makeStyles = (colors: Palette) =>
   StyleSheet.create({
     subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg },
     submit: { marginTop: spacing.sm },
-    errorText: { ...typography.caption, color: colors.danger, marginBottom: spacing.sm },
-    sentText: { ...typography.caption, color: colors.teal, marginBottom: spacing.sm },
+    noticeCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+      borderWidth: 1,
+      borderRadius: radius.md,
+      paddingHorizontal: spacing.sm + 2,
+      paddingVertical: spacing.sm,
+      marginBottom: spacing.sm,
+    },
+    errorCard: { backgroundColor: withAlpha(colors.danger, 0.1), borderColor: withAlpha(colors.danger, 0.35) },
+    sentCard: { backgroundColor: withAlpha(colors.success, 0.1), borderColor: withAlpha(colors.success, 0.35) },
+    errorText: { ...typography.caption, color: colors.danger, fontWeight: '700', flexShrink: 1 },
+    sentText: { ...typography.caption, color: colors.success, fontWeight: '700', flexShrink: 1 },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   });

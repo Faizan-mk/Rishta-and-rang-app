@@ -2,12 +2,15 @@ import React, { useMemo } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { TAB_BAR_BASE_HEIGHT, useHideTabBarOnScroll } from '../../store/TabBarVisibilityContext';
 import { MatchRow } from '../../components/matches/MatchRow';
 import { ModeToggle } from '../../components/profile/ModeToggle';
+import { AccentHeading } from '../../components/common/AccentHeading';
+import { AuroraBackground } from '../../components/common/AuroraBackground';
 import { FadeIn } from '../../components/common/FadeInUp';
 import { useAuth } from '../../store/AuthContext';
 import { useLanguage } from '../../store/LanguageContext';
@@ -16,7 +19,11 @@ import { useMatches } from '../../store/MatchesContext';
 import type { Match } from '../../types/content';
 import type { ProfileMode } from '../../types/user';
 import { radius, spacing, typography } from '../../theme';
+import { glow, modeAccent } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
+
+const GRADIENT_START = { x: 0, y: 0 } as const;
+const GRADIENT_END = { x: 1, y: 1 } as const;
 
 // An accepted Move to Rishta is what decides the side a thread sits on. The flag
 // is the source of truth rather than `mode` alone, so threads moved before the
@@ -38,6 +45,7 @@ export function MatchesScreen() {
   // Threads live in the same two modes as the decks: a match stays in Friends
   // until both sides accept a Move to Rishta, which flips it over to Rishta.
   const mode: ProfileMode = user?.activeMode ?? 'dating';
+  const accent = modeAccent(colors, mode);
   const friendsMatches = useMemo(() => matches.filter((m) => threadMode(m) === 'dating'), [matches]);
   const rishtaMatches = useMemo(() => matches.filter((m) => threadMode(m) === 'rishta'), [matches]);
   const visibleMatches = mode === 'dating' ? friendsMatches : rishtaMatches;
@@ -45,10 +53,33 @@ export function MatchesScreen() {
   const otherMode: ProfileMode = mode === 'dating' ? 'rishta' : 'dating';
   const otherCount = otherMode === 'dating' ? friendsMatches.length : rishtaMatches.length;
   const otherModeLabel = t(otherMode === 'dating' ? 'profile.datingMode' : 'profile.rishtaMode');
+  const unreadCount = visibleMatches.filter((m) => m.unread).length;
 
   return (
     <ScreenContainer scroll={false} edges={['top']}>
-      <FadeIn><Text style={[styles.title, rtl && styles.rtlText]}>{t('matches.title')}</Text></FadeIn>
+      <AuroraBackground colors={colors} mode={mode} bleed={spacing.lg} />
+
+      <FadeIn>
+        <AccentHeading
+          size="screen"
+          title={t('matches.title')}
+          gradient={accent.ramp}
+          style={styles.heading}
+          right={
+            unreadCount > 0 ? (
+              <LinearGradient
+                colors={accent.duo}
+                start={GRADIENT_START}
+                end={GRADIENT_END}
+                style={[styles.unreadPill, glow(accent.primary, 0.55, 12, 5)]}
+              >
+                <View style={styles.unreadDot} />
+                <Text style={styles.unreadPillText}>{unreadCount}</Text>
+              </LinearGradient>
+            ) : undefined
+          }
+        />
+      </FadeIn>
 
       <View style={styles.toggleWrap}>
         <ModeToggle
@@ -76,7 +107,14 @@ export function MatchesScreen() {
         contentContainerStyle={[styles.listContent, { paddingBottom: TAB_BAR_BASE_HEIGHT + insets.bottom + spacing.lg }]}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Ionicons name="chatbubbles-outline" size={32} color={colors.textTertiary} />
+            <LinearGradient
+              colors={accent.ramp}
+              start={GRADIENT_START}
+              end={GRADIENT_END}
+              style={[styles.emptyOrb, glow(accent.primary, 0.5, 22, 10)]}
+            >
+              <Ionicons name="chatbubbles" size={32} color="#FFFFFF" />
+            </LinearGradient>
             <Text style={[styles.emptyText, rtl && styles.rtlText]}>
               {t(mode === 'dating' ? 'matches.emptyFriends' : 'matches.emptyRishta')}
             </Text>
@@ -87,8 +125,15 @@ export function MatchesScreen() {
                 <Text style={[styles.emptyHint, rtl && styles.rtlText]}>
                   {t('matches.otherModeHint', { count: otherCount, mode: otherModeLabel })}
                 </Text>
-                <Pressable onPress={() => setActiveMode(otherMode)} style={styles.switchButton}>
-                  <Text style={styles.switchLabel}>{t('matches.switchTo', { mode: otherModeLabel })}</Text>
+                <Pressable onPress={() => setActiveMode(otherMode)}>
+                  <LinearGradient
+                    colors={modeAccent(colors, otherMode).duo}
+                    start={GRADIENT_START}
+                    end={GRADIENT_END}
+                    style={[styles.switchButton, glow(modeAccent(colors, otherMode).primary, 0.5, 14, 6)]}
+                  >
+                    <Text style={styles.switchLabel}>{t('matches.switchTo', { mode: otherModeLabel })}</Text>
+                  </LinearGradient>
                 </Pressable>
               </>
             )}
@@ -101,20 +146,30 @@ export function MatchesScreen() {
 
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
-    title: { ...typography.h1, color: colors.textPrimary, marginBottom: spacing.md },
+    heading: { marginBottom: spacing.md },
+    unreadPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+      borderRadius: radius.pill,
+      paddingHorizontal: spacing.sm + 2,
+      paddingVertical: 5,
+    },
+    unreadDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#FFFFFF' },
+    unreadPillText: { ...typography.caption, color: '#FFFFFF', fontWeight: '800' },
     toggleWrap: { paddingBottom: spacing.md },
-    separator: { height: 1, backgroundColor: colors.borderSoft },
+    // The rows are cards now, so the list is spaced rather than ruled.
+    separator: { height: spacing.sm },
     listContent: { paddingBottom: spacing.xl },
     emptyState: { alignItems: 'center', justifyContent: 'center', paddingTop: spacing.xxl, gap: spacing.md },
+    emptyOrb: { width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center' },
     emptyText: { ...typography.body, color: colors.textSecondary, textAlign: 'center', paddingHorizontal: spacing.xl },
     emptyHint: { ...typography.caption, color: colors.textTertiary, textAlign: 'center', paddingHorizontal: spacing.xl },
     switchButton: {
       borderRadius: radius.pill,
-      borderWidth: 1.5,
-      borderColor: colors.rishta,
       paddingHorizontal: spacing.lg,
-      paddingVertical: spacing.sm,
+      paddingVertical: spacing.sm + 2,
     },
-    switchLabel: { ...typography.label, color: colors.rishta, fontWeight: '700' },
+    switchLabel: { ...typography.label, color: '#FFFFFF', fontWeight: '800' },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   });

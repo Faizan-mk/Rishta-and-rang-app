@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { radius } from '../../theme';
 import { scaleFont } from '../../theme/responsive';
+import { glow, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 
@@ -38,7 +39,7 @@ export function IconButton({ icon, onPress, size = 20, color, background, badge,
     >
       <Ionicons name={icon} size={size} color={color ?? colors.textPrimary} />
       {typeof badge === 'number' && badge > 0 && (
-        <Animated.View style={styles.badge}>
+        <Animated.View style={[styles.badge, glow(colors.danger, 0.75, 8, 4)]}>
           <Text style={styles.badgeText}>{badge > 9 ? '9+' : badge}</Text>
         </Animated.View>
       )}
@@ -49,11 +50,11 @@ export function IconButton({ icon, onPress, size = 20, color, background, badge,
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
     button: {
-      width: 40,
-      height: 40,
+      width: 42,
+      height: 42,
       borderRadius: radius.pill,
       borderWidth: 1,
-      borderColor: colors.border,
+      borderColor: withAlpha(colors.textPrimary, 0.08),
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -68,6 +69,8 @@ const makeStyles = (colors: Palette) =>
       alignItems: 'center',
       justifyContent: 'center',
       paddingHorizontal: 3,
+      borderWidth: 1.5,
+      borderColor: colors.surface,
     },
-    badgeText: { color: '#FFFFFF', fontSize: scaleFont(10), fontWeight: '700' },
+    badgeText: { color: '#FFFFFF', fontSize: scaleFont(10), fontWeight: '800' },
   });

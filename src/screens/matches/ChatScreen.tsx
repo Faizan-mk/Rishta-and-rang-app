@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { FlatList, Image, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import * as ImagePicker from 'expo-image-picker';
@@ -15,7 +16,11 @@ import { useTheme } from '../../store/ThemeContext';
 import { useDialog } from '../../store/DialogContext';
 import { useMatches } from '../../store/MatchesContext';
 import { radius, spacing, typography } from '../../theme';
+import { glow, modeAccent, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
+
+const GRADIENT_START = { x: 0, y: 0 } as const;
+const GRADIENT_END = { x: 1, y: 1 } as const;
 
 export function ChatScreen() {
   const router = useRouter();
@@ -48,6 +53,9 @@ export function ChatScreen() {
   }, [matchId]);
 
   if (!match) return null;
+
+  // The thread's own world colours the header and the outgoing bubbles' company.
+  const accent = modeAccent(colors, match.movedToRishta ? 'rishta' : match.mode);
 
   const sendMessage = () => {
     const trimmed = draft.trim();
@@ -131,7 +139,14 @@ export function ChatScreen() {
         <Pressable onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name={rtl ? 'chevron-forward' : 'chevron-back'} size={22} color={colors.textPrimary} />
         </Pressable>
-        <Image source={{ uri: match.photo }} style={styles.headerAvatar} />
+        <LinearGradient
+          colors={accent.ramp}
+          start={GRADIENT_START}
+          end={GRADIENT_END}
+          style={styles.headerAvatarRing}
+        >
+          <Image source={{ uri: match.photo }} style={styles.headerAvatar} />
+        </LinearGradient>
         <View style={styles.headerTextWrap}>
           <Text style={styles.headerName}>{match.name}</Text>
           {match.movedToRishta && <Badge label={t('matches.movedToRishta')} tone="rishta" />}
@@ -155,12 +170,19 @@ export function ChatScreen() {
           <Pressable
             onPress={onMoveToRishta}
             disabled={match.rishtaRequestPending}
-            style={[styles.moveToRishtaBar, match.rishtaRequestPending && styles.moveToRishtaBarPending]}
+            style={[styles.moveToRishtaWrap, match.rishtaRequestPending && styles.moveToRishtaBarPending]}
           >
-            <Ionicons name={match.rishtaRequestPending ? 'time-outline' : 'git-merge'} size={16} color={colors.rishta} />
-            <Text style={styles.moveToRishtaText}>
-              {match.rishtaRequestPending ? t('chat.moveToRishtaPending') : t('chat.moveToRishta')}
-            </Text>
+            <LinearGradient
+              colors={[colors.rishta, colors.plum]}
+              start={GRADIENT_START}
+              end={GRADIENT_END}
+              style={[styles.moveToRishtaBar, glow(colors.rishta, 0.45, 12, 5)]}
+            >
+              <Ionicons name={match.rishtaRequestPending ? 'time-outline' : 'git-merge'} size={16} color="#FFFFFF" />
+              <Text style={styles.moveToRishtaText}>
+                {match.rishtaRequestPending ? t('chat.moveToRishtaPending') : t('chat.moveToRishta')}
+              </Text>
+            </LinearGradient>
           </Pressable>
         </FadeIn>
       )}
@@ -200,16 +222,27 @@ export function ChatScreen() {
           )}
 
           {draft.trim() ? (
-            <Pressable onPress={sendMessage} style={styles.sendButton}>
-              <Ionicons name="send" size={18} color={colors.textInverse} />
+            <Pressable onPress={sendMessage}>
+              <LinearGradient
+                colors={[colors.teal, colors.sage]}
+                start={GRADIENT_START}
+                end={GRADIENT_END}
+                style={[styles.sendButton, glow(colors.teal, 0.6, 14, 6)]}
+              >
+                <Ionicons name="send" size={18} color="#FFFFFF" />
+              </LinearGradient>
             </Pressable>
           ) : (
-            <Pressable
-              onPressIn={startRecording}
-              onPressOut={stopRecording}
-              style={[styles.sendButton, recording && styles.sendButtonRecording]}
-            >
-              <Ionicons name="mic" size={18} color={colors.textInverse} />
+            <Pressable onPressIn={startRecording} onPressOut={stopRecording}>
+              {recording ? (
+                <View style={[styles.sendButton, styles.sendButtonRecording, glow(colors.danger, 0.7, 14, 6)]}>
+                  <Ionicons name="mic" size={18} color="#FFFFFF" />
+                </View>
+              ) : (
+                <View style={[styles.sendButton, styles.sendButtonIdle]}>
+                  <Ionicons name="mic" size={18} color={colors.teal} />
+                </View>
+              )}
             </Pressable>
           )}
         </View>
@@ -234,41 +267,44 @@ const makeStyles = (colors: Palette) =>
       alignItems: 'center',
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border,
-      backgroundColor: colors.surface,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.borderSoft,
+      backgroundColor: colors.surfaceElevated,
     },
     backButton: { padding: spacing.xs, marginRight: spacing.xs },
-    headerAvatar: { width: 36, height: 36, borderRadius: radius.pill, backgroundColor: colors.skeleton },
+    headerAvatarRing: { width: 42, height: 42, borderRadius: radius.pill, padding: 2 },
+    headerAvatar: { width: '100%', height: '100%', borderRadius: radius.pill, backgroundColor: colors.skeleton },
     headerTextWrap: { flex: 1, marginLeft: spacing.sm, gap: 2 },
-    headerName: { ...typography.bodyBold, color: colors.textPrimary },
+    headerName: { ...typography.bodyBold, color: colors.textPrimary, fontWeight: '800' },
     headerIconButton: { padding: spacing.xs, marginLeft: spacing.xs },
+    moveToRishtaWrap: { paddingHorizontal: spacing.md, paddingTop: spacing.sm },
     moveToRishtaBar: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
       gap: spacing.xs,
-      backgroundColor: colors.rishtaSoft,
-      paddingVertical: spacing.sm,
+      borderRadius: radius.pill,
+      paddingVertical: spacing.sm + 2,
     },
     moveToRishtaBarPending: { opacity: 0.6 },
-    moveToRishtaText: { ...typography.label, color: colors.rishta },
+    moveToRishtaText: { ...typography.label, color: '#FFFFFF', fontWeight: '800' },
     listContent: { padding: spacing.md, flexGrow: 1, justifyContent: 'flex-end' },
     inputRow: {
       flexDirection: 'row',
       alignItems: 'flex-end',
       padding: spacing.sm,
       gap: spacing.sm,
-      borderTopWidth: 1,
-      borderTopColor: colors.border,
-      backgroundColor: colors.surface,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: colors.borderSoft,
+      backgroundColor: colors.surfaceElevated,
     },
     input: {
       flex: 1,
       maxHeight: 100,
       borderWidth: 1.5,
-      borderColor: colors.border,
-      borderRadius: radius.lg,
+      borderColor: colors.borderSoft,
+      backgroundColor: withAlpha(colors.textPrimary, 0.04),
+      borderRadius: radius.pill,
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
       color: colors.textPrimary,
@@ -284,15 +320,19 @@ const makeStyles = (colors: Palette) =>
       minHeight: 40,
       paddingHorizontal: spacing.md,
     },
-    recordingDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.danger },
-    recordingText: { ...typography.body, color: colors.danger },
+    recordingDot: { width: 9, height: 9, borderRadius: 5, backgroundColor: colors.danger },
+    recordingText: { ...typography.body, color: colors.danger, fontWeight: '700' },
     sendButton: {
-      width: 44,
-      height: 44,
+      width: 46,
+      height: 46,
       borderRadius: radius.pill,
-      backgroundColor: colors.teal,
       alignItems: 'center',
       justifyContent: 'center',
+    },
+    sendButtonIdle: {
+      backgroundColor: withAlpha(colors.teal, 0.12),
+      borderWidth: 1.5,
+      borderColor: withAlpha(colors.teal, 0.35),
     },
     sendButtonRecording: { backgroundColor: colors.danger },
   });

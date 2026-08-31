@@ -2,13 +2,17 @@ import React, { useMemo } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInUp } from 'react-native-reanimated';
+import { AccentHeading } from '../../components/common/AccentHeading';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { ProfileCard } from '../../components/ProfileCard';
 import { useFavorites, FavoriteProfile } from '../../store/FavoritesContext';
 import { useLanguage } from '../../store/LanguageContext';
 import { useTheme } from '../../store/ThemeContext';
-import { spacing, typography } from '../../theme';
+import { useAuth } from '../../store/AuthContext';
+import { radius, spacing, typography } from '../../theme';
+import { glow, modeAccent, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 
 export function FavoritesScreen() {
@@ -17,6 +21,8 @@ export function FavoritesScreen() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
   const { favorites, removeFavorite } = useFavorites();
+  const { user } = useAuth();
+  const accent = modeAccent(colors, user?.activeMode ?? 'dating');
 
   const renderItem = ({ item, index }: { item: FavoriteProfile; index: number }) => (
     <Animated.View entering={FadeInUp.delay(Math.min(index * 60, 300)).duration(360)}>
@@ -38,6 +44,13 @@ export function FavoritesScreen() {
 
   return (
     <ScreenContainer scroll={false}>
+      <AccentHeading
+        size="screen"
+        title={t('profile.favorites')}
+        gradient={accent.ramp}
+        style={styles.heading}
+      />
+
       <FlatList
         data={favorites}
         keyExtractor={(item) => item.id}
@@ -46,7 +59,14 @@ export function FavoritesScreen() {
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Ionicons name="heart-outline" size={32} color={colors.textTertiary} />
+            <LinearGradient
+              colors={accent.ramp}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={[styles.emptyOrb, glow(accent.primary, 0.5, 22, 10)]}
+            >
+              <Ionicons name="heart" size={30} color="#FFFFFF" />
+            </LinearGradient>
             <Text style={[styles.emptyText, rtl && styles.rtlText]}>{t('favorites.empty')}</Text>
           </View>
         }
@@ -57,8 +77,14 @@ export function FavoritesScreen() {
 
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
-    removeButton: { padding: spacing.xs },
+    heading: { marginBottom: spacing.md },
+    removeButton: {
+      padding: spacing.sm,
+      borderRadius: radius.pill,
+      backgroundColor: withAlpha(colors.dating, 0.12),
+    },
     listContent: { paddingBottom: spacing.xl },
+    emptyOrb: { width: 78, height: 78, borderRadius: 39, alignItems: 'center', justifyContent: 'center' },
     emptyState: { alignItems: 'center', justifyContent: 'center', paddingTop: spacing.xxl, gap: spacing.md },
     emptyText: { ...typography.body, color: colors.textSecondary, textAlign: 'center', paddingHorizontal: spacing.xl },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },

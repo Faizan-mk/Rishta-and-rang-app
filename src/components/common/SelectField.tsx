@@ -3,6 +3,7 @@ import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-na
 import { Ionicons } from '@expo/vector-icons';
 import { BottomSheet } from './BottomSheet';
 import { radius, spacing, typography } from '../../theme';
+import { withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
@@ -49,7 +50,9 @@ export function SelectField({ label, value, options, onChange, allowAll, allLabe
         <Text style={[styles.value, !displayValue && styles.placeholder, rtl && styles.rtlText]}>
           {displayValue ?? placeholder ?? '—'}
         </Text>
-        <Ionicons name="chevron-down" size={18} color={colors.textSecondary} />
+        <View style={styles.chevronTile}>
+          <Ionicons name="chevron-down" size={16} color={colors.teal} />
+        </View>
       </Pressable>
       {error ? <Text style={[styles.errorText, rtl && styles.rtlText]}>{error}</Text> : null}
 
@@ -94,17 +97,25 @@ export function SelectField({ label, value, options, onChange, allowAll, allLabe
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
     container: { marginBottom: spacing.md },
-    label: { ...typography.label, color: colors.textPrimary, marginBottom: spacing.xs },
+    label: { ...typography.label, color: colors.textPrimary, marginBottom: spacing.xs, fontWeight: '700' },
     field: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
       borderWidth: 1.5,
-      borderColor: colors.border,
+      borderColor: colors.borderSoft,
       borderRadius: radius.md,
       paddingHorizontal: spacing.md,
-      paddingVertical: spacing.sm + 4,
+      paddingVertical: spacing.sm + 2,
       backgroundColor: colors.surface,
+    },
+    chevronTile: {
+      width: 26,
+      height: 26,
+      borderRadius: radius.sm,
+      backgroundColor: withAlpha(colors.teal, 0.12),
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     fieldError: { borderColor: colors.danger },
     value: { ...typography.body, color: colors.textPrimary },
@@ -135,7 +146,7 @@ const makeStyles = (colors: Palette) =>
       borderBottomColor: colors.borderSoft,
     },
     optionText: { ...typography.body, color: colors.textPrimary },
-    optionTextSelected: { color: colors.teal, fontWeight: '700' },
+    optionTextSelected: { color: colors.teal, fontWeight: '800' },
     emptyText: { ...typography.body, color: colors.textSecondary, textAlign: 'center', paddingVertical: spacing.lg },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   });

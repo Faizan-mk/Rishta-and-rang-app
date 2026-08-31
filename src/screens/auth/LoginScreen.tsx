@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { TextField } from '../../components/common/TextField';
@@ -10,7 +11,8 @@ import { useLanguage } from '../../store/LanguageContext';
 import { useAuth } from '../../store/AuthContext';
 import { useTheme } from '../../store/ThemeContext';
 import { isValidEmail } from '../../utils/validation';
-import { spacing, typography } from '../../theme';
+import { radius, spacing, typography } from '../../theme';
+import { withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 
 export function LoginScreen() {
@@ -70,9 +72,20 @@ export function LoginScreen() {
           secureTextEntry
         />
 
-        {error ? <Text style={[styles.errorText, rtl && styles.rtlText]}>{error}</Text> : null}
+        {error ? (
+          <View style={styles.errorCard}>
+            <Ionicons name="alert-circle" size={16} color={colors.danger} />
+            <Text style={[styles.errorText, rtl && styles.rtlText]}>{error}</Text>
+          </View>
+        ) : null}
 
-        <Button label={t('login.submit')} onPress={onSubmit} loading={loading} style={styles.submit} />
+        <Button
+          label={t('login.submit')}
+          onPress={onSubmit}
+          loading={loading}
+          gradient={[colors.teal, colors.sage]}
+          style={styles.submit}
+        />
         <Button label={t('login.forgotPassword')} variant="ghost" onPress={() => router.push('/forgot-password')} />
       </Animated.View>
 
@@ -87,10 +100,22 @@ export function LoginScreen() {
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
     header: { alignItems: 'center', marginBottom: spacing.lg },
-    title: { ...typography.h1, color: colors.textPrimary, marginTop: spacing.md },
+    title: { ...typography.h1, color: colors.textPrimary, marginTop: spacing.md, fontWeight: '800' },
     subtitle: { ...typography.body, color: colors.textSecondary, marginTop: spacing.xs, textAlign: 'center' },
     submit: { marginTop: spacing.sm },
-    errorText: { ...typography.caption, color: colors.danger, marginBottom: spacing.sm },
+    errorCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+      backgroundColor: withAlpha(colors.danger, 0.1),
+      borderWidth: 1,
+      borderColor: withAlpha(colors.danger, 0.35),
+      borderRadius: radius.md,
+      paddingHorizontal: spacing.sm + 2,
+      paddingVertical: spacing.sm,
+      marginBottom: spacing.sm,
+    },
+    errorText: { ...typography.caption, color: colors.danger, fontWeight: '700', flexShrink: 1 },
     footer: { marginTop: spacing.lg, alignItems: 'center' },
     footerText: { ...typography.body, color: colors.textSecondary },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },

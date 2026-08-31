@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import { AccentHeading } from '../../components/common/AccentHeading';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { Button } from '../../components/Button';
 import { StepHeader } from '../../components/common/StepHeader';
@@ -14,6 +15,7 @@ import { useOnboarding } from '../../store/onboardingStore';
 import { analyzeIdCardPhoto } from '../../utils/idCardImageCheck';
 import { radius, spacing, typography } from '../../theme';
 import { scaleFont } from '../../theme/responsive';
+import { glow, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 
 export function SelfieVerificationScreen() {
@@ -21,6 +23,7 @@ export function SelfieVerificationScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl, language } = useLanguage();
+  const onboardRamp = [colors.teal, colors.sage] as const;
   const { signup } = useAuth();
   const { notify } = useDialog();
   const { draft } = useOnboarding();
@@ -126,7 +129,7 @@ export function SelfieVerificationScreen() {
       </FadeIn>
 
       <FadeIn delay={100}>
-        <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('cnic.title')}</Text>
+        <AccentHeading title={t('cnic.title')} gradient={onboardRamp} style={styles.sectionHeading} />
         <Text style={[styles.subtitle, rtl && styles.rtlText]}>{t('cnic.subtitle')}</Text>
 
         {cnicPhotoUri ? (
@@ -162,12 +165,28 @@ export function SelfieVerificationScreen() {
 
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
-    title: { ...typography.h1, color: colors.textPrimary, marginBottom: spacing.xs },
+    title: { ...typography.h1, color: colors.textPrimary, marginBottom: spacing.xs, fontWeight: '800' },
     subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg },
-    sectionTitle: { ...typography.h3, color: colors.textPrimary, marginTop: spacing.lg, marginBottom: spacing.xs },
+    sectionHeading: { marginTop: spacing.lg, marginBottom: spacing.sm },
     previewWrap: { alignItems: 'center', marginBottom: spacing.lg },
-    preview: { width: 180, height: 180, borderRadius: radius.pill, backgroundColor: colors.skeleton },
-    cnicPreview: { width: '100%', aspectRatio: 16 / 10, borderRadius: radius.lg, backgroundColor: colors.skeleton, marginBottom: spacing.md },
+    preview: {
+      width: 180,
+      height: 180,
+      borderRadius: radius.pill,
+      backgroundColor: colors.skeleton,
+      borderWidth: 3,
+      borderColor: withAlpha(colors.teal, 0.45),
+      ...glow(colors.teal, 0.3, 18, 7),
+    },
+    cnicPreview: {
+      width: '100%',
+      aspectRatio: 16 / 10,
+      borderRadius: radius.lg,
+      backgroundColor: colors.skeleton,
+      marginBottom: spacing.md,
+      borderWidth: 2,
+      borderColor: withAlpha(colors.teal, 0.35),
+    },
     previewEmpty: { alignItems: 'center', justifyContent: 'center' },
     previewPlaceholder: { fontSize: scaleFont(56) },
     errorText: { ...typography.caption, color: colors.danger, marginTop: spacing.sm },

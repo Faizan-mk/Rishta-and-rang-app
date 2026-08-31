@@ -1,9 +1,11 @@
 import React, { useMemo } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Badge } from './common/Badge';
 import { useLanguage } from '../store/LanguageContext';
 import { useTheme } from '../store/ThemeContext';
 import { radius, spacing, typography } from '../theme';
+import { glow, modeAccent } from '../theme/glow';
 import type { Palette } from '../theme/palettes';
 import type { ProfileMode } from '../types/user';
 
@@ -25,10 +27,23 @@ export function ProfileCard({ photo, name, age, city, kind, onPress, action }: P
   const { colors } = useTheme();
   const { t, rtl } = useLanguage();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const accent = modeAccent(colors, kind);
 
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}>
-      <Image source={{ uri: photo }} style={styles.photo} />
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [styles.card, glow(accent.primary, 0.2, 14, 5), pressed && styles.cardPressed]}
+    >
+      {/* The photo's rim carries the mode, so a saved Friends profile and a
+          saved Rishta profile are told apart before the badge is read. */}
+      <LinearGradient
+        colors={accent.ramp}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.photoRim}
+      >
+        <Image source={{ uri: photo }} style={styles.photo} />
+      </LinearGradient>
       <View style={styles.body}>
         <Text style={[styles.name, rtl && styles.rtlText]}>
           {name}, {age}
@@ -49,17 +64,18 @@ const makeStyles = (colors: Palette) =>
     card: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: colors.surface,
+      backgroundColor: colors.surfaceElevated,
       borderRadius: radius.lg,
       borderWidth: 1,
-      borderColor: colors.border,
+      borderColor: colors.borderSoft,
       padding: spacing.sm,
       marginBottom: spacing.md,
     },
     cardPressed: { opacity: 0.85 },
-    photo: { width: 64, height: 80, borderRadius: radius.md, backgroundColor: colors.skeleton },
+    photoRim: { width: 68, height: 84, borderRadius: radius.md + 2, padding: 2 },
+    photo: { width: '100%', height: '100%', borderRadius: radius.md, backgroundColor: colors.skeleton },
     body: { flex: 1, marginLeft: spacing.md, gap: 4 },
-    name: { ...typography.h3, color: colors.textPrimary },
+    name: { ...typography.h3, color: colors.textPrimary, fontWeight: '800' },
     meta: { ...typography.caption, color: colors.textSecondary },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   });

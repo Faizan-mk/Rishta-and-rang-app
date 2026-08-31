@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { BottomSheet } from '../common/BottomSheet';
 import { radius, spacing, typography } from '../../theme';
+import { glow, withAlpha } from '../../theme/glow';
 import { scaleFont } from '../../theme/responsive';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
@@ -139,11 +140,12 @@ const makeStyles = (colors: Palette) =>
     clockRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.lg },
     clockTile: {
       backgroundColor: colors.teal,
-      borderRadius: radius.sm,
+      borderRadius: radius.md,
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
       minWidth: 68,
       alignItems: 'center',
+      ...glow(colors.teal, 0.5, 14, 6),
     },
     clockText: { color: '#FFFFFF', fontSize: scaleFont(26), fontWeight: '800', letterSpacing: 1 },
     clockSeparator: { ...typography.h2, color: colors.textPrimary },
@@ -158,9 +160,17 @@ const makeStyles = (colors: Palette) =>
       borderRadius: radius.pill,
       paddingVertical: spacing.md,
       minHeight: 52,
+      ...glow(colors.teal, 0.5, 16, 7),
     },
-    primaryLabel: { ...typography.h3, color: '#FFFFFF', fontWeight: '700' },
-    secondaryButton: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: colors.border, minHeight: 48 },
+    primaryLabel: { ...typography.h3, color: '#FFFFFF', fontWeight: '800' },
+    secondaryButton: {
+      backgroundColor: 'transparent',
+      borderWidth: 1.5,
+      borderColor: colors.borderSoft,
+      minHeight: 48,
+      shadowOpacity: 0,
+      elevation: 0,
+    },
     secondaryLabel: { color: colors.textPrimary },
     rtlText: { writingDirection: 'rtl' },
   });
@@ -174,8 +184,8 @@ const makeIllustrationStyles = (colors: Palette) =>
       height: 104,
       borderRadius: radius.md,
       borderWidth: 2,
-      borderColor: colors.border,
-      backgroundColor: colors.backgroundAlt,
+      borderColor: colors.borderSoft,
+      backgroundColor: withAlpha(colors.teal, 0.08),
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -184,13 +194,14 @@ const makeIllustrationStyles = (colors: Palette) =>
     rocketBadge: {
       position: 'absolute',
       bottom: 8,
-      width: 44,
-      height: 44,
-      borderRadius: 22,
-      backgroundColor: colors.teal,
+      width: 46,
+      height: 46,
+      borderRadius: 23,
+      backgroundColor: colors.gold,
       alignItems: 'center',
       justifyContent: 'center',
       borderWidth: 3,
-      borderColor: colors.surface,
+      borderColor: colors.surfaceElevated,
+      ...glow(colors.gold, 0.7, 16, 8),
     },
   });

@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { radius, spacing, typography } from '../../theme';
+import { glow, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 
@@ -33,12 +34,17 @@ export function StatCard({ icon, value, label, tint, tintSoft, onPress }: StatCa
       onPressOut={() => {
         if (onPress) scale.value = withSpring(1, { damping: 12, stiffness: 220 });
       }}
-      style={[styles.card, animatedStyle]}
+      style={[
+        styles.card,
+        { borderColor: withAlpha(tint, 0.3), backgroundColor: withAlpha(tint, 0.07) },
+        glow(tint, 0.22, 12, 4),
+        animatedStyle,
+      ]}
     >
-      <View style={[styles.iconWrap, { backgroundColor: tintSoft }]}>
+      <View style={[styles.iconWrap, { backgroundColor: tintSoft }, glow(tint, 0.4, 8, 3)]}>
         <Ionicons name={icon} size={18} color={tint} />
       </View>
-      <Text style={styles.value}>{value}</Text>
+      <Text style={[styles.value, { color: tint }]}>{value}</Text>
       <Text style={styles.label}>{label}</Text>
     </AnimatedPressable>
   );
@@ -62,6 +68,6 @@ const makeStyles = (colors: Palette) =>
       justifyContent: 'center',
       marginBottom: spacing.sm,
     },
-    value: { ...typography.h2, color: colors.textPrimary },
+    value: { ...typography.h2, color: colors.textPrimary, fontWeight: '800' },
     label: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
   });

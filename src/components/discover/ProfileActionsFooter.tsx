@@ -1,7 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { spacing, radius, typography } from '../../theme';
 import { scaleFont } from '../../theme/responsive';
+import { glow, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
@@ -53,15 +55,24 @@ export function ProfileActionsFooter({ name, onSendCompliment }: ProfileActionsF
         {compliment.length}/{COMPLIMENT_MAX_LENGTH}
       </Text>
 
-      <Pressable
-        onPress={onSubmitCompliment}
-        disabled={!canSubmit}
-        style={[styles.submit, !canSubmit && styles.submitDisabled]}
-      >
-        {sending ? (
-          <ActivityIndicator color="#FFFFFF" />
+      <Pressable onPress={onSubmitCompliment} disabled={!canSubmit}>
+        {canSubmit || sending ? (
+          <LinearGradient
+            colors={[colors.teal, colors.sage]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={[styles.submit, glow(colors.teal, 0.5, 16, 7)]}
+          >
+            {sending ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.submitLabel}>{t('discover.salaamSend')}</Text>
+            )}
+          </LinearGradient>
         ) : (
-          <Text style={styles.submitLabel}>{t('discover.salaamSend')}</Text>
+          <View style={[styles.submit, styles.submitDisabled]}>
+            <Text style={styles.submitLabel}>{t('discover.salaamSend')}</Text>
+          </View>
         )}
       </Pressable>
     </View>
@@ -82,7 +93,7 @@ const makeStyles = (colors: Palette) =>
     input: {
       minHeight: 96,
       borderWidth: 1.5,
-      borderColor: colors.border,
+      borderColor: colors.borderSoft,
       borderRadius: radius.md,
       backgroundColor: colors.surface,
       paddingHorizontal: spacing.md,
@@ -91,19 +102,18 @@ const makeStyles = (colors: Palette) =>
       color: colors.textPrimary,
       textAlignVertical: 'top',
     },
-    inputFocused: { borderColor: colors.teal },
+    inputFocused: { borderColor: colors.teal, backgroundColor: withAlpha(colors.teal, 0.06) },
     charCount: { ...typography.caption, color: colors.textTertiary, textAlign: 'right', marginTop: spacing.xs },
     charCountRtl: { textAlign: 'left' },
     submit: {
       marginTop: spacing.sm,
       borderRadius: radius.pill,
-      backgroundColor: colors.teal,
       alignItems: 'center',
       justifyContent: 'center',
       paddingVertical: spacing.md,
       minHeight: 48,
     },
-    submitDisabled: { backgroundColor: colors.textTertiary, opacity: 0.6 },
-    submitLabel: { ...typography.h3, color: '#FFFFFF', fontWeight: '700' },
+    submitDisabled: { backgroundColor: colors.textTertiary, opacity: 0.5 },
+    submitLabel: { ...typography.h3, color: '#FFFFFF', fontWeight: '800' },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   });

@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import Animated, { FadeInUp } from 'react-native-reanimated';
+import { AccentHeading } from '../../components/common/AccentHeading';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { Button } from '../../components/Button';
 import { useBoost } from '../../store/BoostContext';
@@ -17,6 +18,7 @@ import { usePrivacy } from '../../store/PrivacyContext';
 import { useMatches } from '../../store/MatchesContext';
 import { isoToDisplay } from '../../utils/date';
 import { radius, spacing, typography } from '../../theme';
+import { glow, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 
 type Plan = 'trial' | 'monthly' | 'yearly';
@@ -28,6 +30,12 @@ function isoDateInDays(days: number): string {
 }
 
 const PLAN_DAYS: Record<Plan, number> = { trial: 7, monthly: 30, yearly: 365 };
+
+const GRADIENT_START = { x: 0, y: 0 } as const;
+const GRADIENT_END = { x: 1, y: 1 } as const;
+// Explore+ has its own colour identity — gold through ember into rose — so the
+// paid surface never reads as just another mode-tinted screen.
+const PLUS_RAMP = ['#F5C451', '#E8642E', '#D6407A'] as const;
 
 // Profile boosts included with any paid plan.
 const BOOSTS_PER_SUBSCRIPTION = 5;
@@ -108,8 +116,17 @@ export function ExplorePlusScreen() {
 
   return (
     <ScreenContainer>
-      <LinearGradient colors={[colors.gold, colors.dating]} style={styles.hero}>
-        <Ionicons name="sparkles" size={28} color="#FFFFFF" />
+      <LinearGradient
+        colors={PLUS_RAMP}
+        start={GRADIENT_START}
+        end={GRADIENT_END}
+        style={[styles.hero, glow(colors.gold, 0.5, 24, 10)]}
+      >
+        <View style={styles.heroGlowA} pointerEvents="none" />
+        <View style={styles.heroGlowB} pointerEvents="none" />
+        <View style={styles.heroIcon}>
+          <Ionicons name="sparkles" size={26} color="#FFFFFF" />
+        </View>
         <Text style={styles.heroTitle}>{t('explorePlus.title')}</Text>
         <Text style={styles.heroSubtitle}>{t('explorePlus.subtitle')}</Text>
       </LinearGradient>
@@ -151,12 +168,16 @@ export function ExplorePlusScreen() {
             <Text style={[styles.trialHint, rtl && styles.rtlText]}>{t('explorePlus.trialHint')}</Text>
           )}
 
-          <View style={styles.featureRow}>
-            <Ionicons name="checkmark-circle" size={18} color={colors.success} />
+          <View style={[styles.featureRow, rtl && styles.rowRtl]}>
+            <View style={styles.featureTick}>
+              <Ionicons name="checkmark" size={12} color="#FFFFFF" />
+            </View>
             <Text style={[styles.featureText, rtl && styles.rtlText]}>{t('explorePlus.featureUnlimitedLikes')}</Text>
           </View>
-          <View style={styles.featureRow}>
-            <Ionicons name="checkmark-circle" size={18} color={colors.success} />
+          <View style={[styles.featureRow, rtl && styles.rowRtl]}>
+            <View style={styles.featureTick}>
+              <Ionicons name="checkmark" size={12} color="#FFFFFF" />
+            </View>
             <Text style={[styles.featureText, rtl && styles.rtlText]}>{t('explorePlus.featureSeeWhoLikedYou')}</Text>
           </View>
 
@@ -171,6 +192,7 @@ export function ExplorePlusScreen() {
             label={plan === 'trial' ? t('explorePlus.startTrial') : t('explorePlus.upgrade')}
             onPress={onUpgrade}
             loading={upgrading}
+            gradient={PLUS_RAMP}
             style={styles.upgradeButton}
           />
         </Animated.View>
@@ -214,12 +236,19 @@ export function ExplorePlusScreen() {
         </Animated.View>
       )}
 
-      <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('explorePlus.whoLikedYou')}</Text>
+      <AccentHeading title={t('explorePlus.whoLikedYou')} gradient={PLUS_RAMP} style={styles.sectionHeading} />
       {prefs.profileVisible ? (
         <>
           <View style={styles.grid}>
             {admirers.map((profile) => (
-              <View key={profile.id} style={styles.admirerCard}>
+              <LinearGradient
+                key={profile.id}
+                colors={PLUS_RAMP}
+                start={GRADIENT_START}
+                end={GRADIENT_END}
+                style={[styles.admirerRim, glow(colors.gold, 0.3, 12, 5)]}
+              >
+                <View style={styles.admirerCard}>
                 <Image source={{ uri: profile.photo }} style={styles.admirerPhoto} />
                 {!isPro && (
                   <BlurView intensity={40} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFill}>
@@ -233,7 +262,8 @@ export function ExplorePlusScreen() {
                     <Text style={styles.admirerName}>{profile.name}, {profile.age}</Text>
                   </View>
                 )}
-              </View>
+                </View>
+              </LinearGradient>
             ))}
           </View>
           {!isPro && <Text style={[styles.lockedHint, rtl && styles.rtlText]}>{t('explorePlus.lockedHint')}</Text>}
@@ -250,14 +280,49 @@ export function ExplorePlusScreen() {
 
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
-    hero: { borderRadius: radius.lg, padding: spacing.xl, alignItems: 'center', marginBottom: spacing.lg },
-    heroTitle: { ...typography.h1, color: '#FFFFFF', marginTop: spacing.sm },
-    heroSubtitle: { ...typography.body, color: 'rgba(255,255,255,0.9)', textAlign: 'center', marginTop: spacing.xs },
+    hero: {
+      borderRadius: radius.lg,
+      padding: spacing.xl,
+      alignItems: 'center',
+      marginBottom: spacing.lg,
+      overflow: 'hidden',
+    },
+    // Blown-out highlights inside the hero, so the ramp reads as lit rather
+    // than as a flat sweep of three colours.
+    heroGlowA: {
+      position: 'absolute',
+      top: -70,
+      left: -30,
+      width: 180,
+      height: 180,
+      borderRadius: 90,
+      backgroundColor: 'rgba(255,255,255,0.16)',
+    },
+    heroGlowB: {
+      position: 'absolute',
+      bottom: -90,
+      right: -20,
+      width: 200,
+      height: 200,
+      borderRadius: 100,
+      backgroundColor: 'rgba(255,255,255,0.1)',
+    },
+    heroIcon: {
+      width: 52,
+      height: 52,
+      borderRadius: 26,
+      backgroundColor: 'rgba(255,255,255,0.22)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    heroTitle: { ...typography.h1, color: '#FFFFFF', marginTop: spacing.sm, fontWeight: '800' },
+    heroSubtitle: { ...typography.body, color: 'rgba(255,255,255,0.92)', textAlign: 'center', marginTop: spacing.xs },
+    rowRtl: { flexDirection: 'row-reverse' },
     priceCard: {
-      backgroundColor: colors.surface,
+      backgroundColor: colors.surfaceElevated,
       borderRadius: radius.lg,
       borderWidth: 1,
-      borderColor: colors.border,
+      borderColor: colors.borderSoft,
       padding: spacing.lg,
       marginBottom: spacing.lg,
     },
@@ -265,15 +330,20 @@ const makeStyles = (colors: Palette) =>
     planOption: {
       flex: 1,
       borderWidth: 1.5,
-      borderColor: colors.border,
+      borderColor: colors.borderSoft,
       borderRadius: radius.md,
-      padding: spacing.sm,
+      paddingHorizontal: spacing.xs,
+      paddingVertical: spacing.sm + 2,
       alignItems: 'center',
     },
-    planOptionSelected: { borderColor: colors.teal, backgroundColor: colors.tealSoft },
-    planLabel: { ...typography.label, color: colors.textSecondary },
-    planLabelSelected: { color: colors.teal },
-    planPrice: { ...typography.h3, color: colors.textPrimary, marginTop: 2 },
+    planOptionSelected: {
+      borderColor: colors.gold,
+      backgroundColor: withAlpha(colors.gold, 0.12),
+      ...glow(colors.gold, 0.35, 12, 5),
+    },
+    planLabel: { ...typography.label, color: colors.textSecondary, fontWeight: '700' },
+    planLabelSelected: { color: colors.gold },
+    planPrice: { ...typography.h3, color: colors.textPrimary, marginTop: 2, fontWeight: '800' },
     saveBadge: {
       position: 'absolute',
       top: -10,
@@ -282,28 +352,39 @@ const makeStyles = (colors: Palette) =>
       paddingHorizontal: spacing.sm,
       paddingVertical: 2,
     },
-    saveBadgeText: { ...typography.caption, color: '#FFFFFF', fontWeight: '700' },
+    saveBadgeText: { ...typography.caption, color: '#FFFFFF', fontWeight: '800' },
     trialBadge: { backgroundColor: colors.success },
     trialHint: { ...typography.caption, color: colors.textSecondary, textAlign: 'center', marginTop: -spacing.xs, marginBottom: spacing.md },
     featureRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
-    featureText: { ...typography.body, color: colors.textPrimary },
+    featureTick: {
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      backgroundColor: colors.success,
+      alignItems: 'center',
+      justifyContent: 'center',
+      ...glow(colors.success, 0.5, 8, 3),
+    },
+    featureText: { ...typography.body, color: colors.textPrimary, flexShrink: 1 },
     limitCard: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.xs,
-      backgroundColor: colors.tealSoft,
+      backgroundColor: withAlpha(colors.teal, 0.12),
+      borderWidth: 1,
+      borderColor: withAlpha(colors.teal, 0.3),
       borderRadius: radius.md,
       padding: spacing.sm,
       marginTop: spacing.xs,
       marginBottom: spacing.sm,
     },
-    limitText: { ...typography.caption, color: colors.teal, fontWeight: '700' },
+    limitText: { ...typography.caption, color: colors.teal, fontWeight: '800' },
     upgradeButton: { marginTop: spacing.sm },
     manageCard: {
-      backgroundColor: colors.surface,
+      backgroundColor: colors.surfaceElevated,
       borderRadius: radius.lg,
       borderWidth: 1,
-      borderColor: colors.border,
+      borderColor: colors.borderSoft,
       padding: spacing.lg,
       marginBottom: spacing.lg,
     },
@@ -317,7 +398,7 @@ const makeStyles = (colors: Palette) =>
       paddingVertical: spacing.sm,
       marginBottom: spacing.md,
     },
-    upgradedText: { ...typography.label, color: colors.success },
+    upgradedText: { ...typography.label, color: colors.success, fontWeight: '800' },
     manageRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
@@ -328,22 +409,23 @@ const makeStyles = (colors: Palette) =>
     manageLabel: { ...typography.body, color: colors.textSecondary },
     manageValue: { ...typography.bodyBold, color: colors.textPrimary },
     cancelButton: { marginTop: spacing.lg },
-    sectionTitle: { ...typography.label, color: colors.textSecondary, textTransform: 'uppercase', marginBottom: spacing.sm },
+    sectionHeading: { marginBottom: spacing.sm },
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-    admirerCard: { width: '47%', aspectRatio: 3 / 4, borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.skeleton },
+    admirerRim: { width: '47%', borderRadius: radius.md + 2, padding: 2 },
+    admirerCard: { aspectRatio: 3 / 4, borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.skeleton },
     admirerPhoto: { width: '100%', height: '100%' },
     lockOverlay: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     admirerNameWrap: { position: 'absolute', bottom: spacing.xs, left: spacing.xs },
-    admirerName: { ...typography.caption, color: '#FFFFFF', fontWeight: '700' },
+    admirerName: { ...typography.caption, color: '#FFFFFF', fontWeight: '800' },
     lockedHint: { ...typography.caption, color: colors.textTertiary, textAlign: 'center', marginTop: spacing.sm, marginBottom: spacing.lg },
     hiddenCard: {
       flexDirection: 'row',
       alignItems: 'flex-start',
       gap: spacing.sm,
-      backgroundColor: colors.surface,
+      backgroundColor: colors.surfaceElevated,
       borderRadius: radius.lg,
       borderWidth: 1,
-      borderColor: colors.border,
+      borderColor: colors.borderSoft,
       padding: spacing.md,
       marginBottom: spacing.lg,
     },

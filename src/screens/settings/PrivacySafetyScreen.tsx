@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { AccentHeading } from '../../components/common/AccentHeading';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { SettingsRow } from '../../components/common/SettingsRow';
 import { FadeIn } from '../../components/common/FadeInUp';
@@ -12,6 +13,7 @@ import { useDialog } from '../../store/DialogContext';
 import { usePrivacy } from '../../store/PrivacyContext';
 import { useMatches } from '../../store/MatchesContext';
 import { radius, spacing, typography } from '../../theme';
+import { glow, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 
 export function PrivacySafetyScreen() {
@@ -23,6 +25,7 @@ export function PrivacySafetyScreen() {
   const { confirm, notify } = useDialog();
   const { prefs, setPref } = usePrivacy();
   const { blockedProfiles } = useMatches();
+  const safeRamp = [colors.teal, colors.sage] as const;
 
   const onDeleteAccount = async () => {
     const confirmed = await confirm({
@@ -49,7 +52,11 @@ export function PrivacySafetyScreen() {
   return (
     <ScreenContainer>
       <FadeIn>
-        <Text style={[styles.sectionTitle, rtl && styles.rtlText, styles.firstSection]}>{t('privacy.visibilitySection')}</Text>
+        <AccentHeading
+          title={t('privacy.visibilitySection')}
+          gradient={safeRamp}
+          style={styles.firstSectionHeading}
+        />
         <View style={styles.card}>
           <SettingsRow
             icon="eye-outline"
@@ -80,7 +87,7 @@ export function PrivacySafetyScreen() {
       </FadeIn>
 
       <FadeIn delay={80}>
-        <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('privacy.safetySection')}</Text>
+        <AccentHeading title={t('privacy.safetySection')} gradient={safeRamp} style={styles.sectionHeading} />
         <View style={styles.card}>
           <SettingsRow
             icon="hand-left-outline"
@@ -93,7 +100,9 @@ export function PrivacySafetyScreen() {
 
         <View style={styles.tipsCard}>
           <View style={styles.tipsHeader}>
-            <Ionicons name="shield-checkmark" size={18} color={colors.success} />
+            <View style={[styles.tipsIcon, glow(colors.success, 0.5, 10, 4)]}>
+              <Ionicons name="shield-checkmark" size={14} color="#FFFFFF" />
+            </View>
             <Text style={[styles.tipsTitle, rtl && styles.rtlText]}>{t('privacy.safetyTipsTitle')}</Text>
           </View>
           <Text style={[styles.tip, rtl && styles.rtlText]}>• {t('privacy.safetyTip1')}</Text>
@@ -103,7 +112,11 @@ export function PrivacySafetyScreen() {
       </FadeIn>
 
       <FadeIn delay={160}>
-        <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('privacy.accountSection')}</Text>
+        <AccentHeading
+          title={t('privacy.accountSection')}
+          gradient={[colors.danger, colors.plum]}
+          style={styles.sectionHeading}
+        />
         <View style={styles.card}>
           <SettingsRow icon="trash-outline" label={t('privacy.deleteAccount')} right="chevron" onPress={onDeleteAccount} />
         </View>
@@ -114,24 +127,34 @@ export function PrivacySafetyScreen() {
 
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
-    firstSection: { marginTop: 0 },
-    sectionTitle: { ...typography.label, color: colors.textSecondary, textTransform: 'uppercase', marginBottom: spacing.sm, marginTop: spacing.lg },
+    firstSectionHeading: { marginBottom: spacing.sm },
+    sectionHeading: { marginBottom: spacing.sm, marginTop: spacing.lg },
     card: {
-      backgroundColor: colors.surface,
+      backgroundColor: colors.surfaceElevated,
       borderRadius: radius.lg,
       borderWidth: 1,
-      borderColor: colors.border,
+      borderColor: colors.borderSoft,
       paddingHorizontal: spacing.md,
     },
     divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border },
     tipsCard: {
-      backgroundColor: colors.successSoft,
+      backgroundColor: withAlpha(colors.success, 0.1),
+      borderWidth: 1,
+      borderColor: withAlpha(colors.success, 0.32),
       borderRadius: radius.lg,
       padding: spacing.md,
       marginTop: spacing.lg,
     },
-    tipsHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.sm },
-    tipsTitle: { ...typography.label, color: colors.success },
+    tipsHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
+    tipsIcon: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      backgroundColor: colors.success,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    tipsTitle: { ...typography.label, color: colors.success, fontWeight: '800' },
     tip: { ...typography.caption, color: colors.textPrimary, marginBottom: 4 },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   });

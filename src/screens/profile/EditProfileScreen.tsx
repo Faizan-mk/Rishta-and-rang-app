@@ -4,9 +4,11 @@ import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useEvent } from 'expo';
 import { useAudioPlayer, useAudioPlayerStatus, useAudioRecorder, RecordingPresets, requestRecordingPermissionsAsync } from 'expo-audio';
 import { useVideoPlayer, VideoView } from 'expo-video';
+import { AccentHeading } from '../../components/common/AccentHeading';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { TextField } from '../../components/common/TextField';
 import { SelectField } from '../../components/common/SelectField';
@@ -21,8 +23,12 @@ import { useDialog } from '../../store/DialogContext';
 import { usePrivacy } from '../../store/PrivacyContext';
 import type { UserProfile } from '../../types/user';
 import { radius, spacing, typography } from '../../theme';
+import { glow, modeAccent, withAlpha } from '../../theme/glow';
 import { scaleFont } from '../../theme/responsive';
 import type { Palette } from '../../theme/palettes';
+
+const GRADIENT_START = { x: 0, y: 0 } as const;
+const GRADIENT_END = { x: 1, y: 1 } as const;
 
 const MAX_PHOTOS = 4;
 const MARITAL_OPTIONS: NonNullable<UserProfile['maritalStatus']>[] = ['single', 'divorced', 'widowed'];
@@ -115,6 +121,10 @@ export function EditProfileScreen() {
   const { isPlaying: videoPlaying } = useEvent(videoPlayer, 'playingChange', { isPlaying: videoPlayer.playing });
 
   if (!user) return null;
+
+  const accent = modeAccent(colors, user.activeMode);
+  // Unselected photo tiles get a hairline rim rather than the member's colours.
+  const idleRim = [colors.border, colors.borderSoft] as const;
 
   const startVoiceRecording = async () => {
     const permission = await requestRecordingPermissionsAsync();
@@ -244,9 +254,20 @@ export function EditProfileScreen() {
   return (
     <ScreenContainer style={styles.screenContent}>
       <FadeIn>
-        <Text style={[styles.title, rtl && styles.rtlText]}>{t('editProfile.title')}</Text>
+        <LinearGradient
+          colors={accent.ramp}
+          start={GRADIENT_START}
+          end={GRADIENT_END}
+          style={[styles.hero, glow(accent.primary, 0.45, 20, 9)]}
+        >
+          <View style={styles.heroGlow} pointerEvents="none" />
+          <View style={styles.heroIcon}>
+            <Ionicons name="create" size={20} color="#FFFFFF" />
+          </View>
+          <Text style={[styles.heroTitle, rtl && styles.rtlText]}>{t('editProfile.title')}</Text>
+        </LinearGradient>
 
-        <Text style={[styles.label, rtl && styles.rtlText]}>{t('photos.title')}</Text>
+        <AccentHeading title={t('photos.title')} gradient={accent.duo} style={styles.heading} />
         {prefs.blurPhotos && (
           <View style={styles.blurNotice}>
             <Ionicons name="eye-off-outline" size={14} color={colors.teal} />
@@ -255,32 +276,43 @@ export function EditProfileScreen() {
         )}
         <View style={styles.grid}>
           {photos.map((uri, index) => (
-            <Pressable key={uri} onPress={() => setPrimaryPhoto(uri)} style={styles.slot}>
-              <Image source={{ uri }} style={styles.photo} />
-              {prefs.blurPhotos && (
-                <BlurView intensity={35} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
-              )}
-              {index === 0 ? (
-                <View style={styles.primaryBadge}>
-                  <Ionicons name="star" size={10} color="#FFFFFF" />
-                  <Text style={styles.primaryBadgeText}>{t('editProfile.primaryPhoto')}</Text>
+            <Pressable key={uri} onPress={() => setPrimaryPhoto(uri)}>
+              {/* The rim carries the status: the primary photo wears the member's
+                  own colours, the rest a plain hairline. */}
+              <LinearGradient
+                colors={index === 0 ? accent.ramp : idleRim}
+                start={GRADIENT_START}
+                end={GRADIENT_END}
+                style={[styles.slotRim, index === 0 && glow(accent.primary, 0.45, 12, 6)]}
+              >
+                <View style={styles.slot}>
+                  <Image source={{ uri }} style={styles.photo} />
+                  {prefs.blurPhotos && (
+                    <BlurView intensity={35} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
+                  )}
+                  {index === 0 ? (
+                    <View style={styles.primaryBadge}>
+                      <Ionicons name="star" size={10} color="#FFFFFF" />
+                      <Text style={styles.primaryBadgeText}>{t('editProfile.primaryPhoto')}</Text>
+                    </View>
+                  ) : (
+                    // The whole tile already sets primary, but the action has to be
+                    // visible — nobody discovers a tap-anywhere gesture on its own.
+                    <Pressable onPress={() => setPrimaryPhoto(uri)} style={styles.makePrimaryBadge} hitSlop={6}>
+                      <Ionicons name="star-outline" size={11} color="#FFFFFF" />
+                      <Text style={styles.primaryBadgeText}>{t('editProfile.makePrimary')}</Text>
+                    </Pressable>
+                  )}
+                  <Pressable onPress={() => removePhoto(uri)} style={styles.removeBadge} hitSlop={6}>
+                    <Text style={styles.removeText}>×</Text>
+                  </Pressable>
                 </View>
-              ) : (
-                // The whole tile already sets primary, but the action has to be
-                // visible — nobody discovers a tap-anywhere gesture on its own.
-                <Pressable onPress={() => setPrimaryPhoto(uri)} style={styles.makePrimaryBadge} hitSlop={6}>
-                  <Ionicons name="star-outline" size={11} color="#FFFFFF" />
-                  <Text style={styles.primaryBadgeText}>{t('editProfile.makePrimary')}</Text>
-                </Pressable>
-              )}
-              <Pressable onPress={() => removePhoto(uri)} style={styles.removeBadge} hitSlop={6}>
-                <Text style={styles.removeText}>×</Text>
-              </Pressable>
+              </LinearGradient>
             </Pressable>
           ))}
           {photos.length < MAX_PHOTOS && (
-            <Pressable onPress={addPhoto} style={[styles.slot, styles.addSlot]}>
-              <Text style={styles.addPlus}>+</Text>
+            <Pressable onPress={addPhoto} style={styles.addSlot}>
+              <Ionicons name="add" size={26} color={accent.primary} />
             </Pressable>
           )}
         </View>
@@ -288,8 +320,12 @@ export function EditProfileScreen() {
       </FadeIn>
 
       <FadeIn delay={60}>
-        <Text style={[styles.label, rtl && styles.rtlText]}>{t('editProfile.introMediaTitle')}</Text>
-        <Text style={[styles.hint, { marginTop: 0 }, rtl && styles.rtlText]}>{t('editProfile.introMediaHint')}</Text>
+        <AccentHeading
+          title={t('editProfile.introMediaTitle')}
+          subtitle={t('editProfile.introMediaHint')}
+          gradient={accent.duo}
+          style={styles.heading}
+        />
 
         {voiceUri ? (
           <View style={styles.voiceCard}>
@@ -350,7 +386,7 @@ export function EditProfileScreen() {
       </FadeIn>
 
       <FadeIn delay={140}>
-        <Text style={[styles.label, rtl && styles.rtlText]}>{t('profile.vibeTags')}</Text>
+        <AccentHeading title={t('profile.vibeTags')} gradient={accent.duo} style={styles.heading} />
         <View style={styles.chipRow}>
           {vibeTags.map((tag) => (
             <Chip key={tag} label={`${tag} ×`} selected tone="dating" onPress={() => removeTag(tag)} />
@@ -371,7 +407,7 @@ export function EditProfileScreen() {
       </FadeIn>
 
       <FadeIn delay={180}>
-        <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('discover.aboutMeTitle')}</Text>
+        <AccentHeading title={t('discover.aboutMeTitle')} gradient={accent.duo} style={styles.sectionHeading} />
         <TextField
           label={t('editProfile.height')}
           value={details.heightCm}
@@ -395,7 +431,7 @@ export function EditProfileScreen() {
       </FadeIn>
 
       <FadeIn delay={220}>
-        <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('discover.faithTitle')}</Text>
+        <AccentHeading title={t('discover.faithTitle')} gradient={accent.duo} style={styles.sectionHeading} />
         <BooleanRow label={t('attributes.practisingYes')} value={details.practising} onChange={(v) => setField('practising', v)} rtl={rtl} />
         <TextField label={t('editProfile.prayerHabits')} value={details.prayerHabits} onChangeText={(v) => setField('prayerHabits', v)} />
         <BooleanRow label={t('attributes.halalOnly')} value={details.halalOnly} onChange={(v) => setField('halalOnly', v)} rtl={rtl} />
@@ -405,14 +441,14 @@ export function EditProfileScreen() {
       </FadeIn>
 
       <FadeIn delay={260}>
-        <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('discover.futurePlansTitle')}</Text>
+        <AccentHeading title={t('discover.futurePlansTitle')} gradient={accent.duo} style={styles.sectionHeading} />
         <BooleanRow label={t('discover.openToRelocate')} value={details.openToRelocate} onChange={(v) => setField('openToRelocate', v)} rtl={rtl} />
         <TextField label={t('editProfile.preferredCountry')} value={details.preferredCountry} onChangeText={(v) => setField('preferredCountry', v)} />
         <TextField label={t('discover.careerPlansTitle')} value={details.careerPlans} onChangeText={(v) => setField('careerPlans', v)} />
       </FadeIn>
 
       <FadeIn delay={300}>
-        <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('discover.educationCareerTitle')}</Text>
+        <AccentHeading title={t('discover.educationCareerTitle')} gradient={accent.duo} style={styles.sectionHeading} />
         <SelectOrOtherField label={t('editProfile.educationLevel')} value={details.educationLevel} options={EDUCATION_LEVEL_OPTIONS} onChange={(v) => setField('educationLevel', v)} placeholder={t('editProfile.educationLevelPlaceholder')} />
         <SelectOrOtherField label={t('editProfile.degree')} value={details.degree} options={DEGREE_OPTIONS} onChange={(v) => setField('degree', v)} placeholder={t('editProfile.degreePlaceholder')} />
         <SelectOrOtherField label={t('editProfile.jobTitle')} value={details.jobTitle} options={JOB_TITLE_OPTIONS} onChange={(v) => setField('jobTitle', v)} />
@@ -420,7 +456,7 @@ export function EditProfileScreen() {
       </FadeIn>
 
       <FadeIn delay={340}>
-        <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('discover.languagesBackgroundTitle')}</Text>
+        <AccentHeading title={t('discover.languagesBackgroundTitle')} gradient={accent.duo} style={styles.sectionHeading} />
         <SelectOrOtherField
           label={t('editProfile.languages')}
           value={details.languagesText}
@@ -433,7 +469,7 @@ export function EditProfileScreen() {
         <SelectOrOtherField label={t('editProfile.country')} value={details.country} options={COUNTRY_OPTIONS} onChange={(v) => setField('country', v)} />
       </FadeIn>
 
-      <Button label={t('common.save')} onPress={onSave} loading={saving} style={styles.submit} />
+      <Button label={t('common.save')} onPress={onSave} loading={saving} gradient={accent.ramp} style={styles.submit} />
       <Button label={t('common.cancel')} variant="ghost" onPress={() => router.back()} />
     </ScreenContainer>
   );
@@ -499,8 +535,21 @@ function BooleanRow({
   return (
     <View style={[styles.booleanRow, rtl && { flexDirection: 'row-reverse' }]}>
       <Text style={[styles.booleanLabel, rtl && styles.rtlText]}>{label}</Text>
-      <Pressable onPress={() => onChange(!value)} style={[styles.toggleTrack, value && styles.toggleTrackActive]}>
-        <View style={[styles.toggleThumb, value && styles.toggleThumbActive]} />
+      <Pressable onPress={() => onChange(!value)} hitSlop={6}>
+        {value ? (
+          <LinearGradient
+            colors={[colors.teal, colors.sage]}
+            start={GRADIENT_START}
+            end={GRADIENT_END}
+            style={[styles.toggleTrack, glow(colors.teal, 0.6, 10, 4)]}
+          >
+            <View style={[styles.toggleThumb, styles.toggleThumbActive]} />
+          </LinearGradient>
+        ) : (
+          <View style={styles.toggleTrack}>
+            <View style={styles.toggleThumb} />
+          </View>
+        )}
       </Pressable>
     </View>
   );
@@ -510,15 +559,46 @@ const makeStyles = (colors: Palette) =>
   StyleSheet.create({
     // Separate the form from the native navigation header on compact phones.
     screenContent: { paddingTop: spacing.xl },
-    title: { ...typography.h1, color: colors.textPrimary, marginBottom: spacing.lg },
-    label: { ...typography.label, color: colors.textPrimary, marginBottom: spacing.sm },
-    sectionTitle: { ...typography.label, color: colors.textSecondary, textTransform: 'uppercase', marginTop: spacing.lg, marginBottom: spacing.sm },
+    hero: {
+      borderRadius: radius.lg,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md,
+      gap: spacing.sm,
+      marginBottom: spacing.lg,
+      overflow: 'hidden',
+    },
+    // A blown-out highlight inside the hero, so the ramp reads as lit rather
+    // than as a flat two-colour sweep.
+    heroGlow: {
+      position: 'absolute',
+      top: -60,
+      right: -30,
+      width: 170,
+      height: 170,
+      borderRadius: 85,
+      backgroundColor: 'rgba(255,255,255,0.14)',
+    },
+    heroIcon: {
+      width: 38,
+      height: 38,
+      borderRadius: 19,
+      backgroundColor: 'rgba(255,255,255,0.22)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    heroTitle: { ...typography.h1, color: '#FFFFFF', fontWeight: '800' },
+    heading: { marginBottom: spacing.sm },
+    sectionHeading: { marginTop: spacing.lg, marginBottom: spacing.sm },
     fieldLabel: { ...typography.body, color: colors.textPrimary, marginTop: spacing.sm, marginBottom: spacing.xs },
     blurNotice: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.sm },
     blurNoticeText: { ...typography.caption, color: colors.teal, flexShrink: 1 },
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.md },
-    slot: { width: 80, height: 100, borderRadius: radius.md, overflow: 'hidden' },
+    slotRim: { width: 86, height: 106, borderRadius: radius.md + 2, padding: 2 },
+    slot: { flex: 1, borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.skeleton },
     addSlot: {
+      width: 86,
+      height: 106,
+      borderRadius: radius.md + 2,
       borderWidth: 1.5,
       borderColor: colors.border,
       borderStyle: 'dashed',
@@ -527,7 +607,6 @@ const makeStyles = (colors: Palette) =>
       backgroundColor: colors.surface,
     },
     photo: { width: '100%', height: '100%' },
-    addPlus: { fontSize: scaleFont(26), color: colors.teal },
     primaryBadge: {
       position: 'absolute',
       bottom: 4,
@@ -576,11 +655,11 @@ const makeStyles = (colors: Palette) =>
       justifyContent: 'center',
       gap: spacing.xs,
       borderWidth: 1.5,
-      borderColor: colors.border,
+      borderColor: withAlpha(colors.teal, 0.4),
       borderStyle: 'dashed',
       borderRadius: radius.lg,
-      paddingVertical: spacing.sm + 2,
-      backgroundColor: colors.surface,
+      paddingVertical: spacing.md,
+      backgroundColor: withAlpha(colors.teal, 0.07),
     },
     mediaButtonActive: { borderColor: colors.danger, borderStyle: 'solid' },
     mediaButtonText: { ...typography.bodyBold, color: colors.teal },
@@ -588,9 +667,9 @@ const makeStyles = (colors: Palette) =>
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.sm,
-      backgroundColor: colors.surface,
+      backgroundColor: withAlpha(colors.teal, 0.07),
       borderWidth: 1,
-      borderColor: colors.border,
+      borderColor: withAlpha(colors.teal, 0.3),
       borderRadius: radius.lg,
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
@@ -617,15 +696,14 @@ const makeStyles = (colors: Palette) =>
     },
     booleanLabel: { ...typography.body, color: colors.textPrimary, flex: 1 },
     toggleTrack: {
-      width: 44,
-      height: 26,
-      borderRadius: 13,
+      width: 46,
+      height: 27,
+      borderRadius: 14,
       backgroundColor: colors.border,
       padding: 3,
       justifyContent: 'center',
     },
-    toggleTrackActive: { backgroundColor: colors.teal },
-    toggleThumb: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#FFFFFF' },
+    toggleThumb: { width: 21, height: 21, borderRadius: 11, backgroundColor: '#FFFFFF' },
     toggleThumbActive: { alignSelf: 'flex-end' },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   });

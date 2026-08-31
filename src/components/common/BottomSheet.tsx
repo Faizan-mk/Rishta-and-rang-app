@@ -7,6 +7,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
 import { radius, spacing } from '../../theme';
 import { useTheme } from '../../store/ThemeContext';
 
@@ -82,10 +83,18 @@ export function BottomSheet({ visible, onClose, children, maxHeight = '88%', hei
           onLayout={onSheetLayout}
           style={[
             styles.sheet,
-            { backgroundColor: colors.surface, maxHeight, height },
+            { backgroundColor: colors.surfaceElevated, maxHeight, height },
             sheetStyle,
           ]}
         >
+          {/* A hairline of brand colour along the panel's lip, so a sheet reads
+              as part of the app rather than as a bare system tray. */}
+          <LinearGradient
+            colors={[colors.teal, colors.plum, colors.gold]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.topRule}
+          />
           {showHandle && <View style={[styles.handle, { backgroundColor: colors.border }]} />}
           {children}
         </Animated.View>
@@ -102,11 +111,13 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm,
     overflow: 'hidden',
   },
+  topRule: { position: 'absolute', top: 0, left: 0, right: 0, height: 3 },
   handle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
+    width: 44,
+    height: 5,
+    borderRadius: 3,
     alignSelf: 'center',
+    marginTop: 2,
     marginBottom: spacing.sm,
   },
 });

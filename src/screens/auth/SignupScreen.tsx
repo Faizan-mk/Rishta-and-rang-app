@@ -1,8 +1,10 @@
 import React, { useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import type { Gender } from '../../types/user';
+import { AccentHeading } from '../../components/common/AccentHeading';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { TextField } from '../../components/common/TextField';
 import { DateField } from '../../components/common/DateField';
@@ -18,7 +20,8 @@ import { isValidEmail } from '../../utils/validation';
 import { ageFromDob, isValidDobFormat } from '../../utils/date';
 import { digitsToCnicDisplay, isValidCnicFormat, cnicMatchesGender } from '../../utils/cnic';
 import { authService } from '../../services/authService';
-import { spacing, typography } from '../../theme';
+import { radius, spacing, typography } from '../../theme';
+import { withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 
 export function SignupScreen() {
@@ -26,6 +29,7 @@ export function SignupScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
+  const onboardRamp = [colors.teal, colors.sage] as const;
   const { startDraft } = useOnboarding();
 
   const [email, setEmail] = useState('');
@@ -139,7 +143,11 @@ export function SignupScreen() {
           </Text>
         )}
 
-        <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('personalDetails.title')}</Text>
+        <AccentHeading
+          title={t('personalDetails.title')}
+          gradient={onboardRamp}
+          style={styles.sectionHeading}
+        />
 
         <TextField label={t('personalDetails.fullName')} value={fullName} onChangeText={setFullName} autoComplete="name" />
         <DateField
@@ -178,9 +186,20 @@ export function SignupScreen() {
           onSubmitEditing={onNext}
         />
 
-        {error ? <Text style={[styles.errorText, rtl && styles.rtlText]}>{error}</Text> : null}
+        {error ? (
+          <View style={styles.errorCard}>
+            <Ionicons name="alert-circle" size={16} color={colors.danger} />
+            <Text style={[styles.errorText, rtl && styles.rtlText]}>{error}</Text>
+          </View>
+        ) : null}
 
-        <Button label={t('signup.submit')} onPress={onNext} loading={checking} style={styles.submit} />
+        <Button
+          label={t('signup.submit')}
+          onPress={onNext}
+          loading={checking}
+          gradient={onboardRamp}
+          style={styles.submit}
+        />
       </Animated.View>
 
       <View style={styles.footer}>
@@ -219,14 +238,26 @@ function PasswordRequirements({ password }: { password: string }) {
 
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
-    title: { ...typography.h1, color: colors.textPrimary, marginBottom: spacing.xs },
+    title: { ...typography.h1, color: colors.textPrimary, marginBottom: spacing.xs, fontWeight: '800' },
     subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg },
-    sectionTitle: { ...typography.label, color: colors.textSecondary, textTransform: 'uppercase', marginTop: spacing.md, marginBottom: spacing.sm },
-    label: { ...typography.label, color: colors.textPrimary, marginBottom: spacing.sm },
+    sectionHeading: { marginTop: spacing.md, marginBottom: spacing.sm },
+    label: { ...typography.label, color: colors.textPrimary, marginBottom: spacing.sm, fontWeight: '700' },
     row: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.md },
     bioInput: { minHeight: 70, textAlignVertical: 'top' },
     submit: { marginTop: spacing.sm },
-    errorText: { ...typography.caption, color: colors.danger, marginBottom: spacing.sm },
+    errorCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+      backgroundColor: withAlpha(colors.danger, 0.1),
+      borderWidth: 1,
+      borderColor: withAlpha(colors.danger, 0.35),
+      borderRadius: radius.md,
+      paddingHorizontal: spacing.sm + 2,
+      paddingVertical: spacing.sm,
+      marginBottom: spacing.sm,
+    },
+    errorText: { ...typography.caption, color: colors.danger, fontWeight: '700', flexShrink: 1 },
     passwordMatch: { ...typography.caption, marginTop: -spacing.sm, marginBottom: spacing.md },
     footer: { marginTop: spacing.lg, alignItems: 'center' },
     footerText: { ...typography.body, color: colors.textSecondary },

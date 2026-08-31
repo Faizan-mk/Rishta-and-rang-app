@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Image, Modal, Pressable, RefreshControl, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,6 +9,7 @@ import Animated, {
   FadeOut,
   ZoomIn,
 } from 'react-native-reanimated';
+import { AuroraBackground } from '../../components/common/AuroraBackground';
 import { DiscoverProfileCard } from '../../components/discover/DiscoverProfileCard';
 import { TAB_BAR_BASE_HEIGHT, useHideTabBarOnScroll } from '../../store/TabBarVisibilityContext';
 import { MatchCelebration } from '../../components/discover/MatchCelebration';
@@ -60,6 +62,7 @@ import { oppositeGenderProfiles } from '../../utils/genderMatch';
 import { datingCompatibility, rishtaCompatibility } from '../../utils/compatibility';
 import { isActiveToday } from '../../utils/time';
 import { radius, spacing, typography } from '../../theme';
+import { glow, modeAccent } from '../../theme/glow';
 import { scaleFont } from '../../theme/responsive';
 import type { Palette } from '../../theme/palettes';
 
@@ -152,6 +155,7 @@ export function HomeScreen() {
   const onScroll = useHideTabBarOnScroll();
 
   const mode: ProfileMode = user?.activeMode ?? 'dating';
+  const accent = modeAccent(colors, mode);
 
   const chattingWith = useMemo(
     () => new Set(matches.map((m) => m.sourceProfileId).filter((id): id is string => Boolean(id))),
@@ -367,6 +371,9 @@ export function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
+      {/* Drifting colour behind everything, repainted per mode. Decorative only. */}
+      <AuroraBackground colors={colors} mode={mode} />
+
       <HomeTopBar
         activeFilterCount={filtersActive}
         onOpenFilters={() => setFiltersVisible(true)}
@@ -375,6 +382,7 @@ export function HomeScreen() {
         boostActive={isBoostActive}
         notificationCount={unreadCount}
         onNotifications={() => router.push('/notifications')}
+        mode={mode}
       />
 
       {/* Friends / Rishta decks are separate — this is how a member switches
@@ -404,13 +412,19 @@ export function HomeScreen() {
             }
           >
             <SwipeableCard profileId={currentProfile.id} onSwipeRight={onLike} onSwipeLeft={onPass}>
-              <DiscoverProfileCard profile={currentProfile} liked={isFavorite(currentProfile.id)} onPressPhoto={setPreviewUri} />
+              <DiscoverProfileCard
+                profile={currentProfile}
+                liked={isFavorite(currentProfile.id)}
+                mode={mode}
+                onPressPhoto={setPreviewUri}
+              />
             </SwipeableCard>
 
             <MatchScoreCard
               name={currentProfile.name}
               score={compatibilityScore}
               bureauVerified={Boolean(currentProfile.bureauVerified)}
+              mode={mode}
               onPress={onOpenMatchScore}
             />
 
@@ -452,17 +466,32 @@ export function HomeScreen() {
             onPass={onPass}
             onLike={onLike}
             bottomInset={actionBarBottom}
+            mode={mode}
           />
         </Animated.View>
       ) : (
         <Animated.View entering={ReanimatedFadeIn.duration(240)} style={styles.emptyState}>
-          <Ionicons name="sparkles-outline" size={32} color={colors.textTertiary} />
+          <LinearGradient
+            colors={accent.ramp}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={[styles.emptyOrb, glow(accent.primary, 0.55, 24, 10)]}
+          >
+            <Ionicons name="sparkles" size={34} color="#FFFFFF" />
+          </LinearGradient>
           <Text style={[styles.emptyText, rtl && styles.rtlText]}>
             {filtersActive > 0 ? t('discover.filtersEmpty') : t('discover.outOfProfiles')}
           </Text>
           {filtersActive > 0 && (
-            <Pressable onPress={() => setFilters(DEFAULT_BROWSE_FILTERS)} style={styles.emptyResetButton}>
-              <Text style={styles.emptyResetLabel}>{t('discover.filtersReset')}</Text>
+            <Pressable onPress={() => setFilters(DEFAULT_BROWSE_FILTERS)}>
+              <LinearGradient
+                colors={accent.duo}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={[styles.emptyResetButton, glow(accent.primary, 0.5, 14, 6)]}
+              >
+                <Text style={styles.emptyResetLabel}>{t('discover.filtersReset')}</Text>
+              </LinearGradient>
             </Pressable>
           )}
         </Animated.View>
@@ -518,14 +547,13 @@ const makeStyles = (colors: Palette) =>
     toggleWrap: { paddingHorizontal: spacing.lg, paddingBottom: spacing.md },
     emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, paddingHorizontal: spacing.xl },
     emptyText: { ...typography.body, color: colors.textSecondary, textAlign: 'center' },
+    emptyOrb: { width: 84, height: 84, borderRadius: 42, alignItems: 'center', justifyContent: 'center' },
     emptyResetButton: {
       borderRadius: radius.pill,
-      borderWidth: 1.5,
-      borderColor: colors.teal,
       paddingHorizontal: spacing.lg,
-      paddingVertical: spacing.sm,
+      paddingVertical: spacing.sm + 2,
     },
-    emptyResetLabel: { ...typography.label, color: colors.teal, fontWeight: '700', fontSize: scaleFont(13) },
+    emptyResetLabel: { ...typography.label, color: '#FFFFFF', fontWeight: '800', fontSize: scaleFont(13) },
     previewOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', alignItems: 'center', justifyContent: 'center' },
     previewImage: { width: '100%', height: '80%' },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },

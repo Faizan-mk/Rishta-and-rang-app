@@ -2,11 +2,13 @@ import React, { useMemo } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import type { RishtaListingProfile } from '../../types/content';
 import { Badge } from '../common/Badge';
 import { radius, spacing, typography } from '../../theme';
 import { scaleFont } from '../../theme/responsive';
+import { glow, modeAccent, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
@@ -31,6 +33,7 @@ export const RishtaListingCard = React.memo(function RishtaListingCard({ profile
   const heartScale = useSharedValue(1);
   const heartStyle = useAnimatedStyle(() => ({ transform: [{ scale: heartScale.value }] }));
   const photosHidden = Boolean(profile.photosBlurred) && !liked;
+  const accent = modeAccent(colors, 'rishta');
 
   const onLikePress = () => {
     heartScale.value = withSpring(1.35, { damping: 6, stiffness: 260 }, () => {
@@ -40,8 +43,16 @@ export const RishtaListingCard = React.memo(function RishtaListingCard({ profile
   };
 
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}>
-      <View style={styles.photoWrap}>
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [styles.card, glow(accent.primary, 0.2, 14, 5), pressed && styles.cardPressed]}
+    >
+      <LinearGradient
+        colors={accent.ramp}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.photoWrap}
+      >
         <Image source={{ uri: profile.photos[0] }} style={styles.photo} />
         {photosHidden ? (
           <BlurView intensity={35} tint={isDark ? 'dark' : 'light'} style={styles.blurOverlay}>
@@ -55,7 +66,7 @@ export const RishtaListingCard = React.memo(function RishtaListingCard({ profile
             </View>
           )
         )}
-      </View>
+      </LinearGradient>
       <View style={styles.body}>
         <View style={styles.headerRow}>
           <Text style={[styles.name, rtl && styles.rtlText]}>
@@ -75,7 +86,7 @@ export const RishtaListingCard = React.memo(function RishtaListingCard({ profile
       {onToggleLike && (
         <Pressable onPress={onLikePress} hitSlop={8} style={styles.likeButton}>
           <Animated.View style={heartStyle}>
-            <Ionicons name={liked ? 'heart' : 'heart-outline'} size={20} color={liked ? colors.rishta : colors.textTertiary} />
+            <Ionicons name={liked ? 'heart' : 'heart-outline'} size={21} color={liked ? colors.rishta : colors.textTertiary} />
           </Animated.View>
         </Pressable>
       )}
@@ -89,22 +100,22 @@ const makeStyles = (colors: Palette) =>
     card: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: colors.surface,
+      backgroundColor: colors.surfaceElevated,
       borderRadius: radius.lg,
       borderWidth: 1,
-      borderColor: colors.border,
+      borderColor: colors.borderSoft,
       padding: spacing.sm,
       marginBottom: spacing.md,
     },
     cardPressed: { opacity: 0.85 },
-    photoWrap: { position: 'relative' },
-    photo: { width: 84, height: 104, borderRadius: radius.md, backgroundColor: colors.skeleton },
+    photoWrap: { position: 'relative', width: 88, height: 108, borderRadius: radius.md + 2, padding: 2 },
+    photo: { width: '100%', height: '100%', borderRadius: radius.md, backgroundColor: colors.skeleton },
     blurOverlay: {
       position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
+      top: 2,
+      left: 2,
+      right: 2,
+      bottom: 2,
       borderRadius: radius.md,
       overflow: 'hidden',
       alignItems: 'center',
@@ -125,11 +136,15 @@ const makeStyles = (colors: Palette) =>
     photoCountText: { color: '#FFFFFF', fontSize: scaleFont(10), fontWeight: '700' },
     body: { flex: 1, marginLeft: spacing.md, justifyContent: 'center' },
     headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-    name: { ...typography.h3, color: colors.textPrimary },
+    name: { ...typography.h3, color: colors.textPrimary, fontWeight: '800' },
     meta: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
     family: { ...typography.caption, color: colors.textSecondary, marginTop: spacing.xs },
     readinessRow: { marginTop: spacing.xs },
-    likeButton: { padding: spacing.xs },
+    likeButton: {
+      padding: spacing.sm,
+      borderRadius: radius.pill,
+      backgroundColor: withAlpha(colors.rishta, 0.1),
+    },
     chevron: { marginLeft: spacing.xs },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   });

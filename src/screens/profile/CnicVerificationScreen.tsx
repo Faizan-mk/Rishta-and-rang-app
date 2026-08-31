@@ -14,6 +14,7 @@ import { digitsToCnicDisplay, isValidCnicFormat, cnicMatchesGender, maskCnic } f
 import { analyzeIdCardPhoto } from '../../utils/idCardImageCheck';
 import { radius, spacing, typography } from '../../theme';
 import { scaleFont } from '../../theme/responsive';
+import { glow, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 
 export function CnicVerificationScreen() {
@@ -174,24 +175,33 @@ export function CnicVerificationScreen() {
 
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
-    title: { ...typography.h1, color: colors.textPrimary, marginBottom: spacing.xs },
+    title: { ...typography.h1, color: colors.textPrimary, marginBottom: spacing.xs, fontWeight: '800' },
     subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg },
-    preview: { width: '100%', aspectRatio: 16 / 10, borderRadius: radius.lg, backgroundColor: colors.skeleton, marginBottom: spacing.md },
+    preview: {
+      width: '100%',
+      aspectRatio: 16 / 10,
+      borderRadius: radius.lg,
+      backgroundColor: colors.skeleton,
+      marginBottom: spacing.md,
+      borderWidth: 2,
+      borderColor: withAlpha(colors.teal, 0.35),
+    },
     previewEmpty: { alignItems: 'center', justifyContent: 'center' },
     previewPlaceholder: { fontSize: scaleFont(40) },
     card: {
-      backgroundColor: colors.surface,
+      backgroundColor: colors.surfaceElevated,
       borderRadius: radius.lg,
       borderWidth: 1,
-      borderColor: colors.border,
+      borderColor: colors.borderSoft,
       padding: spacing.md,
       marginBottom: spacing.md,
+      ...glow(colors.teal, 0.16, 14, 4),
     },
     cardHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
     label: { ...typography.label, color: colors.textSecondary, marginBottom: 0 },
     value: { ...typography.h3, color: colors.textPrimary },
     verifiedRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-    verifiedText: { ...typography.label, color: colors.success },
+    verifiedText: { ...typography.label, color: colors.success, fontWeight: '800' },
     updateButton: { marginTop: spacing.lg },
     editActions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.lg },
     editActionButton: { flex: 1 },
@@ -200,10 +210,10 @@ const makeStyles = (colors: Palette) =>
       flexDirection: 'row',
       alignItems: 'flex-start',
       gap: spacing.sm,
-      backgroundColor: colors.surface,
+      backgroundColor: withAlpha(colors.warning, 0.1),
       borderRadius: radius.lg,
       borderWidth: 1,
-      borderColor: colors.border,
+      borderColor: withAlpha(colors.warning, 0.35),
       padding: spacing.md,
     },
     notVerifiedText: { ...typography.body, color: colors.textSecondary, flex: 1 },

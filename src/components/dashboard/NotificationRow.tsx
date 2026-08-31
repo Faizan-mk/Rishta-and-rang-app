@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { NotificationItem, NotificationType } from '../../types/content';
 import { radius, spacing, typography } from '../../theme';
+import { glow, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 import { timeAgo } from '../../utils/time';
@@ -22,8 +23,11 @@ export function NotificationRow({ item, onPress }: { item: NotificationItem; onP
   const toneSoft = item.type === 'rishta_request' ? colors.rishtaSoft : item.type === 'match' ? colors.datingSoft : colors.tealSoft;
 
   return (
-    <Pressable onPress={onPress} style={styles.row}>
-      <View style={[styles.iconWrap, { backgroundColor: toneSoft }]}>
+    <Pressable
+      onPress={onPress}
+      style={[styles.row, !item.read && [styles.rowUnread, { borderColor: withAlpha(tone, 0.35) }]]}
+    >
+      <View style={[styles.iconWrap, { backgroundColor: toneSoft }, !item.read && glow(tone, 0.45, 10, 4)]}>
         <Ionicons name={ICONS[item.type]} size={18} color={tone} />
       </View>
       <View style={styles.textWrap}>
@@ -32,7 +36,7 @@ export function NotificationRow({ item, onPress }: { item: NotificationItem; onP
       </View>
       <View style={styles.metaWrap}>
         <Text style={styles.time}>{timeAgo(item.createdAt)}</Text>
-        {!item.read && <View style={[styles.dot, { backgroundColor: tone }]} />}
+        {!item.read && <View style={[styles.dot, { backgroundColor: tone }, glow(tone, 0.8, 8, 3)]} />}
       </View>
     </Pressable>
   );
@@ -43,8 +47,15 @@ const makeStyles = (colors: Palette) =>
     row: {
       flexDirection: 'row',
       alignItems: 'flex-start',
-      paddingVertical: spacing.sm,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: 'transparent',
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.sm + 2,
     },
+    // Unread notifications sit on their own tinted card so the list separates
+    // into "new" and "seen" without a second colour language.
+    rowUnread: { backgroundColor: colors.surfaceElevated },
     iconWrap: {
       width: 40,
       height: 40,
@@ -54,7 +65,7 @@ const makeStyles = (colors: Palette) =>
       marginRight: spacing.sm,
     },
     textWrap: { flex: 1 },
-    title: { ...typography.bodyBold, color: colors.textPrimary },
+    title: { ...typography.bodyBold, color: colors.textPrimary, fontWeight: '700' },
     body: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
     metaWrap: { alignItems: 'flex-end', marginLeft: spacing.sm },
     time: { ...typography.caption, color: colors.textTertiary },

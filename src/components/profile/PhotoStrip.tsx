@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { Image, ScrollView, StyleSheet, View } from 'react-native';
 import { radius, spacing } from '../../theme';
+import { glow, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 
@@ -33,6 +34,9 @@ const makeStyles = (colors: Palette) =>
       aspectRatio: 3 / 4,
       borderRadius: radius.lg,
       backgroundColor: colors.skeleton,
+      borderWidth: 2,
+      borderColor: withAlpha(colors.teal, 0.35),
+      ...glow(colors.teal, 0.2, 16, 6),
     },
     emptyPrimary: {
       width: '100%',
@@ -42,10 +46,12 @@ const makeStyles = (colors: Palette) =>
     },
     stripScroll: { marginTop: spacing.sm },
     thumb: {
-      width: 64,
-      height: 64,
-      borderRadius: radius.sm,
+      width: 66,
+      height: 66,
+      borderRadius: radius.md,
       marginRight: spacing.sm,
       backgroundColor: colors.skeleton,
+      borderWidth: 1,
+      borderColor: colors.borderSoft,
     },
   });

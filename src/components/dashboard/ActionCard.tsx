@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { radius, spacing, typography } from '../../theme';
+import { glow, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 
@@ -31,9 +32,14 @@ export function ActionCard({ icon, title, tint, tintSoft, onPress }: ActionCardP
       onPressOut={() => {
         scale.value = withSpring(1, { damping: 12, stiffness: 220 });
       }}
-      style={[styles.card, animatedStyle]}
+      style={[
+        styles.card,
+        { borderColor: withAlpha(tint, 0.3), backgroundColor: withAlpha(tint, 0.07) },
+        glow(tint, 0.22, 12, 4),
+        animatedStyle,
+      ]}
     >
-      <View style={[styles.iconWrap, { backgroundColor: tintSoft }]}>
+      <View style={[styles.iconWrap, { backgroundColor: tintSoft }, glow(tint, 0.45, 10, 4)]}>
         <Ionicons name={icon} size={22} color={tint} />
       </View>
       <Text style={styles.title}>{title}</Text>
@@ -60,5 +66,5 @@ const makeStyles = (colors: Palette) =>
       justifyContent: 'center',
       marginBottom: spacing.sm,
     },
-    title: { ...typography.label, color: colors.textPrimary, textAlign: 'center' },
+    title: { ...typography.label, color: colors.textPrimary, textAlign: 'center', fontWeight: '700' },
   });

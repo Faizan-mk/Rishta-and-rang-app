@@ -2,7 +2,8 @@ import React, { useEffect, useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring } from 'react-native-reanimated';
-import { spacing, typography } from '../../theme';
+import { radius, spacing, typography } from '../../theme';
+import { glow, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
@@ -25,7 +26,7 @@ export function ProfileUtilityBar({ liked, onShare, onToggleFavourite, onBlock, 
   return (
     <View style={styles.wrap}>
       <Pressable onPress={onShare} style={styles.shareRow}>
-        <Ionicons name="share-social-outline" size={19} color={colors.textPrimary} />
+        <Ionicons name="share-social" size={19} color={colors.teal} />
         <Text style={styles.shareLabel}>{t('discover.shareProfile')}</Text>
       </Pressable>
 
@@ -87,7 +88,13 @@ function UtilityAction({
       }}
       style={styles.utilityButton}
     >
-      <Animated.View style={animatedStyle}>
+      <Animated.View
+        style={[
+          styles.utilityIcon,
+          active && [{ backgroundColor: withAlpha(colors.gold, 0.16) }, glow(colors.gold, 0.4, 10, 3)],
+          animatedStyle,
+        ]}
+      >
         <Ionicons name={icon} size={22} color={active ? colors.gold : colors.textPrimary} />
       </Animated.View>
       <Text style={[styles.utilityLabel, { color: active ? colors.gold : colors.textPrimary }]}>{label}</Text>
@@ -98,10 +105,28 @@ function UtilityAction({
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
     wrap: { marginTop: spacing.xl },
-    shareRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, paddingVertical: spacing.md },
-    shareLabel: { ...typography.h3, color: colors.textPrimary, fontWeight: '600' },
-    divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border, marginVertical: spacing.sm },
-    utilityRow: { flexDirection: 'row', paddingVertical: spacing.md },
+    shareRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.sm,
+      paddingVertical: spacing.md,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: withAlpha(colors.teal, 0.3),
+      backgroundColor: withAlpha(colors.teal, 0.08),
+    },
+    shareLabel: { ...typography.h3, color: colors.teal, fontWeight: '800' },
+    divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border, marginVertical: spacing.md },
+    utilityRow: { flexDirection: 'row', paddingVertical: spacing.sm },
     utilityButton: { flex: 1, alignItems: 'center', gap: spacing.sm },
-    utilityLabel: { ...typography.body, fontWeight: '600' },
+    utilityIcon: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: withAlpha(colors.textPrimary, 0.05),
+    },
+    utilityLabel: { ...typography.body, fontWeight: '700' },
   });

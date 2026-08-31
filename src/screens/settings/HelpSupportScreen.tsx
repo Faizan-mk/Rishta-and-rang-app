@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { AccentHeading } from '../../components/common/AccentHeading';
 import { FadeIn } from '../../components/common/FadeInUp';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { TextField } from '../../components/common/TextField';
@@ -9,6 +10,7 @@ import { useLanguage } from '../../store/LanguageContext';
 import { useTheme } from '../../store/ThemeContext';
 import { useDialog } from '../../store/DialogContext';
 import { radius, spacing, typography } from '../../theme';
+import { withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 
 const FAQ_KEYS = ['selfie', 'subscription', 'reporting', 'changeDetails', 'deleteAccount', 'safety'];
@@ -25,6 +27,7 @@ export function HelpSupportScreen() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  const safeRamp = [colors.teal, colors.sage] as const;
 
   const onSend = async () => {
     if (!subject.trim() || !message.trim()) {
@@ -42,15 +45,23 @@ export function HelpSupportScreen() {
 
   return (
     <ScreenContainer>
-      <Text style={[styles.sectionTitle, rtl && styles.rtlText, styles.firstSection]}>{t('help.faqTitle')}</Text>
+      <AccentHeading title={t('help.faqTitle')} gradient={safeRamp} style={styles.firstSectionHeading} />
       <View style={styles.card}>
         {FAQ_KEYS.map((key, index) => {
           const isOpen = expanded === key;
           return (
             <React.Fragment key={key}>
               <Pressable onPress={() => setExpanded(isOpen ? null : key)} style={styles.faqRow}>
-                <Text style={[styles.faqQuestion, rtl && styles.rtlText]}>{t(`help.faq.${key}.q`)}</Text>
-                <Ionicons name={isOpen ? 'chevron-up' : 'chevron-down'} size={16} color={colors.textTertiary} />
+                <Text style={[styles.faqQuestion, isOpen && styles.faqQuestionOpen, rtl && styles.rtlText]}>
+                  {t(`help.faq.${key}.q`)}
+                </Text>
+                <View style={[styles.faqChevron, isOpen && styles.faqChevronOpen]}>
+                  <Ionicons
+                    name={isOpen ? 'chevron-up' : 'chevron-down'}
+                    size={14}
+                    color={isOpen ? '#FFFFFF' : colors.textTertiary}
+                  />
+                </View>
               </Pressable>
               {isOpen && (
                 <FadeIn style={styles.faqAnswerWrap}>
@@ -63,7 +74,7 @@ export function HelpSupportScreen() {
         })}
       </View>
 
-      <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('help.contactTitle')}</Text>
+      <AccentHeading title={t('help.contactTitle')} gradient={safeRamp} style={styles.sectionHeading} />
       <Pressable onPress={() => Linking.openURL(`mailto:${SUPPORT_EMAIL}`)} style={styles.emailRow}>
         <Ionicons name="mail-outline" size={18} color={colors.teal} />
         <Text style={[styles.emailText, rtl && styles.rtlText]}>{t('help.emailUs')}</Text>
@@ -81,7 +92,13 @@ export function HelpSupportScreen() {
           style={styles.messageInput}
         />
         {error ? <Text style={[styles.errorText, rtl && styles.rtlText]}>{error}</Text> : null}
-        <Button label={t('help.send')} onPress={onSend} loading={sending} style={styles.sendButton} />
+        <Button
+          label={t('help.send')}
+          onPress={onSend}
+          loading={sending}
+          gradient={safeRamp}
+          style={styles.sendButton}
+        />
       </View>
     </ScreenContainer>
   );
@@ -89,17 +106,27 @@ export function HelpSupportScreen() {
 
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
-    firstSection: { marginTop: 0 },
-    sectionTitle: { ...typography.label, color: colors.textSecondary, textTransform: 'uppercase', marginBottom: spacing.sm, marginTop: spacing.lg },
+    firstSectionHeading: { marginBottom: spacing.sm },
+    sectionHeading: { marginBottom: spacing.sm, marginTop: spacing.lg },
     card: {
-      backgroundColor: colors.surface,
+      backgroundColor: colors.surfaceElevated,
       borderRadius: radius.lg,
       borderWidth: 1,
-      borderColor: colors.border,
+      borderColor: colors.borderSoft,
       paddingHorizontal: spacing.md,
     },
     faqRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: spacing.md, gap: spacing.sm },
-    faqQuestion: { ...typography.body, color: colors.textPrimary, flex: 1 },
+    faqQuestion: { ...typography.body, color: colors.textPrimary, flex: 1, fontWeight: '600' },
+    faqQuestionOpen: { color: colors.teal, fontWeight: '800' },
+    faqChevron: {
+      width: 26,
+      height: 26,
+      borderRadius: 13,
+      backgroundColor: withAlpha(colors.textPrimary, 0.06),
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    faqChevronOpen: { backgroundColor: colors.teal },
     faqAnswerWrap: { paddingBottom: spacing.md },
     faqAnswer: { ...typography.caption, color: colors.textSecondary },
     divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border },
@@ -107,17 +134,19 @@ const makeStyles = (colors: Palette) =>
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.sm,
-      backgroundColor: colors.tealSoft,
+      backgroundColor: withAlpha(colors.teal, 0.1),
+      borderWidth: 1,
+      borderColor: withAlpha(colors.teal, 0.32),
       borderRadius: radius.lg,
       padding: spacing.md,
       marginBottom: spacing.md,
     },
-    emailText: { ...typography.label, color: colors.teal },
+    emailText: { ...typography.label, color: colors.teal, fontWeight: '800' },
     formCard: {
-      backgroundColor: colors.surface,
+      backgroundColor: colors.surfaceElevated,
       borderRadius: radius.lg,
       borderWidth: 1,
-      borderColor: colors.border,
+      borderColor: colors.borderSoft,
       padding: spacing.md,
       marginBottom: spacing.lg,
     },

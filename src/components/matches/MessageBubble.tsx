@@ -1,10 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import { Image, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import type { ChatMessage } from '../../types/content';
 import { radius, spacing, typography } from '../../theme';
 import { scaleFont } from '../../theme/responsive';
+import { glow } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
@@ -28,7 +30,6 @@ export const MessageBubble = React.memo(function MessageBubble({ message }: { me
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
-  const bubbleStyle = [styles.bubble, message.fromMe ? styles.bubbleMe : styles.bubbleThem];
   const textColor = message.fromMe ? styles.textMe : styles.textThem;
 
   let content: React.ReactNode;
@@ -45,7 +46,20 @@ export const MessageBubble = React.memo(function MessageBubble({ message }: { me
   return (
     <View style={[styles.row, message.fromMe ? styles.rowMe : styles.rowThem]}>
       <View style={styles.bubbleWrap}>
-        <View style={bubbleStyle}>{content}</View>
+        {/* Own messages are a lit gradient, replies a plain surface — the two
+            sides of the thread never need re-reading to tell apart. */}
+        {message.fromMe ? (
+          <LinearGradient
+            colors={[colors.teal, colors.sage]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={[styles.bubble, styles.bubbleMe, glow(colors.teal, 0.35, 10, 4)]}
+          >
+            {content}
+          </LinearGradient>
+        ) : (
+          <View style={[styles.bubble, styles.bubbleThem]}>{content}</View>
+        )}
         <Text style={[styles.timestamp, message.fromMe ? styles.timestampMe : styles.timestampThem]}>
           {formatMessageTime(message.sentAt)}
         </Text>
@@ -134,8 +148,13 @@ const makeStyles = (colors: Palette) =>
     rowThem: { justifyContent: 'flex-start' },
     bubbleWrap: { maxWidth: '78%', alignSelf: 'flex-start' },
     bubble: { borderRadius: radius.lg, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
-    bubbleMe: { backgroundColor: colors.teal, borderBottomRightRadius: 4 },
-    bubbleThem: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderBottomLeftRadius: 4 },
+    bubbleMe: { borderBottomRightRadius: 5 },
+    bubbleThem: {
+      backgroundColor: colors.surfaceElevated,
+      borderWidth: 1,
+      borderColor: colors.borderSoft,
+      borderBottomLeftRadius: 5,
+    },
     text: { ...typography.body },
     textMe: { color: colors.textInverse },
     textThem: { color: colors.textPrimary },
@@ -148,7 +167,7 @@ const makeStyles = (colors: Palette) =>
     },
     previewOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.9)', alignItems: 'center', justifyContent: 'center' },
     previewImage: { width: '100%', height: '80%' },
-    timestamp: { ...typography.caption, fontSize: scaleFont(10), marginTop: 2 },
+    timestamp: { ...typography.caption, fontSize: scaleFont(10), marginTop: 3, fontWeight: '600' },
     timestampMe: { color: colors.textTertiary, textAlign: 'right' },
     timestampThem: { color: colors.textTertiary, textAlign: 'left' },
   });

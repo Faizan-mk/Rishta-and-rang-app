@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming, Easing } from 'react-native-reanimated';
 import { radius } from '../../theme';
+import { glow } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 
@@ -18,9 +20,18 @@ export function ProgressBar({ progress, color }: { progress: number; color?: str
     width: `${width.value}%`,
   }));
 
+  const tint = color ?? colors.teal;
+
   return (
     <View style={styles.track}>
-      <Animated.View style={[styles.fill, { backgroundColor: color ?? colors.teal }, animatedStyle]} />
+      <Animated.View style={[styles.fill, glow(tint, 0.5, 8, 3), animatedStyle]}>
+        <LinearGradient
+          colors={[tint, colors.sage]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={StyleSheet.absoluteFill}
+        />
+      </Animated.View>
     </View>
   );
 }
@@ -33,5 +44,5 @@ const makeStyles = (colors: Palette) =>
       backgroundColor: colors.border,
       overflow: 'hidden',
     },
-    fill: { height: '100%', borderRadius: radius.pill },
+    fill: { height: '100%', borderRadius: radius.pill, overflow: 'hidden' },
   });

@@ -19,6 +19,7 @@ import { FadeIn } from '../../components/common/FadeInUp';
 import { useLanguage } from '../../store/LanguageContext';
 import { useTheme } from '../../store/ThemeContext';
 import { radius, spacing, typography } from '../../theme';
+import { glow } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 
 function formatDuration(totalSeconds: number): string {
@@ -85,7 +86,12 @@ export function CallScreen() {
       {showCamera ? (
         <CameraView style={StyleSheet.absoluteFill} facing={facing} />
       ) : (
-        <LinearGradient colors={[colors.tealDark, colors.background]} style={StyleSheet.absoluteFill} />
+        <LinearGradient
+          colors={[colors.tealDark, colors.plum, colors.background]}
+          start={{ x: 0.1, y: 0 }}
+          end={{ x: 0.9, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
       )}
 
       <SafeAreaView style={styles.flex} edges={['top', 'bottom']}>
@@ -205,12 +211,27 @@ const makeStyles = (colors: Palette) =>
     flex: { flex: 1 },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     topBar: { alignItems: 'center', paddingTop: spacing.lg },
-    status: { ...typography.label, color: 'rgba(255,255,255,0.8)', letterSpacing: 1 },
+    status: { ...typography.label, color: 'rgba(255,255,255,0.8)', letterSpacing: 1.6, fontWeight: '800' },
     statusOnCamera: { color: '#FFFFFF', textShadowColor: 'rgba(0,0,0,0.5)', textShadowRadius: 4 },
     avatarWrap: { marginTop: spacing.lg, alignItems: 'center', justifyContent: 'center' },
-    ring: { position: 'absolute', width: 168, height: 168, borderRadius: 84, borderWidth: 2, borderColor: '#FFFFFF' },
-    avatar: { width: 140, height: 140, borderRadius: 70, borderWidth: 3, borderColor: 'rgba(255,255,255,0.5)' },
-    name: { ...typography.h1, color: '#FFFFFF', marginTop: spacing.lg },
+    ring: {
+      position: 'absolute',
+      width: 172,
+      height: 172,
+      borderRadius: 86,
+      borderWidth: 2,
+      borderColor: '#FFFFFF',
+      ...glow('#FFFFFF', 0.5, 20, 0),
+    },
+    avatar: {
+      width: 140,
+      height: 140,
+      borderRadius: 70,
+      borderWidth: 4,
+      borderColor: 'rgba(255,255,255,0.65)',
+      ...glow(colors.teal, 0.6, 24, 10),
+    },
+    name: { ...typography.h1, color: '#FFFFFF', marginTop: spacing.lg, fontWeight: '800' },
     hint: { ...typography.body, color: 'rgba(255,255,255,0.75)', marginTop: spacing.xs },
     hintOnCamera: { color: 'rgba(255,255,255,0.85)', textShadowColor: 'rgba(0,0,0,0.5)', textShadowRadius: 4 },
     remoteTile: {
@@ -223,18 +244,20 @@ const makeStyles = (colors: Palette) =>
       overflow: 'hidden',
       borderWidth: 2,
       borderColor: 'rgba(255,255,255,0.7)',
+      ...glow('#000000', 0.5, 14, 8),
     },
     remoteTileRtl: { right: undefined, left: spacing.md },
     remoteImage: { width: '100%', height: '100%' },
     controlsRow: { flexDirection: 'row', gap: spacing.lg, alignSelf: 'center', marginTop: 'auto', marginBottom: spacing.xl },
     endButton: {
-      width: 64,
-      height: 64,
-      borderRadius: 32,
+      width: 66,
+      height: 66,
+      borderRadius: 33,
       backgroundColor: colors.danger,
       alignItems: 'center',
       justifyContent: 'center',
       alignSelf: 'center',
+      ...glow(colors.danger, 0.7, 20, 10),
     },
     endLabel: { ...typography.caption, color: 'rgba(255,255,255,0.7)', textAlign: 'center', marginTop: spacing.sm, marginBottom: spacing.lg },
     permissionWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xl, gap: spacing.md },

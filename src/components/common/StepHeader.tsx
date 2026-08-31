@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { spacing } from '../../theme';
+import { radius, spacing } from '../../theme';
+import { withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
@@ -36,14 +37,14 @@ const makeStyles = (colors: Palette) =>
   StyleSheet.create({
     row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
     backButton: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
+      width: 38,
+      height: 38,
+      borderRadius: radius.pill,
       borderWidth: 1,
-      borderColor: colors.border,
+      borderColor: colors.borderSoft,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: colors.surface,
+      backgroundColor: withAlpha(colors.textPrimary, 0.05),
     },
     dotsWrap: { flex: 1 },
   });

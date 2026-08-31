@@ -3,10 +3,13 @@ import { Image, Modal, Pressable, RefreshControl, ScrollView, Share, StyleSheet,
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { TAB_BAR_BASE_HEIGHT, useHideTabBarOnScroll } from '../../store/TabBarVisibilityContext';
 import { Button } from '../../components/Button';
+import { AccentHeading } from '../../components/common/AccentHeading';
+import { AuroraBackground } from '../../components/common/AuroraBackground';
 import { SmartImage } from '../../components/common/SmartImage';
 import { BrowseFiltersSheet } from '../../components/discover/BrowseSheets';
 import {
@@ -28,19 +31,25 @@ import { oppositeGenderProfiles } from '../../utils/genderMatch';
 import { timeAgo } from '../../utils/time';
 import { radius, spacing, typography } from '../../theme';
 import { scaleFont } from '../../theme/responsive';
+import { glow, modeAccent, withAlpha, type ModeAccent } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 
 type ExploreTab = 'forYou' | 'events' | 'history';
 type ExploreProfile = (DiscoverProfile | RishtaListingProfile) & { kind: 'dating' | 'rishta' };
 
-const TABS: { key: ExploreTab; labelKey: string }[] = [
-  { key: 'forYou', labelKey: 'explore.forYou' },
-  { key: 'events', labelKey: 'explore.events' },
-  { key: 'history', labelKey: 'explore.myHistory' },
+const TABS: { key: ExploreTab; labelKey: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { key: 'forYou', labelKey: 'explore.forYou', icon: 'sparkles' },
+  { key: 'events', labelKey: 'explore.events', icon: 'calendar' },
+  { key: 'history', labelKey: 'explore.myHistory', icon: 'time' },
 ];
 
 // How many cards each themed row shows.
 const ROW_SIZE = 4;
+
+const GRADIENT_START = { x: 0, y: 0 } as const;
+const GRADIENT_END = { x: 1, y: 1 } as const;
+const SCRIM_START = { x: 0, y: 0 } as const;
+const SCRIM_END = { x: 0, y: 1 } as const;
 
 function timestamp(iso?: string): number {
   return iso ? new Date(iso).getTime() : 0;
@@ -70,6 +79,7 @@ export function ExploreScreen() {
 
   const isPro = Boolean(user?.isExplorePlus);
   const mode = user?.activeMode ?? 'dating';
+  const accent = modeAccent(colors, mode);
   const activeFilters = countActiveFilters(filters);
 
   // Real data, not a slice of the deck: these are the members who actually
@@ -163,36 +173,69 @@ export function ExploreScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <View style={[styles.header, rtl && styles.rowRtl]}>
-        <View style={styles.headerText}>
-          <Text style={[styles.title, rtl && styles.rtlText]}>{t('explore.title')}</Text>
-          <Text style={[styles.subtitle, rtl && styles.rtlText]}>{t('explore.subtitle')}</Text>
-        </View>
-        {tab === 'forYou' && (
-          <Pressable
-            onPress={() => setFiltersVisible(true)}
-            style={[styles.filterChip, activeFilters > 0 && styles.filterChipActive]}
-          >
-            <Ionicons name="options-outline" size={16} color={activeFilters > 0 ? colors.teal : colors.textSecondary} />
-            <Text style={[styles.filterLabel, activeFilters > 0 && styles.filterLabelActive]}>
-              {t('discover.filters')}
-            </Text>
-            {activeFilters > 0 && (
-              <View style={styles.countPill}>
-                <Text style={styles.countPillText}>{activeFilters}</Text>
-              </View>
-            )}
-          </Pressable>
-        )}
+      <AuroraBackground colors={colors} mode={mode} />
+
+      <View style={styles.header}>
+        <AccentHeading
+          size="screen"
+          title={t('explore.title')}
+          subtitle={t('explore.subtitle')}
+          gradient={accent.ramp}
+          right={
+            tab === 'forYou' ? (
+              <Pressable
+                onPress={() => setFiltersVisible(true)}
+                style={[styles.filterChip, activeFilters > 0 && styles.filterChipActive]}
+              >
+                <Ionicons
+                  name="options-outline"
+                  size={16}
+                  color={activeFilters > 0 ? colors.teal : colors.textSecondary}
+                />
+                <Text style={[styles.filterLabel, activeFilters > 0 && styles.filterLabelActive]}>
+                  {t('discover.filters')}
+                </Text>
+                {activeFilters > 0 && (
+                  <View style={[styles.countPill, glow(colors.teal, 0.7, 8, 4)]}>
+                    <Text style={styles.countPillText}>{activeFilters}</Text>
+                  </View>
+                )}
+              </Pressable>
+            ) : undefined
+          }
+        />
       </View>
 
+      {/* Segmented pills rather than an underline: the lit pill says which tab
+          you're on from the corner of the eye, an underline doesn't. */}
       <View style={[styles.tabRow, rtl && styles.rowRtl]}>
         {TABS.map((tabDef) => {
           const active = tab === tabDef.key;
+          if (active) {
+            return (
+              <Pressable key={tabDef.key} onPress={() => setTab(tabDef.key)} style={styles.tabItem}>
+                <LinearGradient
+                  colors={accent.ramp}
+                  start={GRADIENT_START}
+                  end={GRADIENT_END}
+                  style={[styles.tabPill, glow(accent.primary, 0.5, 12, 6)]}
+                >
+                  <Ionicons name={tabDef.icon} size={14} color="#FFFFFF" />
+                  <Text style={styles.tabLabelActive} numberOfLines={1}>
+                    {t(tabDef.labelKey)}
+                  </Text>
+                </LinearGradient>
+              </Pressable>
+            );
+          }
           return (
             <Pressable key={tabDef.key} onPress={() => setTab(tabDef.key)} style={styles.tabItem}>
-              <Text style={[styles.tabLabel, active && styles.tabLabelActive]}>{t(tabDef.labelKey)}</Text>
-              {active && <View style={styles.tabUnderline} />}
+              <View style={styles.tabPillIdle}>
+                <Ionicons name={tabDef.icon} size={14} color={colors.textTertiary} />
+                <Text style={styles.tabLabel} numberOfLines={1}>
+                  {t(tabDef.labelKey)}
+                </Text>
+              </View>
             </Pressable>
           );
         })}
@@ -211,45 +254,62 @@ export function ExploreScreen() {
           <>
             {/* The one paid unlock in V1: free members see the count, not the faces. */}
             <View style={styles.section}>
-              <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('explore.whoLikedYou')}</Text>
+              <AccentHeading title={t('explore.whoLikedYou')} gradient={accent.duo} style={styles.sectionHeading} />
               {likes.length === 0 ? (
                 <Text style={[styles.sectionEmpty, rtl && styles.rtlText]}>{t('explore.whoLikedYouEmpty')}</Text>
               ) : isPro ? (
                 <View style={styles.grid}>
                   {likes.map((like) => (
-                    <Pressable
-                      key={like.id}
-                      onPress={() => router.push({ pathname: '/profile-detail', params: { kind: like.kind, id: like.id } })}
-                      style={styles.gridCard}
-                    >
-                      <SmartImage uri={like.photo} name={like.name} style={styles.gridPhoto} size={30} />
-                      <View style={styles.gridCaption}>
-                        <Text style={styles.gridName} numberOfLines={1}>
-                          {like.name}, {like.age}
-                        </Text>
-                        <Text style={styles.gridMeta} numberOfLines={1}>
-                          {like.city}
-                        </Text>
-                      </View>
-                    </Pressable>
+                    <View key={like.id} style={styles.gridSlot}>
+                      <PhotoTile
+                        uri={like.photo}
+                        name={like.name}
+                        title={`${like.name}, ${like.age}`}
+                        caption={like.city}
+                        accent={accent}
+                        colors={colors}
+                        onPress={() =>
+                          router.push({ pathname: '/profile-detail', params: { kind: like.kind, id: like.id } })
+                        }
+                      />
+                    </View>
                   ))}
                 </View>
               ) : (
-                <Pressable onPress={() => router.push('/explore-plus')} style={styles.lockedCard}>
+                <Pressable onPress={() => router.push('/explore-plus')} style={[styles.lockedCard, glow(accent.primary, 0.35, 18, 8)]}>
                   <Image source={{ uri: likes[0].photo }} style={styles.lockedImage} blurRadius={22} />
                   <BlurView intensity={40} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
+                  <LinearGradient
+                    colors={[withAlpha(accent.primary, 0.35), withAlpha(accent.secondary, 0.2), 'transparent']}
+                    start={SCRIM_END}
+                    end={SCRIM_START}
+                    style={StyleSheet.absoluteFill}
+                    pointerEvents="none"
+                  />
                   <View style={styles.lockedBody}>
-                    <Ionicons name="lock-closed" size={20} color={colors.teal} />
+                    <LinearGradient
+                      colors={accent.ramp}
+                      start={GRADIENT_START}
+                      end={GRADIENT_END}
+                      style={[styles.lockedOrb, glow(accent.primary, 0.6, 16, 8)]}
+                    >
+                      <Ionicons name="lock-closed" size={20} color="#FFFFFF" />
+                    </LinearGradient>
                     <Text style={styles.lockedCount}>
                       {likes.length === 1
                         ? t('explore.whoLikedYouLockedOne')
                         : t('explore.whoLikedYouLocked', { count: likes.length })}
                     </Text>
                     <Text style={styles.lockedHint}>{t('explore.premiumLockHint')}</Text>
-                    <View style={styles.lockedButton}>
+                    <LinearGradient
+                      colors={accent.ramp}
+                      start={GRADIENT_START}
+                      end={GRADIENT_END}
+                      style={[styles.lockedButton, glow(accent.primary, 0.6, 14, 6)]}
+                    >
                       <Ionicons name="sparkles" size={14} color="#FFFFFF" />
                       <Text style={styles.lockedButtonText}>{t('explorePlus.upgrade')}</Text>
-                    </View>
+                    </LinearGradient>
                   </View>
                 </Pressable>
               )}
@@ -262,6 +322,7 @@ export function ExploreScreen() {
               captionFor={(p) => (p.joinedAt ? t('explore.joinedAt', { time: timeAgo(p.joinedAt) }) : p.city)}
               onPressProfile={openProfile}
               colors={colors}
+              accent={accent}
               rtl={rtl}
             />
 
@@ -272,6 +333,7 @@ export function ExploreScreen() {
               captionFor={(p) => (p.lastActiveAt ? t('explore.activeAt', { time: timeAgo(p.lastActiveAt) }) : p.city)}
               onPressProfile={openProfile}
               colors={colors}
+              accent={accent}
               rtl={rtl}
             />
 
@@ -282,6 +344,7 @@ export function ExploreScreen() {
               captionFor={(p) => p.city}
               onPressProfile={openProfile}
               colors={colors}
+              accent={accent}
               rtl={rtl}
             />
           </>
@@ -290,28 +353,46 @@ export function ExploreScreen() {
         {tab === 'events' && (
           <View style={styles.eventList}>
             {mockEvents.map((event, index) => (
-              <Animated.View key={event.id} entering={FadeInUp.delay(index * 60).duration(320)} style={styles.eventCard}>
-                <Image source={{ uri: event.image }} style={styles.eventImage} />
+              <Animated.View
+                key={event.id}
+                entering={FadeInUp.delay(index * 60).duration(320)}
+                style={[styles.eventCard, glow(accent.primary, 0.25, 16, 6)]}
+              >
+                <View style={styles.eventImageWrap}>
+                  <Image source={{ uri: event.image }} style={styles.eventImage} />
+                  <LinearGradient
+                    colors={['transparent', withAlpha(accent.primary, 0.35), 'rgba(10,10,12,0.72)']}
+                    start={SCRIM_START}
+                    end={SCRIM_END}
+                    style={StyleSheet.absoluteFill}
+                    pointerEvents="none"
+                  />
+                  <Text style={[styles.eventTitle, rtl && styles.rtlText]} numberOfLines={2}>
+                    {event.title}
+                  </Text>
+                </View>
                 <View style={styles.eventBody}>
-                  <Text style={[styles.eventTitle, rtl && styles.rtlText]}>{event.title}</Text>
                   <View style={[styles.eventMetaRow, rtl && styles.rowRtl]}>
-                    <Ionicons name="location-outline" size={13} color={colors.textSecondary} />
-                    <Text style={styles.eventMeta}>{event.city}</Text>
-                    <Ionicons
-                      name="calendar-outline"
-                      size={13}
-                      color={colors.textSecondary}
-                      style={styles.eventMetaIcon}
-                    />
-                    <Text style={styles.eventMeta}>{event.dateLabel}</Text>
+                    <View style={[styles.eventTag, { backgroundColor: withAlpha(colors.teal, 0.12) }]}>
+                      <Ionicons name="location" size={12} color={colors.teal} />
+                      <Text style={[styles.eventTagText, { color: colors.teal }]}>{event.city}</Text>
+                    </View>
+                    <View style={[styles.eventTag, { backgroundColor: withAlpha(colors.gold, 0.14) }]}>
+                      <Ionicons name="calendar" size={12} color={colors.gold} />
+                      <Text style={[styles.eventTagText, { color: colors.gold }]}>{event.dateLabel}</Text>
+                    </View>
                   </View>
                   <View style={[styles.eventActions, rtl && styles.rowRtl]}>
-                    <Button
-                      label={t('explore.learnMore')}
-                      variant="secondary"
-                      onPress={() => setActiveEvent(event)}
-                      style={styles.eventActionButton}
-                    />
+                    <Pressable onPress={() => setActiveEvent(event)} style={styles.eventActionButton}>
+                      <LinearGradient
+                        colors={accent.ramp}
+                        start={GRADIENT_START}
+                        end={GRADIENT_END}
+                        style={[styles.eventCta, glow(accent.primary, 0.5, 12, 6)]}
+                      >
+                        <Text style={styles.eventCtaText}>{t('explore.learnMore')}</Text>
+                      </LinearGradient>
+                    </Pressable>
                     <Pressable onPress={() => onShareEvent(event)} style={styles.eventShareButton}>
                       <Ionicons name="share-outline" size={18} color={colors.teal} />
                     </Pressable>
@@ -326,27 +407,47 @@ export function ExploreScreen() {
           <View style={styles.section}>
             {history.length === 0 ? (
               <View style={styles.emptyState}>
-                <Ionicons name="time-outline" size={28} color={colors.textTertiary} />
+                <LinearGradient
+                  colors={accent.ramp}
+                  start={GRADIENT_START}
+                  end={GRADIENT_END}
+                  style={[styles.emptyOrb, glow(accent.primary, 0.5, 22, 10)]}
+                >
+                  <Ionicons name="time" size={30} color="#FFFFFF" />
+                </LinearGradient>
                 <Text style={[styles.emptyText, rtl && styles.rtlText]}>{t('explore.historyEmpty')}</Text>
               </View>
             ) : (
               <>
-                {history.map((entry) => (
-                  <Pressable
-                    key={entry.id}
-                    onPress={() => router.push({ pathname: '/profile-detail', params: { kind: entry.kind, id: entry.id } })}
-                    style={[styles.historyRow, rtl && styles.rowRtl]}
-                  >
-                    <SmartImage uri={entry.photo} name={entry.name} style={styles.historyAvatar} size={16} />
-                    <View style={styles.historyTextWrap}>
-                      <Text style={[styles.historyName, rtl && styles.rtlText]}>
-                        {entry.name}, {entry.age}
-                      </Text>
-                      <Text style={[styles.historyMeta, rtl && styles.rtlText]}>
-                        {t('explore.viewedAt', { time: timeAgo(entry.viewedAt) })}
-                      </Text>
-                    </View>
-                  </Pressable>
+                {history.map((entry, index) => (
+                  <Animated.View key={entry.id} entering={FadeInUp.delay(Math.min(index * 40, 240)).duration(280)}>
+                    <Pressable
+                      onPress={() => router.push({ pathname: '/profile-detail', params: { kind: entry.kind, id: entry.id } })}
+                      style={[styles.historyRow, rtl && styles.rowRtl]}
+                    >
+                      <LinearGradient
+                        colors={accent.ramp}
+                        start={GRADIENT_START}
+                        end={GRADIENT_END}
+                        style={styles.historyAvatarRing}
+                      >
+                        <SmartImage uri={entry.photo} name={entry.name} style={styles.historyAvatar} size={16} />
+                      </LinearGradient>
+                      <View style={styles.historyTextWrap}>
+                        <Text style={[styles.historyName, rtl && styles.rtlText]}>
+                          {entry.name}, {entry.age}
+                        </Text>
+                        <Text style={[styles.historyMeta, rtl && styles.rtlText]}>
+                          {t('explore.viewedAt', { time: timeAgo(entry.viewedAt) })}
+                        </Text>
+                      </View>
+                      <Ionicons
+                        name={rtl ? 'chevron-back' : 'chevron-forward'}
+                        size={16}
+                        color={colors.textTertiary}
+                      />
+                    </Pressable>
+                  </Animated.View>
                 ))}
                 <Button
                   label={t('explore.clearHistory')}
@@ -364,19 +465,29 @@ export function ExploreScreen() {
         <Pressable style={styles.eventModalOverlay} onPress={() => setActiveEvent(null)}>
           {activeEvent && (
             <Pressable style={styles.eventModalCard} onPress={(e) => e.stopPropagation()}>
-              <Image source={{ uri: activeEvent.image }} style={styles.eventModalImage} />
+              <View style={styles.eventImageWrap}>
+                <Image source={{ uri: activeEvent.image }} style={styles.eventModalImage} />
+                <LinearGradient
+                  colors={['transparent', withAlpha(accent.primary, 0.3), 'rgba(10,10,12,0.7)']}
+                  start={SCRIM_START}
+                  end={SCRIM_END}
+                  style={StyleSheet.absoluteFill}
+                  pointerEvents="none"
+                />
+                <Text style={styles.eventTitle} numberOfLines={2}>
+                  {activeEvent.title}
+                </Text>
+              </View>
               <View style={styles.eventModalBody}>
-                <Text style={styles.eventModalTitle}>{activeEvent.title}</Text>
                 <View style={styles.eventMetaRow}>
-                  <Ionicons name="location-outline" size={13} color={colors.textSecondary} />
-                  <Text style={styles.eventMeta}>{activeEvent.city}</Text>
-                  <Ionicons
-                    name="calendar-outline"
-                    size={13}
-                    color={colors.textSecondary}
-                    style={styles.eventMetaIcon}
-                  />
-                  <Text style={styles.eventMeta}>{activeEvent.dateLabel}</Text>
+                  <View style={[styles.eventTag, { backgroundColor: withAlpha(colors.teal, 0.12) }]}>
+                    <Ionicons name="location" size={12} color={colors.teal} />
+                    <Text style={[styles.eventTagText, { color: colors.teal }]}>{activeEvent.city}</Text>
+                  </View>
+                  <View style={[styles.eventTag, { backgroundColor: withAlpha(colors.gold, 0.14) }]}>
+                    <Ionicons name="calendar" size={12} color={colors.gold} />
+                    <Text style={[styles.eventTagText, { color: colors.gold }]}>{activeEvent.dateLabel}</Text>
+                  </View>
                 </View>
                 <Text style={styles.eventModalDescription}>{activeEvent.description}</Text>
                 <Button
@@ -401,6 +512,65 @@ export function ExploreScreen() {
   );
 }
 
+// One tile shape for every face on this screen: a gradient rim, the photo, and
+// a gradient scrim that carries the caption without a grey bar over the face.
+function PhotoTile({
+  uri,
+  name,
+  title,
+  caption,
+  verified,
+  accent,
+  colors,
+  onPress,
+}: {
+  uri: string;
+  name: string;
+  title: string;
+  caption: string;
+  verified?: boolean;
+  accent: ModeAccent;
+  colors: Palette;
+  onPress: () => void;
+}) {
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+
+  return (
+    <Pressable onPress={onPress}>
+      <LinearGradient
+        colors={accent.ramp}
+        start={GRADIENT_START}
+        end={GRADIENT_END}
+        style={[styles.tileRim, glow(accent.primary, 0.28, 12, 5)]}
+      >
+        <View style={styles.tileInner}>
+          <SmartImage uri={uri} name={name} style={styles.gridPhoto} size={30} />
+          <LinearGradient
+            colors={['transparent', 'rgba(10,10,12,0.15)', 'rgba(10,10,12,0.85)']}
+            start={SCRIM_START}
+            end={SCRIM_END}
+            style={styles.tileScrim}
+            pointerEvents="none"
+          />
+          {verified && (
+            <View style={[styles.gridVerified, glow(colors.teal, 0.7, 8, 4)]}>
+              <Ionicons name="checkmark" size={11} color="#FFFFFF" />
+            </View>
+          )}
+          <View style={styles.gridCaption}>
+            <Text style={styles.gridName} numberOfLines={1}>
+              {title}
+            </Text>
+            <Text style={styles.gridMeta} numberOfLines={1}>
+              {caption}
+            </Text>
+          </View>
+        </View>
+      </LinearGradient>
+    </Pressable>
+  );
+}
+
 function ProfileRow({
   title,
   emptyLabel,
@@ -408,6 +578,7 @@ function ProfileRow({
   captionFor,
   onPressProfile,
   colors,
+  accent,
   rtl,
 }: {
   title: string;
@@ -416,34 +587,29 @@ function ProfileRow({
   captionFor: (profile: ExploreProfile) => string;
   onPressProfile: (profile: ExploreProfile) => void;
   colors: Palette;
+  accent: ModeAccent;
   rtl: boolean;
 }) {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
     <View style={styles.section}>
-      <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{title}</Text>
+      <AccentHeading title={title} gradient={accent.duo} style={styles.sectionHeading} />
       {profiles.length === 0 ? (
         <Text style={[styles.sectionEmpty, rtl && styles.rtlText]}>{emptyLabel}</Text>
       ) : (
         <View style={styles.grid}>
           {profiles.map((profile, index) => (
             <Animated.View key={profile.id} entering={FadeInUp.delay(index * 50).duration(280)} style={styles.gridSlot}>
-              <Pressable onPress={() => onPressProfile(profile)} style={styles.gridCardFill}>
-                <SmartImage uri={profile.photos[0]} name={profile.name} style={styles.gridPhoto} size={30} />
-                {profile.selfieVerified && (
-                  <View style={styles.gridVerified}>
-                    <Ionicons name="checkmark-circle" size={16} color={colors.teal} />
-                  </View>
-                )}
-                <View style={styles.gridCaption}>
-                  <Text style={styles.gridName} numberOfLines={1}>
-                    {profile.name}, {profile.age}
-                  </Text>
-                  <Text style={styles.gridMeta} numberOfLines={1}>
-                    {captionFor(profile)}
-                  </Text>
-                </View>
-              </Pressable>
+              <PhotoTile
+                uri={profile.photos[0]}
+                name={profile.name}
+                title={`${profile.name}, ${profile.age}`}
+                caption={captionFor(profile)}
+                verified={profile.selfieVerified}
+                accent={accent}
+                colors={colors}
+                onPress={() => onPressProfile(profile)}
+              />
             </Animated.View>
           ))}
         </View>
@@ -452,39 +618,23 @@ function ProfileRow({
   );
 }
 
-// Shared card shape: the likes grid sizes itself, the profile rows are sized by
-// their animated wrapper instead.
-const CARD_SHAPE = {
-  aspectRatio: 3 / 4,
-  borderRadius: radius.md,
-  overflow: 'hidden' as const,
-  justifyContent: 'flex-end' as const,
-};
-
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
     safeArea: { flex: 1, backgroundColor: colors.background },
     rowRtl: { flexDirection: 'row-reverse' },
-    header: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.sm,
-      paddingHorizontal: spacing.md,
-      paddingBottom: spacing.sm,
-    },
-    headerText: { flex: 1 },
-    title: { ...typography.h1, color: colors.textPrimary },
-    subtitle: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
+    header: { paddingHorizontal: spacing.md, paddingBottom: spacing.md },
     filterChip: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 6,
-      borderRadius: radius.sm,
-      backgroundColor: colors.backgroundAlt,
+      borderRadius: radius.pill,
+      borderWidth: 1,
+      borderColor: colors.borderSoft,
+      backgroundColor: withAlpha(colors.textPrimary, 0.05),
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
     },
-    filterChipActive: { backgroundColor: colors.tealSoft },
+    filterChipActive: { backgroundColor: colors.tealSoft, borderColor: colors.teal },
     filterLabel: { ...typography.label, color: colors.textSecondary, fontWeight: '700' },
     filterLabelActive: { color: colors.teal },
     countPill: {
@@ -499,41 +649,65 @@ const makeStyles = (colors: Palette) =>
     countPillText: { color: '#FFFFFF', fontSize: scaleFont(10), fontWeight: '800' },
     tabRow: {
       flexDirection: 'row',
-      paddingHorizontal: spacing.md,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: colors.border,
+      gap: spacing.xs,
+      marginHorizontal: spacing.md,
+      padding: 4,
+      borderRadius: radius.pill,
+      backgroundColor: withAlpha(colors.textPrimary, 0.05),
+      borderWidth: 1,
+      borderColor: colors.borderSoft,
     },
-    tabItem: { flex: 1, alignItems: 'center', paddingVertical: spacing.sm },
-    tabLabel: { ...typography.label, color: colors.textSecondary, fontWeight: '700' },
-    tabLabelActive: { color: colors.teal },
-    tabUnderline: {
-      position: 'absolute',
-      bottom: 0,
-      height: 2,
-      width: '70%',
-      borderRadius: 1,
-      backgroundColor: colors.teal,
+    tabItem: { flex: 1 },
+    tabPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 5,
+      borderRadius: radius.pill,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.xs,
     },
-    content: { paddingHorizontal: spacing.md },
+    tabPillIdle: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 5,
+      borderRadius: radius.pill,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.xs,
+    },
+    tabLabel: { ...typography.label, color: colors.textSecondary, fontWeight: '700', flexShrink: 1 },
+    tabLabelActive: { ...typography.label, color: '#FFFFFF', fontWeight: '800', flexShrink: 1 },
+    content: { paddingHorizontal: spacing.md, paddingTop: spacing.xs },
     section: { marginTop: spacing.lg },
-    sectionTitle: { ...typography.h3, color: colors.textPrimary, marginBottom: spacing.sm },
+    sectionHeading: { marginBottom: spacing.sm },
     sectionEmpty: { ...typography.caption, color: colors.textSecondary },
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
     gridSlot: { width: '47%' },
-    gridCard: { ...CARD_SHAPE, width: '47%', backgroundColor: colors.skeleton },
-    gridCardFill: { ...CARD_SHAPE, width: '100%', backgroundColor: colors.skeleton },
+    tileRim: { borderRadius: radius.md + 2, padding: 2 },
+    tileInner: {
+      aspectRatio: 3 / 4,
+      borderRadius: radius.md,
+      overflow: 'hidden',
+      justifyContent: 'flex-end',
+      backgroundColor: colors.skeleton,
+    },
     gridPhoto: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
+    tileScrim: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '55%' },
     gridVerified: {
       position: 'absolute',
       top: spacing.xs,
       right: spacing.xs,
-      backgroundColor: colors.surface,
-      borderRadius: radius.pill,
-      padding: 2,
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      backgroundColor: colors.teal,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
-    gridCaption: { backgroundColor: 'rgba(10,10,12,0.55)', paddingHorizontal: spacing.sm, paddingVertical: 6 },
-    gridName: { ...typography.caption, color: '#FFFFFF', fontWeight: '700' },
-    gridMeta: { fontSize: scaleFont(11), color: 'rgba(255,255,255,0.85)' },
+    gridCaption: { paddingHorizontal: spacing.sm, paddingVertical: spacing.sm },
+    gridName: { ...typography.caption, color: '#FFFFFF', fontWeight: '800' },
+    gridMeta: { fontSize: scaleFont(11), color: 'rgba(255,255,255,0.85)', marginTop: 1 },
     lockedCard: {
       width: '100%',
       aspectRatio: 16 / 10,
@@ -543,41 +717,69 @@ const makeStyles = (colors: Palette) =>
     },
     lockedImage: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
     lockedBody: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.xs, padding: spacing.md },
-    lockedCount: { ...typography.h3, color: colors.textPrimary, textAlign: 'center' },
+    lockedOrb: {
+      width: 46,
+      height: 46,
+      borderRadius: 23,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: spacing.xs,
+    },
+    lockedCount: { ...typography.h3, color: colors.textPrimary, textAlign: 'center', fontWeight: '800' },
     lockedHint: { ...typography.caption, color: colors.textSecondary, textAlign: 'center' },
     lockedButton: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 6,
-      backgroundColor: colors.teal,
       borderRadius: radius.pill,
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
-      marginTop: spacing.xs,
+      marginTop: spacing.sm,
     },
-    lockedButtonText: { ...typography.label, color: '#FFFFFF', fontWeight: '700' },
+    lockedButtonText: { ...typography.label, color: '#FFFFFF', fontWeight: '800' },
     eventList: { marginTop: spacing.lg, gap: spacing.md },
     eventCard: {
-      backgroundColor: colors.surface,
+      backgroundColor: colors.surfaceElevated,
       borderRadius: radius.lg,
       borderWidth: 1,
-      borderColor: colors.border,
+      borderColor: colors.borderSoft,
       overflow: 'hidden',
     },
+    eventImageWrap: { width: '100%', justifyContent: 'flex-end' },
     eventImage: { width: '100%', aspectRatio: 16 / 9, backgroundColor: colors.skeleton },
-    eventBody: { padding: spacing.md, gap: spacing.xs },
-    eventTitle: { ...typography.h3, color: colors.textPrimary },
-    eventMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-    eventMetaIcon: { marginLeft: spacing.sm },
-    eventMeta: { ...typography.caption, color: colors.textSecondary },
-    eventActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm },
+    // Sits on the photo's scrim rather than under it, so the card leads with
+    // the event's name instead of a slab of grey text.
+    eventTitle: {
+      ...typography.h3,
+      position: 'absolute',
+      left: spacing.md,
+      right: spacing.md,
+      bottom: spacing.sm,
+      color: '#FFFFFF',
+      fontWeight: '800',
+    },
+    eventBody: { padding: spacing.md, gap: spacing.sm },
+    eventMetaRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.xs },
+    eventTag: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      borderRadius: radius.pill,
+      paddingHorizontal: spacing.sm + 2,
+      paddingVertical: 5,
+    },
+    eventTagText: { ...typography.caption, fontWeight: '700' },
+    eventActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
     eventActionButton: { flex: 1 },
+    eventCta: { alignItems: 'center', justifyContent: 'center', borderRadius: radius.md, paddingVertical: spacing.md },
+    eventCtaText: { ...typography.bodyBold, color: '#FFFFFF', fontWeight: '800' },
     eventShareButton: {
-      width: 44,
-      height: 44,
+      width: 48,
+      height: 48,
       borderRadius: radius.md,
       borderWidth: 1,
       borderColor: colors.border,
+      backgroundColor: colors.surface,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -588,18 +790,30 @@ const makeStyles = (colors: Palette) =>
       justifyContent: 'center',
       padding: spacing.lg,
     },
-    eventModalCard: { width: '100%', backgroundColor: colors.surface, borderRadius: radius.lg, overflow: 'hidden' },
+    eventModalCard: { width: '100%', backgroundColor: colors.surfaceElevated, borderRadius: radius.lg, overflow: 'hidden' },
     eventModalImage: { width: '100%', aspectRatio: 16 / 9, backgroundColor: colors.skeleton },
     eventModalBody: { padding: spacing.md, gap: spacing.sm },
-    eventModalTitle: { ...typography.h3, color: colors.textPrimary },
     eventModalDescription: { ...typography.body, color: colors.textSecondary },
     eventModalCloseButton: { marginTop: spacing.xs },
-    emptyState: { alignItems: 'center', justifyContent: 'center', gap: spacing.sm, paddingVertical: spacing.xxl },
+    emptyState: { alignItems: 'center', justifyContent: 'center', gap: spacing.md, paddingVertical: spacing.xxl },
+    emptyOrb: { width: 76, height: 76, borderRadius: 38, alignItems: 'center', justifyContent: 'center' },
     emptyText: { ...typography.body, color: colors.textSecondary, textAlign: 'center' },
-    historyRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm },
-    historyAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.skeleton },
+    historyRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      backgroundColor: colors.surfaceElevated,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: colors.borderSoft,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.sm,
+      marginBottom: spacing.sm,
+    },
+    historyAvatarRing: { width: 50, height: 50, borderRadius: 25, padding: 2 },
+    historyAvatar: { width: '100%', height: '100%', borderRadius: 23, backgroundColor: colors.skeleton },
     historyTextWrap: { flex: 1 },
-    historyName: { ...typography.body, color: colors.textPrimary, fontWeight: '600' },
+    historyName: { ...typography.body, color: colors.textPrimary, fontWeight: '700' },
     historyMeta: { ...typography.caption, color: colors.textSecondary },
     clearButton: { marginTop: spacing.md },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },

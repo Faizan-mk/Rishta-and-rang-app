@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { StyleSheet, Text, TextInput, TextInputProps, View } from 'react-native';
 import { radius, spacing, typography } from '../../theme';
+import { glow, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
@@ -24,8 +25,10 @@ export function TextField({ label, error, style, ...inputProps }: TextFieldProps
         style={[
           styles.input,
           rtl && styles.rtlText,
-          focused && styles.inputFocused,
-          error && styles.inputError,
+          // A focused field lights up in the brand teal rather than only
+          // darkening its border — it reads at a glance on a long form.
+          focused && [styles.inputFocused, glow(colors.teal, 0.35, 10, 3)],
+          error && [styles.inputError, glow(colors.danger, 0.3, 10, 3)],
           style,
         ]}
         onFocus={(e) => {
@@ -46,10 +49,10 @@ export function TextField({ label, error, style, ...inputProps }: TextFieldProps
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
     container: { marginBottom: spacing.md },
-    label: { ...typography.label, color: colors.textPrimary, marginBottom: spacing.xs },
+    label: { ...typography.label, color: colors.textPrimary, marginBottom: spacing.xs, fontWeight: '700' },
     input: {
       borderWidth: 1.5,
-      borderColor: colors.border,
+      borderColor: colors.borderSoft,
       borderRadius: radius.md,
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm + 4,
@@ -57,7 +60,7 @@ const makeStyles = (colors: Palette) =>
       color: colors.textPrimary,
       backgroundColor: colors.surface,
     },
-    inputFocused: { borderColor: colors.teal },
+    inputFocused: { borderColor: colors.teal, backgroundColor: withAlpha(colors.teal, 0.06) },
     inputError: { borderColor: colors.danger },
     error: { ...typography.caption, color: colors.danger, marginTop: spacing.xs },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },

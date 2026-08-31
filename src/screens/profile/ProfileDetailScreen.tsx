@@ -4,7 +4,9 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
+import { AccentHeading } from '../../components/common/AccentHeading';
 import { Badge } from '../../components/common/Badge';
 import { Chip } from '../../components/common/Chip';
 import { Button } from '../../components/Button';
@@ -32,6 +34,7 @@ import { useFavorites } from '../../store/FavoritesContext';
 import { useViewHistory } from '../../store/ViewHistoryContext';
 import { datingCompatibility, rishtaCompatibility } from '../../utils/compatibility';
 import { radius, spacing, typography } from '../../theme';
+import { glow, modeAccent } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 
 const READINESS_KEY: Record<string, string> = {
@@ -71,6 +74,8 @@ export function ProfileDetailScreen() {
   if (!profile || !user) return null;
 
   const compatibilityScore = kind === 'dating' ? datingCompatibility(user, profile as DiscoverProfile) : rishtaCompatibility(user, profile as RishtaListingProfile);
+  // The profile is browsed from one deck or the other, so it wears that deck's ramp.
+  const detailRamp = modeAccent(colors, kind === 'rishta' ? 'rishta' : 'dating').ramp;
   const photosHidden = Boolean(profile.photosBlurred) && !isFavorite(profile.id);
 
   const onGalleryLayout = (e: LayoutChangeEvent) => setGalleryWidth(e.nativeEvent.layout.width);
@@ -168,16 +173,21 @@ export function ProfileDetailScreen() {
             {profile.name}, {profile.age}
           </Text>
           <View style={styles.metaRow}>
-            <Ionicons name="location-outline" size={14} color={colors.textSecondary} />
-            <Text style={styles.metaText}>{profile.city}</Text>
+            <Ionicons name="location" size={14} color={detailRamp[0]} />
+            <Text style={[styles.metaText, { color: detailRamp[0] }]}>{profile.city}</Text>
           </View>
 
-          <View style={styles.compatibilityBanner}>
-            <Ionicons name="sparkles" size={18} color={colors.gold} />
+          <LinearGradient
+            colors={[colors.gold, colors.dating]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={[styles.compatibilityBanner, glow(colors.gold, 0.5, 18, 8)]}
+          >
+            <Ionicons name="sparkles" size={18} color="#FFFFFF" />
             <Text style={[styles.compatibilityTitle, rtl && styles.rtlText]}>
               {t('profile.aiScoreValue', { score: compatibilityScore })}
             </Text>
-          </View>
+          </LinearGradient>
 
           {kind === 'dating' && (profile as DiscoverProfile).vibeTags?.length > 0 && (
             <View style={styles.chipRow}>
@@ -189,14 +199,14 @@ export function ProfileDetailScreen() {
 
           {profile.bio && (
             <>
-              <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('profile.about')}</Text>
+              <AccentHeading title={t('profile.about')} gradient={detailRamp} style={styles.sectionHeading} />
               <Text style={[styles.bio, rtl && styles.rtlText]}>{profile.bio}</Text>
             </>
           )}
 
           {profile.familyBackground && (
             <>
-              <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('rishtaProfile.title')}</Text>
+              <AccentHeading title={t('rishtaProfile.title')} gradient={detailRamp} style={styles.sectionHeading} />
               <Text style={[styles.bio, rtl && styles.rtlText]}>{profile.familyBackground}</Text>
             </>
           )}
@@ -277,24 +287,23 @@ const makeStyles = (colors: Palette) =>
     overlayRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
     dotsRow: { position: 'absolute', bottom: spacing.sm, alignSelf: 'center', flexDirection: 'row', gap: 6 },
     dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.5)' },
-    dotActive: { backgroundColor: '#FFFFFF', width: 18 },
+    dotActive: { backgroundColor: '#FFFFFF', width: 20 },
     content: { padding: spacing.lg, paddingBottom: 150 },
-    name: { ...typography.h1, color: colors.textPrimary },
+    name: { ...typography.h1, color: colors.textPrimary, fontWeight: '800' },
     metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: spacing.xs, marginBottom: spacing.md },
-    metaText: { ...typography.body, color: colors.textSecondary },
-    sectionTitle: { ...typography.label, color: colors.textSecondary, textTransform: 'uppercase', marginTop: spacing.lg, marginBottom: spacing.sm },
+    metaText: { ...typography.caption, fontWeight: '800', letterSpacing: 0.6, textTransform: 'uppercase' },
+    sectionHeading: { marginTop: spacing.lg, marginBottom: spacing.sm },
     bio: { ...typography.body, color: colors.textPrimary },
     chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
     compatibilityBanner: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.sm,
-      backgroundColor: colors.goldSoft,
       borderRadius: radius.lg,
       padding: spacing.md,
       marginTop: spacing.md,
     },
-    compatibilityTitle: { ...typography.bodyBold, color: colors.gold },
+    compatibilityTitle: { ...typography.bodyBold, color: '#FFFFFF', fontWeight: '800', flexShrink: 1 },
     previewOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', alignItems: 'center', justifyContent: 'center' },
     previewImage: { width: '100%', height: '80%' },
     actionBar: {
@@ -303,9 +312,14 @@ const makeStyles = (colors: Palette) =>
       right: 0,
       bottom: 0,
       padding: spacing.lg,
-      backgroundColor: colors.surface,
-      borderTopWidth: 1,
-      borderTopColor: colors.border,
+      backgroundColor: colors.surfaceElevated,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: colors.borderSoft,
+      shadowColor: '#000',
+      shadowOpacity: 0.14,
+      shadowRadius: 16,
+      shadowOffset: { width: 0, height: -4 },
+      elevation: 16,
     },
     contactRow: {
       flexDirection: 'row',
@@ -322,7 +336,7 @@ const makeStyles = (colors: Palette) =>
       paddingVertical: spacing.xs,
     },
     contactDivider: { width: 1, alignSelf: 'stretch', backgroundColor: colors.border, marginVertical: 2 },
-    contactLabel: { ...typography.label, color: colors.teal },
+    contactLabel: { ...typography.label, color: colors.teal, fontWeight: '800' },
     primaryRow: { flexDirection: 'row', gap: spacing.sm },
     actionButton: { flex: 1 },
     fullButton: { flex: 1 },

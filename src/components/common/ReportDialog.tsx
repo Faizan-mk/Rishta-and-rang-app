@@ -4,6 +4,7 @@ import Animated, { FadeInUp } from 'react-native-reanimated';
 import { Button } from '../Button';
 import { TextField } from './TextField';
 import { radius, spacing, typography } from '../../theme';
+import { withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
@@ -125,11 +126,18 @@ const makeStyles = (colors: Palette) =>
     card: {
       width: '100%',
       maxWidth: 380,
-      backgroundColor: colors.surface,
+      backgroundColor: colors.surfaceElevated,
       borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: colors.borderSoft,
       padding: spacing.lg,
+      shadowColor: '#000',
+      shadowOpacity: 0.3,
+      shadowRadius: 28,
+      shadowOffset: { width: 0, height: 10 },
+      elevation: 16,
     },
-    title: { ...typography.h3, color: colors.textPrimary, marginBottom: spacing.xs },
+    title: { ...typography.h3, color: colors.textPrimary, marginBottom: spacing.xs, fontWeight: '800' },
     subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.md },
     reasonRow: {
       flexDirection: 'row',
@@ -139,7 +147,7 @@ const makeStyles = (colors: Palette) =>
       paddingHorizontal: spacing.sm,
       borderRadius: radius.md,
     },
-    reasonRowSelected: { backgroundColor: colors.tealSoft },
+    reasonRowSelected: { backgroundColor: withAlpha(colors.teal, 0.12) },
     radio: {
       width: 18,
       height: 18,
@@ -149,9 +157,9 @@ const makeStyles = (colors: Palette) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
-    radioSelected: { borderColor: colors.teal },
+    radioSelected: { borderColor: colors.teal, borderWidth: 2 },
     radioDot: { width: 9, height: 9, borderRadius: 5, backgroundColor: colors.teal },
-    reasonText: { ...typography.body, color: colors.textPrimary, flex: 1 },
+    reasonText: { ...typography.body, color: colors.textPrimary, flex: 1, fontWeight: '600' },
     customInput: { minHeight: 70, textAlignVertical: 'top', marginTop: spacing.xs },
     errorText: { ...typography.caption, color: colors.danger, marginTop: spacing.xs },
     actions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },

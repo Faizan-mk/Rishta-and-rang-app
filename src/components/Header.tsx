@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { spacing, typography } from '../theme';
+import { radius, spacing, typography } from '../theme';
+import { withAlpha } from '../theme/glow';
 import type { Palette } from '../theme/palettes';
 import { useTheme } from '../store/ThemeContext';
 import { useLanguage } from '../store/LanguageContext';
@@ -49,17 +50,17 @@ const makeStyles = (colors: Palette) =>
     row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.lg },
     rowRtl: { flexDirection: 'row-reverse' },
     backButton: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
+      width: 38,
+      height: 38,
+      borderRadius: radius.pill,
       borderWidth: 1,
-      borderColor: colors.border,
+      borderColor: colors.borderSoft,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: colors.surface,
+      backgroundColor: withAlpha(colors.textPrimary, 0.05),
     },
     titles: { flex: 1, gap: 2 },
-    title: { ...typography.h2, color: colors.textPrimary },
+    title: { ...typography.h2, color: colors.textPrimary, fontWeight: '800' },
     subtitle: { ...typography.caption, color: colors.textSecondary },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   });

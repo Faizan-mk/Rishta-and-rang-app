@@ -7,10 +7,16 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 import type { BrowseProfile } from '../../types/content';
 import { radius, spacing, typography } from '../../theme';
 import { scaleFont } from '../../theme/responsive';
+import { glow, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
 import { SmartImage } from '../common/SmartImage';
+import { AccentHeading } from '../common/AccentHeading';
+
+// Profile sections keep one ramp of their own rather than following the deck
+// mode, so the long read down a profile stays visually steady.
+const SECTION_RAMP = ['#1D4E52', '#7A3B6D'] as const;
 
 function formatDuration(totalSeconds: number): string {
   const sec = Math.max(0, Math.floor(totalSeconds || 0));
@@ -108,7 +114,7 @@ function AttributeChip({ icon, label }: AttributeChipData) {
   const styles = useMemo(() => makeChipStyles(colors), [colors]);
   return (
     <View style={styles.chip}>
-      <Ionicons name={icon} size={15} color={colors.textSecondary} />
+      <Ionicons name={icon} size={15} color={colors.teal} />
       <Text style={styles.chipText}>{label}</Text>
     </View>
   );
@@ -116,12 +122,11 @@ function AttributeChip({ icon, label }: AttributeChipData) {
 
 function Section({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   const { colors } = useTheme();
-  const { rtl } = useLanguage();
   const styles = useMemo(() => makeSectionStyles(colors), [colors]);
+  // AccentHeading handles RTL for the title and subtitle itself.
   return (
     <View style={styles.section}>
-      <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{title}</Text>
-      {subtitle ? <Text style={[styles.sectionSubtitle, rtl && styles.rtlText]}>{subtitle}</Text> : null}
+      <AccentHeading title={title} subtitle={subtitle} gradient={SECTION_RAMP} style={styles.sectionHeading} />
       {children}
     </View>
   );
@@ -527,30 +532,34 @@ const makeChipStyles = (colors: Palette) =>
       flexDirection: 'row',
       alignItems: 'center',
       gap: 6,
-      backgroundColor: colors.backgroundAlt,
+      backgroundColor: withAlpha(colors.teal, 0.1),
+      borderWidth: 1,
+      borderColor: withAlpha(colors.teal, 0.28),
       borderRadius: radius.pill,
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
     },
-    chipText: { ...typography.body, color: colors.textPrimary, fontWeight: '500' },
+    chipText: { ...typography.body, color: colors.textPrimary, fontWeight: '600' },
   });
 
 const makeSectionStyles = (colors: Palette) =>
   StyleSheet.create({
     section: { marginTop: spacing.lg },
-    sectionTitle: { ...typography.h2, color: colors.textPrimary, marginBottom: spacing.sm },
-    sectionSubtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.md },
+    sectionHeading: { marginBottom: spacing.md },
     chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
     bodyText: { ...typography.body, color: colors.textPrimary },
     verificationCard: {
-      backgroundColor: colors.backgroundAlt,
+      backgroundColor: colors.surfaceElevated,
       borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: colors.borderSoft,
       padding: spacing.md,
       marginTop: spacing.lg,
       gap: spacing.sm,
+      ...glow(colors.teal, 0.16, 14, 4),
     },
     verificationHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-    verificationTitle: { ...typography.h3, color: colors.textPrimary },
+    verificationTitle: { ...typography.h3, color: colors.textPrimary, fontWeight: '800' },
     verificationRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
     verificationLabel: { ...typography.body, color: colors.textPrimary, flex: 1 },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },

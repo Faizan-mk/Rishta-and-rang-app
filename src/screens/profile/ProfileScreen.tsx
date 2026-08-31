@@ -7,6 +7,7 @@ import Animated, { FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { TAB_BAR_BASE_HEIGHT, useHideTabBarOnScroll } from '../../store/TabBarVisibilityContext';
+import { AccentHeading } from '../../components/common/AccentHeading';
 import { Badge } from '../../components/common/Badge';
 import { Chip } from '../../components/common/Chip';
 import { Button } from '../../components/Button';
@@ -30,7 +31,11 @@ import { useNotifications } from '../../store/NotificationContext';
 import { ageFromDob } from '../../utils/date';
 import { profileCompletion } from '../../utils/profileCompletion';
 import { radius, spacing, typography } from '../../theme';
+import { glow, modeAccent, withAlpha, type Gradient } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
+
+const GRADIENT_START = { x: 0, y: 0 } as const;
+const GRADIENT_END = { x: 1, y: 1 } as const;
 
 export function ProfileScreen() {
   const router = useRouter();
@@ -59,6 +64,7 @@ export function ProfileScreen() {
   const age = ageFromDob(user.dob);
   const completion = profileCompletion(user);
   const memberSince = new Date(user.createdAt).getFullYear();
+  const accent = modeAccent(colors, user.activeMode);
 
   const onLogout = async () => {
     const confirmed = await confirm({
@@ -98,12 +104,16 @@ export function ProfileScreen() {
       scrollEventThrottle={16}
       style={{ paddingBottom: TAB_BAR_BASE_HEIGHT + insets.bottom + spacing.lg }}
     >
-      <LinearGradient colors={[colors.tealDark, colors.teal]} style={styles.banner}>
+      {/* The banner wears the member's own mode colours, so the menu opens in the
+          same world their deck is in. */}
+      <LinearGradient colors={accent.ramp} start={GRADIENT_START} end={GRADIENT_END} style={styles.banner}>
+        <View style={styles.bannerGlowA} pointerEvents="none" />
+        <View style={styles.bannerGlowB} pointerEvents="none" />
         <Animated.View entering={FadeInUp.delay(60).duration(320)} style={styles.bannerActions}>
           <IconButton
             icon="notifications-outline"
             onPress={() => router.push('/notifications')}
-            background="rgba(255,255,255,0.2)"
+            background="rgba(255,255,255,0.22)"
             color="#FFFFFF"
             badge={unreadCount}
             style={styles.noBorder}
@@ -111,7 +121,7 @@ export function ProfileScreen() {
           <IconButton
             icon="settings-outline"
             onPress={() => router.push('/settings')}
-            background="rgba(255,255,255,0.2)"
+            background="rgba(255,255,255,0.22)"
             color="#FFFFFF"
             style={styles.noBorder}
           />
@@ -120,15 +130,22 @@ export function ProfileScreen() {
 
       <Animated.View entering={FadeInUp.duration(360)} style={styles.headerCard}>
         <View style={styles.avatarWrap}>
-          {user.photos[0] ? (
-            <Image source={{ uri: user.photos[0] }} style={[styles.avatar, user.isExplorePlus && styles.avatarPremium]} />
-          ) : (
-            <View style={[styles.avatar, styles.avatarPlaceholder, user.isExplorePlus && styles.avatarPremium]}>
-              <Ionicons name="person" size={28} color={colors.textInverse} />
-            </View>
-          )}
+          <LinearGradient
+            colors={user.isExplorePlus ? PREMIUM_RING : accent.ramp}
+            start={GRADIENT_START}
+            end={GRADIENT_END}
+            style={[styles.avatarRing, glow(user.isExplorePlus ? colors.gold : accent.primary, 0.5, 18, 8)]}
+          >
+            {user.photos[0] ? (
+              <Image source={{ uri: user.photos[0] }} style={styles.avatar} />
+            ) : (
+              <View style={[styles.avatar, styles.avatarPlaceholder]}>
+                <Ionicons name="person" size={28} color={colors.textInverse} />
+              </View>
+            )}
+          </LinearGradient>
           {user.selfieVerified && (
-            <View style={styles.verifiedDot}>
+            <View style={[styles.verifiedDot, glow(colors.success, 0.7, 8, 4)]}>
               <Ionicons name="checkmark" size={12} color="#FFFFFF" />
             </View>
           )}
@@ -140,7 +157,10 @@ export function ProfileScreen() {
             {age ? `, ${age}` : ''}
           </Text>
         </View>
-        <Text style={[styles.meta, rtl && styles.rtlText]}>{user.city}</Text>
+        <View style={[styles.metaRow, rtl && styles.rowRtl]}>
+          <Ionicons name="location" size={13} color={accent.primary} />
+          <Text style={[styles.meta, { color: accent.primary }, rtl && styles.rtlText]}>{user.city}</Text>
+        </View>
 
         <View style={styles.badgeRow}>
           {user.isExplorePlus && (
@@ -152,31 +172,52 @@ export function ProfileScreen() {
           <Badge label={t(`intent.${user.intent}Title`)} tone="neutral" />
         </View>
 
-        <Button label={t('profile.editProfile')} variant="secondary" onPress={() => router.push('/edit-profile')} style={styles.editButton} />
+        <Pressable onPress={() => router.push('/edit-profile')} style={styles.editButton}>
+          <LinearGradient
+            colors={accent.ramp}
+            start={GRADIENT_START}
+            end={GRADIENT_END}
+            style={[styles.editButtonFill, glow(accent.primary, 0.5, 16, 7)]}
+          >
+            <Ionicons name="create-outline" size={17} color="#FFFFFF" />
+            <Text style={styles.editButtonLabel}>{t('profile.editProfile')}</Text>
+          </LinearGradient>
+        </Pressable>
       </Animated.View>
 
       <View style={styles.statsRow}>
-        <View style={styles.statItem}>
-          <Text style={styles.statValue}>{completion}%</Text>
-          <Text style={styles.statLabel}>{t('profile.completion')}</Text>
-        </View>
-        <View style={styles.statDivider} />
-        <View style={styles.statItem}>
-          <Text style={styles.statValue}>{user.photos.length}</Text>
-          <Text style={styles.statLabel}>{t('photos.title')}</Text>
-        </View>
-        <View style={styles.statDivider} />
-        <View style={styles.statItem}>
-          <Text style={styles.statValue}>{memberSince}</Text>
-          <Text style={styles.statLabel}>{t('profile.memberSince')}</Text>
-        </View>
+        <StatTile
+          icon="pie-chart"
+          tint={colors.teal}
+          value={`${completion}%`}
+          label={t('profile.completion')}
+          colors={colors}
+        />
+        <StatTile
+          icon="images"
+          tint={colors.plum}
+          value={String(user.photos.length)}
+          label={t('photos.title')}
+          colors={colors}
+        />
+        <StatTile
+          icon="ribbon"
+          tint={colors.gold}
+          value={String(memberSince)}
+          label={t('profile.memberSince')}
+          colors={colors}
+        />
       </View>
 
       {/* Intent replaces the old Friend/Rishta switch: picking Matrimonial puts
           the member on the rishta deck, anything else on the dating deck. */}
       <View style={styles.section}>
-        <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('profile.intentSection')}</Text>
-        <Text style={[styles.sectionHint, rtl && styles.rtlText]}>{t('profile.intentHint')}</Text>
+        <AccentHeading
+          title={t('profile.intentSection')}
+          subtitle={t('profile.intentHint')}
+          gradient={accent.duo}
+          style={styles.sectionHeading}
+        />
         <View style={styles.optionCard}>
           {INTENT_OPTIONS.map((option, index) => {
             const selected = user.intent === option.key;
@@ -184,19 +225,37 @@ export function ProfileScreen() {
               <Pressable
                 key={option.key}
                 onPress={() => setIntent(option.key)}
-                style={[styles.optionRow, index > 0 && styles.optionRowBorder, rtl && styles.rowRtl]}
+                style={[
+                  styles.optionRow,
+                  index > 0 && styles.optionRowBorder,
+                  selected && { backgroundColor: withAlpha(accent.primary, 0.08) },
+                  rtl && styles.rowRtl,
+                ]}
               >
                 <View style={styles.optionText}>
-                  <Text style={[styles.optionTitle, selected && styles.optionTitleSelected, rtl && styles.rtlText]}>
+                  <Text
+                    style={[
+                      styles.optionTitle,
+                      selected && { color: accent.primary },
+                      rtl && styles.rtlText,
+                    ]}
+                  >
                     {t(option.labelKey)}
                   </Text>
                   <Text style={[styles.optionDesc, rtl && styles.rtlText]}>{t(`intent.${option.key}Desc`)}</Text>
                 </View>
-                <Ionicons
-                  name={selected ? 'radio-button-on' : 'radio-button-off'}
-                  size={20}
-                  color={selected ? colors.teal : colors.textTertiary}
-                />
+                {selected ? (
+                  <LinearGradient
+                    colors={accent.duo}
+                    start={GRADIENT_START}
+                    end={GRADIENT_END}
+                    style={[styles.radioOn, glow(accent.primary, 0.7, 10, 4)]}
+                  >
+                    <Ionicons name="checkmark" size={13} color="#FFFFFF" />
+                  </LinearGradient>
+                ) : (
+                  <View style={styles.radioOff} />
+                )}
               </Pressable>
             );
           })}
@@ -204,8 +263,12 @@ export function ProfileScreen() {
       </View>
 
       <View style={styles.section}>
-        <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('profile.readiness')}</Text>
-        <Text style={[styles.sectionHint, rtl && styles.rtlText]}>{t('profile.readinessHint')}</Text>
+        <AccentHeading
+          title={t('profile.readiness')}
+          subtitle={t('profile.readinessHint')}
+          gradient={accent.duo}
+          style={styles.sectionHeading}
+        />
         <View style={styles.chipRow}>
           {READINESS_OPTIONS.map((option) => (
             <Chip
@@ -221,14 +284,16 @@ export function ProfileScreen() {
 
       {user.bio ? (
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('profile.about')}</Text>
-          <Text style={[styles.body, rtl && styles.rtlText]}>{user.bio}</Text>
+          <AccentHeading title={t('profile.about')} gradient={accent.duo} style={styles.sectionHeading} />
+          <View style={styles.bioCard}>
+            <Text style={[styles.body, rtl && styles.rtlText]}>{user.bio}</Text>
+          </View>
         </View>
       ) : null}
 
       {user.activeMode === 'dating' ? (
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('profile.vibeTags')}</Text>
+          <AccentHeading title={t('profile.vibeTags')} gradient={accent.duo} style={styles.sectionHeading} />
           <View style={styles.chipRow}>
             {user.dating.vibeTags.length === 0 ? (
               <Text style={[styles.body, rtl && styles.rtlText]}>—</Text>
@@ -239,10 +304,12 @@ export function ProfileScreen() {
         </View>
       ) : (
         <View style={styles.section}>
-          <View style={styles.sectionHeaderRow}>
-            <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('profile.rishtaDetails')}</Text>
-            <Button label={t('common.edit')} variant="ghost" onPress={() => router.push('/rishta-profile')} />
-          </View>
+          <AccentHeading
+            title={t('profile.rishtaDetails')}
+            gradient={accent.duo}
+            style={styles.sectionHeading}
+            right={<Button label={t('common.edit')} variant="ghost" onPress={() => router.push('/rishta-profile')} />}
+          />
           <View style={styles.detailCard}>
             <ProfileRow label={t('profile.religion')} value={user.rishta.religion || '—'} rtl={rtl} />
             <ProfileRow label={t('profile.sect')} value={user.rishta.sect || '—'} rtl={rtl} />
@@ -264,15 +331,15 @@ export function ProfileScreen() {
 
       <View style={styles.section}>
         <View style={styles.quickLinks}>
-          <QuickLinkRow icon="heart-outline" label={t('profile.favorites')} onPress={() => router.push('/favorites')} rtl={rtl} />
-          <QuickLinkRow icon="sparkles-outline" label={t('profile.subscription')} onPress={() => router.push('/explore-plus')} rtl={rtl} />
-          <QuickLinkRow icon="notifications-outline" label={t('profile.notifications')} onPress={() => router.push('/notifications')} rtl={rtl} />
-          <QuickLinkRow icon="settings-outline" label={t('profile.settings')} onPress={() => router.push('/settings')} rtl={rtl} last />
+          <QuickLinkRow icon="heart" tint={colors.dating} label={t('profile.favorites')} onPress={() => router.push('/favorites')} rtl={rtl} />
+          <QuickLinkRow icon="sparkles" tint={colors.gold} label={t('profile.subscription')} onPress={() => router.push('/explore-plus')} rtl={rtl} />
+          <QuickLinkRow icon="notifications" tint={colors.plum} label={t('profile.notifications')} onPress={() => router.push('/notifications')} rtl={rtl} />
+          <QuickLinkRow icon="settings" tint={colors.teal} label={t('profile.settings')} onPress={() => router.push('/settings')} rtl={rtl} last />
         </View>
       </View>
 
       <View style={styles.section}>
-        <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('profile.verificationSection')}</Text>
+        <AccentHeading title={t('profile.verificationSection')} gradient={accent.duo} style={styles.sectionHeading} />
         <View style={styles.quickLinks}>
           <SettingsRow
             icon="card-outline"
@@ -305,6 +372,35 @@ export function ProfileScreen() {
   );
 }
 
+// Each stat gets its own tinted tile and icon, so the three numbers read as
+// three different facts instead of one undifferentiated strip.
+function StatTile({
+  icon,
+  tint,
+  value,
+  label,
+  colors,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  tint: string;
+  value: string;
+  label: string;
+  colors: Palette;
+}) {
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  return (
+    <View style={[styles.statTile, { backgroundColor: withAlpha(tint, 0.1), borderColor: withAlpha(tint, 0.28) }]}>
+      <Ionicons name={icon} size={16} color={tint} />
+      <Text style={[styles.statValue, { color: tint }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+        {value}
+      </Text>
+      <Text style={styles.statLabel} numberOfLines={1}>
+        {label}
+      </Text>
+    </View>
+  );
+}
+
 function ProfileRow({ label, value, rtl, last }: { label: string; value: string; rtl: boolean; last?: boolean }) {
   const { colors } = useTheme();
   return (
@@ -321,16 +417,43 @@ function ProfileRow({ label, value, rtl, last }: { label: string; value: string;
   );
 }
 
-function QuickLinkRow({ icon, label, onPress, rtl, last }: { icon: keyof typeof Ionicons.glyphMap; label: string; onPress: () => void; rtl: boolean; last?: boolean }) {
+function QuickLinkRow({
+  icon,
+  tint,
+  label,
+  onPress,
+  rtl,
+  last,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  tint: string;
+  label: string;
+  onPress: () => void;
+  rtl: boolean;
+  last?: boolean;
+}) {
   const { colors } = useTheme();
   return (
-    <Pressable onPress={onPress} style={[quickStyles.row, !last && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }, rtl && { flexDirection: 'row-reverse' }]}>
-      <Ionicons name={icon} size={18} color={colors.textSecondary} />
+    <Pressable
+      onPress={onPress}
+      style={[
+        quickStyles.row,
+        !last && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
+        rtl && { flexDirection: 'row-reverse' },
+      ]}
+    >
+      <View style={[quickStyles.iconTile, { backgroundColor: withAlpha(tint, 0.14) }]}>
+        <Ionicons name={icon} size={17} color={tint} />
+      </View>
       <Text style={[quickStyles.label, { color: colors.textPrimary }, rtl && quickStyles.rtlText]}>{label}</Text>
       <Ionicons name={rtl ? 'chevron-back' : 'chevron-forward'} size={16} color={colors.textTertiary} />
     </Pressable>
   );
 }
+
+// Gold ring for paying members — the one place the palette's premium colour
+// outranks the member's own mode colour.
+const PREMIUM_RING: Gradient = ['#F5C451', '#E0913A', '#C97C2E'];
 
 const detailStyles = StyleSheet.create({
   row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.sm },
@@ -340,28 +463,56 @@ const detailStyles = StyleSheet.create({
 });
 
 const quickStyles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.md, gap: spacing.sm },
-  label: { ...typography.body, flex: 1 },
+  row: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm + 2, gap: spacing.sm },
+  iconTile: { width: 34, height: 34, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
+  label: { ...typography.body, flex: 1, fontWeight: '600' },
   rtlText: { textAlign: 'right', writingDirection: 'rtl' },
 });
 
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
-    banner: { height: 88, borderRadius: radius.lg, marginTop: spacing.sm, alignItems: 'flex-end', padding: spacing.sm },
+    banner: {
+      height: 104,
+      borderRadius: radius.lg,
+      marginTop: spacing.sm,
+      alignItems: 'flex-end',
+      padding: spacing.sm,
+      overflow: 'hidden',
+    },
+    // Two blown-out highlights inside the banner, so the gradient reads as lit
+    // rather than as a flat two-colour sweep.
+    bannerGlowA: {
+      position: 'absolute',
+      top: -50,
+      left: -20,
+      width: 150,
+      height: 150,
+      borderRadius: 75,
+      backgroundColor: 'rgba(255,255,255,0.16)',
+    },
+    bannerGlowB: {
+      position: 'absolute',
+      bottom: -70,
+      right: 30,
+      width: 170,
+      height: 170,
+      borderRadius: 85,
+      backgroundColor: 'rgba(255,255,255,0.1)',
+    },
     bannerActions: { flexDirection: 'row', gap: spacing.xs },
     noBorder: { borderWidth: 0 },
-    headerCard: { alignItems: 'center', marginTop: -40, paddingHorizontal: spacing.md },
+    headerCard: { alignItems: 'center', marginTop: -46, paddingHorizontal: spacing.md },
     avatarWrap: { position: 'relative' },
-    avatar: { width: 84, height: 84, borderRadius: 42, borderWidth: 4, borderColor: colors.background, backgroundColor: colors.skeleton },
-    avatarPremium: { borderColor: colors.gold },
+    avatarRing: { width: 92, height: 92, borderRadius: 46, padding: 4 },
+    avatar: { width: '100%', height: '100%', borderRadius: 42, backgroundColor: colors.skeleton },
     avatarPlaceholder: { backgroundColor: colors.teal, alignItems: 'center', justifyContent: 'center' },
     verifiedDot: {
       position: 'absolute',
       bottom: 2,
       right: 2,
-      width: 20,
-      height: 20,
-      borderRadius: 10,
+      width: 22,
+      height: 22,
+      borderRadius: 11,
       backgroundColor: colors.success,
       borderWidth: 2,
       borderColor: colors.background,
@@ -369,30 +520,40 @@ const makeStyles = (colors: Palette) =>
       justifyContent: 'center',
     },
     nameRow: { marginTop: spacing.sm },
-    name: { ...typography.h2, color: colors.textPrimary },
-    meta: { ...typography.body, color: colors.textSecondary, marginTop: 2 },
-    badgeRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
-    editButton: { marginTop: spacing.md, alignSelf: 'stretch' },
-    statsRow: {
+    name: { ...typography.h2, color: colors.textPrimary, fontWeight: '800' },
+    rowRtl: { flexDirection: 'row-reverse' },
+    metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 },
+    meta: { ...typography.caption, fontWeight: '800', letterSpacing: 0.6, textTransform: 'uppercase' },
+    badgeRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: spacing.xs, marginTop: spacing.sm },
+    editButton: { alignSelf: 'stretch', marginTop: spacing.md },
+    editButtonFill: {
       flexDirection: 'row',
-      backgroundColor: colors.surface,
-      borderRadius: radius.lg,
-      borderWidth: 1,
-      borderColor: colors.border,
-      marginTop: spacing.lg,
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.xs,
+      borderRadius: radius.md,
       paddingVertical: spacing.md,
     },
-    statItem: { flex: 1, alignItems: 'center' },
-    statDivider: { width: 1, backgroundColor: colors.border },
-    statValue: { ...typography.h3, color: colors.textPrimary },
-    statLabel: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
+    editButtonLabel: { ...typography.bodyBold, color: '#FFFFFF', fontWeight: '800' },
+    statsRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.lg },
+    statTile: {
+      flex: 1,
+      alignItems: 'center',
+      gap: 2,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.xs,
+    },
+    statValue: { ...typography.h3, fontWeight: '800' },
+    statLabel: { ...typography.caption, color: colors.textSecondary },
     section: { marginTop: spacing.lg },
-    sectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    sectionHeading: { marginBottom: spacing.sm },
     optionCard: {
-      backgroundColor: colors.surface,
+      backgroundColor: colors.surfaceElevated,
       borderRadius: radius.lg,
       borderWidth: 1,
-      borderColor: colors.border,
+      borderColor: colors.borderSoft,
       overflow: 'hidden',
     },
     optionRow: {
@@ -405,25 +566,30 @@ const makeStyles = (colors: Palette) =>
     optionRowBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.borderSoft },
     optionText: { flex: 1 },
     optionTitle: { ...typography.body, color: colors.textPrimary, fontWeight: '700' },
-    optionTitleSelected: { color: colors.teal },
     optionDesc: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
-    rowRtl: { flexDirection: 'row-reverse' },
-    sectionHint: { ...typography.caption, color: colors.textSecondary, marginBottom: spacing.sm, marginTop: -spacing.xs },
-    sectionTitle: { ...typography.label, color: colors.textSecondary, marginBottom: spacing.sm, textTransform: 'uppercase' },
+    radioOn: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
+    radioOff: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: colors.border },
     body: { ...typography.body, color: colors.textPrimary },
-    chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
-    detailCard: {
-      backgroundColor: colors.surface,
+    bioCard: {
+      backgroundColor: colors.surfaceElevated,
       borderRadius: radius.lg,
       borderWidth: 1,
-      borderColor: colors.border,
+      borderColor: colors.borderSoft,
+      padding: spacing.md,
+    },
+    chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+    detailCard: {
+      backgroundColor: colors.surfaceElevated,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: colors.borderSoft,
       paddingHorizontal: spacing.md,
     },
     quickLinks: {
-      backgroundColor: colors.surface,
+      backgroundColor: colors.surfaceElevated,
       borderRadius: radius.lg,
       borderWidth: 1,
-      borderColor: colors.border,
+      borderColor: colors.borderSoft,
       paddingHorizontal: spacing.md,
     },
     rowDivider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border },

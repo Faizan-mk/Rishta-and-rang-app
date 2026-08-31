@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import type { Intent } from '../../types/user';
+import { AccentHeading } from '../../components/common/AccentHeading';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { Button } from '../../components/Button';
 import { StepHeader } from '../../components/common/StepHeader';
@@ -14,6 +15,7 @@ import { useDialog } from '../../store/DialogContext';
 import { useOnboarding } from '../../store/onboardingStore';
 import { radius, spacing, typography } from '../../theme';
 import { scaleFont } from '../../theme/responsive';
+import { glow, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 
 const MAX_PHOTOS = 4;
@@ -30,6 +32,8 @@ export function IntentPhotosScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
+  const onboardRamp = [colors.teal, colors.sage] as const;
+
   const { notify } = useDialog();
   const { draft, patchDraft } = useOnboarding();
   const [selected, setSelected] = useState<Intent | null>(null);
@@ -87,7 +91,7 @@ export function IntentPhotosScreen() {
         );
       })}
 
-      <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{t('photos.title')}</Text>
+      <AccentHeading title={t('photos.title')} gradient={onboardRamp} style={styles.sectionHeading} />
       <Text style={[styles.subtitle, rtl && styles.rtlText]}>{t('photos.subtitle')}</Text>
 
       <View style={styles.grid}>
@@ -124,32 +128,48 @@ export function IntentPhotosScreen() {
         <Text style={[styles.hint, styles.hintNeutral, rtl && styles.rtlText]}>{t('photos.primaryHint')}</Text>
       )}
 
-      <Button label={t('common.next')} onPress={onNext} disabled={!canContinue} style={styles.submit} />
+      <Button
+        label={t('common.next')}
+        onPress={onNext}
+        disabled={!canContinue}
+        gradient={canContinue ? onboardRamp : undefined}
+        style={styles.submit}
+      />
     </ScreenContainer>
   );
 }
 
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
-    title: { ...typography.h1, color: colors.textPrimary, marginBottom: spacing.xs },
+    title: { ...typography.h1, color: colors.textPrimary, marginBottom: spacing.xs, fontWeight: '800' },
     subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg },
-    sectionTitle: { ...typography.h3, color: colors.textPrimary, marginTop: spacing.sm, marginBottom: spacing.xs },
+    sectionHeading: { marginTop: spacing.sm, marginBottom: spacing.sm },
     card: {
       borderWidth: 1.5,
-      borderColor: colors.border,
+      borderColor: colors.borderSoft,
       borderRadius: radius.lg,
       padding: spacing.md,
       marginBottom: spacing.md,
-      backgroundColor: colors.surface,
+      backgroundColor: colors.surfaceElevated,
     },
-    cardSelected: { borderColor: colors.teal, backgroundColor: colors.tealSoft },
-    cardTitle: { ...typography.h3, color: colors.textPrimary, marginBottom: 4 },
+    cardSelected: {
+      borderColor: colors.teal,
+      backgroundColor: withAlpha(colors.teal, 0.1),
+      ...glow(colors.teal, 0.35, 14, 6),
+    },
+    cardTitle: { ...typography.h3, color: colors.textPrimary, marginBottom: 4, fontWeight: '800' },
     cardDesc: { ...typography.body, color: colors.textSecondary },
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-    slot: { width: '47%', aspectRatio: 3 / 4, borderRadius: radius.md, overflow: 'hidden' },
+    slot: {
+      width: '47%',
+      aspectRatio: 3 / 4,
+      borderRadius: radius.md,
+      overflow: 'hidden',
+      backgroundColor: colors.skeleton,
+    },
     addSlot: {
       borderWidth: 1.5,
-      borderColor: colors.border,
+      borderColor: withAlpha(colors.teal, 0.4),
       borderStyle: 'dashed',
       alignItems: 'center',
       justifyContent: 'center',
