@@ -39,7 +39,9 @@ export function ModeToggle({ mode, onChange, datingLabel, rishtaLabel, datingCou
   const halo = useSharedValue(0);
 
   useEffect(() => {
-    thumbX.value = withSpring(mode === 'dating' ? 0 : width.value / 2, { damping: 18, stiffness: 220 });
+    // A snappier spring so the thumb lands with the tap rather than drifting
+    // in afterwards — mode switches feel immediate instead of laggy.
+    thumbX.value = withSpring(mode === 'dating' ? 0 : width.value / 2, { damping: 20, stiffness: 340 });
   }, [mode, width.value]);
 
   useEffect(() => {
@@ -110,7 +112,7 @@ function ToggleOption({
   const scale = useSharedValue(active ? 1 : 0.94);
 
   useEffect(() => {
-    scale.value = withSpring(active ? 1 : 0.94, { damping: 14, stiffness: 240 });
+    scale.value = withSpring(active ? 1 : 0.94, { damping: 18, stiffness: 340 });
   }, [active, scale]);
 
   const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));

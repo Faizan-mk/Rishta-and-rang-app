@@ -6,8 +6,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   FadeIn as ReanimatedFadeIn,
-  FadeOut,
-  ZoomIn,
 } from 'react-native-reanimated';
 import { AuroraBackground } from '../../components/common/AuroraBackground';
 import { DiscoverProfileCard } from '../../components/discover/DiscoverProfileCard';
@@ -209,6 +207,21 @@ export function HomeScreen() {
   const canUndo = safeCursor > 0;
   const filtersActive = countActiveFilters(filters);
 
+  // Warm the photo caches up front so a mode or profile change never sits on
+  // a blank card while the new profile's image downloads from the network.
+  useEffect(() => {
+    const warm = (p: BrowseProfile | undefined) => {
+      if (!p) return;
+      p.photos.forEach((uri) => {
+        if (uri.startsWith('http')) Image.prefetch(uri).catch(() => {});
+      });
+    };
+    warm(currentProfile);
+    warm(visibleDatingProfiles[0]);
+    warm(visibleRishtaProfiles[0]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, currentProfile?.id]);
+
   // A re-filtered or re-sorted deck is a different deck — start it from the top
   // instead of landing mid-way through it.
   useEffect(() => {
@@ -397,7 +410,7 @@ export function HomeScreen() {
       </View>
 
       {currentProfile ? (
-        <Animated.View key={`${mode}-${currentProfile.id}`} entering={ZoomIn.duration(200)} exiting={FadeOut.duration(100)} style={styles.flex}>
+        <Animated.View key={`${mode}-${currentProfile.id}`} entering={ReanimatedFadeIn.duration(120)} style={styles.flex}>
           {/* The action bar floats over this scroll view, so the content reserves
               its height (plus the tab bar) at the bottom instead of ending flush. */}
           <ScrollView
