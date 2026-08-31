@@ -4,7 +4,7 @@
     "slug": "rishta-and-rang",
     "version": "1.0.1",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/heart.png",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
@@ -18,10 +18,8 @@
       "package": "com.rishtaandrang.app",
       "versionCode": 2,
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "backgroundColor": "#FFFFFF",
+        "foregroundImage": "./assets/heart.png"
       },
       "predictiveBackGestureEnabled": false,
       "permissions": [
@@ -32,7 +30,7 @@
       ]
     },
     "web": {
-      "favicon": "./assets/favicon.png",
+      "favicon": "./assets/heart.png",
       "bundler": "metro"
     },
     "plugins": [
