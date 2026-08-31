@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -153,7 +153,7 @@ const makeStyles = (colors: Palette, bottomInset: number) =>
       right: 0,
       bottom: 0,
       backgroundColor: colors.surfaceElevated,
-      paddingBottom: bottomInset,
+      paddingBottom: bottomInset + (Platform.OS === 'web' ? 12 : 0),
       shadowColor: '#000',
       shadowOpacity: 0.14,
       shadowRadius: 16,
@@ -161,7 +161,7 @@ const makeStyles = (colors: Palette, bottomInset: number) =>
       elevation: 16,
     },
     topRule: { height: 2, opacity: 0.85 },
-    row: { flexDirection: 'row', height: TAB_BAR_BASE_HEIGHT, paddingTop: 6 },
+    row: { flexDirection: 'row', height: TAB_BAR_BASE_HEIGHT + (Platform.OS === 'web' ? 8 : 0), paddingTop: 6 },
     item: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 2 },
     pod: {
       width: 44,

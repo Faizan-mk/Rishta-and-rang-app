@@ -15,7 +15,7 @@ import { ViewHistoryProvider } from '../store/ViewHistoryContext';
 import { LikeLimitProvider } from '../store/LikeLimitContext';
 import { BoostProvider } from '../store/BoostContext';
 import { PrivacyProvider } from '../store/PrivacyContext';
-import { DiscoveryProvider } from '../store/DiscoveryContext';
+import { DiscoveryProvider }  from '../store/DiscoveryContext';
 import { DialogProvider } from '../store/DialogContext';
 import { OnboardingProvider } from '../store/onboardingStore';
 import { ResponsiveFrame } from '../components/common/ResponsiveFrame';
