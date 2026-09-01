@@ -12,11 +12,12 @@ import { SelectField } from '../../components/common/SelectField';
 import { Chip } from '../../components/common/Chip';
 import { Button } from '../../components/Button';
 import { StepHeader } from '../../components/common/StepHeader';
+import { PasswordRequirements } from '../../components/common/PasswordRequirements';
 import { PAKISTAN_CITIES } from '../../data/locations';
 import { useLanguage } from '../../store/LanguageContext';
 import { useTheme } from '../../store/ThemeContext';
 import { useOnboarding } from '../../store/onboardingStore';
-import { isValidEmail } from '../../utils/validation';
+import { isValidEmail, isStrongPassword } from '../../utils/validation';
 import { ageFromDob, isValidDobFormat } from '../../utils/date';
 import { digitsToCnicDisplay, isValidCnicFormat, cnicMatchesGender } from '../../utils/cnic';
 import { authService } from '../../services/authService';
@@ -207,32 +208,6 @@ export function SignupScreen() {
         <Button label={t('signup.logIn')} variant="ghost" onPress={() => router.push('/login')} />
       </View>
     </ScreenContainer>
-  );
-}
-
-function isStrongPassword(password: string): boolean {
-  return password.length >= 8 && /[a-z]/.test(password) && /[A-Z]/.test(password) && /\d/.test(password) && /[^A-Za-z0-9]/.test(password);
-}
-
-function PasswordRequirements({ password }: { password: string }) {
-  const { colors } = useTheme();
-  const { t, rtl } = useLanguage();
-  const checks = [
-    [password.length >= 8, t('signup.passwordRequirementLength')],
-    [/[a-z]/.test(password), t('signup.passwordRequirementLower')],
-    [/[A-Z]/.test(password), t('signup.passwordRequirementUpper')],
-    [/\d/.test(password), t('signup.passwordRequirementNumber')],
-    [/[^A-Za-z0-9]/.test(password), t('signup.passwordRequirementSpecial')],
-  ] as const;
-
-  return (
-    <View style={{ marginTop: -spacing.sm, marginBottom: spacing.md }}>
-      {checks.map(([valid, label]) => (
-        <Text key={label} style={{ ...typography.caption, color: valid ? colors.teal : colors.textTertiary, marginBottom: 2, ...(rtl ? { textAlign: 'right', writingDirection: 'rtl' as const } : {}) }}>
-          {valid ? '✓' : '○'} {label}
-        </Text>
-      ))}
-    </View>
   );
 }
 

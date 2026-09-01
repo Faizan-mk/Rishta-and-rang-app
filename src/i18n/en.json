@@ -39,6 +39,20 @@
     "sent": "If an account exists for that email, a reset link is on its way. Check your inbox and spam folder.",
     "backToLogin": "Back to log in"
   },
+  "reset": {
+    "title": "Set a new password",
+    "subtitle": "Choose a new password for your account. You will use it the next time you log in.",
+    "verifying": "Checking your reset link…",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm new password",
+    "submit": "Update password",
+    "cancel": "Cancel",
+    "invalidBody": "This reset link is no longer valid. Request a new one and try again.",
+    "requestNew": "Request a new link",
+    "failed": "Could not update your password. Try again.",
+    "doneBody": "Your password has been updated. Log in with your new password to continue.",
+    "goToLogin": "Go to log in"
+  },
   "signup": {
     "title": "Create your account",
     "subtitle": "Step 1 of 3 · Create your account",

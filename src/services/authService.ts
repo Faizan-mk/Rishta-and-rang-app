@@ -775,9 +775,104 @@ async function setReadiness(userId: string, readiness: UserProfile['rishta']['re
 // the address is registered — telling an anonymous caller which emails have
 // accounts is an account-enumeration leak.
 async function requestPasswordReset(email: string): Promise<void> {
-  const redirectTo = Linking.createURL('/login');
+  // Expo Go builds this from the dev server's LAN address, so it changes with
+  // the network — and Supabase silently falls back to the project's Site URL for
+  // any redirect that is not on its allow-list, which is what sends the tap to a
+  // dead localhost page instead of the app. Printing it here is the only way to
+  // copy the exact string the allow-list needs.
+  const redirectTo = Linking.createURL('/reset-password');
+  if (__DEV__) console.log('[password reset] redirectTo =', redirectTo);
   const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), { redirectTo });
   if (error && error.status !== 400 && error.status !== 422) throw error;
+}
+
+function decodeParam(value: string): string {
+  try {
+    return decodeURIComponent(value.replace(/\+/g, ' '));
+  } catch {
+    return value;
+  }
+}
+
+/**
+ * Every parameter a reset link carries, read from the query string and the
+ * fragment alike. Which of the two holds the credential depends on the flow the
+ * client is configured for — the implicit flow puts access_token/refresh_token
+ * after the '#', PKCE puts a code in the query — so reading both means the reset
+ * keeps working if that setting ever changes.
+ */
+function linkParams(url: string): Record<string, string> {
+  const params: Record<string, string> = {};
+  const collect = (query: string) => {
+    for (const pair of query.split('&')) {
+      if (!pair) continue;
+      const eq = pair.indexOf('=');
+      const key = decodeParam(eq === -1 ? pair : pair.slice(0, eq));
+      if (key) params[key] = eq === -1 ? '' : decodeParam(pair.slice(eq + 1));
+    }
+  };
+  const hash = url.indexOf('#');
+  if (hash !== -1) collect(url.slice(hash + 1));
+  const path = hash === -1 ? url : url.slice(0, hash);
+  const question = path.indexOf('?');
+  if (question !== -1) collect(path.slice(question + 1));
+  return params;
+}
+
+/**
+ * Turns a tapped reset link into a live session — the authority updatePassword
+ * needs to write a new password for an account nobody can currently log into.
+ *
+ * The session this leaves behind is an ordinary one, which is why the reset
+ * screen sits outside the signed-out route group: the moment this resolves, the
+ * rest of the app counts the visitor as signed in.
+ */
+async function openPasswordResetLink(url: string): Promise<void> {
+  const params = linkParams(url);
+
+  // An expired or already-spent link is reported by redirecting with the reason
+  // attached, not by failing the request — so this is checked before the rest.
+  if (params.error || params.error_code) {
+    throw new Error(params.error_description || 'This reset link is no longer valid. Request a new one.');
+  }
+
+  if (params.access_token && params.refresh_token) {
+    const { error } = await supabase.auth.setSession({
+      access_token: params.access_token,
+      refresh_token: params.refresh_token,
+    });
+    if (error) throw new Error(error.message);
+    return;
+  }
+
+  if (params.code) {
+    const { error } = await supabase.auth.exchangeCodeForSession(params.code);
+    if (error) throw new Error(error.message);
+    return;
+  }
+
+  if (params.token_hash) {
+    const { error } = await supabase.auth.verifyOtp({ type: 'recovery', token_hash: params.token_hash });
+    if (error) throw new Error(error.message);
+    return;
+  }
+
+  // On web, detectSessionInUrl consumes the fragment before this runs, so a link
+  // with nothing left on it is still good if it left a session behind.
+  const { data } = await supabase.auth.getSession();
+  if (!data.session) {
+    throw new Error('This reset link is incomplete or has already been used. Request a new one.');
+  }
+}
+
+/**
+ * Writes the new password against whatever session is live — the recovery one
+ * the link established, or an ordinary one for a password change made while
+ * signed in. This is the call that lands the change in the database.
+ */
+async function updatePassword(newPassword: string): Promise<void> {
+  const { error } = await supabase.auth.updateUser({ password: newPassword });
+  if (error) throw new Error(error.message);
 }
 
 export const authService = {
@@ -795,4 +890,6 @@ export const authService = {
   emailExists,
   inspectEmail,
   requestPasswordReset,
+  openPasswordResetLink,
+  updatePassword,
 };

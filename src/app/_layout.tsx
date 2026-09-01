@@ -65,6 +65,11 @@ function RootNavigator() {
         >
           <Stack.Screen name="index" options={{ headerShown: false }} />
 
+          {/* Outside both guards on purpose: the reset link signs the visitor in
+              to authorise the password write, so a screen gated on !user would
+              unmount itself the moment the link worked. */}
+          <Stack.Screen name="reset-password" options={{ headerShown: false }} />
+
           <Stack.Protected guard={!user}>
             <Stack.Screen name="(auth)" options={{ headerShown: false }} />
           </Stack.Protected>

@@ -39,6 +39,20 @@
     "sent": "Agar us email ka account mojood hai to reset link bhej diya gaya hai. Apna inbox aur spam folder dekhein.",
     "backToLogin": "Wapas login par"
   },
+  "reset": {
+    "title": "Naya password set karein",
+    "subtitle": "Apne account ke liye naya password chunein. Agli baar login karte waqt yehi use hoga.",
+    "verifying": "Aap ka reset link check kiya ja raha hai…",
+    "newPassword": "Naya password",
+    "confirmPassword": "Naye password ki tasdeeq karein",
+    "submit": "Password update karein",
+    "cancel": "Mansookh karein",
+    "invalidBody": "Yeh reset link ab kaam nahi karta. Naya link mangwa kar dobara koshish karein.",
+    "requestNew": "Naya link mangwaein",
+    "failed": "Password update nahi ho saka. Dobara koshish karein.",
+    "doneBody": "Aap ka password update ho gaya hai. Jari rakhne ke liye naye password se login karein.",
+    "goToLogin": "Login par jayein"
+  },
   "signup": {
     "title": "Apna Account Banayein",
     "subtitle": "Step 1 of 3 · Apna account banayein",
