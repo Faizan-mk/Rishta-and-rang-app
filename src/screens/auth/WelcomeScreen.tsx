@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -10,6 +10,7 @@ import { FloatingHearts } from '../../components/common/FloatingHearts';
 import { SwingingLogo } from '../../components/common/SwingingLogo';
 import { spacing, typography, radius } from '../../theme';
 import { glow, withAlpha } from '../../theme/glow';
+import { scaleSpace } from '../../theme/responsive';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
@@ -28,7 +29,14 @@ export function WelcomeScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const { language, setLanguage, t, rtl } = useLanguage();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { height } = useWindowDimensions();
+  // Graduated layout so the welcome page always fits, from tiny foldables /
+  // landscape through to big tablets. Compact trims spacing + logo on short
+  // phones (e.g. iPhone SE); tiny trims further on very short viewports.
+  const tiny = height < 620;
+  const compact = height < 720;
+  const logoSize = tiny ? 52 : compact ? 64 : 88;
+  const styles = useMemo(() => makeStyles(colors, compact, tiny), [colors, compact, tiny]);
 
   return (
     <LinearGradient colors={BRAND_RAMP} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.gradient}>
@@ -37,7 +45,7 @@ export function WelcomeScreen() {
       <FloatingHearts colors={[colors.gold, '#FFFFFF', colors.rishta]} />
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
         <View style={styles.brand}>
-          <SwingingLogo color={colors.teal} ringColor="#FFFFFF" />
+          <SwingingLogo size={logoSize} color={colors.teal} ringColor="#FFFFFF" />
           <Animated.Text entering={FadeInDown.delay(200).duration(500)} style={styles.brandTitle}>
             {t('appName')}
           </Animated.Text>
@@ -50,27 +58,29 @@ export function WelcomeScreen() {
         </View>
 
         <Animated.View entering={FadeInUp.delay(420).duration(500)} style={styles.card}>
-          {/* Language is a segmented pill rather than three full buttons — it is
-              a preference, not the screen's main action. */}
-          <View style={styles.langRow}>
+          {/* Language is a segmented control so the three options read as one
+              group — a preference, not the screen's main action. */}
+          <View style={styles.langGroup}>
             {LANGUAGES.map((option) => {
               const selected = language === option.key;
               return (
-                <Pressable key={option.key} onPress={() => setLanguage(option.key)} style={styles.langSlot}>
-                  {selected ? (
+                <Pressable
+                  key={option.key}
+                  onPress={() => setLanguage(option.key)}
+                  style={[styles.langSlot, selected && styles.langSlotSelected]}
+                >
+                  {selected && (
                     <LinearGradient
                       colors={[colors.teal, colors.sage]}
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 1 }}
-                      style={[styles.langOption, glow(colors.teal, 0.5, 12, 5)]}
-                    >
-                      <Text style={[styles.langLabel, styles.langLabelSelected]}>{t(option.labelKey)}</Text>
-                    </LinearGradient>
-                  ) : (
-                    <View style={[styles.langOption, styles.langOptionIdle]}>
-                      <Text style={styles.langLabel}>{t(option.labelKey)}</Text>
-                    </View>
+                      style={[styles.langOption, glow(colors.teal, 0.4, 10, 4)]}
+                      pointerEvents="none"
+                    />
                   )}
+                  <Text style={[styles.langLabel, selected && styles.langLabelSelected]}>
+                    {t(option.labelKey)}
+                  </Text>
                 </Pressable>
               );
             })}
@@ -90,7 +100,7 @@ export function WelcomeScreen() {
   );
 }
 
-const makeStyles = (colors: Palette) =>
+const makeStyles = (colors: Palette, compact: boolean, tiny: boolean) =>
   StyleSheet.create({
     gradient: { flex: 1, overflow: 'hidden' },
     // Two soft highlights so the backdrop has depth behind the floating hearts.
@@ -112,13 +122,23 @@ const makeStyles = (colors: Palette) =>
       borderRadius: 150,
       backgroundColor: 'rgba(122,59,109,0.2)',
     },
-    safeArea: { flex: 1, justifyContent: 'space-between', padding: spacing.lg },
-    brand: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+    safeArea: {
+      flex: 1,
+      justifyContent: 'space-between',
+      padding: spacing.lg,
+      paddingBottom: compact ? spacing.lg : spacing.xl,
+    },
+    brand: {
+      flexGrow: 1,
+      flexShrink: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     brandTitle: {
       ...typography.h1,
       color: '#FFFFFF',
       textAlign: 'center',
-      marginTop: spacing.lg,
+      marginTop: tiny ? scaleSpace(6) : compact ? scaleSpace(12) : spacing.lg,
       fontWeight: '800',
       letterSpacing: 0.5,
     },
@@ -126,33 +146,53 @@ const makeStyles = (colors: Palette) =>
       ...typography.body,
       color: 'rgba(255,255,255,0.85)',
       textAlign: 'center',
-      marginTop: spacing.sm,
+      marginTop: tiny ? scaleSpace(4) : spacing.sm,
       paddingHorizontal: spacing.lg,
     },
     card: {
       backgroundColor: colors.surfaceElevated,
       borderRadius: radius.lg,
-      padding: spacing.lg,
+      padding: tiny ? scaleSpace(12) : compact ? scaleSpace(16) : spacing.lg,
       shadowColor: '#000',
       shadowOpacity: 0.25,
       shadowRadius: 24,
       shadowOffset: { width: 0, height: 8 },
       elevation: 12,
     },
-    langRow: { flexDirection: 'row', gap: spacing.xs, marginBottom: spacing.lg },
-    langSlot: { flex: 1 },
-    langOption: {
+    langGroup: {
+      flexDirection: 'row',
+      padding: scaleSpace(4),
+      borderRadius: radius.pill,
+      backgroundColor: withAlpha(colors.textPrimary, 0.06),
+      borderWidth: 1,
+      borderColor: colors.borderSoft,
+      marginBottom: tiny ? spacing.sm : compact ? spacing.md : spacing.lg,
+    },
+    langSlot: {
+      flex: 1,
       alignItems: 'center',
       justifyContent: 'center',
       borderRadius: radius.pill,
-      paddingVertical: spacing.sm + 2,
+      overflow: 'hidden',
+      paddingVertical: tiny ? scaleSpace(7) : compact ? scaleSpace(9) : scaleSpace(11),
+      paddingHorizontal: spacing.xs,
     },
-    langOptionIdle: {
-      borderWidth: 1.5,
-      borderColor: colors.borderSoft,
-      backgroundColor: withAlpha(colors.textPrimary, 0.04),
+    langSlotSelected: {
+      backgroundColor: 'transparent',
     },
-    langLabel: { ...typography.label, color: colors.textSecondary, fontWeight: '700' },
+    langOption: {
+      ...StyleSheet.absoluteFillObject,
+      borderRadius: radius.pill,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    langLabel: {
+      ...typography.label,
+      color: colors.textSecondary,
+      fontWeight: '700',
+      textAlign: 'center',
+      textAlignVertical: 'center',
+    },
     langLabelSelected: { color: '#FFFFFF', fontWeight: '800' },
     actions: { gap: spacing.sm },
     rtlText: { writingDirection: 'rtl' },
