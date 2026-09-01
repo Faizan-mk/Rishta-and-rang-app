@@ -2,21 +2,21 @@
   "expo": {
     "name": "Rishta & Rang",
     "slug": "rishta-and-rang",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/heart.png",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.rishtaandrang.app",
-      "buildNumber": "3",
+      "buildNumber": "4",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "Allow Rishta & Rang to access your photos so you can add profile pictures, verification documents, and share photos in chat."
       }
     },
     "android": {
       "package": "com.rishtaandrang.app",
-      "versionCode": 3,
+      "versionCode": 4,
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/heart.png"
