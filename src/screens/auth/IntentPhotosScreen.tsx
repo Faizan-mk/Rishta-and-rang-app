@@ -84,8 +84,12 @@ export function IntentPhotosScreen() {
         return (
           <Animated.View key={option.key} entering={FadeInUp.delay(index * 90).duration(360)}>
             <Pressable onPress={() => setSelected(option.key)} style={[styles.card, isSelected && styles.cardSelected]}>
-              <Text style={[styles.cardTitle, rtl && styles.rtlText]}>{t(option.titleKey)}</Text>
-              <Text style={[styles.cardDesc, rtl && styles.rtlText]}>{t(option.descKey)}</Text>
+              <Text style={[isSelected ? styles.cardTitleSelected : styles.cardTitle, rtl && styles.rtlText]}>
+                {t(option.titleKey)}
+              </Text>
+              <Text style={[isSelected ? styles.cardDescSelected : styles.cardDesc, rtl && styles.rtlText]}>
+                {t(option.descKey)}
+              </Text>
             </Pressable>
           </Animated.View>
         );
@@ -116,7 +120,7 @@ export function IntentPhotosScreen() {
         ))}
         {photos.length < MAX_PHOTOS && (
           <Pressable onPress={pickPhoto} style={[styles.slot, styles.addSlot]}>
-            <Text style={styles.addPlus}>+</Text>
+            <Ionicons name="camera-outline" size={32} color={colors.teal} />
             <Text style={styles.addLabel}>{t('photos.addPhoto')}</Text>
           </Pressable>
         )}
@@ -154,11 +158,13 @@ const makeStyles = (colors: Palette) =>
     },
     cardSelected: {
       borderColor: colors.teal,
-      backgroundColor: withAlpha(colors.teal, 0.1),
-      ...glow(colors.teal, 0.35, 14, 6),
+      backgroundColor: colors.tealSoft,
+      ...glow(colors.teal, 0.25, 12, 4),
     },
     cardTitle: { ...typography.h3, color: colors.textPrimary, marginBottom: 4, fontWeight: '800' },
+    cardTitleSelected: { ...typography.h3, color: colors.teal, marginBottom: 4, fontWeight: '800' },
     cardDesc: { ...typography.body, color: colors.textSecondary },
+    cardDescSelected: { ...typography.body, color: colors.textPrimary },
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
     slot: {
       width: '47%',
@@ -176,8 +182,7 @@ const makeStyles = (colors: Palette) =>
       backgroundColor: colors.surface,
     },
     photo: { width: '100%', height: '100%' },
-    addPlus: { fontSize: scaleFont(32), color: colors.teal, marginBottom: 4 },
-    addLabel: { ...typography.caption, color: colors.textSecondary },
+    addLabel: { ...typography.caption, color: colors.textSecondary, marginTop: spacing.xs, textAlign: 'center' },
     primaryBadge: {
       position: 'absolute',
       bottom: 4,

@@ -19,6 +19,7 @@ import {
 } from '../../components/discover/browseOptions';
 import { likesService, type LikeReceived } from '../../services/likesService';
 import { mockEvents } from '../../data/mockEvents';
+import { FEATURE_EVENTS } from '../../config/features';
 import type { DiscoverProfile, RishtaListingProfile } from '../../types/content';
 import { useDiscovery } from '../../store/DiscoveryContext';
 import { useLanguage } from '../../store/LanguageContext';
@@ -39,7 +40,9 @@ type ExploreProfile = (DiscoverProfile | RishtaListingProfile) & { kind: 'dating
 
 const TABS: { key: ExploreTab; labelKey: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { key: 'forYou', labelKey: 'explore.forYou', icon: 'sparkles' },
-  { key: 'events', labelKey: 'explore.events', icon: 'calendar' },
+  // Events tab hidden behind FEATURE_EVENTS flag for V1 — out of V1 roadmap scope.
+  // When enabled, real event data must come from the backend, not mockEvents.
+  ...(FEATURE_EVENTS ? ([{ key: 'events', labelKey: 'explore.events', icon: 'calendar' }] as const) : []),
   { key: 'history', labelKey: 'explore.myHistory', icon: 'time' },
 ];
 
