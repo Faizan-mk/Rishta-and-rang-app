@@ -1,6 +1,7 @@
 import { PROFILE_SELECT, fetchProfileRow, type ProfileDoc } from './authService';
 import { supabase } from './supabase';
 import { ageFromDob } from '../utils/date';
+import { targetGenders } from '../utils/genderMatch';
 import type { DiscoverProfile, RishtaListingProfile } from '../types/content';
 import type { Gender } from '../types/user';
 
@@ -21,18 +22,12 @@ interface ProfileEntry {
   data: ProfileDoc;
 }
 
-/** Opposite gender for straight matching; undefined for 'other' viewers. */
-function targetGender(viewer?: Gender): Gender | undefined {
-  if (viewer === 'male') return 'female';
-  if (viewer === 'female') return 'male';
-  return undefined;
-}
-
 async function fetchProfiles(viewer?: Gender): Promise<ProfileEntry[]> {
-  const target = targetGender(viewer);
-  let query = supabase.from('profiles').select(PROFILE_SELECT);
-  if (target) query = query.eq('gender', target);
-  const { data, error } = await query;
+  // male sees female, female sees male, 'other' sees both — see utils/genderMatch.
+  const { data, error } = await supabase
+    .from('profiles')
+    .select(PROFILE_SELECT)
+    .in('gender', targetGenders(viewer));
   if (error) throw new Error(error.message);
   return (data ?? []).map((row) => {
     const profile = row as unknown as ProfileDoc;

@@ -1,11 +1,23 @@
 import type { Gender } from '../types/user';
 
-const OPPOSITE: Partial<Record<Gender, Gender>> = { male: 'female', female: 'male' };
+// Straight matching for V1, and the single source of truth for who a member can
+// browse — the Supabase query in discoveryService filters on the same list so a
+// row that reaches a screen was already the right gender when it left the table.
+//
+//   male   -> female listings
+//   female -> male listings
+//   other  -> both male and female listings
+//
+// 'other' rows are never listed to anyone: the only accounts carrying that gender
+// besides self-identified members are login's placeholder rows (see authService),
+// which hold no member-entered detail and are not browsable content.
+export function targetGenders(viewerGender?: Gender): Gender[] {
+  if (viewerGender === 'male') return ['female'];
+  if (viewerGender === 'female') return ['male'];
+  return ['male', 'female'];
+}
 
-// Straight matching for V1: a male account sees female listings and vice versa.
-// Accounts with gender 'other' (or no signed-in user yet) see everyone.
 export function oppositeGenderProfiles<T extends { gender: Gender }>(profiles: T[], viewerGender?: Gender): T[] {
-  const target = viewerGender ? OPPOSITE[viewerGender] : undefined;
-  if (!target) return profiles;
-  return profiles.filter((p) => p.gender === target);
+  const targets = targetGenders(viewerGender);
+  return profiles.filter((p) => targets.includes(p.gender));
 }
