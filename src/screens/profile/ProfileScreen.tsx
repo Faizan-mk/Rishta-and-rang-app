@@ -168,7 +168,7 @@ export function ProfileScreen() {
               <Badge label={t('profile.premiumBadge')} tone="premium" icon="sparkles" />
             </Pressable>
           )}
-          <Badge label={user.selfieVerified ? t('profile.verified') : t('profile.notVerified')} tone={user.selfieVerified ? 'success' : 'neutral'} />
+          <Badge label={user.selfieVerified ? t('profile.photoAdded') : t('profile.noPhotoYet')} tone={user.selfieVerified ? 'success' : 'neutral'} />
           <Badge label={t(`intent.${user.intent}Title`)} tone="neutral" />
         </View>
 
@@ -344,7 +344,7 @@ export function ProfileScreen() {
           <SettingsRow
             icon="card-outline"
             label={t('profile.cnic')}
-            description={user.cnicVerified ? t('profile.verified') : t('profile.notVerified')}
+            description={user.cnicVerified ? t('profile.cnicPhotoSubmitted') : t('profile.cnicNoPhoto')}
             right="chevron"
             onPress={() => router.push('/cnic-verification')}
           />

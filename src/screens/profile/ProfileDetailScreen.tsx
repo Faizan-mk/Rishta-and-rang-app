@@ -92,7 +92,8 @@ export function ProfileDetailScreen() {
   const onPass = () => router.back();
   const onLike = async () => {
     if (!isFavorite(profile.id)) onToggleFavorite();
-    setCelebration({ name: profile.name, photo: profile.photos[0] });
+    // Celebration intentionally omitted — only fire when the match RPC returns matched = true.
+    // TODO(wk2-day5): wire celebration to the match-detection RPC result.
   };
   const onExpressInterest = async () => {
     if (!isFavorite(profile.id)) onToggleFavorite();

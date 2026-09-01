@@ -326,10 +326,10 @@ export function HomeScreen() {
     }
     toggleFavorite({ id: profile.id, kind: mode, name: profile.name, age: profile.age, city: profile.city, photo: profile.photos[0] });
     if (!wasLiked) {
-      if (mode === 'dating') {
-        setCelebration({ name: profile.name, photo: profile.photos[0] });
-        addNotification('match', t('matches.itsAMatch'), t('matches.youAndLikedEachOther', { name: profile.name }));
-      } else {
+      // Celebration and "It's a Match" notification are intentionally omitted here.
+      // They must only fire when the server confirms a mutual like (matched = true).
+      // TODO(wk2-day5): wire celebration to the match-detection RPC result.
+      if (mode !== 'dating') {
         addNotification('like', t('profileDetail.interestSentTitle'), t('profileDetail.interestSentBody', { name: profile.name }));
         await notify({ title: t('profileDetail.interestSentTitle'), message: t('profileDetail.interestSentBody', { name: profile.name }) });
       }
