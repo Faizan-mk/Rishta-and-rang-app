@@ -47,9 +47,17 @@ function projectId(): string | undefined {
  * works without notifications.
  */
 export async function requestPushToken(): Promise<string | null> {
+  // Every `return null` below is an ordinary outcome the app carries on from,
+  // which is exactly why each one says which it was: "no token" with no reason
+  // attached is undiagnosable, and the causes need different fixes.
+  const giveUp = (reason: string): null => {
+    if (__DEV__) console.warn(`[push] no token: ${reason}`);
+    return null;
+  };
+
   // The emulator has no notification hardware; asking there returns a token
   // that can never be delivered to.
-  if (!Device.isDevice) return null;
+  if (!Device.isDevice) return giveUp('not a physical device');
 
   if (Platform.OS === 'android') {
     // Android will not display anything without a channel to display it in.
@@ -68,18 +76,20 @@ export async function requestPushToken(): Promise<string | null> {
     const requested = await Notifications.requestPermissionsAsync();
     status = requested.status;
   }
-  if (status !== 'granted') return null;
+  if (status !== 'granted') return giveUp(`permission ${status}`);
 
   const id = projectId();
-  if (!id) return null;
+  if (!id) return giveUp('no EAS projectId in app config');
 
   try {
     const token = await Notifications.getExpoPushTokenAsync({ projectId: id });
+    if (__DEV__) console.log('[push] token acquired:', token.data);
     return token.data;
-  } catch {
-    // No FCM credentials on the project, no network, or a token service that
-    // is having a bad day. None of it should stop the app loading.
-    return null;
+  } catch (e) {
+    // Most often: no FCM credentials on the EAS project, so Expo has no way to
+    // reach an Android device. Also no network, or a token service having a bad
+    // day. None of it should stop the app loading.
+    return giveUp(e instanceof Error ? e.message : String(e));
   }
 }
 

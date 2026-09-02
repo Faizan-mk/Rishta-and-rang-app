@@ -31,8 +31,9 @@ export function usePushRegistration(): void {
       if (cancelled || !token) return;
       tokenRef.current = token;
       await pushService.registerPushToken(token);
-    })().catch(() => {
+    })().catch((e) => {
       // Offline, or the RPC is not deployed yet. The next sign-in tries again.
+      if (__DEV__) console.warn('[push] registration failed:', e);
     });
 
     return () => {
