@@ -251,3 +251,30 @@ curl -X POST 'https://<project>.supabase.co/functions/v1/send-push' \
   -H 'Content-Type: application/json' \
   -d '{"userId":"<uuid>","event":"message","title":"Test","body":"Hello"}'
 ```
+
+### Verified (2 September 2026)
+
+`supabase/tests/` holds two scripts that prove this rather than assert it. Both
+write inside a transaction they deliberately abort, so they are safe against a
+live project — the results come back as the raised exception.
+
+- `verify_reports_and_blocks.sql` — one reporter does not hide anyone, the same
+  reporter twice still does not, three distinct reporters do; `is_blocked_pair`
+  answers true from both sides of a single row and false for an unrelated pair;
+  blocking clears a standing like; `match_counterpart` resolves a thread.
+- `verify_block_both_ways.sql` — impersonates real members (`role` +
+  `request.jwt.claims`, what PostgREST sets per request) so the actual policies
+  are measured, not bypassed by Studio's superuser. Confirms A cannot see B,
+  **B cannot see A**, and a third member is still visible as a control.
+
+Both passed, and reporting and blocking were each confirmed from the app: a
+report lands as a real row, and `blocked_users.blocked_user_id` resolves to the
+blocked person's name.
+
+**Bug found doing it:** `reportsService` used `.upsert()`, which is
+`INSERT … ON CONFLICT DO UPDATE` underneath and needs UPDATE rights that
+`reports` deliberately does not grant. Every report was silently refused, and
+the screen said "Report submitted" anyway because the handler swallowed the
+error. Now a plain `.insert()` (duplicate = success, via `23505`), and a failed
+report says so instead of lying — a report is what someone reaches for when they
+feel unsafe, so a false confirmation is the worst possible outcome.
