@@ -15,6 +15,7 @@
       }
     },
     "android": {
+      "googleServicesFile": "./google-services.json",
       "package": "com.rishtaandrang.app",
       "versionCode": 4,
       "adaptiveIcon": {
