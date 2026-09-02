@@ -15,6 +15,7 @@ import { useAuth } from '../../store/AuthContext';
 import { authService } from '../../services/authService';
 import { supabase } from '../../services/supabase';
 import { isStrongPassword } from '../../utils/validation';
+import { errorMessage } from '../../utils/appError';
 import { radius, spacing, typography } from '../../theme';
 import { withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
@@ -30,10 +31,6 @@ import type { Palette } from '../../theme/palettes';
 type Phase = 'verifying' | 'ready' | 'invalid' | 'done';
 
 type ExitRoute = '/login' | '/forgot-password';
-
-function messageFrom(error: unknown, fallback: string): string {
-  return error instanceof Error && error.message ? error.message : fallback;
-}
 
 export function ResetPasswordScreen() {
   const router = useRouter();
@@ -71,7 +68,7 @@ export function ResetPasswordScreen() {
           if (!cancelled) setPhase('ready');
         } catch (e) {
           if (cancelled) return;
-          setLinkError(messageFrom(e, t('reset.invalidBody')));
+          setLinkError(errorMessage(e, t, 'reset.invalidBody'));
           setPhase('invalid');
         }
         return;
@@ -116,7 +113,7 @@ export function ResetPasswordScreen() {
       await logout().catch(() => undefined);
       setPhase('done');
     } catch (e) {
-      setError(messageFrom(e, t('reset.failed')));
+      setError(errorMessage(e, t, 'reset.failed'));
     } finally {
       setSaving(false);
     }

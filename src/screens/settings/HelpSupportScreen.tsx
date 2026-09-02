@@ -7,6 +7,7 @@ import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { TextField } from '../../components/common/TextField';
 import { Button } from '../../components/Button';
 import { useLanguage } from '../../store/LanguageContext';
+import { SUPPORT_EMAIL } from '../../constants/Config';
 import { useTheme } from '../../store/ThemeContext';
 import { useDialog } from '../../store/DialogContext';
 import { radius, spacing, typography } from '../../theme';
@@ -15,7 +16,6 @@ import type { Palette } from '../../theme/palettes';
 
 const FAQ_KEYS = ['selfie', 'subscription', 'reporting', 'changeDetails', 'deleteAccount', 'safety'];
 
-const SUPPORT_EMAIL = 'support@rishtaandrang.app';
 
 export function HelpSupportScreen() {
   const { colors } = useTheme();

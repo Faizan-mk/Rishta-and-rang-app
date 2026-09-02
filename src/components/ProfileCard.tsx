@@ -3,6 +3,7 @@ import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Badge } from './common/Badge';
 import { useLanguage } from '../store/LanguageContext';
+import { vocabularyLabel } from '../i18n/vocabulary';
 import { useTheme } from '../store/ThemeContext';
 import { radius, spacing, typography } from '../theme';
 import { glow, modeAccent } from '../theme/glow';
@@ -48,7 +49,7 @@ export function ProfileCard({ photo, name, age, city, kind, onPress, action }: P
         <Text style={[styles.name, rtl && styles.rtlText]}>
           {name}, {age}
         </Text>
-        <Text style={[styles.meta, rtl && styles.rtlText]}>{city}</Text>
+        <Text style={[styles.meta, rtl && styles.rtlText]}>{vocabularyLabel(city, t)}</Text>
         <Badge
           label={t(kind === 'dating' ? 'profile.datingMode' : 'profile.rishtaMode')}
           tone={kind === 'dating' ? 'dating' : 'rishta'}

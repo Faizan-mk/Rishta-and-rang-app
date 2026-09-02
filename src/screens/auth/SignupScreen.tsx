@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInUp } from 'react-native-reanimated';
@@ -44,6 +44,10 @@ export function SignupScreen() {
   const [cnicNumber, setCnicNumber] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [checking, setChecking] = useState(false);
+  // Self-declared 18+ and acceptance of the two documents. The date of birth is
+  // checked as well, below — this is the explicit affirmation the stores ask for,
+  // not a substitute for it.
+  const [acceptedLegal, setAcceptedLegal] = useState(false);
 
   const onCnicChange = (input: string) => {
     setCnicNumber(digitsToCnicDisplay(input.replace(/\D/g, '')));
@@ -81,6 +85,10 @@ export function SignupScreen() {
     }
     if (!cnicMatchesGender(cnicNumber, gender)) {
       setError(t('cnic.genderMismatch'));
+      return;
+    }
+    if (!acceptedLegal) {
+      setError(t('signup.mustAcceptLegal'));
       return;
     }
 
@@ -187,6 +195,19 @@ export function SignupScreen() {
           onSubmitEditing={onNext}
         />
 
+        <Pressable
+          onPress={() => setAcceptedLegal((v) => !v)}
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: acceptedLegal }}
+          style={[styles.consentRow, rtl && styles.consentRowRtl]}
+        >
+          <View style={[styles.checkbox, acceptedLegal && styles.checkboxOn]}>
+            {acceptedLegal && <Ionicons name="checkmark" size={14} color={colors.textInverse} />}
+          </View>
+          <Text style={[styles.consentText, rtl && styles.rtlText]}>{t('signup.ageAndTermsLabel')}</Text>
+        </Pressable>
+        <Button label={t('signup.reviewLegal')} variant="ghost" onPress={() => router.push('/legal')} />
+
         {error ? (
           <View style={styles.errorCard}>
             <Ionicons name="alert-circle" size={16} color={colors.danger} />
@@ -234,6 +255,26 @@ const makeStyles = (colors: Palette) =>
     },
     errorText: { ...typography.caption, color: colors.danger, fontWeight: '700', flexShrink: 1 },
     passwordMatch: { ...typography.caption, marginTop: -spacing.sm, marginBottom: spacing.md },
+    consentRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: spacing.sm,
+      marginTop: spacing.md,
+      marginBottom: spacing.xs,
+    },
+    consentRowRtl: { flexDirection: 'row-reverse' },
+    checkbox: {
+      width: 22,
+      height: 22,
+      borderRadius: radius.sm,
+      borderWidth: 1.5,
+      borderColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 1,
+    },
+    checkboxOn: { backgroundColor: colors.teal, borderColor: colors.teal },
+    consentText: { ...typography.caption, color: colors.textSecondary, flex: 1, lineHeight: 19 },
     footer: { marginTop: spacing.lg, alignItems: 'center' },
     footerText: { ...typography.body, color: colors.textSecondary },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },

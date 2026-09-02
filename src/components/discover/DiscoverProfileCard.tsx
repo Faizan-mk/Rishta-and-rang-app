@@ -19,6 +19,7 @@ import { glow, modeAccent, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
+import { vocabularyLabel } from '../../i18n/vocabulary';
 import { activityLevel } from '../../utils/time';
 
 // Reads the same in both themes, so it isn't a palette token.
@@ -59,8 +60,8 @@ export const DiscoverProfileCard = React.memo(function DiscoverProfileCard({
   // Distance only appears when the backend actually worked one out.
   const locationLine = [
     profile.distanceKm !== undefined ? t('discover.kmAway', { km: Math.round(profile.distanceKm) }) : null,
-    profile.city,
-    profile.country,
+    vocabularyLabel(profile.city, t),
+    profile.country ? vocabularyLabel(profile.country, t) : null,
   ]
     .filter(Boolean)
     .join(' · ');
@@ -151,8 +152,8 @@ export const DiscoverProfileCard = React.memo(function DiscoverProfileCard({
             {profile.name}, {profile.age}
           </Text>
           {profile.selfieVerified && (
-            <View style={[styles.verifiedRing, glow(colors.teal, 0.7, 8, 4)]}>
-              <Ionicons name="checkmark" size={12} color="#FFFFFF" />
+            <View style={styles.photoRing} accessibilityLabel={t('profile.photoAdded')}>
+              <Ionicons name="camera" size={11} color={colors.textInverse} />
             </View>
           )}
         </View>
@@ -289,11 +290,14 @@ const makeStyles = (colors: Palette) =>
     rowRtl: { flexDirection: 'row-reverse' },
     nameRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
     name: { ...typography.h2, color: colors.textPrimary, flexShrink: 1 },
-    verifiedRing: {
+    // Says "has a photo", not "verified". A tick in the app's accent beside a
+    // name is read as a verified account everywhere else on the internet, and
+    // this flag only means a selfie was uploaded at signup.
+    photoRing: {
       width: 20,
       height: 20,
       borderRadius: 10,
-      backgroundColor: colors.teal,
+      backgroundColor: withAlpha(colors.textPrimary, 0.45),
       alignItems: 'center',
       justifyContent: 'center',
     },

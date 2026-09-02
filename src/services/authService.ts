@@ -1,6 +1,7 @@
 import * as Linking from 'expo-linking';
 import { supabase } from './supabase';
 import { mediaUpload } from './mediaUpload';
+import { AppError } from '../utils/appError';
 import type { AppLanguage, Intent, ProfileMode, UserProfile } from '../types/user';
 
 export interface SignupInput {
@@ -380,19 +381,20 @@ function isPlaceholderProfile(profile: ProfileDoc, email: string): boolean {
   );
 }
 
+/** Maps a Supabase signup failure to a dictionary key (see AppError). */
 function signupErrorMessage(err: unknown): string {
   const code = (err as { code?: string })?.code ?? '';
   const message = (err as { message?: string })?.message ?? '';
   if (code === 'email_exists' || /already registered/i.test(message)) {
-    return 'That email is already registered. Try logging in instead.';
+    return 'authErrors.emailTaken';
   }
   if (code === 'weak_password' || message.includes('must be at least')) {
-    return 'Password is too weak — use at least 6 characters.';
+    return 'authErrors.weakPassword';
   }
   if (code === 'invalid_email' || message.toLowerCase().includes('invalid email')) {
-    return 'That email address looks invalid.';
+    return 'authErrors.invalidEmail';
   }
-  return message || 'Could not create the account.';
+  return 'authErrors.signupFailed';
 }
 
 /**
@@ -420,7 +422,7 @@ async function createAccount(email: string, input: SignupInput): Promise<string>
     if (alreadyRegistered) throw { code: 'email_exists' };
 
     const createdUserId = data.user?.id;
-    if (!createdUserId) throw new Error('Could not create the account.');
+    if (!createdUserId) throw new AppError('authErrors.signupFailed');
 
     // With email confirmation turned ON in the dashboard, signUp returns no
     // session yet. The storage uploads below and the profile writes need a
@@ -428,7 +430,7 @@ async function createAccount(email: string, input: SignupInput): Promise<string>
     if (!data.session) {
       const { error: sessionError } = await supabase.auth.signInWithPassword({ email, password: input.password });
       if (sessionError) {
-        throw new Error('Account created — check your email for the confirmation link before you continue.');
+        throw new AppError('authErrors.confirmEmailFirst');
       }
     }
     return createdUserId;
@@ -441,7 +443,7 @@ async function createAccount(email: string, input: SignupInput): Promise<string>
       const { data, error } = await supabase.auth.signInWithPassword({ email, password: input.password });
       if (!error && data.user) return data.user.id;
     }
-    throw new Error(signupErrorMessage(err));
+    throw new AppError(signupErrorMessage(err));
   }
 }
 
@@ -522,7 +524,7 @@ async function signup(input: SignupInput): Promise<UserProfile> {
   }
 
   const profile = await fetchFullProfile(userId);
-  if (!profile) throw new Error('Could not load the account that was just created.');
+  if (!profile) throw new AppError('authErrors.profileLoadFailed');
   return profile;
 }
 
@@ -538,17 +540,18 @@ function isJwtClockError(err: unknown): boolean {
   return /jwt (issued at future|expired)|token used before issued/i.test(message);
 }
 
+/** Maps a Supabase sign-in failure to a dictionary key (see AppError). */
 function loginErrorMessage(err: unknown): string {
   const code = (err as { code?: string })?.code ?? '';
   const message = (err as { message?: string })?.message ?? '';
   if (code === 'email_not_confirmed' || message.includes('Email not confirmed')) {
-    return 'Confirm your email first — check your inbox and tap the link.';
+    return 'authErrors.emailNotConfirmed';
   }
   if (/invalid login credentials|user not found/i.test(message)) {
-    return 'Incorrect email or password.';
+    return 'authErrors.invalidCredentials';
   }
-  if (code === 'user-disabled' || message.includes('has been disabled')) return 'This account has been disabled.';
-  return 'Incorrect email or password.';
+  if (code === 'user-disabled' || message.includes('has been disabled')) return 'authErrors.accountDisabled';
+  return 'authErrors.invalidCredentials';
 }
 
 async function login(email: string, password: string): Promise<UserProfile> {
@@ -560,7 +563,7 @@ async function login(email: string, password: string): Promise<UserProfile> {
     if (error) throw error;
     userId = data.user.id;
   } catch (err) {
-    throw new Error(loginErrorMessage(err));
+    throw new AppError(loginErrorMessage(err));
   }
 
   let profile: UserProfile | null;
@@ -570,7 +573,7 @@ async function login(email: string, password: string): Promise<UserProfile> {
     if (!isJwtClockError(err)) throw err;
     // Drop the unusable session so the next attempt starts clean.
     await supabase.auth.signOut({ scope: 'local' });
-    throw new Error("Couldn't verify your session — the server clock is out of sync. Try again in a minute.");
+    throw new AppError('authErrors.clockSkew');
   }
 
   // Auth user exists but the profile rows don't — a signup that died between
@@ -592,7 +595,7 @@ async function login(email: string, password: string): Promise<UserProfile> {
         .upsert({ id: userId, email: normalized, wali_contact: null }, { onConflict: 'id' }),
     ]);
     profile = await fetchFullProfile(userId);
-    if (!profile) throw new Error('Could not create profile.');
+    if (!profile) throw new AppError('authErrors.profileCreateFailed');
   }
 
   return profile;
@@ -723,7 +726,7 @@ async function updateUser(updated: UserProfile): Promise<UserProfile> {
   if (removed.length) await mediaUpload.removeFiles(removed);
 
   const profile = await fetchFullProfile(userId);
-  if (!profile) throw new Error('Could not reload the updated profile.');
+  if (!profile) throw new AppError('authErrors.profileReloadFailed');
   return profile;
 }
 
@@ -736,7 +739,7 @@ async function updateUser(updated: UserProfile): Promise<UserProfile> {
 async function deleteAccount(userId: string): Promise<void> {
   const { data } = await supabase.auth.getUser();
   const current = data.user;
-  if (!current || current.id !== userId) throw new Error('Not signed in.');
+  if (!current || current.id !== userId) throw new AppError('authErrors.notSignedIn');
 
   // Public media on the card is stored outside Postgres, so it has to go first
   // (while the session is still valid for the storage policies).
@@ -833,7 +836,9 @@ async function openPasswordResetLink(url: string): Promise<void> {
   // An expired or already-spent link is reported by redirecting with the reason
   // attached, not by failing the request — so this is checked before the rest.
   if (params.error || params.error_code) {
-    throw new Error(params.error_description || 'This reset link is no longer valid. Request a new one.');
+    // Supabase attaches its own reason on the redirect; keep it when present.
+    if (params.error_description) throw new Error(params.error_description);
+    throw new AppError('authErrors.resetLinkExpired');
   }
 
   if (params.access_token && params.refresh_token) {
@@ -861,7 +866,7 @@ async function openPasswordResetLink(url: string): Promise<void> {
   // with nothing left on it is still good if it left a session behind.
   const { data } = await supabase.auth.getSession();
   if (!data.session) {
-    throw new Error('This reset link is incomplete or has already been used. Request a new one.');
+    throw new AppError('authErrors.resetLinkSpent');
   }
 }
 

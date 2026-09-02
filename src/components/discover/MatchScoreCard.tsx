@@ -19,6 +19,7 @@ import type { Palette } from '../../theme/palettes';
 import type { ProfileMode } from '../../types/user';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
+import { FEATURE_BUREAU } from '../../config/features';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -111,11 +112,15 @@ export function MatchScoreCard({ name, score, bureauVerified, mode, onPress }: M
 
       {/* Wraps rather than squeezing: on a narrow phone the CTA drops onto its
           own line instead of the badge and the link colliding. */}
-      <View style={[styles.footerRow, rtl && styles.rowRtl]}>
-        <Badge
-          label={bureauVerified ? t('profile.bureau') : t('profile.bureauNotVerified')}
-          tone={bureauVerified ? 'success' : 'neutral'}
-        />
+      <View style={[styles.footerRow, !FEATURE_BUREAU && styles.footerRowSolo, rtl && styles.rowRtl]}>
+        {/* Shown only while the badge is earned by a real review — see
+            FEATURE_BUREAU. Until then nothing checks anyone. */}
+        {FEATURE_BUREAU && (
+          <Badge
+            label={bureauVerified ? t('profile.bureau') : t('profile.bureauNotVerified')}
+            tone={bureauVerified ? 'success' : 'neutral'}
+          />
+        )}
         <View style={[styles.ctaRow, rtl && styles.rowRtl]}>
           <Text style={[styles.cta, { color: accent.primary }]} numberOfLines={1}>
             {t('discover.matchScoreCta')}
@@ -175,6 +180,9 @@ const makeStyles = (colors: Palette) =>
       justifyContent: 'space-between',
       gap: spacing.xs,
     },
+    // Without the badge beside it the CTA keeps its trailing position rather
+    // than sliding to the start of an otherwise empty row.
+    footerRowSolo: { justifyContent: 'flex-end' },
     ctaRow: { flexDirection: 'row', alignItems: 'center', gap: 2, flexShrink: 1 },
     cta: { ...typography.caption, fontWeight: '800', flexShrink: 1 },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },

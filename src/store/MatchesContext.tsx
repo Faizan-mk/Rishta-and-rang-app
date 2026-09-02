@@ -2,8 +2,11 @@ import React, { createContext, useContext, useEffect, useMemo, useRef, useState 
 import { matchesService } from '../services/matchesService';
 import { supabase } from '../services/supabase';
 import { cache, CACHE_KEYS } from '../services/cache';
-import type { BlockedProfile, ChatMessage, Match } from '../types/content';
+import { reactionsService, rowToReaction } from '../services/reactionsService';
+import { AppError } from '../utils/appError';
+import type { BlockedProfile, ChatMessage, Match, MessageReaction } from '../types/content';
 import type { ProfileMode } from '../types/user';
+import { PHOTO_PREVIEW, VOICE_PREVIEW, previewFor } from '../utils/messagePreview';
 import { useAuth } from './AuthContext';
 import { useNotifications } from './NotificationContext';
 
@@ -27,6 +30,10 @@ interface MatchesContextValue {
   blockedProfiles: BlockedProfile[];
   getMatch: (matchId: string) => Match | undefined;
   getMessages: (matchId: string) => ChatMessage[];
+  /** Every reaction on one message, in the order they were added. */
+  getReactions: (messageId: string) => MessageReaction[];
+  /** Adds the emoji, or takes it back off if this member already used it. */
+  toggleReaction: (messageId: string, emoji: string) => void;
   sendMessage: (matchId: string, text: string) => void;
   sendVoiceMessage: (matchId: string, uri: string, durationSec: number) => void;
   sendImageMessage: (matchId: string, uri: string) => void;
@@ -40,11 +47,7 @@ interface MatchesContextValue {
 
 const MatchesContext = createContext<MatchesContextValue | undefined>(undefined);
 
-function previewFor(message: ChatMessage): string {
-  if (message.kind === 'image') return '📷 Photo';
-  if (message.kind === 'voice') return '🎤 Voice message';
-  return message.text;
-}
+const NO_REACTIONS: MessageReaction[] = [];
 
 /** A `chat_messages` row (snake_case, from PostgreSQL/Realtime) → ChatMessage. */
 function rowToMessage(row: Record<string, unknown>): ChatMessage {
@@ -67,6 +70,9 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
   const [matches, setMatches] = useState<Match[]>([]);
   const [chatHistory, setChatHistory] = useState<Record<string, ChatMessage[]>>({});
   const [blockedProfiles, setBlockedProfiles] = useState<BlockedProfile[]>([]);
+  // Keyed by message id. Kept beside chatHistory rather than inside it so a
+  // reaction arriving on its own never has to rewrite a message row.
+  const [reactions, setReactions] = useState<Record<string, MessageReaction[]>>({});
 
   // Guards the cache write below, so one account's match list can never be
   // persisted under another's key during a sign-out/sign-in.
@@ -78,6 +84,7 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
       setMatches([]);
       setBlockedProfiles([]);
       setChatHistory({});
+      setReactions({});
       return;
     }
     const userId = user.id;
@@ -97,15 +104,17 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
       }
       if (cachedBlocked) setBlockedProfiles(cachedBlocked);
 
-      const [freshMatches, freshBlocked, freshHistory] = await Promise.all([
+      const [freshMatches, freshBlocked, freshHistory, freshReactions] = await Promise.all([
         matchesService.fetchMatches(userId),
         matchesService.fetchBlocked(userId),
         matchesService.fetchChatHistory(userId),
+        reactionsService.fetchReactions(),
       ]);
       if (cancelled) return;
       setMatches(freshMatches);
       setBlockedProfiles(freshBlocked);
       setChatHistory(freshHistory);
+      setReactions(freshReactions);
       hydratedFor.current = userId;
     })().catch(() => {
       // Offline: whatever the cache gave us stays on screen.
@@ -136,12 +145,45 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
       );
     };
 
+    // Reactions ride the same channel as the messages, so one subscription keeps
+    // both in step: a reaction added in another session shows up here without a
+    // refresh, and one removed there disappears here.
+    const applyReaction = (reaction: MessageReaction) => {
+      setReactions((prev) => {
+        const list = prev[reaction.messageId] ?? [];
+        if (list.some((existing) => existing.id === reaction.id)) return prev;
+        return { ...prev, [reaction.messageId]: [...list, reaction] };
+      });
+    };
+
+    const dropReaction = (reaction: MessageReaction) => {
+      setReactions((prev) => {
+        const list = prev[reaction.messageId];
+        if (!list) return prev;
+        const next = list.filter((existing) => existing.id !== reaction.id);
+        if (next.length === list.length) return prev;
+        return { ...prev, [reaction.messageId]: next };
+      });
+    };
+
     const channel = supabase
       .channel(`chat_messages_${userId}`)
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: `profile_id=eq.${userId}` },
         (payload) => applyMessage(rowToMessage(payload.new as Record<string, unknown>))
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'message_reactions', filter: `user_id=eq.${userId}` },
+        (payload) => applyReaction(rowToReaction(payload.new as Record<string, unknown>))
+      )
+      .on(
+        // The DELETE payload only carries message_id because the table is
+        // `replica identity full` (see supabase/20_message_reactions.sql).
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'message_reactions', filter: `user_id=eq.${userId}` },
+        (payload) => dropReaction(rowToReaction(payload.old as Record<string, unknown>))
       )
       .subscribe();
 
@@ -162,6 +204,58 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
 
   const getMatch = (matchId: string) => matches.find((m) => m.id === matchId);
   const getMessages = (matchId: string) => chatHistory[matchId] ?? [];
+  const getReactions = (messageId: string) => reactions[messageId] ?? NO_REACTIONS;
+
+  // Optimistic on both paths: the pill appears (or goes) on the tap, and the
+  // Realtime echo of the write is de-duped by id. A failed write puts the list
+  // back the way the server still has it.
+  const toggleReaction = (messageId: string, emoji: string) => {
+    if (!user) return;
+    const userId = user.id;
+    const mine = (reactions[messageId] ?? []).find((r) => r.userId === userId && r.emoji === emoji);
+
+    if (mine) {
+      setReactions((prev) => ({
+        ...prev,
+        [messageId]: (prev[messageId] ?? []).filter((r) => r.id !== mine.id),
+      }));
+      reactionsService.removeReaction(userId, messageId, emoji).catch(() => {
+        setReactions((prev) => ({ ...prev, [messageId]: [...(prev[messageId] ?? []), mine] }));
+      });
+      return;
+    }
+
+    // A placeholder id until the row comes back — swapped for the saved row so
+    // the Realtime echo recognises it and a later un-react has a real id to delete.
+    const pendingId = `pending-${messageId}-${emoji}`;
+    const pending: MessageReaction = {
+      id: pendingId,
+      messageId,
+      userId,
+      emoji,
+      createdAt: new Date().toISOString(),
+    };
+    setReactions((prev) => ({ ...prev, [messageId]: [...(prev[messageId] ?? []), pending] }));
+
+    reactionsService
+      .addReaction(userId, messageId, emoji)
+      .then((saved) => {
+        setReactions((prev) => {
+          const list = prev[messageId] ?? [];
+          if (list.some((r) => r.id === saved.id)) {
+            // The channel beat the insert's own response back; drop the placeholder.
+            return { ...prev, [messageId]: list.filter((r) => r.id !== pendingId) };
+          }
+          return { ...prev, [messageId]: list.map((r) => (r.id === pendingId ? saved : r)) };
+        });
+      })
+      .catch(() => {
+        setReactions((prev) => ({
+          ...prev,
+          [messageId]: (prev[messageId] ?? []).filter((r) => r.id !== pendingId),
+        }));
+      });
+  };
 
   const pushMessage = (matchId: string, message: ChatMessage, lastMessagePreview: string) => {
     if (!user) return;
@@ -181,12 +275,12 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
     if (!user) return;
     matchesService
       .insertVoiceMessage(user.id, matchId, uri, durationSec)
-      .then((message) => pushMessage(matchId, message, '🎤 Voice message'));
+      .then((message) => pushMessage(matchId, message, VOICE_PREVIEW));
   };
 
   const sendImageMessage = (matchId: string, uri: string) => {
     if (!user) return;
-    matchesService.insertImageMessage(user.id, matchId, uri).then((message) => pushMessage(matchId, message, '📷 Photo'));
+    matchesService.insertImageMessage(user.id, matchId, uri).then((message) => pushMessage(matchId, message, PHOTO_PREVIEW));
   };
 
   const markMatchRead = (matchId: string) => {
@@ -271,7 +365,7 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
   const getOrCreateMatchForProfile = async (profile: ProfileRef): Promise<Match> => {
     const existing = matches.find((m) => m.sourceProfileId === profile.id);
     if (existing) return existing;
-    if (!user) throw new Error('Not signed in.');
+    if (!user) throw new AppError('authErrors.notSignedIn');
 
     const created = await matchesService.createMatch(user.id, {
       name: profile.name,
@@ -305,6 +399,8 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
       blockedProfiles,
       getMatch,
       getMessages,
+      getReactions,
+      toggleReaction,
       sendMessage,
       sendVoiceMessage,
       sendImageMessage,
@@ -315,7 +411,7 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
       unblockUser,
       getOrCreateMatchForProfile,
     }),
-    [matches, chatHistory, unreadCount, rishtaProfileIds, blockedProfiles, user?.id]
+    [matches, chatHistory, reactions, unreadCount, rishtaProfileIds, blockedProfiles, user?.id]
   );
 
   return <MatchesContext.Provider value={value}>{children}</MatchesContext.Provider>;

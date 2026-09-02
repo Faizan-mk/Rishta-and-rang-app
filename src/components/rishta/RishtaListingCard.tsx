@@ -12,6 +12,7 @@ import { glow, modeAccent, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
+import { vocabularyLabel } from '../../i18n/vocabulary';
 
 const READINESS_KEY: Record<string, string> = {
   browsing: 'profile.readinessBrowsing',
@@ -74,7 +75,7 @@ export const RishtaListingCard = React.memo(function RishtaListingCard({ profile
           </Text>
           {profile.readiness === 'ready_now' && <Badge label={t(READINESS_KEY[profile.readiness])} tone="rishta" />}
         </View>
-        <Text style={[styles.meta, rtl && styles.rtlText]}>{profile.city} · {profile.sect}</Text>
+        <Text style={[styles.meta, rtl && styles.rtlText]}>{vocabularyLabel(profile.city, t)} · {vocabularyLabel(profile.sect, t)}</Text>
         <Text style={[styles.meta, rtl && styles.rtlText]} numberOfLines={1}>{profile.education}</Text>
         <Text style={[styles.family, rtl && styles.rtlText]} numberOfLines={2}>{profile.familyBackground}</Text>
         {profile.readiness !== 'ready_now' && (

@@ -7,6 +7,7 @@ import { withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
+import { vocabularyLabel } from '../../i18n/vocabulary';
 
 interface SelectFieldProps {
   label: string;
@@ -27,9 +28,14 @@ export function SelectField({ label, value, options, onChange, allowAll, allLabe
   const [query, setQuery] = useState('');
 
   const filtered = useMemo(() => {
-    const list = query.trim() ? options.filter((o) => o.toLowerCase().includes(query.trim().toLowerCase())) : options;
+    const needle = query.trim().toLowerCase();
+    const list = needle
+      ? options.filter(
+          (o) => o.toLowerCase().includes(needle) || vocabularyLabel(o, t).toLowerCase().includes(needle)
+        )
+      : options;
     return allowAll ? [allLabel ?? 'All', ...list] : list;
-  }, [options, query, allowAll, allLabel]);
+  }, [options, query, allowAll, allLabel, t]);
 
   const displayValue = value ?? (allowAll ? allLabel ?? 'All' : null);
 
@@ -46,9 +52,9 @@ export function SelectField({ label, value, options, onChange, allowAll, allLabe
   return (
     <View style={styles.container}>
       <Text style={[styles.label, rtl && styles.rtlText]}>{label}</Text>
-      <Pressable onPress={() => setOpen(true)} style={[styles.field, error && styles.fieldError]}>
+      <Pressable onPress={() => setOpen(true)} style={[styles.field, rtl && styles.rowRtl, error && styles.fieldError]}>
         <Text style={[styles.value, !displayValue && styles.placeholder, rtl && styles.rtlText]}>
-          {displayValue ?? placeholder ?? '—'}
+          {displayValue ? vocabularyLabel(displayValue, t) : placeholder ?? '—'}
         </Text>
         <View style={styles.chevronTile}>
           <Ionicons name="chevron-down" size={16} color={colors.teal} />
@@ -59,12 +65,12 @@ export function SelectField({ label, value, options, onChange, allowAll, allLabe
       <BottomSheet visible={open} onClose={() => setOpen(false)}>
         <View style={styles.sheetBody}>
           <Text style={[styles.sheetTitle, rtl && styles.rtlText]}>{label}</Text>
-          <View style={styles.searchRow}>
+          <View style={[styles.searchRow, rtl && styles.rowRtl]}>
             <Ionicons name="search" size={16} color={colors.textTertiary} />
             <TextInput
               value={query}
               onChangeText={setQuery}
-              placeholder="Search..."
+              placeholder={t('common.search')}
               placeholderTextColor={colors.textTertiary}
               style={[styles.searchInput, rtl && styles.rtlText]}
               autoCapitalize="words"
@@ -78,9 +84,9 @@ export function SelectField({ label, value, options, onChange, allowAll, allLabe
             renderItem={({ item }) => {
               const isSelected = item === displayValue;
               return (
-                <Pressable onPress={() => select(item)} style={styles.option}>
+                <Pressable onPress={() => select(item)} style={[styles.option, rtl && styles.rowRtl]}>
                   <Text style={[styles.optionText, isSelected && styles.optionTextSelected, rtl && styles.rtlText]}>
-                    {item}
+                    {vocabularyLabel(item, t)}
                   </Text>
                   {isSelected && <Ionicons name="checkmark" size={18} color={colors.teal} />}
                 </Pressable>
@@ -97,6 +103,9 @@ export function SelectField({ label, value, options, onChange, allowAll, allLabe
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
     container: { marginBottom: spacing.md },
+    // The chevron, the search icon and the tick all move to the edge the
+    // language starts at, so none of them lands mid-sentence in Urdu.
+    rowRtl: { flexDirection: 'row-reverse' },
     label: { ...typography.label, color: colors.textPrimary, marginBottom: spacing.xs, fontWeight: '700' },
     field: {
       flexDirection: 'row',

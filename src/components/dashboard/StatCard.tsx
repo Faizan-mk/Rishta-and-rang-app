@@ -6,6 +6,7 @@ import { radius, spacing, typography } from '../../theme';
 import { glow, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
+import { useLanguage } from '../../store/LanguageContext';
 
 interface StatCardProps {
   icon: keyof typeof Ionicons.glyphMap;
@@ -20,6 +21,7 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export function StatCard({ icon, value, label, tint, tintSoft, onPress }: StatCardProps) {
   const { colors } = useTheme();
+  const { rtl } = useLanguage();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const scale = useSharedValue(1);
   const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
@@ -36,6 +38,7 @@ export function StatCard({ icon, value, label, tint, tintSoft, onPress }: StatCa
       }}
       style={[
         styles.card,
+        rtl && styles.cardRtl,
         { borderColor: withAlpha(tint, 0.3), backgroundColor: withAlpha(tint, 0.07) },
         glow(tint, 0.22, 12, 4),
         animatedStyle,
@@ -44,8 +47,8 @@ export function StatCard({ icon, value, label, tint, tintSoft, onPress }: StatCa
       <View style={[styles.iconWrap, { backgroundColor: tintSoft }, glow(tint, 0.4, 8, 3)]}>
         <Ionicons name={icon} size={18} color={tint} />
       </View>
-      <Text style={[styles.value, { color: tint }]}>{value}</Text>
-      <Text style={styles.label}>{label}</Text>
+      <Text style={[styles.value, { color: tint }, rtl && styles.rtlText]}>{value}</Text>
+      <Text style={[styles.label, rtl && styles.rtlText]}>{label}</Text>
     </AnimatedPressable>
   );
 }
@@ -60,6 +63,8 @@ const makeStyles = (colors: Palette) =>
       borderWidth: 1,
       borderColor: colors.border,
     },
+    // The tile reads corner-in from whichever edge the language starts at.
+    cardRtl: { alignItems: 'flex-end' },
     iconWrap: {
       width: 32,
       height: 32,
@@ -70,4 +75,5 @@ const makeStyles = (colors: Palette) =>
     },
     value: { ...typography.h2, color: colors.textPrimary, fontWeight: '800' },
     label: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
+    rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   });

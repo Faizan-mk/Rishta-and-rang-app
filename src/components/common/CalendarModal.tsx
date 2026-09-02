@@ -16,7 +16,15 @@ interface CalendarModalProps {
   onClose: () => void;
 }
 
-const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+const WEEKDAY_KEYS = [
+  'calendar.weekdaySun',
+  'calendar.weekdayMon',
+  'calendar.weekdayTue',
+  'calendar.weekdayWed',
+  'calendar.weekdayThu',
+  'calendar.weekdayFri',
+  'calendar.weekdaySat',
+] as const;
 const CELL_SIZE = 40;
 
 function pad(n: number): string {
@@ -29,7 +37,7 @@ function toIso(year: number, month: number, day: number): string {
 
 export function CalendarModal({ visible, initialIso, maxDateIso, onSelect, onClose }: CalendarModalProps) {
   const { colors } = useTheme();
-  const { rtl } = useLanguage();
+  const { t, rtl } = useLanguage();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const maxDate = useMemo(() => new Date(maxDateIso), [maxDateIso]);
 
@@ -77,7 +85,9 @@ export function CalendarModal({ visible, initialIso, maxDateIso, onSelect, onClo
 
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
   const firstWeekday = new Date(viewYear, viewMonth, 1).getDay();
-  const monthLabel = new Date(viewYear, viewMonth, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  // Built from the dictionary rather than toLocaleDateString: Hermes ships a
+  // trimmed ICU, so a locale-formatted month silently falls back to English.
+  const monthLabel = t('calendar.label', { month: t(`calendar.month${viewMonth}`), year: viewYear });
   const canGoNext = new Date(viewYear, viewMonth + 1, 1) <= maxDate;
 
   const goPrev = () => {
@@ -153,8 +163,8 @@ export function CalendarModal({ visible, initialIso, maxDateIso, onSelect, onClo
             ) : (
               <>
                 <View style={styles.weekRow}>
-                  {WEEKDAYS.map((w, index) => (
-                    <Text key={`${w}-${index}`} style={styles.weekday}>{w}</Text>
+                  {WEEKDAY_KEYS.map((key, index) => (
+                    <Text key={`${key}-${index}`} style={styles.weekday}>{t(key)}</Text>
                   ))}
                 </View>
 

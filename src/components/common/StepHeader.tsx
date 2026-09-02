@@ -22,7 +22,7 @@ export function StepHeader({ total, current, onBack }: StepHeaderProps) {
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   return (
-    <View style={styles.row}>
+    <View style={[styles.row, rtl && styles.rowRtl]}>
       <Pressable onPress={onBack} hitSlop={10} style={styles.backButton}>
         <Ionicons name={rtl ? 'chevron-forward' : 'chevron-back'} size={20} color={colors.textPrimary} />
       </Pressable>
@@ -36,6 +36,8 @@ export function StepHeader({ total, current, onBack }: StepHeaderProps) {
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
     row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+    // Mirrored in Urdu so the row starts from the edge the language does.
+    rowRtl: { flexDirection: 'row-reverse' },
     backButton: {
       width: 38,
       height: 38,
