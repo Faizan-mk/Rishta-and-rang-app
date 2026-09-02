@@ -58,6 +58,7 @@
           "backgroundColor": "#E6F4FE"
         }
       ],
+      "expo-notifications",
       "expo-video",
       "expo-asset",
       "expo-router"

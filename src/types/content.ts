@@ -215,11 +215,11 @@ export interface ViewedProfile {
 }
 
 export interface BlockedProfile {
+  // The blocked person's account id — the same id their profile has in Discover
+  // and Rishta. It used to be the match row's id, which meant nothing to the
+  // other side and nothing across a second match row; see
+  // supabase/22_block_hardening.sql for the migration.
   id: string;
-  // Links back to the Discover/Rishta listing this block originated from (if any),
-  // so Discover/Rishta decks can exclude the profile even though `id` here is the
-  // match's own id, not the listing's.
-  sourceProfileId?: string;
   name: string;
   photo: string;
   blockedAt: string;
