@@ -1,7 +1,6 @@
 import { Platform } from 'react-native';
-import Constants from 'expo-constants';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 import * as Device from 'expo-device';
-import * as Notifications from 'expo-notifications';
 import { supabase } from './supabase';
 
 // ---------------------------------------------------------------------------
@@ -16,19 +15,52 @@ import { supabase } from './supabase';
 // Two things that will bite on a real device:
 //   · Remote push does not work in Expo Go on SDK 53+. It needs a development
 //     build or a store build.
-//   · Android needs FCM credentials configured on the EAS project, or Expo has
-//     no way to reach the device.
+//   · Android needs FCM credentials on the EAS project, and the Firebase config
+//     in the build (app.json `googleServicesFile`), or Expo cannot reach the
+//     device at all.
 // ---------------------------------------------------------------------------
 
-/** Foreground behaviour. Without this a notification arriving while the app is open is silent. */
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
-});
+/**
+ * True inside Expo Go.
+ *
+ * This matters more than it looks. On SDK 53+ merely *importing*
+ * `expo-notifications` in Expo Go throws a red error at startup, because the
+ * module registers a push-token listener as an import side effect. That would
+ * greet anyone opening the app in Expo Go — including someone doing an
+ * unrelated Urdu/RTL pass — with a stack trace about a feature they never
+ * touched. So the module is loaded lazily, behind this check, and Expo Go never
+ * pulls it in.
+ */
+function isExpoGo(): boolean {
+  return Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+}
+
+type NotificationsModule = typeof import('expo-notifications');
+
+let notifications: NotificationsModule | null = null;
+
+/** Loads expo-notifications on first use, and configures it once. */
+function loadNotifications(): NotificationsModule | null {
+  if (isExpoGo()) return null;
+  if (notifications) return notifications;
+
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const mod = require('expo-notifications') as NotificationsModule;
+
+  // Foreground behaviour. Without this, a notification arriving while the app
+  // is open is silent.
+  mod.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowBanner: true,
+      shouldShowList: true,
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+    }),
+  });
+
+  notifications = mod;
+  return mod;
+}
 
 /** The EAS project id Expo signs the push token against. */
 function projectId(): string | undefined {
@@ -55,9 +87,14 @@ export async function requestPushToken(): Promise<string | null> {
     return null;
   };
 
+  if (isExpoGo()) return giveUp('running in Expo Go — needs a development build');
+
   // The emulator has no notification hardware; asking there returns a token
   // that can never be delivered to.
   if (!Device.isDevice) return giveUp('not a physical device');
+
+  const Notifications = loadNotifications();
+  if (!Notifications) return giveUp('expo-notifications unavailable');
 
   if (Platform.OS === 'android') {
     // Android will not display anything without a channel to display it in.
