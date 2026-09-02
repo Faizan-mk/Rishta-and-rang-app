@@ -278,3 +278,63 @@ the screen said "Report submitted" anyway because the handler swallowed the
 error. Now a plain `.insert()` (duplicate = success, via `23505`), and a failed
 report says so instead of lying — a report is what someone reaches for when they
 feel unsafe, so a false confirmation is the worst possible outcome.
+
+### Push — what is and is not proven (2 September 2026)
+
+The `send-push` logic was run line-for-line against the live project without
+deploying it, using a fake device row that the function's own pruning deleted
+again. All six steps passed:
+
+| Step | Result |
+|---|---|
+| prefs gate, with no `notification_prefs` row | falls back to the table default (`messages` = on) |
+| device lookup | found the seeded row |
+| Expo push API call | HTTP 200, request shape accepted |
+| ticket parsing | `DeviceNotRegistered` read from `data[].details.error` |
+| dead-token pruning | row deleted, table back to 0 |
+
+So the pipeline — prefs → tokens → Expo → prune — is correct.
+
+**Still unproven, and it needs credentials this environment does not have:**
+
+1. **Deployment.** `supabase functions deploy send-push` needs a personal access
+   token (`supabase login`), which is not the service_role key. Never run.
+2. **A real device token.** `push_tokens` is empty. Expo Go cannot produce one on
+   SDK 53+; it needs a development build, and Android additionally needs FCM
+   credentials on the EAS project.
+3. **A push actually arriving.** Follows from 1 and 2.
+
+3.3's own criterion — "a test account has a stored token; manually invoking the
+Edge Function sends a real push" — is therefore **not met**. The code is written
+and its logic is verified; delivery is not.
+
+### Push — deployed and exercised (2 September 2026)
+
+`send-push` is deployed to the project and was invoked against it:
+
+| Call | Response |
+|---|---|
+| valid request, no devices registered | `{"skipped":"no_devices"}` |
+| `{"userId":"x"}` | `{"error":"missing_fields","required":[...]}` |
+| valid request, one (fake) device seeded | `{"sent":1,"pruned":1,"tickets":[…DeviceNotRegistered…]}` |
+
+The third call is the whole pipeline running inside the deployed function: prefs
+gate → device lookup → Expo push API → ticket parsing → dead-token pruning. It
+deleted the fake row itself, and `push_tokens` came back empty.
+
+**The one thing still unproven: a real device receiving a notification.** Expo
+rejected the fake token, correctly — nothing here has ever held a real one.
+`push_tokens` is empty because Expo Go cannot mint a token on SDK 53+; that
+needs a development build, and Android also needs FCM credentials on the EAS
+project.
+
+So of 3.3's criterion — "a test account has a stored token; manually invoking
+the Edge Function sends a real push" — the second half is proven as far as Expo's
+API, and the first half is not met at all. To close it:
+
+```
+npx eas build --profile development --platform android
+# install, sign in, then:
+#   select * from push_tokens;          -> expect one row
+# then invoke send-push with that account's userId and watch the phone
+```
