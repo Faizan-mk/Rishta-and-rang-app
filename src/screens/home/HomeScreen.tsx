@@ -42,7 +42,8 @@ import {
 } from '../../components/discover/ProfileDetailSections';
 import { ProfileActionsFooter } from '../../components/discover/ProfileActionsFooter';
 import { ProfileUtilityBar } from '../../components/discover/ProfileUtilityBar';
-import { ReportDialog } from '../../components/common/ReportDialog';
+import { ReportDialog, type ReportSubmission } from '../../components/common/ReportDialog';
+import { reportsService } from '../../services/reportsService';
 import type { BrowseProfile, DiscoverProfile, RishtaListingProfile } from '../../types/content';
 import type { ProfileMode, UserProfile } from '../../types/user';
 import { useDiscovery } from '../../store/DiscoveryContext';
@@ -161,7 +162,7 @@ export function HomeScreen() {
   );
 
   const blockedProfileIds = useMemo(
-    () => new Set(blockedProfiles.map((b) => b.sourceProfileId).filter(Boolean)),
+    () => new Set(blockedProfiles.map((b) => b.id)),
     [blockedProfiles]
   );
 
@@ -367,8 +368,20 @@ export function HomeScreen() {
     blockMatch(match.id);
   };
 
-  const onSubmitReport = async (_reason: string) => {
+  const onSubmitReport = async (submission: ReportSubmission) => {
     setReportVisible(false);
+    if (!currentProfile || !user) return;
+    try {
+      await reportsService.submitReport(user.id, {
+        targetId: currentProfile.id,
+        reason: submission.reason,
+        details: submission.details,
+        context: 'discover',
+      });
+    } catch {
+      // The report is not worth a second dialog on top of the first: the row
+      // either landed or it did not, and re-reporting is one tap away.
+    }
     await notify({ title: t('chat.reportSentTitle'), message: t('chat.reportSentBody') });
   };
 

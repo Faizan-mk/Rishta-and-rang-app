@@ -73,6 +73,7 @@ profile-detail like action. When Day 5's match-detection RPC lands, wire
   bundles). Low-inventory areas show an honest empty state
   (`discover.outOfProfiles`: "Not enough profiles nearby yet…").
 - Badge honesty: selfie → "Photo added", CNIC → "ID photo submitted".
+
 ## Urdu / RTL sweep
 
 The dictionaries were already at full key coverage; what still rendered in
@@ -163,3 +164,90 @@ is one you own", which is the strongest form of "match participants only" this
 schema can state. When Day 5's match-detection RPC introduces a shared
 conversation, these policies move to its participant list without the table
 changing shape.
+
+## Reporting
+
+`reports` (`supabase/21_reports.sql`) — reporter, target, reason, details,
+context, status. `ReportDialog` used to hand its caller a *translated* label;
+it now returns the stable key (`harassment`, `fakeProfile`, …) so a moderator
+reads the same word whichever language the reporter had the app in. Both call
+sites (Discover card, chat header) write a real row.
+
+- **Insert-only, and no select policy at all.** A reporter cannot read back their
+  own report, and nobody can enumerate who reported whom or learn that they have
+  been reported. Moderation reads `report_queue`, granted to `service_role` only
+  — that is the Studio view.
+- Unique on `(reporter_id, target_id)`: reporting someone twice updates the row.
+  One person cannot reach the auto-hide threshold by themselves.
+- **Auto-hide at 3 distinct reporters.** A trigger stamps `profiles.hidden_at`,
+  and `profiles_select` drops hidden rows for everyone except the owner — so a
+  reported member still sees their own profile rather than a broken app, but
+  disappears from every other surface at once.
+- `select public.moderate_profile('<uuid>', false, 'dismissed');` puts them back.
+
+## Block hardening
+
+`blocked_users.blocked_id` held the *match row's* id. A match row is per-user and
+per-conversation, so that id meant nothing to the other side and nothing again if
+the same two people met through a second match row. `supabase/22_block_hardening.sql`
+promotes the person's uuid into `blocked_user_id`, backfilling from
+`source_profile_id` and then from the match row.
+
+⚠️ **The migration deletes block rows it cannot resolve to a real person** — demo
+and legacy blocks pointing at a profile that no longer exists. Check
+`select count(*) from blocked_users;` before and after if that matters.
+
+Enforcement moved into the database, both directions:
+
+| Surface | Enforced by |
+|---|---|
+| Discover / Explore / profile detail | `profiles_select` calls `is_blocked_pair` |
+| Sending a message | `messages_insert` resolves the counterpart via `match_counterpart` |
+| Likes / "who liked you" | `likes_received_insert`, plus a trigger clearing existing likes on block |
+
+`is_blocked_pair` is `security definer` because `blocked_users` is owner-only —
+answering "did *they* block *me*?" needs a row you do not own. It returns yes/no
+about one pair and never anyone's block list.
+
+`BlockedProfile.sourceProfileId` is gone; `BlockedProfile.id` is the person now.
+`blocked_id` is left in place but nullable, so an older client mid-rollout does
+not fail its inserts. Drop it once every build is updated.
+
+**Known gap:** a match row with no `sourceProfileId` (legacy) has no person to
+block. The thread is still removed, but no `blocked_users` row is written —
+recording a block against a match id is what this change was undoing.
+
+## Push notifications — scaffolding only
+
+Installed `expo-notifications` + `expo-device`; plugin added to app.json.
+
+- `push_tokens` (`supabase/23_push_tokens.sql`) — one row per *device*, not per
+  member, so a phone and a tablet both get reached. Written through
+  `register_push_token`, a definer RPC: the token is unique table-wide, so a
+  device that changes hands has to move to the new account, which a plain client
+  upsert could not do without failing the previous owner's RLS check.
+- `usePushRegistration` (mounted in the root layout) stores a token on sign-in
+  and drops it on sign-out. Silent on failure by design — a declined permission,
+  a simulator, and a build without FCM credentials all end in "no token", and
+  none is worth interrupting someone for.
+- `supabase/functions/send-push` checks the recipient's `notification_prefs`,
+  looks up their devices, calls Expo, and prunes `DeviceNotRegistered` tokens.
+
+**What is NOT done, and cannot be from here:**
+
+- Nothing calls `send-push` automatically. Event wiring (new match / message /
+  like) waits on Day 5-6 making those real server-side events.
+- **Not verified end to end.** A real push needs a physical device, FCM
+  credentials on the EAS project, and the function deployed — none of which
+  exist in this environment. Remote push also does not work in Expo Go on
+  SDK 53+; it needs a development build.
+
+To verify manually once deployed:
+
+```
+supabase functions deploy send-push
+curl -X POST 'https://<project>.supabase.co/functions/v1/send-push' \
+  -H 'Authorization: Bearer <SERVICE_ROLE_KEY>' \
+  -H 'Content-Type: application/json' \
+  -d '{"userId":"<uuid>","event":"message","title":"Test","body":"Hello"}'
+```

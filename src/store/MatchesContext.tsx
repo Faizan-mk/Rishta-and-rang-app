@@ -342,16 +342,23 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
   const blockMatch = (matchId: string) => {
     if (!user) return;
     const match = matches.find((m) => m.id === matchId);
-    if (match) {
+    // `sourceProfileId` is the other member's account id. Without one there is
+    // no person to block — a legacy match row predating that field. The thread
+    // still goes; recording a block against a match id would be a block that
+    // protects nobody, which is what this whole change was about.
+    if (match?.sourceProfileId) {
       const blocked: BlockedProfile = {
-        id: match.id,
-        sourceProfileId: match.sourceProfileId,
+        id: match.sourceProfileId,
         name: match.name,
         photo: match.photo,
         blockedAt: new Date().toISOString(),
       };
-      setBlockedProfiles((prev) => [blocked, ...prev]);
-      matchesService.blockUser(user.id, blocked);
+      // Keyed by person now, so blocking someone met through a second match row
+      // updates the existing entry instead of listing them twice.
+      setBlockedProfiles((prev) => [blocked, ...prev.filter((b) => b.id !== blocked.id)]);
+      matchesService.blockUser(user.id, blocked).catch(() => {
+        setBlockedProfiles((prev) => prev.filter((b) => b.id !== blocked.id));
+      });
     }
     removeMatch(matchId);
   };

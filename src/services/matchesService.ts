@@ -30,7 +30,6 @@ export interface ChatMessageDoc {
 
 interface BlockedDoc {
   id: string;
-  sourceProfileId: string | null;
   name: string;
   photo: string;
   blockedAt: string;
@@ -44,8 +43,7 @@ const MATCH_SELECT: string =
 const MESSAGE_SELECT: string =
   'id, matchId:match_id, fromMe:from_me, text, kind, audioUrl:audio_path, durationSec:duration_sec, imageUrl:image_path, sentAt:sent_at';
 
-const BLOCKED_SELECT: string =
-  'id:blocked_id, sourceProfileId:source_profile_id, name, photo, blockedAt:blocked_at';
+const BLOCKED_SELECT: string = 'id:blocked_user_id, name, photo, blockedAt:blocked_at';
 
 /** The subset of a match a caller may patch. */
 export type MatchPatch = Partial<Omit<MatchDoc, 'sourceProfileId' | 'id'>>;
@@ -93,7 +91,6 @@ export function mapChatMessageDoc(id: string, data: ChatMessageDoc): ChatMessage
 function mapBlockedDoc(data: BlockedDoc): BlockedProfile {
   return {
     id: data.id,
-    sourceProfileId: data.sourceProfileId ?? undefined,
     name: data.name,
     photo: data.photo,
     blockedAt: data.blockedAt,
@@ -244,30 +241,31 @@ async function insertImageMessage(profileId: string, matchId: string, localUri: 
 }
 
 async function blockUser(profileId: string, blocked: BlockedProfile): Promise<void> {
-  // Unique on (profile_id, blocked_id), so re-blocking overwrites instead of
-  // stacking duplicates (what the old `on conflict` upsert did).
+  // Unique on (profile_id, blocked_user_id), so re-blocking the same person
+  // overwrites instead of stacking duplicates. `source_profile_id` is still
+  // written for the older column's sake until it is dropped.
   const { error } = await supabase
     .from('blocked_users')
     .upsert(
       {
         profile_id: profileId,
-        blocked_id: blocked.id,
-        source_profile_id: blocked.sourceProfileId ?? null,
+        blocked_user_id: blocked.id,
+        source_profile_id: blocked.id,
         name: blocked.name,
         photo: blocked.photo,
         blocked_at: blocked.blockedAt,
       },
-      { onConflict: 'profile_id,blocked_id' }
+      { onConflict: 'profile_id,blocked_user_id' }
     );
   if (error) throw new Error(error.message);
 }
 
-async function unblockUser(profileId: string, blockedId: string): Promise<void> {
+async function unblockUser(profileId: string, blockedUserId: string): Promise<void> {
   const { error } = await supabase
     .from('blocked_users')
     .delete()
     .eq('profile_id', profileId)
-    .eq('blocked_id', blockedId);
+    .eq('blocked_user_id', blockedUserId);
   if (error) throw new Error(error.message);
 }
 

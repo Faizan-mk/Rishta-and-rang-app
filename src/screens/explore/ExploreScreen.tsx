@@ -105,7 +105,7 @@ export function ExploreScreen() {
   }, [loadLikes]);
 
   const blockedProfileIds = useMemo(
-    () => new Set(blockedProfiles.map((b) => b.sourceProfileId).filter(Boolean)),
+    () => new Set(blockedProfiles.map((b) => b.id)),
     [blockedProfiles]
   );
 

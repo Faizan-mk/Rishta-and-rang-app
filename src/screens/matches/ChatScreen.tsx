@@ -9,7 +9,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { useAudioRecorder, RecordingPresets, requestRecordingPermissionsAsync } from 'expo-audio';
 import { MessageBubble } from '../../components/matches/MessageBubble';
 import { Badge } from '../../components/common/Badge';
-import { ReportDialog } from '../../components/common/ReportDialog';
+import { ReportDialog, type ReportSubmission } from '../../components/common/ReportDialog';
+import { reportsService } from '../../services/reportsService';
 import { FadeIn } from '../../components/common/FadeInUp';
 import { useLanguage } from '../../store/LanguageContext';
 import { useTheme } from '../../store/ThemeContext';
@@ -130,8 +131,23 @@ export function ChatScreen() {
 
   const onReport = () => setReportVisible(true);
 
-  const onSubmitReport = async (_reason: string) => {
+  const onSubmitReport = async (submission: ReportSubmission) => {
     setReportVisible(false);
+    // `sourceProfileId` is the other member's account id. A legacy match row
+    // without one has nobody to file against, so the report is dropped rather
+    // than written against a match id no moderator could resolve.
+    if (user && match.sourceProfileId) {
+      try {
+        await reportsService.submitReport(user.id, {
+          targetId: match.sourceProfileId,
+          reason: submission.reason,
+          details: submission.details,
+          context: 'chat',
+        });
+      } catch {
+        // See HomeScreen.onSubmitReport.
+      }
+    }
     await notify({ title: t('chat.reportSentTitle'), message: t('chat.reportSentBody') });
   };
 

@@ -20,11 +20,23 @@ const REASON_KEYS = [
 
 export type ReportReasonKey = (typeof REASON_KEYS)[number];
 
+/**
+ * What a submitted report carries.
+ *
+ * `reason` is the stable key, never the rendered label: the moderator reading
+ * the queue has to see the same word whichever language the reporter had the
+ * app set to. `details` is the reporter's own words, for "other".
+ */
+export interface ReportSubmission {
+  reason: ReportReasonKey;
+  details: string;
+}
+
 interface ReportDialogProps {
   visible: boolean;
   name: string;
   onCancel: () => void;
-  onSubmit: (reason: string) => void;
+  onSubmit: (submission: ReportSubmission) => void;
 }
 
 export function ReportDialog({ visible, name, onCancel, onSubmit }: ReportDialogProps) {
@@ -57,9 +69,12 @@ export function ReportDialog({ visible, name, onCancel, onSubmit }: ReportDialog
       setError(t('report.missingCustomText'));
       return;
     }
-    const reason = selected === 'other' ? customText.trim() : t(`report.reason_${selected}`);
+    const submission: ReportSubmission = {
+      reason: selected,
+      details: selected === 'other' ? customText.trim() : '',
+    };
     reset();
-    onSubmit(reason);
+    onSubmit(submission);
   };
 
   return (
