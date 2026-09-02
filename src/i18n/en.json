@@ -503,7 +503,9 @@
     "customPlaceholder": "Describe the issue...",
     "missingReason": "Please select a reason.",
     "missingCustomText": "Please describe the issue.",
-    "submit": "Submit report"
+    "submit": "Submit report",
+    "failedTitle": "Report not sent",
+    "failedBody": "We couldn't send that report. Check your connection and try again."
   },
   "help": {
     "title": "Help & support",

@@ -379,8 +379,8 @@ export function HomeScreen() {
         context: 'discover',
       });
     } catch {
-      // The report is not worth a second dialog on top of the first: the row
-      // either landed or it did not, and re-reporting is one tap away.
+      await notify({ title: t('report.failedTitle'), message: t('report.failedBody') });
+      return;
     }
     await notify({ title: t('chat.reportSentTitle'), message: t('chat.reportSentBody') });
   };

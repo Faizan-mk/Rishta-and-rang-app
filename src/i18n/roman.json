@@ -503,7 +503,9 @@
     "customPlaceholder": "Masla bayan karein...",
     "missingReason": "Baraye meherbani ek wajah muntakhib karein.",
     "missingCustomText": "Baraye meherbani masla bayan karein.",
-    "submit": "Report Jama Karayein"
+    "submit": "Report Jama Karayein",
+    "failedTitle": "Report nahi bheji ja saki",
+    "failedBody": "Hum yeh report nahi bhej sake. Apna internet check karke dobara koshish karein."
   },
   "help": {
     "title": "Madad",

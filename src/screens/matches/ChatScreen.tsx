@@ -145,7 +145,8 @@ export function ChatScreen() {
           context: 'chat',
         });
       } catch {
-        // See HomeScreen.onSubmitReport.
+        await notify({ title: t('report.failedTitle'), message: t('report.failedBody') });
+        return;
       }
     }
     await notify({ title: t('chat.reportSentTitle'), message: t('chat.reportSentBody') });
