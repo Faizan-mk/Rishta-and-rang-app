@@ -24,12 +24,14 @@ import {
   IntroMediaSection,
 } from '../../components/discover/ProfileDetailSections';
 import { useLanguage } from '../../store/LanguageContext';
+import { vocabularyLabel } from '../../i18n/vocabulary';
 import { useAuth } from '../../store/AuthContext';
 import { useTheme } from '../../store/ThemeContext';
 import { useDialog } from '../../store/DialogContext';
 import { useNotifications } from '../../store/NotificationContext';
 import { ageFromDob } from '../../utils/date';
 import { profileCompletion } from '../../utils/profileCompletion';
+import { FEATURE_BUREAU } from '../../config/features';
 import { radius, spacing, typography } from '../../theme';
 import { glow, modeAccent, withAlpha, type Gradient } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
@@ -145,8 +147,8 @@ export function ProfileScreen() {
             )}
           </LinearGradient>
           {user.selfieVerified && (
-            <View style={[styles.verifiedDot, glow(colors.success, 0.7, 8, 4)]}>
-              <Ionicons name="checkmark" size={12} color="#FFFFFF" />
+            <View style={styles.photoDot} accessibilityLabel={t('profile.photoAdded')}>
+              <Ionicons name="camera" size={11} color={colors.textInverse} />
             </View>
           )}
         </View>
@@ -159,7 +161,7 @@ export function ProfileScreen() {
         </View>
         <View style={[styles.metaRow, rtl && styles.rowRtl]}>
           <Ionicons name="location" size={13} color={accent.primary} />
-          <Text style={[styles.meta, { color: accent.primary }, rtl && styles.rtlText]}>{user.city}</Text>
+          <Text style={[styles.meta, { color: accent.primary }, rtl && styles.rtlText]}>{vocabularyLabel(user.city, t)}</Text>
         </View>
 
         <View style={styles.badgeRow}>
@@ -348,14 +350,18 @@ export function ProfileScreen() {
             right="chevron"
             onPress={() => router.push('/cnic-verification')}
           />
-          <View style={styles.rowDivider} />
-          <SettingsRow
-            icon="shield-checkmark-outline"
-            label={t('profile.bureau')}
-            description={requestingBureau ? t('bureau.requesting') : user.bureauVerified ? t('profile.verified') : t('profile.notVerified')}
-            right="chevron"
-            onPress={onRequestBureau}
-          />
+          {FEATURE_BUREAU && (
+            <>
+              <View style={styles.rowDivider} />
+              <SettingsRow
+                icon="shield-checkmark-outline"
+                label={t('profile.bureau')}
+                description={requestingBureau ? t('bureau.requesting') : user.bureauVerified ? t('profile.verified') : t('profile.notVerified')}
+                right="chevron"
+                onPress={onRequestBureau}
+              />
+            </>
+          )}
           <View style={styles.rowDivider} />
           <SettingsRow
             icon="people-outline"
@@ -506,14 +512,17 @@ const makeStyles = (colors: Palette) =>
     avatarRing: { width: 92, height: 92, borderRadius: 46, padding: 4 },
     avatar: { width: '100%', height: '100%', borderRadius: 42, backgroundColor: colors.skeleton },
     avatarPlaceholder: { backgroundColor: colors.teal, alignItems: 'center', justifyContent: 'center' },
-    verifiedDot: {
+    // A camera, not a tick, and in neutral ink rather than success green: this
+    // only says a photo was added. A green check beside a face reads as
+    // "identity confirmed", which nothing in the app has actually done.
+    photoDot: {
       position: 'absolute',
       bottom: 2,
       right: 2,
       width: 22,
       height: 22,
       borderRadius: 11,
-      backgroundColor: colors.success,
+      backgroundColor: withAlpha(colors.textPrimary, 0.55),
       borderWidth: 2,
       borderColor: colors.background,
       alignItems: 'center',

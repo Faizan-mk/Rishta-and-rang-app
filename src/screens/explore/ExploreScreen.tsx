@@ -23,6 +23,7 @@ import { FEATURE_EVENTS } from '../../config/features';
 import type { DiscoverProfile, RishtaListingProfile } from '../../types/content';
 import { useDiscovery } from '../../store/DiscoveryContext';
 import { useLanguage } from '../../store/LanguageContext';
+import { vocabularyLabel } from '../../i18n/vocabulary';
 import { useTheme } from '../../store/ThemeContext';
 import { useAuth } from '../../store/AuthContext';
 import { useMatches } from '../../store/MatchesContext';
@@ -268,7 +269,7 @@ export function ExploreScreen() {
                         uri={like.photo}
                         name={like.name}
                         title={`${like.name}, ${like.age}`}
-                        caption={like.city}
+                        caption={vocabularyLabel(like.city, t)}
                         accent={accent}
                         colors={colors}
                         onPress={() =>
@@ -322,7 +323,7 @@ export function ExploreScreen() {
               title={t('explore.newMembers')}
               emptyLabel={t('explore.newMembersEmpty')}
               profiles={newMembers}
-              captionFor={(p) => (p.joinedAt ? t('explore.joinedAt', { time: timeAgo(p.joinedAt) }) : p.city)}
+              captionFor={(p) => (p.joinedAt ? t('explore.joinedAt', { time: timeAgo(p.joinedAt, t) }) : vocabularyLabel(p.city, t))}
               onPressProfile={openProfile}
               colors={colors}
               accent={accent}
@@ -333,7 +334,7 @@ export function ExploreScreen() {
               title={t('explore.recentlyActive')}
               emptyLabel={t('explore.recentlyActiveEmpty')}
               profiles={recentlyActive}
-              captionFor={(p) => (p.lastActiveAt ? t('explore.activeAt', { time: timeAgo(p.lastActiveAt) }) : p.city)}
+              captionFor={(p) => (p.lastActiveAt ? t('explore.activeAt', { time: timeAgo(p.lastActiveAt, t) }) : vocabularyLabel(p.city, t))}
               onPressProfile={openProfile}
               colors={colors}
               accent={accent}
@@ -344,7 +345,7 @@ export function ExploreScreen() {
               title={t('explore.allProfiles')}
               emptyLabel={t('explore.allProfilesEmpty')}
               profiles={filtered}
-              captionFor={(p) => p.city}
+              captionFor={(p) => vocabularyLabel(p.city, t)}
               onPressProfile={openProfile}
               colors={colors}
               accent={accent}
@@ -378,7 +379,7 @@ export function ExploreScreen() {
                   <View style={[styles.eventMetaRow, rtl && styles.rowRtl]}>
                     <View style={[styles.eventTag, { backgroundColor: withAlpha(colors.teal, 0.12) }]}>
                       <Ionicons name="location" size={12} color={colors.teal} />
-                      <Text style={[styles.eventTagText, { color: colors.teal }]}>{event.city}</Text>
+                      <Text style={[styles.eventTagText, { color: colors.teal }]}>{vocabularyLabel(event.city, t)}</Text>
                     </View>
                     <View style={[styles.eventTag, { backgroundColor: withAlpha(colors.gold, 0.14) }]}>
                       <Ionicons name="calendar" size={12} color={colors.gold} />
@@ -441,7 +442,7 @@ export function ExploreScreen() {
                           {entry.name}, {entry.age}
                         </Text>
                         <Text style={[styles.historyMeta, rtl && styles.rtlText]}>
-                          {t('explore.viewedAt', { time: timeAgo(entry.viewedAt) })}
+                          {t('explore.viewedAt', { time: timeAgo(entry.viewedAt, t) })}
                         </Text>
                       </View>
                       <Ionicons
@@ -485,7 +486,7 @@ export function ExploreScreen() {
                 <View style={styles.eventMetaRow}>
                   <View style={[styles.eventTag, { backgroundColor: withAlpha(colors.teal, 0.12) }]}>
                     <Ionicons name="location" size={12} color={colors.teal} />
-                    <Text style={[styles.eventTagText, { color: colors.teal }]}>{activeEvent.city}</Text>
+                    <Text style={[styles.eventTagText, { color: colors.teal }]}>{vocabularyLabel(activeEvent.city, t)}</Text>
                   </View>
                   <View style={[styles.eventTag, { backgroundColor: withAlpha(colors.gold, 0.14) }]}>
                     <Ionicons name="calendar" size={12} color={colors.gold} />
@@ -536,6 +537,7 @@ function PhotoTile({
   colors: Palette;
   onPress: () => void;
 }) {
+  const { t } = useLanguage();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   return (
@@ -556,8 +558,8 @@ function PhotoTile({
             pointerEvents="none"
           />
           {verified && (
-            <View style={[styles.gridVerified, glow(colors.teal, 0.7, 8, 4)]}>
-              <Ionicons name="checkmark" size={11} color="#FFFFFF" />
+            <View style={styles.gridHasPhoto} accessibilityLabel={t('profile.photoAdded')}>
+              <Ionicons name="camera" size={10} color="#FFFFFF" />
             </View>
           )}
           <View style={styles.gridCaption}>
@@ -697,14 +699,15 @@ const makeStyles = (colors: Palette) =>
     },
     gridPhoto: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
     tileScrim: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '55%' },
-    gridVerified: {
+    // See DiscoverProfileCard.photoRing — a photo marker, not a verified tick.
+    gridHasPhoto: {
       position: 'absolute',
       top: spacing.xs,
       right: spacing.xs,
       width: 20,
       height: 20,
       borderRadius: 10,
-      backgroundColor: colors.teal,
+      backgroundColor: 'rgba(10,10,12,0.55)',
       alignItems: 'center',
       justifyContent: 'center',
     },

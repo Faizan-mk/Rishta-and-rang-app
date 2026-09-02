@@ -16,7 +16,13 @@
     "reset": "Reset Karein",
     "noResults": "Koi result nahi mila.",
     "send": "Bhejein",
-    "confirm": "Confirm"
+    "confirm": "Confirm",
+    "search": "Talash karein...",
+    "other": "Deegar",
+    "enterAnswer": "Apna jawab likhein",
+    "somethingWentWrong": "Kuch ghalat ho gaya. Dobara koshish karein.",
+    "readOnline": "Mukammal matan online parhein",
+    "linkUnavailable": "Yeh link abhi dastyab nahi hai."
   },
   "login": {
     "title": "Wapas Khush Aamdeed",
@@ -72,7 +78,10 @@
     "passwordRequirementLower": "Ek lowercase letter",
     "passwordRequirementUpper": "Ek uppercase letter",
     "passwordRequirementNumber": "Ek number",
-    "passwordRequirementSpecial": "Ek special character"
+    "passwordRequirementSpecial": "Ek special character",
+    "ageAndTermsLabel": "Main tasdeeq karta/karti hoon ke meri umar 18 saal ya us se zyada hai, aur main service ki sharait aur privacy policy qubool karta/karti hoon.",
+    "reviewLegal": "Sharait aur privacy policy parhein",
+    "mustAcceptLegal": "Aage barhne ke liye tasdeeq karein ke aap 18 saal ya us se zyada ke hain aur sharait qubool karte hain."
   },
   "personalDetails": {
     "title": "Zaati Tafseelat",
@@ -275,7 +284,9 @@
     "switchTo": "{mode} par jayen",
     "typeMessage": "Paigham likhein...",
     "itsAMatch": "Yeh Ek Match Hai!",
-    "youAndLikedEachOther": "Aap aur {name} ne ek doosre ko pasand kiya."
+    "youAndLikedEachOther": "Aap aur {name} ne ek doosre ko pasand kiya.",
+    "previewPhoto": "Tasveer",
+    "previewVoice": "Voice paigham"
   },
   "chat": {
     "moveToRishta": "Rishtay ki Taraf Barhein",
@@ -292,7 +303,10 @@
     "reportSentTitle": "Report jama ho gayi",
     "reportSentBody": "Shukriya — hamari hifazati team is guftagu ka jaiza legi.",
     "recording": "Recording ho rahi hai...",
-    "photoUnavailable": "Tasveer dastyaab nahi"
+    "photoUnavailable": "Tasveer dastyaab nahi",
+    "timeAm": "AM",
+    "timePm": "PM",
+    "reactionPickerTitle": "Radd-e-amal chunein"
   },
   "profile": {
     "title": "Profile",
@@ -375,7 +389,8 @@
     "nationality": "Qaumiyat",
     "grewUpIn": "Kahan parwarish payi",
     "country": "Mulk",
-    "makePrimary": "Primary banayein"
+    "makePrimary": "Primary banayein",
+    "otherLabel": "{label} (deegar)"
   },
   "rishtaProfile": {
     "title": "Rishtay ki Tafseelat",
@@ -531,12 +546,111 @@
     "missingFields": "Baraye meherbani dono khane pur karein."
   },
   "legal": {
-    "title": "Privacy policy aur shara'it",
-    "placeholderNotice": "Yeh development ke liye placeholder text hai. App Store ya Play Store par jama karane se pehle ise apni reviewed, legally-approved Privacy Policy aur Terms of Service se, aur har ek ke liye ek hosted URL se replace karein.",
-    "privacyPolicyTitle": "Privacy Policy",
-    "privacyPolicyBody": "Rishta & Rang aapki privacy ka ehtaram karta hai. Is section mein yeh batana chahiye ke kaunsa data collect hota hai (profile details, tasveerein, verification documents, messages), yeh kaise store aur use hota hai, kis ke saath share ho sakta hai, kitni der tak rakha jata hai, aur users apna data aur account delete karne ki request kaise kar sakte hain.",
-    "termsTitle": "Terms of Service",
-    "termsBody": "Rishta & Rang use karne se aap in shara'it se muttafiq hote hain. Is section mein eligibility (minimum age, fi shakhs ek account), acceptable use, mana kiye gaye rawaiye (harassment, jaali profiles, impersonation), content ownership, Explore+ ke liye subscription aur billing terms, aur accounts ko kaise suspend ya terminate kiya ja sakta hai, shamil hona chahiye."
+    "title": "Privacy policy aur sharait",
+    "lastUpdated": "Aakhri tabdeeli: 2 September 2026",
+    "readPrivacyOnline": "Privacy policy browser mein kholein",
+    "readTermsOnline": "Service ki sharait browser mein kholein",
+    "contactLine": "In dastavezaat ke baare mein sawal hai? {email} par email karein.",
+    "privacyPolicyTitle": "Privacy policy",
+    "termsTitle": "Service ki sharait",
+    "privacyIntro": "Rishta & Rang Pakistan mein baaligh afraad ke liye aik matchmaking app hai. Yeh policy batati hai ke hum aap se kya maloomat lete hain, kyun lete hain, kaun unhein dekh sakta hai, aur aap unhein kaise delete karwa sakte hain.",
+    "termsIntro": "Yeh sharait aap ke aur Rishta & Rang ke darmiyan muahida hain. Account bana kar aap inhein qubool karte hain. Agar aap inhein qubool nahi karte to app istemal na karein.",
+    "privacy": {
+      "whoWeAre": {
+        "title": "1. Hum kaun hain",
+        "body": "Rishta & Rang (\"hum\") is app ko chalate hain aur neeche bayan ki gayi maloomat ke data controller hain. Is policy se mutalliq kisi bhi baat ke liye, bashamool apna data dekhne ya delete karwane ki darkhwast, aap hum se {email} par rabta kar sakte hain."
+      },
+      "dataWeCollect": {
+        "title": "2. Hum kya jama karte hain",
+        "body": "Account ki tafseelat: aap ka email address aur password (sirf mehfooz hash ki soorat mein — hum ise kabhi nahi dekhte).\n\nProfile ki tafseelat: aap ka naam, tareekh-e-paidaish, jins, sheher, taaruf, aap kya talash kar rahe hain, aur woh rishta se mutalliq khane jo aap khud bharte hain (mazhab, maslak, taleem, khandani pas manzar, tayyari).\n\nTasaveer: aap ki upload ki gayi profile tasaveer.\n\nTasdeeqi selfie: signup ke waqt li gayi selfie, yeh jaanchne ke liye ke profile ke peeche aik haqeeqi shakhs hai. Yeh kabhi aap ke profile par ya doosre members ko nahi dikhai jati.\n\nShanakhti card: aap ka CNIC number aur, agar aap upload karein, card ki tasveer. Sirf format jaanchne aur aainda shanakhti jaiza ke liye. Doosre members ko kabhi nahi dikhai jati.\n\nMaqam: woh sheher jo aap muntakhib karte hain. Agar aap ijazat dein to taqreebi fasla, taake qareebi profiles pehle dikhai ja sakein. Hum aap ke durust maqam ki tareekh mehfooz ya track nahi karte.\n\nChat: app mein bheje gaye paighamaat, voice notes aur tasaveer, aur yeh ke aap ne kise bheje.\n\nIstemal: aap ne aakhri baar app kab kholi, kise pasand kiya, kise block kiya aur kya report kiya — yehi record hifazati jaiza ki bunyaad hai."
+      },
+      "howWeUse": {
+        "title": "3. Hum ise kyun istemal karte hain",
+        "body": "Aap ka account banane aur chalane, aap ka profile doosre members ko dikhane, match tajweez karne, aap ke paighamaat pohanchane, rozana like ki hadd aur Explore+ sahulyat lagoo karne, reports ka jaiza lene aur community ko mehfooz rakhne, aur qanooni taqazay poore karne ke liye.\n\nHum aap ka data farokht nahi karte. Hum aap ki tasaveer, selfie, CNIC ya paighamaat ko ishtiharaat ke liye istemal nahi karte, aur na hi inhein machine-learning models ki tarbiyat ke liye istemal karte hain."
+      },
+      "legalBasis": {
+        "title": "4. Aap ki razamandi",
+        "body": "Aap apna profile, tasaveer, selfie aur CNIC razakaarana taur par, match hone ke liye dete hain. Aap apna account delete karke yeh razamandi kisi bhi waqt wapas le sakte hain. Delete karne ke baad hum sirf woh thora sa data rakhte hain jis ka qanoon ya koi jaari hifazati tehqeeq taqaza kare — dekhein \"Hum kitni der rakhte hain\"."
+      },
+      "sharing": {
+        "title": "5. Ise aur kaun dekhta hai",
+        "body": "Doosre members aap ka profile dekhte hain: naam, umar, sheher, tasaveer, taaruf aur woh khane jo aap ne bhare. Woh aap ka email, password, CNIC, tasdeeqi selfie ya durust maqam nahi dekhte.\n\nSupabase hamara data processor hai. Aap ka account, profile, paighamaat aur upload ki gayi files aik processing muahide ke tehat Supabase ke infrastructure par mehfooz hoti hain; Supabase yeh data sirf hamari hidayat par process karta hai aur apne maqasid ke liye istemal nahi karta.\n\nHum qanoon nafiz karne wale idaron ko data sirf us soorat mein dete hain jab qanoonan lazim ho, ya kisi ki jaan ko lahiq qabil-e-aitbar khatre ki tehqeeq ke liye zaroori ho."
+      },
+      "retention": {
+        "title": "6. Hum kitni der rakhte hain",
+        "body": "Aap ka account khula rehne tak aap ka data mehfooz rehta hai. Account delete karne par aap ka profile, tasaveer, matches aur paighamaat hamare faal systems se hazf ho jate hain, aur khufiya backups 30 din ke andar khatam ho jate hain.\n\nDo istisna: kisi khuli hifazati report ya pabandi wale account se jure record 12 maah tak rakhe jate hain taake wohi shakhs foran wapas na aa sake; aur jo record qanoonan rakhna lazim ho, woh muqarrara muddat tak rakhe jate hain."
+      },
+      "yourRights": {
+        "title": "7. Aap ke huqooq",
+        "body": "Aap apna profile data kisi bhi waqt \"Profile mein tarmeem\" se dekh aur durust kar sakte hain.\n\nAap apna account aur us ke saath sab kuch Settings → Privacy aur hifazat → Account delete karein se hazf kar sakte hain. Yeh foran lagoo hota hai aur wapas nahi ho sakta.\n\nAap {email} par email karke apne data ki naqal, us ki durusti, ya kisi makhsoos istemal par aitraz bhi kar sakte hain. Hum 30 din ke andar jawab dete hain."
+      },
+      "security": {
+        "title": "8. Hum ise kaise mehfooz rakhte hain",
+        "body": "Data muntaqili ke douran encrypted rehta hai. Passwords hash kiye jate hain aur kabhi parhi jane wali shakal mein mehfooz nahi hote. Tasdeeqi dastavezaat aik niji storage mein rehti hain jise sirf aap aur hamara jaiza amal parh sakta hai; profile tasaveer aisi jagah rehti hain jise sirf logged-in members parh sakte hain. Har table par row-level security qawaid lagoo hain, is liye aik account doosre ke paighamaat ya dastavezaat nahi parh sakta.\n\nKoi nizam mukammal mehfooz nahi hota. Agar kisi khilaf warzi se aap ka data mutasir hua to hum aap ko aur mutalliqa idare ko qanoon ke mutabiq mutla karenge."
+      },
+      "ageLimit": {
+        "title": "9. Sirf baaligh afraad ke liye",
+        "body": "Rishta & Rang 18 saal ya us se zyada umar ke afraad ke liye hai. Hum signup par tareekh-e-paidaish poochte hain aur 18 saal se kam umar ke accounts qubool nahi karte. Agar hamein maloom ho ke koi account nabaligh ka hai to hum use aur us ka data hazf kar dete hain. Agar aap ko lage ke koi nabaligh app istemal kar raha hai to {email} par email karein."
+      },
+      "changes": {
+        "title": "10. Is policy mein tabdeeliyan",
+        "body": "Agar hum is policy mein koi aisi tabdeeli karein jo aap par numayan asar dale to nafiz hone se pehle hum aap ko app mein bata denge. Oopar darj tareekh hamesha wohi nuskha zahir karti hai jo aap parh rahe hain."
+      },
+      "contact": {
+        "title": "11. Hum se rabta",
+        "body": "Privacy se mutalliq kisi bhi sawal, data ki darkhwast ya shikayat ke liye {email} par email karein. Agar aap hamare jawab se mutmain na hon to aap apne muqami data tahaffuz idare se shikayat kar sakte hain."
+      }
+    },
+    "terms": {
+      "eligibility": {
+        "title": "1. Aap ka 18 saal ka hona lazim hai",
+        "body": "Aap Rishta & Rang sirf usi soorat istemal kar sakte hain jab aap 18 saal ya us se zyada umar ke hon aur qanoonan yeh muahida karne ke ahal hon. Aap signup par apni umar ki tasdeeq karte hain. 18 saal se kam umar mein, ya kisi nabaligh ki janib se, account banana in sharait ki khilaf warzi hai aur hum aisa account hazf kar denge."
+      },
+      "yourAccount": {
+        "title": "2. Aap ka account",
+        "body": "Fi shakhs aik account. Durust tafseelat dein, aisi tasaveer lagayein jo waqai aap ki hon, aur apna password apne paas rakhein. Aap ke account se hone wale har amal ke zimmedar aap hain. Agar aap ko lage ke kisi aur ko is tak rasai hai to {email} par hamein batayein."
+      },
+      "acceptableUse": {
+        "title": "3. App kaise istemal karein",
+        "body": "Rishta & Rang dosti, taalluq ya shadi ke liye logon se milne ki jagah hai. Doosre members ke saath waisa sulook karein jaisa aap apne ghar walon ke liye chahte hain. Guftagu usi raftaar se barhayein jo dono ko qubool ho, aur \"nahi\" ka ehtiram pehli hi baar karein."
+      },
+      "prohibited": {
+        "title": "4. Kya mana hai",
+        "body": "Aap yeh nahi kar sakte: kisi aur ka roop dharna ya kisi aur ki tasaveer istemal karna; kisi member ko haraan karna, dhamkana, taaqub karna ya badsulooki karna; nabaligh se mutalliq koi bhi mawad, bashamool jinsi mawad, bhejna ya shaya karna; members se paise, sarmayakari ya maali tafseelat mangna; tijarti ya tashheeri mawad bhejna; nafrat angez mawad ya kisi ke mazhab, maslak, nasal, jins ya maoori par hamla karne wala mawad dalna; kisi member ki niji maloomat, tasaveer ya paighamaat app se bahar share karna; service ke khilaf bots ya khudkaar tools istemal karna; ya aise accounts, data ya systems tak rasai ki koshish karna jo aap ke nahi.\n\nHum aise mawad ko hatate hain aur khilaf warzi karne wale accounts moattal ya khatam kar dete hain."
+      },
+      "contentLicence": {
+        "title": "5. Aap ka mawad",
+        "body": "Aap ki tasaveer aur tehreerein aap hi ki hain. Inhein shaya karke aap hamein service chalane ki gharz se inhein app ke andar rakhne, mehfooz karne aur dikhane ki ijazat dete hain. Yeh ijazat usi waqt khatam ho jati hai jab aap woh mawad ya apna account hazf kar dein. Jo kuch aap upload karte hain us ka haq rakhna aap ki zimmedari hai."
+      },
+      "safety": {
+        "title": "6. Hifazat aur reporting",
+        "body": "Jo bhi aap ko bechain kare use block aur report karein — dono chat screen aur har profile se dastyab hain. Hamari hifazati team har report ka jaiza leti hai.\n\nHum members ki mujrimana pas manzar ki jaanch nahi kar sakte, aur tasdeeqi badge kisi ke kirdar ya niyat ki zamanat nahi. Awami jagah par milein. Kisi qabil-e-aitmaad fard ko bata kar jayein ke aap kahan ja rahe hain. Kisi member ko kabhi paise na bhejein."
+      },
+      "subscriptions": {
+        "title": "7. Explore+ aur adaigiyan",
+        "body": "Explore+ aik ikhtiyari ada shuda subscription hai. Qeemat, shamil sahulyat aur billing ki muddat khareedne se pehle dikhai jati hai. Subscription mansookh karne tak khudkaar taur par tajdeed hoti hai, aur aap ise usi app store se mansookh karte hain jahan se khareedi — billing aur raqam ki wapsi usi store ki policy ke tehat hoti hai, hamare nahi. Subscription khatam hone se aap ka account hazf nahi hota."
+      },
+      "termination": {
+        "title": "8. Muahida khatam karna",
+        "body": "Aap kisi bhi waqt Settings → Privacy aur hifazat se apna account hazf kar sakte hain.\n\nHum aisa account moattal ya khatam kar sakte hain jo in sharait ki khilaf warzi kare, jis ke baare mein hamein maqool taur par dhoka dahi ya khatre ka andesha ho, ya jahan qanoonan aisa karna lazim ho. Jahan mehfooz aur qanooni hoga, hum wajah batayenge. Sangeen khilaf warziyan — nabaligh se mutalliq koi bhi maamla, qabil-e-aitbar dhamkiyan, ya dhoka dahi — account foran aur mustaqil khatam kar deti hain."
+      },
+      "disclaimers": {
+        "title": "9. Hum kya wada nahi karte",
+        "body": "Hum app jaisi hai waisi faraham karte hain. Hum yeh wada nahi karte ke aap ko match milega, ke har member wohi hai jo khud ko batata hai, ya ke service bila taatul aur be aib chalegi. Members apne tarz-e-amal ke khud zimmedar hain, app ke andar bhi aur bahar bhi."
+      },
+      "liability": {
+        "title": "10. Hamari zimmedari ki hudood",
+        "body": "Qanoon jis hadd tak ijazat de, hum bilwasta ya nateejatan hone wale nuqsan ke, ya doosre members ke tarz-e-amal ke zimmedar nahi. Yahan koi baat us zimmedari ko mehdood nahi karti jise qanoonan mehdood nahi kiya ja sakta, bashamool hamari ghaflat se hone wali maut ya jismani nuqsan, ya dhoka dahi."
+      },
+      "disputes": {
+        "title": "11. Tanazaat aur qabil-e-itlaq qanoon",
+        "body": "Yeh sharait Islami Jamhuriya Pakistan ke qawaneen ke taabe hain, aur kisi bhi tanaza par Pakistan ki adaalaton ko daira-e-ikhtiyar hasil hai.\n\nAdalat jane se pehle barah-e-karam {email} par email karein — zyada tar shikayaat isi tarah jald hal ho jati hain, aur hum 30 din ke andar jawab denge."
+      },
+      "changes": {
+        "title": "12. In sharait mein tabdeeliyan",
+        "body": "Koi numayan tabdeeli nafiz hone se pehle hum aap ko app mein bata denge. Is tareekh ke baad app istemal karte rehna is baat ka matlab hai ke aap nai sharait qubool karte hain; agar nahi, to apna account hazf kar dein."
+      }
+    }
   },
   "explore": {
     "title": "Explore",
@@ -647,5 +761,168 @@
     "boostsLeft": "Ab aapke paas {count} Boosts baaqi hain.",
     "start": "Abhi boost karein",
     "getMore": "Mazeed Boosts hasil karein"
+  },
+  "time": {
+    "justNow": "abhi abhi",
+    "minutesAgo": "{count} minute pehle",
+    "hoursAgo": "{count} ghantay pehle",
+    "daysAgo": "{count} din pehle",
+    "weeksAgo": "{count} haftay pehle"
+  },
+  "calendar": {
+    "label": "{month} {year}",
+    "weekdaySun": "It",
+    "weekdayMon": "Pe",
+    "weekdayTue": "Mn",
+    "weekdayWed": "Bu",
+    "weekdayThu": "Jm",
+    "weekdayFri": "Ju",
+    "weekdaySat": "Hf",
+    "month0": "January",
+    "month1": "February",
+    "month2": "March",
+    "month3": "April",
+    "month4": "May",
+    "month5": "June",
+    "month6": "July",
+    "month7": "August",
+    "month8": "September",
+    "month9": "October",
+    "month10": "November",
+    "month11": "December"
+  },
+  "authErrors": {
+    "emailTaken": "Yeh email pehle se registered hai. Log in karke dekhein.",
+    "weakPassword": "Password bohat kamzor hai — kam az kam 6 harf istemal karein.",
+    "invalidEmail": "Yeh email address durust nahi lag raha.",
+    "signupFailed": "Account nahi banaya ja saka.",
+    "confirmEmailFirst": "Account ban gaya — aage barhne se pehle apni email mein tasdeeqi link check karein.",
+    "profileLoadFailed": "Abhi banaya gaya account load nahi ho saka.",
+    "profileCreateFailed": "Aap ka profile nahi banaya ja saka.",
+    "profileReloadFailed": "Update shuda profile dobara load nahi ho saka.",
+    "notSignedIn": "Aap log in nahi hain.",
+    "emailNotConfirmed": "Pehle apni email ki tasdeeq karein — inbox dekh kar link par tap karein.",
+    "invalidCredentials": "Email ya password ghalat hai.",
+    "accountDisabled": "Yeh account band kar diya gaya hai.",
+    "clockSkew": "Aap ka session tasdeeq nahi ho saka — server ka waqt mail nahi kha raha. Aik minute baad dobara koshish karein.",
+    "resetLinkExpired": "Yeh reset link ab karamad nahi. Naya link mangwayein.",
+    "resetLinkSpent": "Yeh reset link namukammal hai ya pehle istemal ho chuka hai. Naya link mangwayein."
+  },
+  "media": {
+    "fileUnavailable": "Muntakhib karda file is device par mazeed dastyab nahi."
+  },
+  "reactions": {
+    "add": "Radd-e-amal shamil karein",
+    "hint": "Radd-e-amal dene ke liye paigham ko der tak dabayein",
+    "a11yReact": "Is paigham par radd-e-amal dein",
+    "a11yPill": "{emoji}, {count} radd-e-amal"
+  },
+  "vocab": {
+    "karachi": "Karachi",
+    "lahore": "Lahore",
+    "islamabad": "Islamabad",
+    "rawalpindi": "Rawalpindi",
+    "faisalabad": "Faisalabad",
+    "multan": "Multan",
+    "peshawar": "Peshawar",
+    "quetta": "Quetta",
+    "sialkot": "Sialkot",
+    "gujranwala": "Gujranwala",
+    "hyderabad": "Hyderabad",
+    "bahawalpur": "Bahawalpur",
+    "sargodha": "Sargodha",
+    "sukkur": "Sukkur",
+    "abbottabad": "Abbottabad",
+    "sahiwal": "Sahiwal",
+    "mardan": "Mardan",
+    "gujrat": "Gujrat",
+    "kasur": "Kasur",
+    "rahimYarKhan": "Rahim Yar Khan",
+    "jhelum": "Jhelum",
+    "larkana": "Larkana",
+    "sheikhupura": "Sheikhupura",
+    "mirpurAjk": "Mirpur (AJK)",
+    "gilgit": "Gilgit",
+    "other": "Deegar",
+    "preferNotToSay": "Batana nahi chahta/chahti",
+    "sunni": "Sunni",
+    "shia": "Shia",
+    "ahmadi": "Ahmadi",
+    "ismaili": "Ismaili",
+    "bohra": "Bohra",
+    "deobandi": "Deobandi",
+    "barelvi": "Barelvi",
+    "salafiAhleHadith": "Salafi/Ahle Hadith",
+    "islam": "Islam",
+    "christianity": "Maseehiyat",
+    "hinduism": "Hindu mat",
+    "sikhism": "Sikh mat",
+    "matricOLevel": "Matric / O-Level",
+    "intermediateALevel": "Intermediate / A-Level",
+    "bachelorS": "Bachelors",
+    "masterS": "Masters",
+    "mphil": "MPhil",
+    "phd": "PhD",
+    "diploma": "Diploma",
+    "religiousEducation": "Deeni taleem",
+    "ba": "BA",
+    "bCom": "B.Com",
+    "bba": "BBA",
+    "bsComputerScience": "BS Computer Science",
+    "bsEngineering": "BS Engineering",
+    "llb": "LLB",
+    "mbbs": "MBBS",
+    "bds": "BDS",
+    "ma": "MA",
+    "mCom": "M.Com",
+    "mba": "MBA",
+    "msMphil": "MS / MPhil",
+    "student": "Talib-e-ilm",
+    "softwareEngineer": "Software Engineer",
+    "doctor": "Doctor",
+    "engineer": "Engineer",
+    "teacher": "Ustad",
+    "businessOwner": "Karobari malik",
+    "banker": "Banker",
+    "lawyer": "Wakeel",
+    "governmentOfficer": "Sarkari afsar",
+    "healthcareProfessional": "Shuba-e-sehat ka pesha war",
+    "armedForces": "Musallah afwaj",
+    "homemaker": "Khana daar",
+    "retired": "Retired",
+    "informationTechnology": "Information Technology",
+    "healthcare": "Shuba-e-sehat",
+    "education": "Taleem",
+    "financeAndBanking": "Maliyat aur bankari",
+    "engineering": "Engineering",
+    "law": "Qanoon",
+    "government": "Hukoomat",
+    "businessAndTrade": "Karobar aur tijarat",
+    "telecommunications": "Telecommunications",
+    "manufacturing": "Manufacturing",
+    "mediaAndMarketing": "Media aur marketing",
+    "realEstate": "Jaidad",
+    "agriculture": "Ziraat",
+    "urdu": "Urdu",
+    "english": "Angrezi",
+    "punjabi": "Punjabi",
+    "sindhi": "Sindhi",
+    "pashto": "Pashto",
+    "balochi": "Balochi",
+    "saraiki": "Saraiki",
+    "hindko": "Hindko",
+    "kashmiri": "Kashmiri",
+    "arabic": "Arabi",
+    "pakistani": "Pakistani",
+    "dualNationality": "Dohri shehriyat",
+    "pakistan": "Pakistan",
+    "unitedArabEmirates": "Muttahida Arab Imarat",
+    "saudiArabia": "Saudi Arab",
+    "qatar": "Qatar",
+    "bahrain": "Bahrain",
+    "unitedKingdom": "Bartania",
+    "unitedStates": "America",
+    "canada": "Canada",
+    "australia": "Australia"
   }
 }

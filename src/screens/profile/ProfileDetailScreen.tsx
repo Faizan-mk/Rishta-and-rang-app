@@ -26,6 +26,7 @@ import {
 import { useDiscovery } from '../../store/DiscoveryContext';
 import type { DiscoverProfile, RishtaListingProfile } from '../../types/content';
 import { useLanguage } from '../../store/LanguageContext';
+import { vocabularyLabel } from '../../i18n/vocabulary';
 import { useTheme } from '../../store/ThemeContext';
 import { useAuth } from '../../store/AuthContext';
 import { useDialog } from '../../store/DialogContext';
@@ -175,7 +176,7 @@ export function ProfileDetailScreen() {
           </Text>
           <View style={styles.metaRow}>
             <Ionicons name="location" size={14} color={detailRamp[0]} />
-            <Text style={[styles.metaText, { color: detailRamp[0] }]}>{profile.city}</Text>
+            <Text style={[styles.metaText, { color: detailRamp[0] }]}>{vocabularyLabel(profile.city, t)}</Text>
           </View>
 
           <LinearGradient

@@ -15,6 +15,7 @@ import { useLanguage } from '../../store/LanguageContext';
 import { useTheme } from '../../store/ThemeContext';
 import { useDialog } from '../../store/DialogContext';
 import { useMatches } from '../../store/MatchesContext';
+import { useAuth } from '../../store/AuthContext';
 import { radius, spacing, typography } from '../../theme';
 import { glow, modeAccent, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
@@ -28,6 +29,7 @@ export function ChatScreen() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
   const { confirm, notify } = useDialog();
+  const { user } = useAuth();
   const { id: matchId } = useLocalSearchParams<{ id: string }>();
   const {
     getMatch,
@@ -135,7 +137,7 @@ export function ChatScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-      <FadeIn style={styles.header}>
+      <FadeIn style={[styles.header, rtl && styles.headerRtl]}>
         <Pressable onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name={rtl ? 'chevron-forward' : 'chevron-back'} size={22} color={colors.textPrimary} />
         </Pressable>
@@ -193,14 +195,17 @@ export function ChatScreen() {
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <Animated.View entering={FadeInUp.duration(220)}>
-              <MessageBubble message={item} />
+              <MessageBubble message={item} currentUserId={user?.id} />
             </Animated.View>
           )}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
+          ListHeaderComponent={
+            messages.length > 0 ? <Text style={styles.reactionHint}>{t('reactions.hint')}</Text> : null
+          }
         />
 
-        <View style={styles.inputRow}>
+        <View style={[styles.inputRow, rtl && styles.inputRowRtl]}>
           <Pressable onPress={pickImage} style={styles.attachButton} disabled={recording}>
             <Ionicons name="image-outline" size={22} color={recording ? colors.textTertiary : colors.textSecondary} />
           </Pressable>
@@ -271,12 +276,15 @@ const makeStyles = (colors: Palette) =>
       borderBottomColor: colors.borderSoft,
       backgroundColor: colors.surfaceElevated,
     },
-    backButton: { padding: spacing.xs, marginRight: spacing.xs },
+    // Back button, avatar and the call/report icons all mirror together, so
+    // the back chevron stays under the thumb that reaches the reading edge.
+    headerRtl: { flexDirection: 'row-reverse' },
+    backButton: { padding: spacing.xs, marginHorizontal: spacing.xs },
     headerAvatarRing: { width: 42, height: 42, borderRadius: radius.pill, padding: 2 },
     headerAvatar: { width: '100%', height: '100%', borderRadius: radius.pill, backgroundColor: colors.skeleton },
-    headerTextWrap: { flex: 1, marginLeft: spacing.sm, gap: 2 },
+    headerTextWrap: { flex: 1, marginHorizontal: spacing.sm, gap: 2 },
     headerName: { ...typography.bodyBold, color: colors.textPrimary, fontWeight: '800' },
-    headerIconButton: { padding: spacing.xs, marginLeft: spacing.xs },
+    headerIconButton: { padding: spacing.xs, marginHorizontal: spacing.xs },
     moveToRishtaWrap: { paddingHorizontal: spacing.md, paddingTop: spacing.sm },
     moveToRishtaBar: {
       flexDirection: 'row',
@@ -289,6 +297,12 @@ const makeStyles = (colors: Palette) =>
     moveToRishtaBarPending: { opacity: 0.6 },
     moveToRishtaText: { ...typography.label, color: '#FFFFFF', fontWeight: '800' },
     listContent: { padding: spacing.md, flexGrow: 1, justifyContent: 'flex-end' },
+    reactionHint: {
+      ...typography.caption,
+      color: colors.textTertiary,
+      textAlign: 'center',
+      marginBottom: spacing.sm,
+    },
     inputRow: {
       flexDirection: 'row',
       alignItems: 'flex-end',
@@ -298,6 +312,7 @@ const makeStyles = (colors: Palette) =>
       borderTopColor: colors.borderSoft,
       backgroundColor: colors.surfaceElevated,
     },
+    inputRowRtl: { flexDirection: 'row-reverse' },
     input: {
       flex: 1,
       maxHeight: 100,

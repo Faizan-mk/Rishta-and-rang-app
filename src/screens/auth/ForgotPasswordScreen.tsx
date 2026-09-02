@@ -10,6 +10,7 @@ import { Header } from '../../components/Header';
 import { useLanguage } from '../../store/LanguageContext';
 import { useTheme } from '../../store/ThemeContext';
 import { isValidEmail } from '../../utils/validation';
+import { errorMessage } from '../../utils/appError';
 import { authService } from '../../services/authService';
 import { radius, spacing, typography } from '../../theme';
 import { withAlpha } from '../../theme/glow';
@@ -36,7 +37,7 @@ export function ForgotPasswordScreen() {
       await authService.requestPasswordReset(email);
       setSent(true);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Something went wrong.');
+      setError(errorMessage(e, t));
     } finally {
       setLoading(false);
     }

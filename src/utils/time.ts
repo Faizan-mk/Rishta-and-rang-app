@@ -1,14 +1,21 @@
-export function timeAgo(isoDate: string): string {
+import type { Translate } from '../i18n';
+
+/**
+ * "3h ago", in whichever language is live. Callers pass their screen's `t` —
+ * the unit words and their order differ per language, so the whole phrase has
+ * to come out of the dictionary rather than a number with a suffix glued on.
+ */
+export function timeAgo(isoDate: string, t: Translate): string {
   const diffMs = Date.now() - new Date(isoDate).getTime();
   const minutes = Math.floor(diffMs / 60000);
-  if (minutes < 1) return 'just now';
-  if (minutes < 60) return `${minutes}m ago`;
+  if (minutes < 1) return t('time.justNow');
+  if (minutes < 60) return t('time.minutesAgo', { count: minutes });
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
+  if (hours < 24) return t('time.hoursAgo', { count: hours });
   const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d ago`;
+  if (days < 7) return t('time.daysAgo', { count: days });
   const weeks = Math.floor(days / 7);
-  return `${weeks}w ago`;
+  return t('time.weeksAgo', { count: weeks });
 }
 
 // True when the profile was seen within the last 24h. Undefined/blank timestamps

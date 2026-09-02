@@ -6,7 +6,10 @@ import type { AppLanguage } from '../types/user';
 const dictionaries = { en, ur, roman } as const;
 
 type Dictionary = typeof en;
-type TranslateParams = Record<string, string | number>;
+export type TranslateParams = Record<string, string | number>;
+
+/** The `t` every screen gets from `useLanguage` — shared so helpers can take it. */
+export type Translate = (path: string, params?: TranslateParams) => string;
 
 function getByPath(dict: Dictionary, path: string): string {
   const value = path.split('.').reduce<unknown>((node, key) => {

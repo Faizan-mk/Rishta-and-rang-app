@@ -11,6 +11,7 @@ import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
 import { timeAgo } from '../../utils/time';
+import { previewLabel } from '../../utils/messagePreview';
 
 const GRADIENT_START = { x: 0, y: 0 } as const;
 const GRADIENT_END = { x: 1, y: 1 } as const;
@@ -46,12 +47,12 @@ export const MatchRow = React.memo(function MatchRow({ match, onPress }: { match
           style={[styles.message, match.unread && { color: colors.textPrimary }, rtl && styles.rtlText]}
           numberOfLines={1}
         >
-          {match.lastMessage}
+          {previewLabel(match.lastMessage, t)}
         </Text>
       </View>
 
       <View style={styles.metaWrap}>
-        <Text style={styles.time}>{timeAgo(match.lastMessageAt)}</Text>
+        <Text style={styles.time}>{timeAgo(match.lastMessageAt, t)}</Text>
         {match.unread ? (
           <LinearGradient
             colors={accent.duo}

@@ -1,6 +1,7 @@
 import { Platform } from 'react-native';
 import { File } from 'expo-file-system';
 import { PUBLIC_BUCKET, VERIFICATION_BUCKET, publicMediaUrl, supabase } from './supabase';
+import { AppError } from '../utils/appError';
 
 export function isLocalUri(uri: string): boolean {
   return !/^https?:\/\//i.test(uri);
@@ -31,12 +32,12 @@ function fileName(uri: string): string {
 async function readLocalFile(localUri: string): Promise<Uint8Array | Blob> {
   if (Platform.OS === 'web') {
     const response = await fetch(localUri);
-    if (!response.ok) throw new Error(`Could not read selected media (${response.status})`);
+    if (!response.ok) throw new AppError('media.fileUnavailable');
     return response.blob();
   }
 
   const file = new File(localUri);
-  if (!file.exists) throw new Error('The selected file is no longer available on this device.');
+  if (!file.exists) throw new AppError('media.fileUnavailable');
   return file.bytes();
 }
 

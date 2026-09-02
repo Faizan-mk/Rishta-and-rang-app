@@ -495,6 +495,7 @@ function SelectOrOtherField({
   onChange: (value: string) => void;
   placeholder?: string;
 }) {
+  const { t } = useLanguage();
   const selectedOption = value && options.includes(value) ? value : value ? OTHER_OPTION : null;
   const isOther = selectedOption === OTHER_OPTION;
 
@@ -509,10 +510,10 @@ function SelectOrOtherField({
       />
       {isOther && (
         <TextField
-          label={`${label} (Other)`}
+          label={t('editProfile.otherLabel', { label })}
           value={options.includes(value) ? '' : value}
           onChangeText={onChange}
-          placeholder="Enter your answer"
+          placeholder={t('common.enterAnswer')}
         />
       )}
     </>

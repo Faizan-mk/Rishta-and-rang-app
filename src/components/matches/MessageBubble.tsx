@@ -2,20 +2,24 @@ import React, { useMemo, useState } from 'react';
 import { Image, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import Animated, { FadeIn, ZoomIn } from 'react-native-reanimated';
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
-import type { ChatMessage } from '../../types/content';
+import type { ChatMessage, MessageReaction } from '../../types/content';
+import { REACTION_EMOJIS } from '../../types/content';
+import type { Translate } from '../../i18n';
 import { radius, spacing, typography } from '../../theme';
 import { scaleFont } from '../../theme/responsive';
-import { glow } from '../../theme/glow';
+import { glow, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
+import { useMatches } from '../../store/MatchesContext';
 
-function formatMessageTime(iso: string): string {
+function formatMessageTime(iso: string, t: Translate): string {
   const date = new Date(iso);
   let hours = date.getHours();
   const minutes = date.getMinutes();
-  const suffix = hours >= 12 ? 'PM' : 'AM';
+  const suffix = t(hours >= 12 ? 'chat.timePm' : 'chat.timeAm');
   hours = hours % 12 || 12;
   return `${hours}:${String(minutes).padStart(2, '0')} ${suffix}`;
 }
@@ -26,9 +30,38 @@ function formatDuration(totalSeconds: number): string {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
-export const MessageBubble = React.memo(function MessageBubble({ message }: { message: ChatMessage }) {
+/** One pill per distinct emoji, with how many people used it and whether I did. */
+function groupReactions(reactions: MessageReaction[], userId: string | undefined) {
+  const order: string[] = [];
+  const counts = new Map<string, { count: number; mine: boolean }>();
+  for (const reaction of reactions) {
+    const entry = counts.get(reaction.emoji);
+    if (entry) {
+      entry.count += 1;
+      entry.mine = entry.mine || reaction.userId === userId;
+    } else {
+      order.push(reaction.emoji);
+      counts.set(reaction.emoji, { count: 1, mine: reaction.userId === userId });
+    }
+  }
+  return order.map((emoji) => ({ emoji, ...counts.get(emoji)! }));
+}
+
+export const MessageBubble = React.memo(function MessageBubble({
+  message,
+  currentUserId,
+}: {
+  message: ChatMessage;
+  currentUserId?: string;
+}) {
   const { colors } = useTheme();
+  const { t, rtl } = useLanguage();
+  const { getReactions, toggleReaction } = useMatches();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  const reactions = getReactions(message.id);
+  const pills = useMemo(() => groupReactions(reactions, currentUserId), [reactions, currentUserId]);
 
   const textColor = message.fromMe ? styles.textMe : styles.textThem;
 
@@ -38,35 +71,115 @@ export const MessageBubble = React.memo(function MessageBubble({ message }: { me
   } else if (message.kind === 'image' && message.imageUri) {
     content = <ImageBubble uri={message.imageUri} styles={styles} colors={colors} />;
   } else if (message.text) {
-    content = <Text style={[styles.text, textColor]}>{message.text}</Text>;
+    content = <Text style={[styles.text, textColor, rtl && styles.rtlText]}>{message.text}</Text>;
   } else {
     return null;
   }
 
+  const onPickEmoji = (emoji: string) => {
+    setPickerOpen(false);
+    toggleReaction(message.id, emoji);
+  };
+
+  // Own messages sit on the side the language starts from the far end of, so
+  // the thread mirrors as a whole in Urdu rather than half of it.
+  const mineSide = rtl ? styles.rowThem : styles.rowMe;
+  const theirSide = rtl ? styles.rowMe : styles.rowThem;
+
   return (
-    <View style={[styles.row, message.fromMe ? styles.rowMe : styles.rowThem]}>
+    <View style={[styles.row, message.fromMe ? mineSide : theirSide]}>
       <View style={styles.bubbleWrap}>
         {/* Own messages are a lit gradient, replies a plain surface — the two
             sides of the thread never need re-reading to tell apart. */}
-        {message.fromMe ? (
-          <LinearGradient
-            colors={[colors.teal, colors.sage]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={[styles.bubble, styles.bubbleMe, glow(colors.teal, 0.35, 10, 4)]}
-          >
-            {content}
-          </LinearGradient>
-        ) : (
-          <View style={[styles.bubble, styles.bubbleThem]}>{content}</View>
+        <Pressable
+          onLongPress={() => setPickerOpen(true)}
+          delayLongPress={280}
+          accessibilityLabel={t('reactions.a11yReact')}
+        >
+          {message.fromMe ? (
+            <LinearGradient
+              colors={[colors.teal, colors.sage]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={[styles.bubble, styles.bubbleMe, glow(colors.teal, 0.35, 10, 4)]}
+            >
+              {content}
+            </LinearGradient>
+          ) : (
+            <View style={[styles.bubble, styles.bubbleThem]}>{content}</View>
+          )}
+        </Pressable>
+
+        {pills.length > 0 && (
+          <View style={[styles.reactionRow, message.fromMe ? styles.reactionRowMe : styles.reactionRowThem]}>
+            {pills.map(({ emoji, count, mine }) => (
+              <Pressable
+                key={emoji}
+                onPress={() => toggleReaction(message.id, emoji)}
+                accessibilityLabel={t('reactions.a11yPill', { emoji, count })}
+              >
+                <Animated.View entering={ZoomIn.duration(160)} style={[styles.pill, mine && styles.pillMine]}>
+                  <Text style={styles.pillEmoji}>{emoji}</Text>
+                  {count > 1 && <Text style={[styles.pillCount, mine && styles.pillCountMine]}>{count}</Text>}
+                </Animated.View>
+              </Pressable>
+            ))}
+          </View>
         )}
+
         <Text style={[styles.timestamp, message.fromMe ? styles.timestampMe : styles.timestampThem]}>
-          {formatMessageTime(message.sentAt)}
+          {formatMessageTime(message.sentAt, t)}
         </Text>
       </View>
+
+      <ReactionPicker
+        visible={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        onPick={onPickEmoji}
+        mine={new Set(reactions.filter((r) => r.userId === currentUserId).map((r) => r.emoji))}
+        styles={styles}
+        t={t}
+      />
     </View>
   );
 });
+
+function ReactionPicker({
+  visible,
+  onClose,
+  onPick,
+  mine,
+  styles,
+  t,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onPick: (emoji: string) => void;
+  mine: Set<string>;
+  styles: ReturnType<typeof makeStyles>;
+  t: Translate;
+}) {
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <Pressable style={styles.pickerOverlay} onPress={onClose}>
+        <Animated.View entering={ZoomIn.duration(180)} style={styles.pickerCard}>
+          <Text style={styles.pickerTitle}>{t('chat.reactionPickerTitle')}</Text>
+          <View style={styles.pickerRow}>
+            {REACTION_EMOJIS.map((emoji) => (
+              <Pressable
+                key={emoji}
+                onPress={() => onPick(emoji)}
+                style={[styles.pickerButton, mine.has(emoji) && styles.pickerButtonMine]}
+              >
+                <Text style={styles.pickerEmoji}>{emoji}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </Animated.View>
+      </Pressable>
+    </Modal>
+  );
+}
 
 function VoiceBubble({ uri, durationSec, fromMe, colors }: { uri: string; durationSec: number; fromMe: boolean; colors: Palette }) {
   const player = useAudioPlayer(uri);
@@ -126,9 +239,11 @@ function ImageBubble({ uri, styles, colors }: { uri: string; styles: ReturnType<
         <Image source={{ uri }} style={styles.image} onError={() => setFailed(true)} />
       </Pressable>
       <Modal visible={previewVisible} transparent animationType="fade" onRequestClose={() => setPreviewVisible(false)}>
-        <Pressable style={styles.previewOverlay} onPress={() => setPreviewVisible(false)}>
-          <Image source={{ uri }} style={styles.previewImage} resizeMode="contain" />
-        </Pressable>
+        <Animated.View entering={FadeIn.duration(140)} style={styles.previewFill}>
+          <Pressable style={styles.previewOverlay} onPress={() => setPreviewVisible(false)}>
+            <Image source={{ uri }} style={styles.previewImage} resizeMode="contain" />
+          </Pressable>
+        </Animated.View>
       </Modal>
     </>
   );
@@ -158,6 +273,7 @@ const makeStyles = (colors: Palette) =>
     text: { ...typography.body },
     textMe: { color: colors.textInverse },
     textThem: { color: colors.textPrimary },
+    rtlText: { textAlign: 'right', writingDirection: 'rtl' },
     image: { width: 200, height: 200, borderRadius: radius.md },
     imageFallback: {
       backgroundColor: colors.skeleton,
@@ -165,8 +281,63 @@ const makeStyles = (colors: Palette) =>
       justifyContent: 'center',
       gap: spacing.xs,
     },
+    previewFill: { flex: 1 },
     previewOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.9)', alignItems: 'center', justifyContent: 'center' },
     previewImage: { width: '100%', height: '80%' },
+
+    // Reactions hang off the bottom edge of the bubble they belong to, on the
+    // same side as the bubble, so a long thread still reads as two columns.
+    reactionRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 4 },
+    reactionRowMe: { justifyContent: 'flex-end' },
+    reactionRowThem: { justifyContent: 'flex-start' },
+    pill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
+      paddingHorizontal: spacing.xs + 2,
+      paddingVertical: 2,
+      borderRadius: radius.pill,
+      borderWidth: 1,
+      borderColor: colors.borderSoft,
+      backgroundColor: colors.surfaceElevated,
+    },
+    pillMine: { borderColor: withAlpha(colors.teal, 0.55), backgroundColor: withAlpha(colors.teal, 0.14) },
+    pillEmoji: { fontSize: scaleFont(13) },
+    pillCount: { ...typography.caption, fontSize: scaleFont(11), color: colors.textSecondary, fontWeight: '700' },
+    pillCountMine: { color: colors.teal },
+
+    pickerOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.45)',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: spacing.lg,
+    },
+    pickerCard: {
+      backgroundColor: colors.surfaceElevated,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: colors.borderSoft,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md,
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    pickerTitle: { ...typography.caption, color: colors.textSecondary, fontWeight: '700' },
+    // Never row-reverse: an emoji row has no reading order to mirror, and the
+    // same six always sit in the same places whichever language is on.
+    pickerRow: { flexDirection: 'row', gap: spacing.xs },
+    pickerButton: {
+      width: 44,
+      height: 44,
+      borderRadius: radius.pill,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: withAlpha(colors.textPrimary, 0.05),
+    },
+    pickerButtonMine: { backgroundColor: withAlpha(colors.teal, 0.18) },
+    pickerEmoji: { fontSize: scaleFont(24) },
+
     timestamp: { ...typography.caption, fontSize: scaleFont(10), marginTop: 3, fontWeight: '600' },
     timestampMe: { color: colors.textTertiary, textAlign: 'right' },
     timestampThem: { color: colors.textTertiary, textAlign: 'left' },

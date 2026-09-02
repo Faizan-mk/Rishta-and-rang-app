@@ -11,6 +11,8 @@ import { glow, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
+import { FEATURE_BUREAU } from '../../config/features';
+import { vocabularyLabel } from '../../i18n/vocabulary';
 import { SmartImage } from '../common/SmartImage';
 import { AccentHeading } from '../common/AccentHeading';
 
@@ -243,12 +245,12 @@ export function FaithSection({ profile }: { profile: BrowseProfile }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeSectionStyles(colors), [colors]);
   const chips: AttributeChipData[] = [];
-  if (profile.religion) chips.push({ icon: 'moon-outline', label: profile.religion });
-  if (profile.sect) chips.push({ icon: 'moon-outline', label: profile.sect });
+  if (profile.religion) chips.push({ icon: 'moon-outline', label: vocabularyLabel(profile.religion, t) });
+  if (profile.sect) chips.push({ icon: 'moon-outline', label: vocabularyLabel(profile.sect, t) });
   if (profile.practising !== undefined) {
     chips.push({ icon: 'moon-outline', label: t(profile.practising ? 'attributes.practisingYes' : 'attributes.practisingNo') });
   }
-  if (profile.prayerHabits) chips.push({ icon: 'time-outline', label: profile.prayerHabits });
+  if (profile.prayerHabits) chips.push({ icon: 'time-outline', label: vocabularyLabel(profile.prayerHabits, t) });
   if (profile.halalOnly) chips.push({ icon: 'restaurant-outline', label: t('attributes.halalOnly') });
   if (profile.smoking !== undefined) {
     chips.push({ icon: 'ban-outline', label: t(profile.smoking ? 'attributes.smoker' : 'attributes.nonSmoker') });
@@ -256,7 +258,7 @@ export function FaithSection({ profile }: { profile: BrowseProfile }) {
   if (profile.drinking !== undefined) {
     chips.push({ icon: 'wine-outline', label: t(profile.drinking ? 'attributes.drinks' : 'attributes.doesntDrink') });
   }
-  if (profile.religiousDress) chips.push({ icon: 'shirt-outline', label: profile.religiousDress });
+  if (profile.religiousDress) chips.push({ icon: 'shirt-outline', label: vocabularyLabel(profile.religiousDress, t) });
   if (chips.length === 0) return null;
 
   return (
@@ -277,7 +279,7 @@ export function FuturePlansSection({ profile }: { profile: BrowseProfile }) {
   const chips: AttributeChipData[] = [];
   if (profile.hasChildren === false) chips.push({ icon: 'happy-outline', label: t('attributes.hasChildrenNo') });
   if (profile.openToRelocate) chips.push({ icon: 'airplane-outline', label: t('discover.openToRelocate') });
-  if (profile.preferredCountry) chips.push({ icon: 'flag-outline', label: profile.preferredCountry });
+  if (profile.preferredCountry) chips.push({ icon: 'flag-outline', label: vocabularyLabel(profile.preferredCountry, t) });
   if (profile.careerPlans) chips.push({ icon: 'trending-up-outline', label: profile.careerPlans });
   if (chips.length === 0) return null;
 
@@ -335,11 +337,11 @@ export function EducationCareerSection({ profile }: { profile: BrowseProfile }) 
   const { colors } = useTheme();
   const styles = useMemo(() => makeSectionStyles(colors), [colors]);
   const chips: AttributeChipData[] = [];
-  if (profile.educationLevel) chips.push({ icon: 'school-outline', label: profile.educationLevel });
+  if (profile.educationLevel) chips.push({ icon: 'school-outline', label: vocabularyLabel(profile.educationLevel, t) });
   if (profile.education) chips.push({ icon: 'school-outline', label: profile.education });
-  if (profile.degree) chips.push({ icon: 'ribbon-outline', label: profile.degree });
-  if (profile.jobTitle) chips.push({ icon: 'briefcase-outline', label: profile.jobTitle });
-  if (profile.industry) chips.push({ icon: 'business-outline', label: profile.industry });
+  if (profile.degree) chips.push({ icon: 'ribbon-outline', label: vocabularyLabel(profile.degree, t) });
+  if (profile.jobTitle) chips.push({ icon: 'briefcase-outline', label: vocabularyLabel(profile.jobTitle, t) });
+  if (profile.industry) chips.push({ icon: 'business-outline', label: vocabularyLabel(profile.industry, t) });
   if (chips.length === 0) return null;
 
   return (
@@ -358,9 +360,9 @@ export function LanguagesBackgroundSection({ profile }: { profile: BrowseProfile
   const { colors } = useTheme();
   const styles = useMemo(() => makeSectionStyles(colors), [colors]);
   const chips: AttributeChipData[] = [];
-  (profile.languages ?? []).forEach((lang) => chips.push({ icon: 'language-outline', label: lang }));
-  if (profile.nationality) chips.push({ icon: 'flag-outline', label: profile.nationality });
-  if (profile.grewUpIn) chips.push({ icon: 'home-outline', label: t('discover.grewUpIn', { place: profile.grewUpIn }) });
+  (profile.languages ?? []).forEach((lang) => chips.push({ icon: 'language-outline', label: vocabularyLabel(lang, t) }));
+  if (profile.nationality) chips.push({ icon: 'flag-outline', label: vocabularyLabel(profile.nationality, t) });
+  if (profile.grewUpIn) chips.push({ icon: 'home-outline', label: t('discover.grewUpIn', { place: vocabularyLabel(profile.grewUpIn, t) }) });
   if (chips.length === 0) return null;
 
   return (
@@ -400,12 +402,18 @@ export function VerificationSection({ profile }: { profile: BrowseProfile }) {
         ? t('discover.verifiedPhotoDone', { name: profile.name })
         : t('discover.verifiedPhotoPending', { name: profile.name }),
     },
-    {
-      verified: Boolean(profile.bureauVerified),
-      text: profile.bureauVerified
-        ? t('discover.bureauDone', { name: profile.name })
-        : t('discover.bureauPending', { name: profile.name }),
-    },
+    // The bureau line is listed only while the badge means something — see
+    // FEATURE_BUREAU. Nothing behind it runs a check yet.
+    ...(FEATURE_BUREAU
+      ? [
+          {
+            verified: Boolean(profile.bureauVerified),
+            text: profile.bureauVerified
+              ? t('discover.bureauDone', { name: profile.name })
+              : t('discover.bureauPending', { name: profile.name }),
+          },
+        ]
+      : []),
   ];
 
   return (

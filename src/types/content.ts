@@ -140,6 +140,22 @@ export interface ChatMessage {
   imageUri?: string;
 }
 
+// A single emoji one person put on one message. Reactions are stored apart from
+// the message so a reaction never rewrites the message row (and so Realtime can
+// stream them on their own).
+export interface MessageReaction {
+  id: string;
+  messageId: string;
+  // Who reacted. Today that is always the signed-in member — this app mirrors
+  // each side of a thread into its own rows and has no cross-user write path.
+  userId: string;
+  emoji: string;
+  createdAt: string;
+}
+
+// The emoji offered by the long-press picker on a message bubble.
+export const REACTION_EMOJIS = ['❤️', '😂', '😍', '👍', '😢', '🙏'] as const;
+
 export type NotificationType = 'match' | 'like' | 'message' | 'rishta_request' | 'system';
 
 export interface NotificationItem {

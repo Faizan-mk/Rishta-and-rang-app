@@ -11,6 +11,7 @@ import { useLanguage } from '../../store/LanguageContext';
 import { useAuth } from '../../store/AuthContext';
 import { useTheme } from '../../store/ThemeContext';
 import { isValidEmail } from '../../utils/validation';
+import { errorMessage } from '../../utils/appError';
 import { radius, spacing, typography } from '../../theme';
 import { withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
@@ -41,7 +42,7 @@ export function LoginScreen() {
       await login(email, password);
       // RootNavigator swaps to AppNavigator automatically once `user` is set.
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Something went wrong.');
+      setError(errorMessage(e, t));
     } finally {
       setLoading(false);
     }

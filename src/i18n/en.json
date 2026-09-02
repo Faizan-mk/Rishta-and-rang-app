@@ -16,7 +16,13 @@
     "reset": "Reset",
     "noResults": "No results found.",
     "send": "Send",
-    "confirm": "Confirm"
+    "confirm": "Confirm",
+    "search": "Search...",
+    "other": "Other",
+    "enterAnswer": "Enter your answer",
+    "somethingWentWrong": "Something went wrong. Please try again.",
+    "readOnline": "Read the full version online",
+    "linkUnavailable": "That link is not available yet."
   },
   "login": {
     "title": "Welcome back",
@@ -72,7 +78,10 @@
     "passwordRequirementLower": "One lowercase letter",
     "passwordRequirementUpper": "One uppercase letter",
     "passwordRequirementNumber": "One number",
-    "passwordRequirementSpecial": "One special character"
+    "passwordRequirementSpecial": "One special character",
+    "ageAndTermsLabel": "I confirm I am 18 or older, and I accept the Terms of Service and Privacy Policy.",
+    "reviewLegal": "Read the terms & privacy policy",
+    "mustAcceptLegal": "Confirm you are 18 or older and accept the terms to continue."
   },
   "personalDetails": {
     "title": "Personal details",
@@ -275,7 +284,9 @@
     "switchTo": "Go to {mode}",
     "typeMessage": "Type a message...",
     "itsAMatch": "It's a Match!",
-    "youAndLikedEachOther": "You and {name} liked each other."
+    "youAndLikedEachOther": "You and {name} liked each other.",
+    "previewPhoto": "Photo",
+    "previewVoice": "Voice message"
   },
   "chat": {
     "moveToRishta": "Move to Rishta",
@@ -292,7 +303,10 @@
     "reportSentTitle": "Report submitted",
     "reportSentBody": "Thanks — our safety team will review this conversation shortly.",
     "recording": "Recording...",
-    "photoUnavailable": "Photo unavailable"
+    "photoUnavailable": "Photo unavailable",
+    "timeAm": "AM",
+    "timePm": "PM",
+    "reactionPickerTitle": "React with"
   },
   "profile": {
     "title": "Profile",
@@ -375,7 +389,8 @@
     "nationality": "Nationality",
     "grewUpIn": "Where you grew up",
     "country": "Country",
-    "makePrimary": "Make primary"
+    "makePrimary": "Make primary",
+    "otherLabel": "{label} (other)"
   },
   "rishtaProfile": {
     "title": "Matrimonial details",
@@ -532,11 +547,110 @@
   },
   "legal": {
     "title": "Privacy policy & terms",
-    "placeholderNotice": "This is placeholder text for development. Replace it with your reviewed, legally-approved Privacy Policy and Terms of Service — and a hosted URL for each — before submitting to the App Store or Play Store.",
+    "lastUpdated": "Last updated 2 September 2026",
+    "readPrivacyOnline": "Open the privacy policy in your browser",
+    "readTermsOnline": "Open the terms of service in your browser",
+    "contactLine": "Questions about either document? Email {email}.",
     "privacyPolicyTitle": "Privacy policy",
-    "privacyPolicyBody": "Rishta & Rang respects your privacy. This section should describe what data is collected (profile details, photos, verification documents, messages), how it's stored and used, who it may be shared with, how long it's retained, and how users can request deletion of their data and account.",
     "termsTitle": "Terms of service",
-    "termsBody": "By using Rishta & Rang, you agree to these terms. This section should cover eligibility (minimum age, one account per person), acceptable use, prohibited conduct (harassment, fake profiles, impersonation), content ownership, subscription and billing terms for Explore+, and how accounts may be suspended or terminated."
+    "privacyIntro": "Rishta & Rang is a matchmaking app for adults in Pakistan. This policy explains what we collect from you, why we need it, who else can see it, and how you get it deleted.",
+    "termsIntro": "These terms are the agreement between you and Rishta & Rang. By creating an account you accept them. If you do not accept them, do not use the app.",
+    "privacy": {
+      "whoWeAre": {
+        "title": "1. Who we are",
+        "body": "Rishta & Rang (\"we\", \"us\") operates this app and is the data controller for the information described below. You can reach us at {email} about anything in this policy, including a request to see or delete your data."
+      },
+      "dataWeCollect": {
+        "title": "2. What we collect",
+        "body": "Account details: your email address and password (stored only as a salted hash — we never see it).\n\nProfile details: your name, date of birth, gender, city, bio, what you are looking for, and the matrimonial fields you choose to fill in (religion, sect, education, family background, readiness).\n\nPhotos: the profile photos you upload.\n\nVerification selfie: the selfie taken during signup, used to check a real person is behind the profile. It is never shown on your profile or to other members.\n\nCNIC / ID: your CNIC number and, if you upload one, a photo of the card. Used only to check the format and to support a future identity review. Never shown to other members.\n\nLocation: the city you select. If you allow it, an approximate distance so nearby profiles can be ranked first. We do not track or store your precise location history.\n\nChat: the messages, voice notes, and photos you send in the app, and who you sent them to.\n\nUsage: when you last opened the app, who you liked, who you blocked, and what you reported — the record safety review runs on."
+      },
+      "howWeUse": {
+        "title": "3. Why we use it",
+        "body": "To create and run your account, show your profile to other members, suggest matches, deliver your messages, apply your daily like limit and Explore+ entitlements, review reports and keep the community safe, and meet legal obligations.\n\nWe do not sell your data. We do not use your photos, selfie, CNIC, or messages for advertising, and we do not use them to train machine-learning models."
+      },
+      "legalBasis": {
+        "title": "4. Your consent",
+        "body": "You give us your profile, photos, selfie, and CNIC voluntarily, to be matched. You can withdraw that consent at any time by deleting your account. We keep a small amount of data after deletion only where the law or a live safety investigation requires it — see Retention."
+      },
+      "sharing": {
+        "title": "5. Who else sees it",
+        "body": "Other members see your profile: name, age, city, photos, bio, and the profile fields you filled in. They do not see your email, password, CNIC, verification selfie, or exact location.\n\nSupabase is our data processor. Your account, profile, messages, and uploaded files are stored on Supabase infrastructure under a processing agreement; Supabase processes this data on our instructions and does not use it for its own purposes.\n\nWe disclose data to law enforcement only where we are legally required to, or where it is necessary to investigate a credible threat to someone's safety."
+      },
+      "retention": {
+        "title": "6. How long we keep it",
+        "body": "Your account data stays while your account is open. When you delete your account, your profile, photos, matches, and messages are deleted from our live systems, and encrypted backups roll off within 30 days.\n\nTwo exceptions: records connected to an open safety report or an account we banned are kept for up to 12 months so the same person cannot immediately return; and records the law requires us to retain are kept for the period the law specifies."
+      },
+      "yourRights": {
+        "title": "7. Your rights",
+        "body": "You can see and correct your profile data at any time from Edit profile.\n\nYou can delete your account, and everything above with it, from Settings → Privacy & safety → Delete account. It takes effect immediately and cannot be undone.\n\nYou can also ask us for a copy of your data, ask us to correct it, or object to a specific use, by emailing {email}. We answer within 30 days."
+      },
+      "security": {
+        "title": "8. How we protect it",
+        "body": "Data is encrypted in transit. Passwords are hashed and never stored in readable form. Verification documents live in a private storage bucket that only you and our review process can read; profile photos live in a bucket that only signed-in members can read. Access is enforced by row-level security rules on every table, so one account cannot read another's messages or documents.\n\nNo system is perfectly secure. If a breach affects your data, we will tell you and the relevant authority as required by law."
+      },
+      "ageLimit": {
+        "title": "9. Adults only",
+        "body": "Rishta & Rang is for people aged 18 and over. We ask for your date of birth at signup and refuse accounts under 18. If we learn that an account belongs to a minor, we delete it and its data. If you believe a minor is using the app, email {email}."
+      },
+      "changes": {
+        "title": "10. Changes to this policy",
+        "body": "If we change this policy in a way that materially affects you, we will tell you in the app before the change takes effect. The date at the top is always the version you are reading."
+      },
+      "contact": {
+        "title": "11. Contact us",
+        "body": "Email {email} with any privacy question, data request, or complaint. If you are not satisfied with our answer, you may complain to your local data-protection authority."
+      }
+    },
+    "terms": {
+      "eligibility": {
+        "title": "1. You must be 18",
+        "body": "You may use Rishta & Rang only if you are 18 or older and legally able to enter this agreement. You confirm your age at signup. Creating an account while under 18, or on behalf of someone under 18, is a breach of these terms and we will delete the account."
+      },
+      "yourAccount": {
+        "title": "2. Your account",
+        "body": "One account per person. Give accurate details, use photos that are genuinely of you, and keep your password to yourself. You are responsible for everything done through your account. Tell us at {email} if you think someone else has access to it."
+      },
+      "acceptableUse": {
+        "title": "3. How to use the app",
+        "body": "Rishta & Rang is for meeting people for friendship, a relationship, or marriage. Treat other members the way you would want your own family treated. Take conversations at the pace both of you are comfortable with, and respect a \"no\" the first time."
+      },
+      "prohibited": {
+        "title": "4. What is not allowed",
+        "body": "You may not: impersonate anyone or use another person's photos; harass, threaten, stalk, or abuse another member; post or send sexual content involving minors, or anything involving a minor at all; solicit money, investments, or financial details from members; send commercial or promotional content; post hate speech or content attacking someone for their religion, sect, ethnicity, gender, or disability; share another member's private information, photos, or messages outside the app; use bots, scrapers, or automated tools against the service; or attempt to access accounts, data, or systems that are not yours.\n\nWe remove content and suspend or terminate accounts that break these rules."
+      },
+      "contentLicence": {
+        "title": "5. Your content",
+        "body": "Your photos and words remain yours. By posting them you give us permission to host, store, and display them inside the app for the purpose of running the service. That permission ends when you delete the content or your account. You are responsible for having the right to post whatever you upload."
+      },
+      "safety": {
+        "title": "6. Safety and reporting",
+        "body": "Block and report anyone who makes you uncomfortable — both are available from the chat screen and from any profile. Our safety team reviews every report.\n\nWe are not able to run criminal background checks on members, and a verification badge is not a guarantee about anyone's character or intentions. Meet in public. Tell someone you trust where you are going. Never send money to a member."
+      },
+      "subscriptions": {
+        "title": "7. Explore+ and payments",
+        "body": "Explore+ is an optional paid subscription. Prices, what is included, and the billing period are shown before you buy. Subscriptions renew automatically until you cancel, and you cancel through the app store you bought it from — that store, not us, handles billing and refunds under its own policy. Losing your subscription does not delete your account."
+      },
+      "termination": {
+        "title": "8. Ending the agreement",
+        "body": "You can delete your account at any time from Settings → Privacy & safety.\n\nWe can suspend or terminate an account that breaches these terms, that we reasonably believe is fraudulent or unsafe, or where we are required to by law. Where it is safe and lawful to do so, we will tell you why. Serious breaches — anything involving a minor, credible threats, or fraud — end the account immediately and permanently."
+      },
+      "disclaimers": {
+        "title": "9. What we do not promise",
+        "body": "We provide the app as it is. We do not promise that you will find a match, that any member is who they say they are, or that the service will be uninterrupted or error-free. Members are responsible for their own conduct, on and off the app."
+      },
+      "liability": {
+        "title": "10. Limits on our liability",
+        "body": "To the extent the law allows, we are not liable for indirect or consequential loss, or for the conduct of other members. Nothing here limits liability that cannot be limited by law, including for death or personal injury caused by our negligence, or for fraud."
+      },
+      "disputes": {
+        "title": "11. Disputes and governing law",
+        "body": "These terms are governed by the laws of the Islamic Republic of Pakistan, and the courts of Pakistan have jurisdiction over any dispute.\n\nBefore going to court, please email {email} — most complaints are resolved faster that way, and we will respond within 30 days."
+      },
+      "changes": {
+        "title": "12. Changes to these terms",
+        "body": "We will tell you in the app before a material change takes effect. Continuing to use the app after that date means you accept the updated terms; if you do not, delete your account."
+      }
+    }
   },
   "explore": {
     "title": "Explore",
@@ -647,5 +761,168 @@
     "boostsLeft": "You now have {count} Boosts left.",
     "start": "Boost me now",
     "getMore": "Get more Boosts"
+  },
+  "time": {
+    "justNow": "just now",
+    "minutesAgo": "{count}m ago",
+    "hoursAgo": "{count}h ago",
+    "daysAgo": "{count}d ago",
+    "weeksAgo": "{count}w ago"
+  },
+  "calendar": {
+    "label": "{month} {year}",
+    "weekdaySun": "S",
+    "weekdayMon": "M",
+    "weekdayTue": "T",
+    "weekdayWed": "W",
+    "weekdayThu": "T",
+    "weekdayFri": "F",
+    "weekdaySat": "S",
+    "month0": "January",
+    "month1": "February",
+    "month2": "March",
+    "month3": "April",
+    "month4": "May",
+    "month5": "June",
+    "month6": "July",
+    "month7": "August",
+    "month8": "September",
+    "month9": "October",
+    "month10": "November",
+    "month11": "December"
+  },
+  "authErrors": {
+    "emailTaken": "That email is already registered. Try logging in instead.",
+    "weakPassword": "Password is too weak — use at least 6 characters.",
+    "invalidEmail": "That email address looks invalid.",
+    "signupFailed": "Could not create the account.",
+    "confirmEmailFirst": "Account created — check your email for the confirmation link before you continue.",
+    "profileLoadFailed": "Could not load the account that was just created.",
+    "profileCreateFailed": "Could not create your profile.",
+    "profileReloadFailed": "Could not reload the updated profile.",
+    "notSignedIn": "You are not signed in.",
+    "emailNotConfirmed": "Confirm your email first — check your inbox and tap the link.",
+    "invalidCredentials": "Incorrect email or password.",
+    "accountDisabled": "This account has been disabled.",
+    "clockSkew": "Could not verify your session — the server clock is out of sync. Try again in a minute.",
+    "resetLinkExpired": "This reset link is no longer valid. Request a new one.",
+    "resetLinkSpent": "This reset link is incomplete or has already been used. Request a new one."
+  },
+  "media": {
+    "fileUnavailable": "The selected file is no longer available on this device."
+  },
+  "reactions": {
+    "add": "Add a reaction",
+    "hint": "Long-press a message to react",
+    "a11yReact": "React to this message",
+    "a11yPill": "{emoji}, {count} reactions"
+  },
+  "vocab": {
+    "karachi": "Karachi",
+    "lahore": "Lahore",
+    "islamabad": "Islamabad",
+    "rawalpindi": "Rawalpindi",
+    "faisalabad": "Faisalabad",
+    "multan": "Multan",
+    "peshawar": "Peshawar",
+    "quetta": "Quetta",
+    "sialkot": "Sialkot",
+    "gujranwala": "Gujranwala",
+    "hyderabad": "Hyderabad",
+    "bahawalpur": "Bahawalpur",
+    "sargodha": "Sargodha",
+    "sukkur": "Sukkur",
+    "abbottabad": "Abbottabad",
+    "sahiwal": "Sahiwal",
+    "mardan": "Mardan",
+    "gujrat": "Gujrat",
+    "kasur": "Kasur",
+    "rahimYarKhan": "Rahim Yar Khan",
+    "jhelum": "Jhelum",
+    "larkana": "Larkana",
+    "sheikhupura": "Sheikhupura",
+    "mirpurAjk": "Mirpur (AJK)",
+    "gilgit": "Gilgit",
+    "other": "Other",
+    "preferNotToSay": "Prefer not to say",
+    "sunni": "Sunni",
+    "shia": "Shia",
+    "ahmadi": "Ahmadi",
+    "ismaili": "Ismaili",
+    "bohra": "Bohra",
+    "deobandi": "Deobandi",
+    "barelvi": "Barelvi",
+    "salafiAhleHadith": "Salafi/Ahle Hadith",
+    "islam": "Islam",
+    "christianity": "Christianity",
+    "hinduism": "Hinduism",
+    "sikhism": "Sikhism",
+    "matricOLevel": "Matric / O-Level",
+    "intermediateALevel": "Intermediate / A-Level",
+    "bachelorS": "Bachelor's",
+    "masterS": "Master's",
+    "mphil": "MPhil",
+    "phd": "PhD",
+    "diploma": "Diploma",
+    "religiousEducation": "Religious education",
+    "ba": "BA",
+    "bCom": "B.Com",
+    "bba": "BBA",
+    "bsComputerScience": "BS Computer Science",
+    "bsEngineering": "BS Engineering",
+    "llb": "LLB",
+    "mbbs": "MBBS",
+    "bds": "BDS",
+    "ma": "MA",
+    "mCom": "M.Com",
+    "mba": "MBA",
+    "msMphil": "MS / MPhil",
+    "student": "Student",
+    "softwareEngineer": "Software Engineer",
+    "doctor": "Doctor",
+    "engineer": "Engineer",
+    "teacher": "Teacher",
+    "businessOwner": "Business Owner",
+    "banker": "Banker",
+    "lawyer": "Lawyer",
+    "governmentOfficer": "Government Officer",
+    "healthcareProfessional": "Healthcare Professional",
+    "armedForces": "Armed Forces",
+    "homemaker": "Homemaker",
+    "retired": "Retired",
+    "informationTechnology": "Information Technology",
+    "healthcare": "Healthcare",
+    "education": "Education",
+    "financeAndBanking": "Finance and Banking",
+    "engineering": "Engineering",
+    "law": "Law",
+    "government": "Government",
+    "businessAndTrade": "Business and Trade",
+    "telecommunications": "Telecommunications",
+    "manufacturing": "Manufacturing",
+    "mediaAndMarketing": "Media and Marketing",
+    "realEstate": "Real Estate",
+    "agriculture": "Agriculture",
+    "urdu": "Urdu",
+    "english": "English",
+    "punjabi": "Punjabi",
+    "sindhi": "Sindhi",
+    "pashto": "Pashto",
+    "balochi": "Balochi",
+    "saraiki": "Saraiki",
+    "hindko": "Hindko",
+    "kashmiri": "Kashmiri",
+    "arabic": "Arabic",
+    "pakistani": "Pakistani",
+    "dualNationality": "Dual nationality",
+    "pakistan": "Pakistan",
+    "unitedArabEmirates": "United Arab Emirates",
+    "saudiArabia": "Saudi Arabia",
+    "qatar": "Qatar",
+    "bahrain": "Bahrain",
+    "unitedKingdom": "United Kingdom",
+    "unitedStates": "United States",
+    "canada": "Canada",
+    "australia": "Australia"
   }
 }

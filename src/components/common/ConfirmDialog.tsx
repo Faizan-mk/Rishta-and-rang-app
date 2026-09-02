@@ -43,7 +43,7 @@ export function ConfirmDialog({
             <Text style={[styles.title, rtl && styles.rtlText]}>{title}</Text>
             {message ? <Text style={[styles.message, rtl && styles.rtlText]}>{message}</Text> : null}
 
-            <View style={styles.actions}>
+            <View style={[styles.actions, rtl && styles.actionsRtl]}>
               {!confirmOnly && (
                 <Button label={cancelLabel ?? t('common.cancel')} variant="secondary" onPress={onCancel} style={styles.actionButton} />
               )}
@@ -87,6 +87,8 @@ const makeStyles = (colors: Palette) =>
     title: { ...typography.h3, color: colors.textPrimary, marginBottom: spacing.xs, fontWeight: '800' },
     message: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg },
     actions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
+    // Confirm keeps the position closest to the reading edge in both directions.
+    actionsRtl: { flexDirection: 'row-reverse' },
     actionButton: { flex: 1 },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   });

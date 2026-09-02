@@ -13,6 +13,7 @@ import { useTheme } from '../../store/ThemeContext';
 import { useDialog } from '../../store/DialogContext';
 import { useOnboarding } from '../../store/onboardingStore';
 import { analyzeIdCardPhoto } from '../../utils/idCardImageCheck';
+import { errorMessage } from '../../utils/appError';
 import { radius, spacing, typography } from '../../theme';
 import { scaleFont } from '../../theme/responsive';
 import { glow, withAlpha } from '../../theme/glow';
@@ -99,7 +100,7 @@ export function SelfieVerificationScreen() {
       });
       // The root layout swaps to the (tabs) group automatically once `user` is set.
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Something went wrong.');
+      setError(errorMessage(e, t));
       setSubmitting(false);
     }
   };
