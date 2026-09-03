@@ -47,7 +47,7 @@ export function ProfileCard({ photo, name, age, city, kind, onPress, action }: P
       </LinearGradient>
       <View style={styles.body}>
         <Text style={[styles.name, rtl && styles.rtlText]}>
-          {name}, {age}
+          {name}
         </Text>
         <Text style={[styles.meta, rtl && styles.rtlText]}>{vocabularyLabel(city, t)}</Text>
         <Badge

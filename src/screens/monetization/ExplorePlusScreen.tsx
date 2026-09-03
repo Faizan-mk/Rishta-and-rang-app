@@ -273,7 +273,7 @@ export function ExplorePlusScreen() {
                 )}
                 {isPro && (
                   <View style={styles.admirerNameWrap}>
-                    <Text style={styles.admirerName}>{profile.name}, {profile.age}</Text>
+                    <Text style={styles.admirerName}>{profile.name}</Text>
                   </View>
                 )}
                 </View>

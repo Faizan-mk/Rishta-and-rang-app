@@ -71,7 +71,7 @@ export const RishtaListingCard = React.memo(function RishtaListingCard({ profile
       <View style={styles.body}>
         <View style={styles.headerRow}>
           <Text style={[styles.name, rtl && styles.rtlText]}>
-            {profile.name}, {profile.age}
+            {profile.name}
           </Text>
           {profile.readiness === 'ready_now' && <Badge label={t(READINESS_KEY[profile.readiness])} tone="rishta" />}
         </View>

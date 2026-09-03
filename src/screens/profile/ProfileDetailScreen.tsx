@@ -195,7 +195,7 @@ export function ProfileDetailScreen() {
 
         <Animated.View entering={FadeInUp.duration(380)} style={styles.content}>
           <Text style={[styles.name, rtl && styles.rtlText]}>
-            {profile.name}, {profile.age}
+            {profile.name}
           </Text>
           <View style={styles.metaRow}>
             <Ionicons name="location" size={14} color={detailRamp[0]} />
