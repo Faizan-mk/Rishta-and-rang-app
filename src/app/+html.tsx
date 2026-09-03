@@ -34,6 +34,13 @@ const resetStyles = `
     outline: none;
     outline-style: none;
     box-shadow: none !important;
+    /* The UA stylesheet's own 1px border, which `appearance: none` leaves
+       behind. It is what drew a square box inside the rounded search pill: the
+       field's border belongs to the row around the input, and the input itself
+       should have none. Plain element selector, not `!important`, so a
+       TextInput that really does set a border in its RN styles still wins —
+       react-native-web's class rules outrank this one. */
+    border: 0;
   }
   input:focus, textarea:focus {
     outline: none !important;
