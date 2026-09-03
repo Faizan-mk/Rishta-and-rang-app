@@ -61,6 +61,7 @@ export function BrowseFiltersSheet({ visible, filters, mode, onChange, onClose }
         onChange={(city) => onChange({ ...filters, city })}
         allowAll
         allLabel={t('discover.filterAnyCity')}
+        allowCustom
       />
 
       <Text style={styles.groupLabel}>{t('discover.filterIntent')}</Text>

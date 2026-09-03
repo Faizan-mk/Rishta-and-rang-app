@@ -21,6 +21,7 @@ import { useAuth } from '../../store/AuthContext';
 import { useTheme } from '../../store/ThemeContext';
 import { useDialog } from '../../store/DialogContext';
 import { usePrivacy } from '../../store/PrivacyContext';
+import { errorMessage } from '../../utils/appError';
 import type { UserProfile } from '../../types/user';
 import { radius, spacing, typography } from '../../theme';
 import { glow, modeAccent, withAlpha } from '../../theme/glow';
@@ -212,43 +213,49 @@ export function EditProfileScreen() {
 
   const onSave = async () => {
     setSaving(true);
-    const heightParsed = Number(details.heightCm);
-    await updateUser({
-      ...user,
-      bio,
-      city: city ?? '',
-      photos,
-      dating: { ...user.dating, vibeTags },
-      heightCm: details.heightCm && !Number.isNaN(heightParsed) ? heightParsed : undefined,
-      maritalStatus: details.maritalStatus,
-      hasChildren: details.hasChildren,
-      occupation: details.occupation.trim() || undefined,
-      practising: details.practising,
-      prayerHabits: details.prayerHabits.trim() || undefined,
-      halalOnly: details.halalOnly,
-      smoking: details.smoking,
-      drinking: details.drinking,
-      religiousDress: details.religiousDress.trim() || undefined,
-      openToRelocate: details.openToRelocate,
-      preferredCountry: details.preferredCountry.trim() || undefined,
-      careerPlans: details.careerPlans.trim() || undefined,
-      educationLevel: details.educationLevel.trim() || undefined,
-      degree: details.degree.trim() || undefined,
-      jobTitle: details.jobTitle.trim() || undefined,
-      industry: details.industry.trim() || undefined,
-      languages: details.languagesText
-        .split(',')
-        .map((l) => l.trim())
-        .filter(Boolean),
-      nationality: details.nationality.trim() || undefined,
-      grewUpIn: details.grewUpIn.trim() || undefined,
-      country: details.country.trim() || undefined,
-      voiceIntroUri: voiceUri,
-      voiceIntroDurationSec: voiceDuration,
-      videoIntroUri: videoUri,
-    });
-    setSaving(false);
-    router.back();
+    try {
+      const heightParsed = Number(details.heightCm);
+      await updateUser({
+        ...user,
+        bio,
+        city: city ?? '',
+        photos,
+        dating: { ...user.dating, vibeTags },
+        heightCm: details.heightCm && !Number.isNaN(heightParsed) ? heightParsed : undefined,
+        maritalStatus: details.maritalStatus,
+        hasChildren: details.hasChildren,
+        occupation: details.occupation.trim() || undefined,
+        practising: details.practising,
+        prayerHabits: details.prayerHabits.trim() || undefined,
+        halalOnly: details.halalOnly,
+        smoking: details.smoking,
+        drinking: details.drinking,
+        religiousDress: details.religiousDress.trim() || undefined,
+        openToRelocate: details.openToRelocate,
+        preferredCountry: details.preferredCountry.trim() || undefined,
+        careerPlans: details.careerPlans.trim() || undefined,
+        educationLevel: details.educationLevel.trim() || undefined,
+        degree: details.degree.trim() || undefined,
+        jobTitle: details.jobTitle.trim() || undefined,
+        industry: details.industry.trim() || undefined,
+        languages: details.languagesText
+          .split(',')
+          .map((l) => l.trim())
+          .filter(Boolean),
+        nationality: details.nationality.trim() || undefined,
+        grewUpIn: details.grewUpIn.trim() || undefined,
+        country: details.country.trim() || undefined,
+        voiceIntroUri: voiceUri,
+        voiceIntroDurationSec: voiceDuration,
+        videoIntroUri: videoUri,
+      });
+      await notify({ title: t('profile.savedTitle'), message: t('profile.savedBody') });
+      setSaving(false);
+      router.back();
+    } catch (e) {
+      setSaving(false);
+      await notify({ title: t('common.somethingWentWrong'), message: errorMessage(e, t) });
+    }
   };
 
   return (
@@ -382,7 +389,7 @@ export function EditProfileScreen() {
           style={styles.bioInput}
         />
 
-        <SelectField label={t('editProfile.city')} value={city} options={PAKISTAN_CITIES} onChange={setCity} placeholder={t('editProfile.city')} />
+        <SelectField label={t('editProfile.city')} value={city} options={PAKISTAN_CITIES} onChange={setCity} placeholder={t('editProfile.city')} allowCustom />
       </FadeIn>
 
       <FadeIn delay={140}>

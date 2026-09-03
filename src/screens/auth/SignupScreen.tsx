@@ -182,7 +182,7 @@ export function SignupScreen() {
           maxLength={15}
         />
 
-        <SelectField label={t('personalDetails.city')} value={city} options={PAKISTAN_CITIES} onChange={setCity} placeholder={t('personalDetails.city')} />
+        <SelectField label={t('personalDetails.city')} value={city} options={PAKISTAN_CITIES} onChange={setCity} placeholder={t('personalDetails.city')} allowCustom />
 
         <TextField
           label={t('personalDetails.bio')}

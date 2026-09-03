@@ -101,8 +101,9 @@ const makeStyles = (colors: Palette) =>
       fontSize: typography.body.fontSize,
       color: colors.textPrimary,
       textAlignVertical: 'top',
+      outlineWidth: 0,
     },
-    inputFocused: { borderColor: colors.teal, backgroundColor: withAlpha(colors.teal, 0.06) },
+    inputFocused: { borderColor: colors.teal },
     charCount: { ...typography.caption, color: colors.textTertiary, textAlign: 'right', marginTop: spacing.xs },
     charCountRtl: { textAlign: 'left' },
     submit: {
