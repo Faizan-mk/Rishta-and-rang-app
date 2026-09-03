@@ -1,20 +1,29 @@
 // send-push — the one place a notification actually leaves the building.
 //
-// Skeleton, deliberately: it takes a recipient and an event, checks that
-// person's notification_prefs, looks up their devices, and calls Expo. What it
-// does NOT do yet is decide *when* to fire — nothing calls it automatically.
-// The triggers (new match / new message / new like) land once Day 5-6 makes
-// those events real server-side; until then this is invoked by hand, which is
-// also how you verify it works.
+// Two ways in, and they trust the caller very differently.
+//
+//   · service_role (curl, a cron, a future server job): the body is taken as
+//     written — recipient, title and text. This is the manual path, and how you
+//     test the pipeline end to end.
+//
+//   · a signed-in member (the app): the body is NOT trusted. `userId` and
+//     `title` are ignored and worked out here instead, from a relationship the
+//     caller demonstrably has — a match they are in, a like they actually sent.
+//     Otherwise any member could push any text to any stranger, which is worse
+//     than having no notifications at all.
+//
+// What it does either way: check the recipient's notification_prefs, look up
+// their devices, hand the batch to Expo, and prune tokens Expo reports as dead.
 //
 // Deploy:
 //   supabase functions deploy send-push
 //
-// Invoke (service_role key — never ship this key in the app):
-//   curl -X POST 'https://<project>.supabase.co/functions/v1/send-push' \
-//     -H 'Authorization: Bearer <SERVICE_ROLE_KEY>' \
-//     -H 'Content-Type: application/json' \
-//     -d '{"userId":"<uuid>","event":"message","title":"Ayesha","body":"Assalam o alaikum"}'
+// Manual invoke (service_role key — never ship this key in the app):
+//   curl -X POST 'https://<project>.supabase.co/functions/v1/send-push' //     -H 'Authorization: Bearer <SERVICE_ROLE_KEY>' //     -H 'Content-Type: application/json' //     -d '{"userId":"<uuid>","event":"message","title":"Ayesha","body":"Assalam o alaikum"}'
+//
+// From the app (the member's own session token is already attached by
+// supabase-js):
+//   supabase.functions.invoke('send-push', { body: { event: 'message', matchId, preview } })
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -31,12 +40,58 @@ const PREF_COLUMN: Record<string, string> = {
 };
 
 interface SendPushBody {
-  userId: string;
   event: keyof typeof PREF_COLUMN | string;
-  title: string;
-  body: string;
+  // Service-role path only: taken as written.
+  userId?: string;
+  title?: string;
+  body?: string;
+  // Member path: the relationship the notification hangs off. `matchId` for a
+  // message or a rishta request, `targetId` for a like or a new match.
+  matchId?: string;
+  targetId?: string;
+  // The message's own preview text. Only used for `message`, and only from the
+  // person who wrote it, so there is nothing here they could not already send.
+  preview?: string;
   // Routed on tap by the app's notification handler.
   data?: Record<string, unknown>;
+}
+
+// The fixed lines, in the language the recipient reads the app in. A push is
+// often the only thing a member sees of an event, so it should not arrive in
+// English because that is what the server happens to speak.
+const COPY: Record<string, Record<string, string>> = {
+  match: {
+    en: 'You matched! Say salaam.',
+    ur: 'آپ کی میچ ہو گئی — سلام کہیے۔',
+    roman: 'Aap ki match ho gayi — salaam kahiye.',
+  },
+  like: {
+    en: 'liked your profile.',
+    ur: 'نے آپ کی پروفائل پسند کی۔',
+    roman: 'ne aap ki profile pasand ki.',
+  },
+  rishta_request: {
+    en: 'would like to move to Rishta stage.',
+    ur: 'آپ کے ساتھ رشتہ مرحلے میں جانا چاہتے ہیں۔',
+    roman: 'aap ke sath Rishta marhale mein jana chahte hain.',
+  },
+  message: {
+    en: 'sent you a message.',
+    ur: 'نے آپ کو پیغام بھیجا۔',
+    roman: 'ne aap ko paigham bheja.',
+  },
+};
+
+function copyFor(event: string, language: string | null | undefined): string {
+  const lines = COPY[event];
+  if (!lines) return '';
+  return lines[language ?? 'en'] ?? lines.en;
+}
+
+/** A message preview is the sender's own words, but it still has to fit. */
+function clamp(text: string, max = 140): string {
+  const trimmed = text.trim();
+  return trimmed.length <= max ? trimmed : `${trimmed.slice(0, max - 1)}…`;
 }
 
 function json(payload: unknown, status = 200): Response {
@@ -56,17 +111,103 @@ Deno.serve(async (req: Request) => {
     return json({ error: 'invalid_json' }, 400);
   }
 
-  const { userId, event, title, body, data } = payload ?? {};
-  if (!userId || !event || !title || !body) {
-    return json({ error: 'missing_fields', required: ['userId', 'event', 'title', 'body'] }, 400);
-  }
+  const { event, data } = payload ?? {};
+  if (!event) return json({ error: 'missing_fields', required: ['event'] }, 400);
+
+  const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
   // Service role: this function has to read another member's prefs and tokens,
   // which is exactly what RLS stops the app from doing.
-  const supabase = createClient(
-    Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-  );
+  const supabase = createClient(supabaseUrl, serviceKey);
+
+  const bearer = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '').trim();
+  const isService = Boolean(serviceKey) && bearer === serviceKey;
+
+  let userId = payload.userId;
+  let title = payload.title;
+  let body = payload.body;
+  let routing: Record<string, unknown> = {};
+
+  if (!isService) {
+    // --- the member path -----------------------------------------------------
+    // Who is asking? Their own token answers that; nothing in the body does.
+    const asCaller = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY') ?? '', {
+      global: { headers: { Authorization: `Bearer ${bearer}` } },
+    });
+    const { data: auth } = await asCaller.auth.getUser();
+    const callerId = auth?.user?.id;
+    if (!callerId) return json({ error: 'not_authenticated' }, 401);
+
+    // Their own name is the only title they may send under.
+    const { data: sender } = await supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('id', callerId)
+      .maybeSingle();
+
+    if (event === 'message' || event === 'rishta_request') {
+      const matchId = payload.matchId;
+      if (!matchId) return json({ error: 'missing_fields', required: ['matchId'] }, 400);
+
+      const { data: match } = await supabase
+        .from('matches')
+        .select('id, user_a, user_b')
+        .eq('id', matchId)
+        .maybeSingle();
+
+      if (!match) return json({ error: 'no_such_match' }, 404);
+      if (match.user_a !== callerId && match.user_b !== callerId) {
+        return json({ error: 'not_a_participant' }, 403);
+      }
+      userId = match.user_a === callerId ? match.user_b : match.user_a;
+      routing = { matchId };
+    } else if (event === 'like' || event === 'match') {
+      const targetId = payload.targetId;
+      if (!targetId) return json({ error: 'missing_fields', required: ['targetId'] }, 400);
+
+      // You may only tell someone you liked them if you actually did. The row is
+      // the proof, and the caller cannot write it as anyone but themselves.
+      const { data: like } = await supabase
+        .from('likes')
+        .select('id')
+        .eq('liker_id', callerId)
+        .eq('target_id', targetId)
+        .maybeSingle();
+
+      if (!like) return json({ error: 'no_such_like' }, 403);
+      userId = targetId;
+    } else {
+      // `system` and anything else is not a member's to send.
+      return json({ error: 'event_not_allowed_for_members', event }, 403);
+    }
+
+    // What the recipient reads the app in decides the wording.
+    const { data: recipient } = await supabase
+      .from('profiles')
+      .select('language')
+      .eq('id', userId)
+      .maybeSingle();
+
+    const senderName = sender?.full_name ?? '';
+    const line = copyFor(event, recipient?.language);
+
+    if (event === 'match') {
+      title = senderName;
+      body = line;
+    } else if (event === 'message') {
+      title = senderName;
+      // Their own words when there are any — a photo or a voice note has none.
+      body = payload.preview ? clamp(payload.preview) : line;
+    } else {
+      title = senderName;
+      body = line;
+    }
+  }
+
+  if (!userId || !title || !body) {
+    return json({ error: 'missing_fields', required: ['userId', 'title', 'body'] }, 400);
+  }
 
   // 1. Has this person asked for this kind of notification?
   const prefColumn = PREF_COLUMN[event];
@@ -103,7 +244,7 @@ Deno.serve(async (req: Request) => {
     title,
     body,
     sound: 'default',
-    data: { event, ...(data ?? {}) },
+    data: { event, ...routing, ...(data ?? {}) },
   }));
 
   const expoResponse = await fetch(EXPO_PUSH_URL, {

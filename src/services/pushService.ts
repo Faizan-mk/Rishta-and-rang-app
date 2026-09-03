@@ -6,11 +6,15 @@ import { supabase } from './supabase';
 // ---------------------------------------------------------------------------
 // Push registration.
 //
-// Scaffolding, not a working notification pipeline: this gets a device address
-// and stores it, so that something can be sent later. Nothing sends yet — the
-// `send-push` Edge Function (supabase/functions/send-push) is invoked by hand
-// until Day 5-6 makes new-match / new-message / new-like real server-side
-// events with somewhere to hang a trigger.
+// Registration plus the four moments that fire one. The device address is
+// stored here; the sending itself is the `send-push` Edge Function
+// (supabase/functions/send-push), which the notify helpers below call.
+//
+// The helpers deliberately send almost nothing: an event and the match or
+// person it hangs off. Who receives it, and what the title says, are decided
+// inside the function from a relationship the caller demonstrably has — a
+// member cannot address a stranger or sign a notification with someone else's
+// name.
 //
 // Two things that will bite on a real device:
 //   · Remote push does not work in Expo Go on SDK 53+. It needs a development
@@ -161,4 +165,44 @@ export async function unregisterPushToken(token: string): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
-export const pushService = { requestPushToken, registerPushToken, unregisterPushToken };
+/**
+ * Fires one notification at the other side of a relationship.
+ *
+ * Never throws: a push that does not go out must not take the message, like or
+ * request that prompted it down with it. The caller has already succeeded by
+ * the time this runs.
+ */
+async function notify(body: Record<string, unknown>): Promise<void> {
+  try {
+    await supabase.functions.invoke('send-push', { body });
+  } catch (e) {
+    if (__DEV__) console.warn('[push] send failed:', e);
+  }
+}
+
+/** `preview` is the message's own text; a photo or voice note simply has none. */
+function notifyMessage(matchId: string, preview?: string): Promise<void> {
+  return notify({ event: 'message', matchId, preview });
+}
+
+function notifyRishtaRequest(matchId: string): Promise<void> {
+  return notify({ event: 'rishta_request', matchId });
+}
+
+function notifyLike(targetId: string): Promise<void> {
+  return notify({ event: 'like', targetId });
+}
+
+function notifyMatch(targetId: string): Promise<void> {
+  return notify({ event: 'match', targetId });
+}
+
+export const pushService = {
+  requestPushToken,
+  registerPushToken,
+  unregisterPushToken,
+  notifyMessage,
+  notifyRishtaRequest,
+  notifyLike,
+  notifyMatch,
+};
