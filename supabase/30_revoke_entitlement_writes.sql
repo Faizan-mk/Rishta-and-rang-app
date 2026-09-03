@@ -37,9 +37,16 @@ declare
     -- The paid tier and its subscription state. `grant_explore_plus` /
     -- `revoke_explore_plus` (29) are the only writers, and run as the owner.
     'is_explore_plus', 'subscription_plan', 'subscription_renews_at', 'has_used_trial',
-    -- Badges. Granted at signup, which is an insert and so untouched by this;
-    -- what it stops is a member editing one onto themselves afterwards.
-    'selfie_verified', 'bureau_verified',
+    -- Bureau badge. Never written by the client at all — it defaults to false
+    -- and only a review may raise it.
+    'bureau_verified',
+    -- `selfie_verified` is deliberately NOT here. Signup upserts the profile
+    -- row, and Postgres reads an upsert as INSERT ... ON CONFLICT DO UPDATE, so
+    -- it demands UPDATE rights on every column in the payload — even on a first
+    -- insert that conflicts with nothing. Revoking this one broke signup
+    -- outright ("permission denied for table profiles"), because the member's
+    -- own answer is what sets it. It is held by the pin in 29 instead: writable
+    -- as the row is created, immovable afterwards.
     -- Set by the reports auto-hide trigger (21_reports.sql), a definer function
     -- running as the owner. Without this a reported profile could un-hide itself.
     'hidden_at',
