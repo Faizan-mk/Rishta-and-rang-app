@@ -137,7 +137,7 @@ export function HomeScreen() {
   const { recordLike } = useLikeLimit();
   const { isBoostActive } = useBoost();
   const { datingProfiles, rishtaProfiles, loading, reload } = useDiscovery();
-  const { matches, rishtaProfileIds, blockedProfiles, getOrCreateMatchForProfile, blockMatch } = useMatches();
+  const { matches, rishtaProfileIds, blockedProfiles, blockProfile } = useMatches();
   const { addNotification, unreadCount } = useNotifications();
   const { recordView } = useViewHistory();
   const [celebration, setCelebration] = useState<{ name: string; photo: string } | null>(null);
@@ -364,8 +364,9 @@ export function HomeScreen() {
       destructive: true,
     });
     if (!confirmed) return;
-    const match = await getOrCreateMatchForProfile({ id: profile.id, name: profile.name, photo: profile.photos[0], mode });
-    blockMatch(match.id);
+    // Blocking is per person, not per thread — there may well be no thread with
+    // someone you are blocking straight off the deck.
+    blockProfile({ id: profile.id, name: profile.name, photo: profile.photos[0], mode });
   };
 
   const onSubmitReport = async (submission: ReportSubmission) => {

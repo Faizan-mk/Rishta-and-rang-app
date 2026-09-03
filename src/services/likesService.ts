@@ -2,15 +2,20 @@ import { supabase } from './supabase';
 import type { ProfileMode } from '../types/user';
 
 // ---------------------------------------------------------------------------
-// "See who liked you" — the paid half of Explore+.
+// Likes, in two tables that answer two different questions.
 //
-// A member's own favourites live in the `favorites` table, which nobody else
-// can read. So a like is mirrored onto the *target*: a `likes_received` row
-// owned by them. RLS lets the liker create and delete only their own row
-// (liker_id = auth.uid()), and only the owner read the list (see supabase/14_likes_received.sql).
+// `likes` (supabase/24_matching.sql) is the canonical intent: liker → target,
+// one standing row per pair. Nobody can read their own outgoing likes, so
+// "did they like me back?" is asked through `is_mutual_like`, a yes/no RPC —
+// that reciprocity is what lets a `matches` row be written at all.
 //
-// The card details are denormalised into the row — all of it is public profile
-// data anyway — so the list renders without a second lookup per liker.
+// `likes_received` (supabase/14_likes_received.sql) is the *display* list
+// behind Explore+'s "see who liked you". The card details are denormalised into
+// it — all of it is public profile data anyway — so the list renders without a
+// second lookup per liker.
+//
+// Every like writes both, and withdrawing clears both: leaving a row in `likes`
+// behind would let a match form out of a like the member already took back.
 // ---------------------------------------------------------------------------
 
 export interface LikeReceived {
@@ -55,6 +60,16 @@ async function fetchLikesReceived(profileId: string): Promise<LikeReceived[]> {
 }
 
 async function sendLike(targetId: string, liker: Omit<LikeReceived, 'likedAt'>): Promise<void> {
+  // The canonical row first: it is the one a match is allowed to form from, so
+  // if only one of the two writes can land, this is the one that matters.
+  const { error: likeError } = await supabase
+    .from('likes')
+    .upsert(
+      { liker_id: liker.id, target_id: targetId, mode: liker.kind },
+      { onConflict: 'liker_id,target_id' }
+    );
+  if (likeError) throw new Error(likeError.message);
+
   // Upsert keyed on (profile_id, liker_id), so re-liking overwrites the row.
   const { error } = await supabase.from('likes_received').upsert(
     {
@@ -73,6 +88,13 @@ async function sendLike(targetId: string, liker: Omit<LikeReceived, 'likedAt'>):
 }
 
 async function withdrawLike(targetId: string, likerId: string): Promise<void> {
+  const { error: likeError } = await supabase
+    .from('likes')
+    .delete()
+    .eq('liker_id', likerId)
+    .eq('target_id', targetId);
+  if (likeError) throw new Error(likeError.message);
+
   const { error } = await supabase
     .from('likes_received')
     .delete()
@@ -81,4 +103,15 @@ async function withdrawLike(targetId: string, likerId: string): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
-export const likesService = { fetchLikesReceived, sendLike, withdrawLike };
+/**
+ * Do these two like each other? Answered by the database rather than by reading
+ * `likes`, because outgoing likes are deliberately unreadable — see the RPC in
+ * supabase/24_matching.sql.
+ */
+async function isMutualLike(a: string, b: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc('is_mutual_like', { a, b });
+  if (error) throw new Error(error.message);
+  return data === true;
+}
+
+export const likesService = { fetchLikesReceived, sendLike, withdrawLike, isMutualLike };

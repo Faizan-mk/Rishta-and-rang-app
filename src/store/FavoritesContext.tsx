@@ -20,7 +20,7 @@ const FavoritesContext = createContext<FavoritesContextValue | undefined>(undefi
 
 export function FavoritesProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const { rishtaProfileIds } = useMatches();
+  const { rishtaProfileIds, checkForMatch } = useMatches();
   const [favorites, setFavorites] = useState<FavoriteProfile[]>([]);
 
   // Guards the cache write below, so one account's favourites can never be
@@ -98,6 +98,11 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
           city: user.city ?? '',
           photo: user.photos?.[0] ?? '',
         })
+        // A like is half a match. If the other side had already liked back, this
+        // is the moment the pair forms, and the shared row gets written.
+        .then(() =>
+          checkForMatch({ id: profile.id, name: profile.name, photo: profile.photo, mode: profile.kind })
+        )
         .catch(() => undefined);
     }
   };
