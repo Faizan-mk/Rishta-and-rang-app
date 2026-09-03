@@ -49,6 +49,7 @@ export function ChatScreen() {
   const [draft, setDraft] = useState('');
   const [reportVisible, setReportVisible] = useState(false);
   const [recording, setRecording] = useState(false);
+  const [inputFocused, setInputFocused] = useState(false);
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
 
   useEffect(() => {
@@ -290,8 +291,10 @@ export function ChatScreen() {
               onChangeText={setDraft}
               placeholder={t('matches.typeMessage')}
               placeholderTextColor={colors.textTertiary}
-              style={[styles.input, rtl && styles.rtlInput]}
+              style={[styles.input, inputFocused && styles.inputFocused, rtl && styles.rtlInput]}
               multiline
+              onFocus={() => setInputFocused(true)}
+              onBlur={() => setInputFocused(false)}
             />
           )}
 
@@ -414,7 +417,9 @@ const makeStyles = (colors: Palette) =>
       paddingVertical: spacing.sm,
       color: colors.textPrimary,
       fontSize: typography.body.fontSize,
+      outlineWidth: 0,
     },
+    inputFocused: { borderColor: colors.teal },
     rtlInput: { textAlign: 'right', writingDirection: 'rtl' },
     attachButton: { padding: spacing.xs, marginBottom: 4 },
     recordingRow: {

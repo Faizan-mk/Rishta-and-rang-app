@@ -23,6 +23,7 @@ export function DateField({ label, value, onChange, placeholder, error, maxDateI
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [text, setText] = useState(() => (value ? isoToDisplay(value) : ''));
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [focused, setFocused] = useState(false);
   const maxDate = maxDateIso ?? eighteenYearsAgoIso();
 
   const handleChangeText = (input: string) => {
@@ -49,7 +50,9 @@ export function DateField({ label, value, onChange, placeholder, error, maxDateI
           placeholderTextColor={colors.textTertiary}
           keyboardType="number-pad"
           maxLength={10}
-          style={[styles.input, rtl && styles.rtlText, error && styles.inputError]}
+          style={[styles.input, focused && styles.inputFocused, rtl && styles.rtlText, error && styles.inputError]}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
         />
         <Pressable onPress={() => setCalendarOpen(true)} style={styles.calendarButton} hitSlop={8}>
           <Ionicons name="calendar-outline" size={20} color={colors.teal} />
@@ -83,7 +86,9 @@ const makeStyles = (colors: Palette) =>
       fontSize: typography.body.fontSize,
       color: colors.textPrimary,
       backgroundColor: colors.surface,
+      outlineWidth: 0,
     },
+    inputFocused: { borderColor: colors.teal },
     inputError: { borderColor: colors.danger },
     calendarButton: {
       width: 48,
