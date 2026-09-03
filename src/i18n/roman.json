@@ -725,7 +725,9 @@
     "cancelConfirmBody": "Aap foran unlimited likes aur apni admirers list kho dengay.",
     "cancelConfirmLabel": "Plan Cancel Karein",
     "cancelledTitle": "Subscription Cancel Ho Gayi",
-    "cancelledBody": "Aap ab free plan par hain."
+    "cancelledBody": "Aap ab free plan par hain.",
+    "billingPendingTitle": "Adaigi ka nizaam abhi jura nahi",
+    "billingPendingBody": "Explore+ app se on nahi kiya ja sakta — ye asli kharidari ki tasdeeq ke baad milta hai, aur payment ka nizaam abhi jura nahi."
   },
   "profileDetail": {
     "expressInterest": "Dilchaspi Zahir Karein",

@@ -10,7 +10,15 @@ interface LikeLimitContextValue {
   remaining: number;
   isUnlimited: boolean;
   canLike: boolean;
+  /**
+   * Optimistic pre-check, so the paywall appears without a round trip. It is
+   * not the enforcement — `like_profile` counts and refuses server-side
+   * (supabase/29_entitlements.sql) — and `applyServerCount` reconciles this
+   * against what the server actually recorded.
+   */
   recordLike: () => boolean;
+  /** `likes_left` as the RPC reported it; -1 means unlimited. */
+  applyServerCount: (likesLeft: number) => void;
 }
 
 const LikeLimitContext = createContext<LikeLimitContextValue | undefined>(undefined);
@@ -42,10 +50,15 @@ export function LikeLimitProvider({ children }: { children: React.ReactNode }) {
     if (!user) return false;
     const current = state.date === todayKey() ? state : { date: todayKey(), count: 0 };
     if (current.count >= DAILY_FREE_LIKES) return false;
-    const next = { date: todayKey(), count: current.count + 1 };
-    setState(next);
-    likeLimitService.setState(user.id, next);
+    // Local only. The row itself is written by the RPC — this table has no
+    // update policy any more, so a write from here would silently do nothing.
+    setState({ date: todayKey(), count: current.count + 1 });
     return true;
+  };
+
+  const applyServerCount = (likesLeft: number) => {
+    if (likesLeft < 0) return; // unlimited; the count is not kept for them
+    setState({ date: todayKey(), count: Math.max(DAILY_FREE_LIKES - likesLeft, 0) });
   };
 
   const value = useMemo(
@@ -56,6 +69,7 @@ export function LikeLimitProvider({ children }: { children: React.ReactNode }) {
       isUnlimited,
       canLike: isUnlimited || used < DAILY_FREE_LIKES,
       recordLike,
+      applyServerCount,
     }),
     [used, remaining, isUnlimited, state]
   );

@@ -68,6 +68,8 @@ export interface LikeOutcome {
   matchId: string | null;
   /** True only on the call that created the match — the cue to celebrate. */
   isNew: boolean;
+  /** Free likes left today, as the server counts them; -1 when unlimited. */
+  likesLeft: number;
 }
 
 /**
@@ -77,18 +79,22 @@ export interface LikeOutcome {
  * happen inside the function's transaction, so there is no in-between state
  * where a like landed and its match did not. The liker is always the signed-in
  * member — it is not a parameter, and cannot be forged.
+ *
+ * The daily cap is counted and enforced in there too, so it rejects with
+ * `daily_like_limit_reached` rather than trusting the caller to have checked.
  */
 async function likeProfile(targetId: string, mode: ProfileMode): Promise<LikeOutcome> {
   const { data, error } = await supabase.rpc('like_profile', { p_target: targetId, p_mode: mode });
   if (error) throw new Error(error.message);
   // `returns table` comes back as a one-row array.
   const row = (Array.isArray(data) ? data[0] : data) as
-    | { matched: boolean; match_id: string | null; is_new: boolean }
+    | { matched: boolean; match_id: string | null; is_new: boolean; likes_left: number }
     | undefined;
   return {
     matched: row?.matched === true,
     matchId: row?.match_id ?? null,
     isNew: row?.is_new === true,
+    likesLeft: typeof row?.likes_left === 'number' ? row.likes_left : -1,
   };
 }
 

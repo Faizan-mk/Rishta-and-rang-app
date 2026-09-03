@@ -134,7 +134,7 @@ export function HomeScreen() {
   const { user, setActiveMode } = useAuth();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { confirm, notify } = useDialog();
-  const { recordLike } = useLikeLimit();
+  const { recordLike, applyServerCount } = useLikeLimit();
   const { isBoostActive } = useBoost();
   const { datingProfiles, rishtaProfiles, loading, reload } = useDiscovery();
   const { matches, rishtaProfileIds, blockedProfiles, blockProfile } = useMatches();
@@ -325,14 +325,27 @@ export function HomeScreen() {
         return;
       }
     }
-    const outcome = await toggleFavorite({
-      id: profile.id,
-      kind: mode,
-      name: profile.name,
-      age: profile.age,
-      city: profile.city,
-      photo: profile.photos[0],
-    });
+    let outcome: Awaited<ReturnType<typeof toggleFavorite>> = null;
+    try {
+      outcome = await toggleFavorite({
+        id: profile.id,
+        kind: mode,
+        name: profile.name,
+        age: profile.age,
+        city: profile.city,
+        photo: profile.photos[0],
+      });
+    } catch {
+      // The cap is the server's to enforce now, so it can refuse even when the
+      // local counter thought there was room — a second device, or a count this
+      // session never saw.
+      const wantsUpgrade = await promptUpgrade(t('discover.limitReachedTitle'), t('discover.limitReachedBody'));
+      if (!wantsUpgrade) advance();
+      return;
+    }
+    // What the server actually counted, which is the number the "likes left"
+    // line should show.
+    if (outcome) applyServerCount(outcome.likesLeft);
     if (!wasLiked) {
       // Only on the call that formed the pair. `isNew` comes from the RPC
       // itself, so this cannot fire on a one-sided like, and re-liking someone

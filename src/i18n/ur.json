@@ -725,7 +725,9 @@
     "cancelConfirmBody": "آپ فوراً لامحدود پسندیدگیاں اور اپنی پسندیدگی کی فہرست کھو دیں گے۔",
     "cancelConfirmLabel": "پلان منسوخ کریں",
     "cancelledTitle": "سبسکرپشن منسوخ ہو گئی",
-    "cancelledBody": "آپ اب مفت پلان پر ہیں۔"
+    "cancelledBody": "آپ اب مفت پلان پر ہیں۔",
+    "billingPendingTitle": "ادائیگی کا نظام ابھی منسلک نہیں",
+    "billingPendingBody": "Explore+ ایپ سے آن نہیں کیا جا سکتا — یہ اصل خریداری کی تصدیق کے بعد ملتا ہے، اور ادائیگی کا نظام ابھی جُڑا نہیں۔"
   },
   "profileDetail": {
     "expressInterest": "دلچسپی ظاہر کریں",

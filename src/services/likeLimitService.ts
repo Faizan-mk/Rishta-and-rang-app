@@ -18,11 +18,8 @@ async function fetchState(profileId: string): Promise<DailyLikeState | null> {
   return { date: row.date, count: row.count };
 }
 
-async function setState(profileId: string, next: DailyLikeState): Promise<void> {
-  const { error } = await supabase
-    .from('daily_likes')
-    .upsert({ id: profileId, date: next.date, count: next.count }, { onConflict: 'id' });
-  if (error) throw new Error(error.message);
-}
-
-export const likeLimitService = { fetchState, setState };
+// There is no `setState` any more. Since supabase/29_entitlements.sql the
+// counter has no insert or update policy: it is written inside `like_profile`,
+// which is the only place a like is actually recorded, so the cap cannot be
+// lifted by writing `count = 0`. This service reads it, and nothing else.
+export const likeLimitService = { fetchState };
