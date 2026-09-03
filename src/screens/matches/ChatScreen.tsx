@@ -108,11 +108,7 @@ export function ChatScreen() {
       cancelLabel: t('common.cancel'),
     });
     if (!confirmed) return;
-    sendRishtaRequest(
-      matchId,
-      t('chat.moveToRishtaSent', { name: match.name }),
-      t('chat.moveToRishtaAccepted', { name: match.name })
-    );
+    sendRishtaRequest(matchId, t('chat.moveToRishtaSent', { name: match.name }));
   };
 
   const onBlock = async () => {
