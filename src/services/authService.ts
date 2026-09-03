@@ -328,7 +328,6 @@ function blankProfileDoc(input: {
     grew_up_in: null,
     country: null,
     selfie_verified: Boolean(input.selfieVerified),
-    bureau_verified: false,
     last_active_at: new Date().toISOString(),
     photos: input.photos,
     voice_intro_url: null,
@@ -336,10 +335,18 @@ function blankProfileDoc(input: {
     video_intro_url: null,
     wali_name: null,
     wali_invited_at: null,
-    is_explore_plus: false,
-    subscription_plan: null,
-    has_used_trial: false,
-    subscription_renews_at: null,
+    // The entitlement columns are absent on purpose. Every one of them would be
+    // written with the value the table already defaults to, and this is an
+    // upsert — which Postgres reads as INSERT ... ON CONFLICT DO UPDATE, and so
+    // demands UPDATE rights on every column named, even on a first insert that
+    // never conflicts. `authenticated` has no UPDATE on them since
+    // supabase/30_revoke_entitlement_writes.sql, so naming them here failed the
+    // whole signup with "permission denied for table profiles".
+    //
+    // `selfie_verified` above is the exception: its value comes from the member,
+    // so it has to be written. It keeps its UPDATE grant for that reason and is
+    // held instead by the pin in 29 — which is what stops it being edited on
+    // later, once the row exists.
   };
 }
 
