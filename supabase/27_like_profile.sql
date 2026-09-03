@@ -68,7 +68,8 @@ begin
       else 0
     end,
     p.city,
-    coalesce(p.photos[1], '')
+    coalesce(p.photos[1], ''),
+    now()
   from public.profiles p
   where p.id = v_me
   on conflict (profile_id, liker_id) do update set
