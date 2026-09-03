@@ -307,7 +307,15 @@
     "photoUnavailable": "Tasveer dastyaab nahi",
     "timeAm": "AM",
     "timePm": "PM",
-    "reactionPickerTitle": "Radd-e-amal chunein"
+    "reactionPickerTitle": "Radd-e-amal chunein",
+    "rishtaIncoming": "{name} is baat cheet ko Rishta marhale mein le jana chahte hain.",
+    "rishtaAccept": "Qabool karein",
+    "rishtaDecline": "Abhi nahi",
+    "rishtaDeclinedTitle": "Darkhwast mustarad",
+    "rishtaDeclinedBody": "Aap ne {name} ko bata diya hai ke aap abhi Rishta marhale ke liye tayyar nahi.",
+    "rishtaProfileNeededTitle": "Pehle apni Rishta profile mukammal karein",
+    "rishtaProfileNeededBody": "Kisi ko Rishta marhale ki darkhwast bhejne se pehle apna mazhab, taleem, khandani pas-manzar aur tayyari likhein — wo isi ki bunyad par faisla karenge.",
+    "rishtaRequestFailed": "Ye mukammal nahi ho saka. Thori dair baad dobara koshish karein."
   },
   "profile": {
     "title": "Profile",

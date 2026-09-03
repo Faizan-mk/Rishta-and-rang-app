@@ -13,6 +13,9 @@ export interface MatchRow {
   user_b: string;
   mode: ProfileMode;
   created_at: string;
+  // Null unless one of the two has asked to move the conversation to rishta.
+  rishta_requested_by: string | null;
+  rishta_requested_at: string | null;
 }
 
 /** The counterpart's card, looked up per match from `profiles`. */
@@ -42,7 +45,8 @@ interface BlockedDoc {
   blockedAt: string;
 }
 
-const MATCH_SELECT: string = 'id, user_a, user_b, mode, created_at';
+const MATCH_SELECT: string =
+  'id, user_a, user_b, mode, created_at, rishta_requested_by, rishta_requested_at';
 
 // Typed as plain string on purpose: supabase-js's select-string parser rejects
 // quoted aliases, so we keep the query untyped and cast rows ourselves.
@@ -82,7 +86,10 @@ export function mapMatchRow(row: MatchRow, userId: string, card?: ProfileCard): 
     // The shared row's own mode is the crossing-over: once a pair moves to
     // rishta, they are in rishta for both of them.
     movedToRishta: row.mode === 'rishta',
-    rishtaRequestPending: false,
+    // Same column, two different screens: the one who asked waits, the other
+    // is the one with something to answer.
+    rishtaRequestPending: row.rishta_requested_by === userId,
+    rishtaRequestIncoming: row.rishta_requested_by != null && row.rishta_requested_by !== userId,
     sourceProfileId: counterpartOf(row, userId),
   };
 }
@@ -236,12 +243,26 @@ async function ensureMatch(profileId: string, targetId: string, mode: ProfileMod
 }
 
 /**
- * `mode` is the only column of the shared row a participant may move — the rest
- * of what the old per-user row held is either derived or kept locally.
+ * Asks to move the conversation to rishta.
+ *
+ * The database decides whether it may be asked at all — a participant, not
+ * already rishta, nothing pending, and the asker's rishta profile filled in.
+ * It raises otherwise, and the message text is the raw code (see
+ * supabase/28_rishta_request.sql) for the caller to map to something readable.
  */
-async function updateMatchMode(matchId: string, mode: ProfileMode): Promise<void> {
-  const { error } = await supabase.from('matches').update({ mode }).eq('id', matchId);
+async function requestRishta(matchId: string): Promise<void> {
+  const { error } = await supabase.rpc('request_rishta', { p_match_id: matchId });
   if (error) throw new Error(error.message);
+}
+
+/**
+ * Answers the other member's request. Accepting is the only thing that moves
+ * `mode`, and it moves it for both of them at once — there is one row.
+ */
+async function respondRishta(matchId: string, accept: boolean): Promise<'accepted' | 'declined'> {
+  const { data, error } = await supabase.rpc('respond_rishta', { p_match_id: matchId, p_accept: accept });
+  if (error) throw new Error(error.message);
+  return data === 'accepted' ? 'accepted' : 'declined';
 }
 
 /** Unmatching ends the conversation for both sides — there is one row now. */
@@ -344,7 +365,8 @@ export const matchesService = {
   fetchBlocked,
   findMatchRow,
   ensureMatch,
-  updateMatchMode,
+  requestRishta,
+  respondRishta,
   deleteMatch,
   insertTextMessage,
   insertVoiceMessage,

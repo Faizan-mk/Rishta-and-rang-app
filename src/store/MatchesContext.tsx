@@ -38,7 +38,10 @@ interface MatchesContextValue {
   sendVoiceMessage: (matchId: string, uri: string, durationSec: number) => void;
   sendImageMessage: (matchId: string, uri: string) => void;
   markMatchRead: (matchId: string) => void;
-  sendRishtaRequest: (matchId: string, requestText: string) => void;
+  /** Asks to move to rishta. Rejects with the database's reason if it may not. */
+  sendRishtaRequest: (matchId: string, requestText: string) => Promise<void>;
+  /** Answers the other member's request; accepting moves both sides at once. */
+  respondRishtaRequest: (matchId: string, accept: boolean) => Promise<'accepted' | 'declined'>;
   removeMatch: (matchId: string) => void;
   blockMatch: (matchId: string) => void;
   unblockUser: (id: string) => void;
@@ -204,8 +207,34 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
       });
     };
 
+    // The shared match row changes under us when the other member asks to move
+    // to rishta, or answers our own request. Both sides are looking at the same
+    // row, so the update is the notification.
+    const applyMatchRow = (row: Record<string, unknown>) => {
+      const requestedBy = row.rishta_requested_by ? String(row.rishta_requested_by) : null;
+      const mode = row.mode as Match['mode'];
+      setMatches((prev) =>
+        prev.map((match) =>
+          match.id === String(row.id)
+            ? {
+                ...match,
+                mode,
+                movedToRishta: mode === 'rishta',
+                rishtaRequestPending: requestedBy === userId,
+                rishtaRequestIncoming: requestedBy != null && requestedBy !== userId,
+              }
+            : match
+        )
+      );
+    };
+
     const channel = supabase
       .channel(`chat_messages_${userId}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'matches' },
+        (payload) => applyMatchRow(payload.new as Record<string, unknown>)
+      )
       // No `profile_id`/`user_id` filter any more. A filter here would put us
       // back to hearing only our own writes, which is exactly what stopped the
       // other person's message from arriving; RLS is what narrows the stream
@@ -336,25 +365,39 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
     matchesService.markRead(user.id, matchId, new Date().toISOString()).catch(() => undefined);
   };
 
-  // Sends a Move to Rishta request as a message in the thread.
-  //
-  // The 2.2-second `setTimeout` that used to fake an acceptance is gone: it
-  // worked by writing a message as the other person, which the participant RLS
-  // in supabase/26_two_way_messaging.sql refuses outright — a message is signed
-  // by whoever sent it now. The real handshake (a pending state on the shared
-  // row, an Accept / Decline banner on the other side) is its own roadmap item;
-  // until it lands the request is a message the other member genuinely receives,
-  // and nothing flips the mode on their behalf.
-  const sendRishtaRequest = (matchId: string, requestText: string) => {
+  // Sends a Move to Rishta request. The request is a state on the shared row
+  // now, so the other member sees it wherever they are — and only they can
+  // answer it (supabase/28_rishta_request.sql).
+  const sendRishtaRequest = async (matchId: string, requestText: string) => {
     const match = matches.find((m) => m.id === matchId);
     if (!match || match.movedToRishta || match.rishtaRequestPending || !user) return;
 
+    // The database is asked first: if the rishta profile is not filled in, the
+    // request must not exist, and no message about it should be sent either.
+    await matchesService.requestRishta(matchId);
+    setMatches((prev) => prev.map((m) => (m.id === matchId ? { ...m, rishtaRequestPending: true } : m)));
     matchesService
       .insertTextMessage(user.id, matchId, requestText)
-      .then((message) => pushMessage(matchId, message, requestText));
-    // Local and in-flight: it keeps the button from being pressed twice in a
-    // sitting. The shared row has no column for it, by design.
-    setMatches((prev) => prev.map((m) => (m.id === matchId ? { ...m, rishtaRequestPending: true } : m)));
+      .then((message) => pushMessage(matchId, message, requestText))
+      .catch(() => undefined);
+  };
+
+  const respondRishtaRequest = async (matchId: string, accept: boolean) => {
+    const outcome = await matchesService.respondRishta(matchId, accept);
+    setMatches((prev) =>
+      prev.map((m) =>
+        m.id === matchId
+          ? {
+              ...m,
+              mode: outcome === 'accepted' ? ('rishta' as const) : m.mode,
+              movedToRishta: outcome === 'accepted' ? true : m.movedToRishta,
+              rishtaRequestPending: false,
+              rishtaRequestIncoming: false,
+            }
+          : m
+      )
+    );
+    return outcome;
   };
 
   // One row, so unmatching removes the conversation for both sides — which is
@@ -471,6 +514,7 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
       removeMatch,
       blockMatch,
       unblockUser,
+      respondRishtaRequest,
       getMatchForProfile,
       blockProfile,
       likeProfile,

@@ -108,10 +108,11 @@ export interface Match {
   unread: boolean;
   mode: ProfileMode;
   movedToRishta: boolean;
-  // True while a "Move to Rishta" request has been sent and we're waiting on
-  // the simulated counterparty response (this app has no live backend/second
-  // user — the response is simulated locally after a short delay).
+  // A "Move to Rishta" request is pending on the shared row. Which side of it
+  // this member is on decides what they see: the requester waits, the other
+  // gets Accept / Decline (supabase/28_rishta_request.sql).
   rishtaRequestPending?: boolean;
+  rishtaRequestIncoming?: boolean;
   // Links back to the Discover/Rishta listing this match was created from, so
   // "Message" on a profile can find (or create) the same match instead of duplicating it.
   sourceProfileId?: string;

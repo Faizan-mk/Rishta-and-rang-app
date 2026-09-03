@@ -307,7 +307,15 @@
     "photoUnavailable": "تصویر دستیاب نہیں",
     "timeAm": "قبل دوپہر",
     "timePm": "بعد دوپہر",
-    "reactionPickerTitle": "ردعمل چنیں"
+    "reactionPickerTitle": "ردعمل چنیں",
+    "rishtaIncoming": "{name} اس بات چیت کو رشتہ مرحلے میں لے جانا چاہتے ہیں۔",
+    "rishtaAccept": "قبول کریں",
+    "rishtaDecline": "ابھی نہیں",
+    "rishtaDeclinedTitle": "درخواست مسترد",
+    "rishtaDeclinedBody": "آپ نے {name} کو بتا دیا ہے کہ آپ ابھی رشتہ مرحلے کے لیے تیار نہیں۔",
+    "rishtaProfileNeededTitle": "پہلے اپنی رشتہ پروفائل مکمل کریں",
+    "rishtaProfileNeededBody": "کسی کو رشتہ مرحلے کی درخواست بھیجنے سے پہلے اپنا مذہب، تعلیم، خاندانی پس منظر اور تیاری لکھیں — وہ اسی کی بنیاد پر فیصلہ کریں گے۔",
+    "rishtaRequestFailed": "یہ مکمل نہیں ہو سکا۔ تھوڑی دیر بعد دوبارہ کوشش کریں۔"
   },
   "profile": {
     "title": "پروفائل",
