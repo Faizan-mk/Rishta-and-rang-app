@@ -65,15 +65,28 @@ begin
   v_results := v_results || format(E'0. impersonating a member  auth.uid() = %s -> PASS\n', v_uid);
 
   -- --- 1. grant yourself the paid tier -------------------------------------
-  update public.profiles
-  set is_explore_plus = true, subscription_plan = 'yearly',
-      subscription_renews_at = now() + interval '1 year'
-  where id = v_me;
+  -- Two defences, and either answer is the right one: refused outright by the
+  -- column grant (30), or permitted and pinned by the trigger (29). What must
+  -- not happen is the column coming back true.
+  begin
+    update public.profiles
+    set is_explore_plus = true, subscription_plan = 'yearly',
+        subscription_renews_at = now() + interval '1 year'
+    where id = v_me;
+    v_hit := false;
+  exception when insufficient_privilege then
+    v_hit := true;
+  end;
 
   select p.is_explore_plus into v_pro from public.profiles p where p.id = v_me;
   v_results := v_results || format(
     E'1. member writes is_explore_plus   is_explore_plus = %s -> %s\n',
-    v_pro, case when v_pro is false then 'PASS (pinned)' else 'FAIL (the paid tier is free)' end
+    v_pro,
+    case
+      when v_pro then 'FAIL (the paid tier is free)'
+      when v_hit then 'PASS (refused: no UPDATE privilege on the column)'
+      else 'PASS (permitted but pinned by the trigger)'
+    end
   );
 
   -- --- 2. an ordinary edit still works -------------------------------------

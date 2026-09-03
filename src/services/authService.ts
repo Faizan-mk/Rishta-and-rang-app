@@ -678,18 +678,18 @@ async function updateUser(updated: UserProfile): Promise<UserProfile> {
     nationality: updated.nationality ?? null,
     grew_up_in: updated.grewUpIn ?? null,
     country: updated.country ?? null,
-    selfie_verified: updated.selfieVerified,
-    bureau_verified: updated.bureauVerified ?? false,
     photos: photoUrls,
     voice_intro_url: voiceIntroUrl,
     voice_intro_duration_sec: updated.voiceIntroDurationSec ?? null,
     video_intro_url: videoIntroUrl,
     wali_name: updated.waliName ?? null,
     wali_invited_at: updated.waliInvitedAt ?? null,
-    is_explore_plus: updated.isExplorePlus ?? false,
-    subscription_plan: updated.subscriptionPlan ?? null,
-    has_used_trial: updated.hasUsedTrial ?? false,
-    subscription_renews_at: updated.subscriptionRenewsAt ?? null,
+    // The entitlement and badge columns are deliberately absent. `authenticated`
+    // has no UPDATE privilege on them since supabase/30_revoke_entitlement_writes.sql,
+    // so naming them here — even to write the value they already hold — would
+    // fail the whole save. They are set at signup (an insert) and moved only by
+    // a server function: grant_explore_plus for the paid tier, the reports
+    // trigger for hidden_at.
   };
 
   const { error: updateError } = await supabase.from('profiles').update(patch).eq('id', userId);
