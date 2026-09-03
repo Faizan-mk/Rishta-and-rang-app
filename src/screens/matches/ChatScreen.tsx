@@ -40,6 +40,7 @@ export function ChatScreen() {
     sendImageMessage,
     markMatchRead,
     sendRishtaRequest,
+    respondRishtaRequest,
     blockMatch,
   } = useMatches();
 
@@ -108,7 +109,39 @@ export function ChatScreen() {
       cancelLabel: t('common.cancel'),
     });
     if (!confirmed) return;
-    sendRishtaRequest(matchId, t('chat.moveToRishtaSent', { name: match.name }));
+    try {
+      await sendRishtaRequest(matchId, t('chat.moveToRishtaSent', { name: match.name }));
+    } catch (error) {
+      // The gate lives in the database, so its reason arrives as a code rather
+      // than a sentence. Only one of them is worth its own wording: the member
+      // has not filled in the rishta half of their profile, which is exactly
+      // what the other person is being asked to consider.
+      const reason = error instanceof Error ? error.message : '';
+      await notify(
+        reason.includes('rishta_profile_incomplete')
+          ? {
+              title: t('chat.rishtaProfileNeededTitle'),
+              message: t('chat.rishtaProfileNeededBody'),
+            }
+          : { title: t('chat.moveToRishta'), message: t('chat.rishtaRequestFailed') }
+      );
+    }
+  };
+
+  const onRespondRishta = async (accept: boolean) => {
+    try {
+      const outcome = await respondRishtaRequest(matchId, accept);
+      await notify(
+        outcome === 'accepted'
+          ? {
+              title: t('matches.movedToRishta'),
+              message: t('chat.moveToRishtaAccepted', { name: match.name }),
+            }
+          : { title: t('chat.rishtaDeclinedTitle'), message: t('chat.rishtaDeclinedBody', { name: match.name }) }
+      );
+    } catch {
+      await notify({ title: t('chat.moveToRishta'), message: t('chat.rishtaRequestFailed') });
+    }
   };
 
   const onBlock = async () => {
@@ -180,7 +213,30 @@ export function ChatScreen() {
         </Pressable>
       </FadeIn>
 
-      {!match.movedToRishta && (
+      {!match.movedToRishta && match.rishtaRequestIncoming && (
+        <FadeIn delay={80}>
+          <View style={styles.rishtaBannerWrap}>
+            <LinearGradient
+              colors={[colors.rishta, colors.plum]}
+              start={GRADIENT_START}
+              end={GRADIENT_END}
+              style={[styles.rishtaBanner, glow(colors.rishta, 0.45, 12, 5)]}
+            >
+              <Text style={styles.rishtaBannerText}>{t('chat.rishtaIncoming', { name: match.name })}</Text>
+              <View style={styles.rishtaBannerActions}>
+                <Pressable onPress={() => onRespondRishta(false)} style={styles.rishtaDeclineButton}>
+                  <Text style={styles.rishtaDeclineText}>{t('chat.rishtaDecline')}</Text>
+                </Pressable>
+                <Pressable onPress={() => onRespondRishta(true)} style={styles.rishtaAcceptButton}>
+                  <Text style={styles.rishtaAcceptText}>{t('chat.rishtaAccept')}</Text>
+                </Pressable>
+              </View>
+            </LinearGradient>
+          </View>
+        </FadeIn>
+      )}
+
+      {!match.movedToRishta && !match.rishtaRequestIncoming && (
         <FadeIn delay={80}>
           <Pressable
             onPress={onMoveToRishta}
@@ -298,6 +354,27 @@ const makeStyles = (colors: Palette) =>
     headerTextWrap: { flex: 1, marginHorizontal: spacing.sm, gap: 2 },
     headerName: { ...typography.bodyBold, color: colors.textPrimary, fontWeight: '800' },
     headerIconButton: { padding: spacing.xs, marginHorizontal: spacing.xs },
+    rishtaBannerWrap: { paddingHorizontal: spacing.md, paddingTop: spacing.sm },
+    rishtaBanner: { borderRadius: radius.lg, padding: spacing.md, gap: spacing.sm },
+    rishtaBannerText: { ...typography.label, color: '#FFFFFF', fontWeight: '800' },
+    rishtaBannerActions: { flexDirection: 'row', gap: spacing.sm },
+    rishtaAcceptButton: {
+      flex: 1,
+      alignItems: 'center',
+      paddingVertical: spacing.sm,
+      borderRadius: radius.md,
+      backgroundColor: '#FFFFFF',
+    },
+    rishtaAcceptText: { ...typography.label, color: colors.rishta, fontWeight: '800' },
+    rishtaDeclineButton: {
+      flex: 1,
+      alignItems: 'center',
+      paddingVertical: spacing.sm,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: withAlpha('#FFFFFF', 0.6),
+    },
+    rishtaDeclineText: { ...typography.label, color: '#FFFFFF', fontWeight: '700' },
     moveToRishtaWrap: { paddingHorizontal: spacing.md, paddingTop: spacing.sm },
     moveToRishtaBar: {
       flexDirection: 'row',
