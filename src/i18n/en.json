@@ -286,7 +286,8 @@
     "itsAMatch": "It's a Match!",
     "youAndLikedEachOther": "You and {name} liked each other.",
     "previewPhoto": "Photo",
-    "previewVoice": "Voice message"
+    "previewVoice": "Voice message",
+    "matchedBody": "You and {name} liked each other."
   },
   "chat": {
     "moveToRishta": "Move to Rishta",

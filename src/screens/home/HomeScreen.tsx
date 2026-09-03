@@ -325,11 +325,22 @@ export function HomeScreen() {
         return;
       }
     }
-    toggleFavorite({ id: profile.id, kind: mode, name: profile.name, age: profile.age, city: profile.city, photo: profile.photos[0] });
+    const outcome = await toggleFavorite({
+      id: profile.id,
+      kind: mode,
+      name: profile.name,
+      age: profile.age,
+      city: profile.city,
+      photo: profile.photos[0],
+    });
     if (!wasLiked) {
-      // Celebration and "It's a Match" notification are intentionally omitted here.
-      // They must only fire when the server confirms a mutual like (matched = true).
-      // TODO(wk2-day5): wire celebration to the match-detection RPC result.
+      // Only on the call that formed the pair. `isNew` comes from the RPC
+      // itself, so this cannot fire on a one-sided like, and re-liking someone
+      // already matched does not celebrate again.
+      if (outcome?.isNew) {
+        setCelebration({ name: profile.name, photo: profile.photos[0] });
+        addNotification('match', t('matches.itsAMatch'), t('matches.matchedBody', { name: profile.name }));
+      }
       if (mode !== 'dating') {
         addNotification('like', t('profileDetail.interestSentTitle'), t('profileDetail.interestSentBody', { name: profile.name }));
         await notify({ title: t('profileDetail.interestSentTitle'), message: t('profileDetail.interestSentBody', { name: profile.name }) });

@@ -286,7 +286,8 @@
     "itsAMatch": "Yeh Ek Match Hai!",
     "youAndLikedEachOther": "Aap aur {name} ne ek doosre ko pasand kiya.",
     "previewPhoto": "Tasveer",
-    "previewVoice": "Voice paigham"
+    "previewVoice": "Voice paigham",
+    "matchedBody": "Aap aur {name} ne ek doosre ko pasand kiya."
   },
   "chat": {
     "moveToRishta": "Rishtay ki Taraf Barhein",
