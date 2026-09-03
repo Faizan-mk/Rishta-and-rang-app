@@ -51,7 +51,7 @@ export function ProfileDetailScreen() {
   const { t, rtl } = useLanguage();
   const { user } = useAuth();
   const { notify } = useDialog();
-  const { getOrCreateMatchForProfile } = useMatches();
+  const { getMatchForProfile } = useMatches();
   const { datingProfiles, rishtaProfiles } = useDiscovery();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { recordView } = useViewHistory();
@@ -105,7 +105,17 @@ export function ProfileDetailScreen() {
     router.back();
   };
   const onMessage = async () => {
-    const match = await getOrCreateMatchForProfile({ id: profile.id, name: profile.name, photo: profile.photos[0], mode: kind });
+    // A conversation needs both sides now: the shared `matches` row cannot be
+    // written until the like is mutual (supabase/24_matching.sql). Until then
+    // there is nothing to open, so say so rather than failing silently.
+    const match = getMatchForProfile(profile.id);
+    if (!match) {
+      await notify({
+        title: t('profileDetail.messageLockedTitle'),
+        message: t('profileDetail.messageLockedBody', { name: profile.name }),
+      });
+      return;
+    }
     router.push(`/chat/${match.id}`);
   };
   const onCall = () => {

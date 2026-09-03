@@ -724,7 +724,9 @@
     "interestSentBody": "{name} ko muttala kar diya jayega. Agar woh bhi dilchaspi rakhte hain to aap dono Rishta Mode ki taraf barh sakenge.",
     "message": "Paigham",
     "call": "Call",
-    "photosHidden": "Match hone tak tasveerein posheeda hain"
+    "photosHidden": "Match hone tak tasveerein posheeda hain",
+    "messageLockedTitle": "Abhi match nahi hua",
+    "messageLockedBody": "Jab aap dono ek doosre ko pasand kar lenge, tab aap {{name}} ko message bhej sakenge."
   },
   "call": {
     "ringing": "Ring ho rahi hai...",

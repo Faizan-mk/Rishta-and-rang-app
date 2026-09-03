@@ -724,7 +724,9 @@
     "interestSentBody": "{name} will be notified. If they're interested too, you'll both be able to move to Rishta Mode.",
     "message": "Message",
     "call": "Call",
-    "photosHidden": "Photos hidden until you match"
+    "photosHidden": "Photos hidden until you match",
+    "messageLockedTitle": "Not matched yet",
+    "messageLockedBody": "You can message {{name}} once you both like each other."
   },
   "call": {
     "ringing": "Ringing...",

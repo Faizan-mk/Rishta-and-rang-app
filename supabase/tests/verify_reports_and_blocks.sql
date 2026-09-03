@@ -148,13 +148,13 @@ begin
   );
 
   -- --- 6. a thread resolves to the other person ----------------------------
-  select m.id into v_match
-  from public.matches m
-  where m.source_profile_id ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
-  limit 1;
+  -- Since 24_matching.sql a match is a paired row, so "a thread with a real
+  -- counterpart" is any row the caller is one half of; RLS already limits the
+  -- select to those.
+  select m.id into v_match from public.matches m limit 1;
 
   if v_match is null then
-    v_results := v_results || E'8. match_counterpart       SKIPPED (no match rows with a real counterpart yet)\n';
+    v_results := v_results || E'8. match_counterpart       SKIPPED (this account has no matches yet)\n';
   else
     v_counterpart := public.match_counterpart(v_match);
     v_results := v_results || format(

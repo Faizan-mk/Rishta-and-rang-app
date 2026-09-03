@@ -3,17 +3,22 @@ import { supabase } from './supabase';
 import type { BlockedProfile, ChatMessage, ChatMessageKind, Match } from '../types/content';
 import type { ProfileMode } from '../types/user';
 
-export interface MatchDoc {
+// A `matches` row as the table now stores it: one row per pair, ordered uuids,
+// readable by both people in it (see supabase/24_matching.sql). Everything the
+// old per-user row carried — the counterpart's name and photo, the last message,
+// unread — is either looked up from `profiles` or derived from the thread.
+export interface MatchRow {
   id: string;
+  user_a: string;
+  user_b: string;
+  mode: ProfileMode;
+  created_at: string;
+}
+
+/** The counterpart's card, looked up per match from `profiles`. */
+interface ProfileCard {
   name: string;
   photo: string;
-  lastMessage: string;
-  lastMessageAt: string;
-  unread: boolean;
-  mode: ProfileMode;
-  movedToRishta: boolean;
-  rishtaRequestPending: boolean;
-  sourceProfileId: string | null;
 }
 
 export interface ChatMessageDoc {
@@ -35,42 +40,48 @@ interface BlockedDoc {
   blockedAt: string;
 }
 
+const MATCH_SELECT: string = 'id, user_a, user_b, mode, created_at';
+
 // Typed as plain string on purpose: supabase-js's select-string parser rejects
 // quoted aliases, so we keep the query untyped and cast rows ourselves.
-const MATCH_SELECT: string =
-  'id, name, photo, lastMessage:last_message, lastMessageAt:last_message_at, unread, mode, movedToRishta:moved_to_rishta, rishtaRequestPending:rishta_request_pending, sourceProfileId:source_profile_id';
-
 const MESSAGE_SELECT: string =
   'id, matchId:match_id, fromMe:from_me, text, kind, audioUrl:audio_path, durationSec:duration_sec, imageUrl:image_path, sentAt:sent_at';
 
 const BLOCKED_SELECT: string = 'id:blocked_user_id, name, photo, blockedAt:blocked_at';
 
-/** The subset of a match a caller may patch. */
-export type MatchPatch = Partial<Omit<MatchDoc, 'sourceProfileId' | 'id'>>;
+/** The other person in a pair, from the caller's side of it. */
+export function counterpartOf(row: MatchRow, userId: string): string {
+  return row.user_a === userId ? row.user_b : row.user_a;
+}
 
-const MATCH_PATCH_COLUMNS: Record<keyof MatchPatch, string> = {
-  name: 'name',
-  photo: 'photo',
-  lastMessage: 'last_message',
-  lastMessageAt: 'last_message_at',
-  unread: 'unread',
-  mode: 'mode',
-  movedToRishta: 'moved_to_rishta',
-  rishtaRequestPending: 'rishta_request_pending',
-};
+/** The pair as the table stores it — ascending, which is what makes it a key. */
+function orderedPair(userId: string, targetId: string): [string, string] {
+  return userId < targetId ? [userId, targetId] : [targetId, userId];
+}
 
-export function mapMatchDoc(id: string, data: MatchDoc): Match {
+export function mapMatchRow(row: MatchRow, userId: string, card?: ProfileCard): Match {
   return {
-    id,
-    name: data.name,
-    photo: data.photo,
-    lastMessage: data.lastMessage,
-    lastMessageAt: data.lastMessageAt,
-    unread: data.unread,
-    mode: data.mode,
-    movedToRishta: data.movedToRishta,
-    rishtaRequestPending: data.rishtaRequestPending,
-    sourceProfileId: data.sourceProfileId ?? undefined,
+    id: row.id,
+    // A card can be missing when the counterpart's profile is unreadable —
+    // hidden, or blocked since. The thread still lists rather than vanishing
+    // mid-render; the block flow is what removes it.
+    name: card?.name ?? '',
+    photo: card?.photo ?? '',
+    // The row has no message columns any more: the preview and its timestamp
+    // come from the thread itself, and the caller fills them in from the chat
+    // history it already loads. Until then the match sorts by when it formed.
+    lastMessage: '',
+    lastMessageAt: row.created_at,
+    // Per-user state with no column to live in — the row is shared, so `unread`
+    // on it would be one person's state that the other could read and write.
+    // The client keeps it locally until a per-participant table lands.
+    unread: false,
+    mode: row.mode,
+    // The shared row's own mode is the crossing-over: once a pair moves to
+    // rishta, they are in rishta for both of them.
+    movedToRishta: row.mode === 'rishta',
+    rishtaRequestPending: false,
+    sourceProfileId: counterpartOf(row, userId),
   };
 }
 
@@ -97,17 +108,33 @@ function mapBlockedDoc(data: BlockedDoc): BlockedProfile {
   };
 }
 
+/** The counterparts' cards in one round trip, keyed by id. */
+async function fetchProfileCards(ids: string[]): Promise<Map<string, ProfileCard>> {
+  const cards = new Map<string, ProfileCard>();
+  if (ids.length === 0) return cards;
+  const { data, error } = await supabase.from('profiles').select('id, full_name, photos').in('id', ids);
+  if (error) throw new Error(error.message);
+  for (const row of data ?? []) {
+    const profile = row as unknown as { id: string; full_name: string; photos: string[] | null };
+    cards.set(profile.id, { name: profile.full_name, photo: profile.photos?.[0] ?? '' });
+  }
+  return cards;
+}
+
 async function fetchMatches(profileId: string): Promise<Match[]> {
+  // Either column can be us, so the filter is an `or` rather than an `eq`. RLS
+  // says the same thing, but stating it in the query keeps the plan on the
+  // per-column indexes.
   const { data, error } = await supabase
     .from('matches')
     .select(MATCH_SELECT)
-    .eq('profile_id', profileId)
-    .order('last_message_at', { ascending: false });
+    .or(`user_a.eq.${profileId},user_b.eq.${profileId}`)
+    .order('created_at', { ascending: false });
   if (error) throw new Error(error.message);
-  return (data ?? []).map((row) => {
-    const match = row as unknown as MatchDoc;
-    return mapMatchDoc(match.id, match);
-  });
+
+  const rows = (data ?? []) as unknown as MatchRow[];
+  const cards = await fetchProfileCards(rows.map((row) => counterpartOf(row, profileId)));
+  return rows.map((row) => mapMatchRow(row, profileId, cards.get(counterpartOf(row, profileId))));
 }
 
 async function fetchChatHistory(profileId: string): Promise<Record<string, ChatMessage[]>> {
@@ -135,44 +162,59 @@ async function fetchBlocked(profileId: string): Promise<BlockedProfile[]> {
   return (data ?? []).map((row) => mapBlockedDoc(row as unknown as BlockedDoc));
 }
 
-async function createMatch(
-  profileId: string,
-  match: { name: string; photo: string; mode: ProfileMode; sourceProfileId?: string }
-): Promise<Match> {
+async function findMatchRow(profileId: string, targetId: string): Promise<MatchRow | null> {
+  const [userA, userB] = orderedPair(profileId, targetId);
   const { data, error } = await supabase
     .from('matches')
-    .insert({
-      profile_id: profileId,
-      name: match.name,
-      photo: match.photo,
-      mode: match.mode,
-      source_profile_id: match.sourceProfileId ?? null,
-      last_message: '',
-      last_message_at: new Date().toISOString(),
-      unread: false,
-      moved_to_rishta: false,
-      rishta_request_pending: false,
-    })
+    .select(MATCH_SELECT)
+    .eq('user_a', userA)
+    .eq('user_b', userB)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return (data as unknown as MatchRow) ?? null;
+}
+
+/**
+ * The pair's match row, creating it if this is the moment it formed. The insert
+ * is refused unless the like is actually mutual (see supabase/24_matching.sql),
+ * so a caller cannot conjure a conversation with someone who never liked back.
+ */
+async function ensureMatch(profileId: string, targetId: string, mode: ProfileMode): Promise<Match> {
+  const existing = await findMatchRow(profileId, targetId);
+  if (existing) return mapMatchRow(existing, profileId);
+
+  const [userA, userB] = orderedPair(profileId, targetId);
+  const { data, error } = await supabase
+    .from('matches')
+    .insert({ user_a: userA, user_b: userB, mode })
     .select(MATCH_SELECT)
     .single();
-  if (error) throw new Error(error.message);
-  return mapMatchDoc((data as unknown as MatchDoc).id, data as unknown as MatchDoc);
-}
 
-async function updateMatch(profileId: string, matchId: string, patch: MatchPatch): Promise<void> {
-  const update: Record<string, unknown> = {};
-  for (const key of Object.keys(patch) as (keyof MatchPatch)[]) {
-    const value = patch[key];
-    if (value === undefined) continue;
-    update[MATCH_PATCH_COLUMNS[key]] = value;
+  if (error) {
+    // 23505: the other side's client wrote the row between our select and our
+    // insert. The unique on the pair is what makes that a race we can simply
+    // read our way out of rather than an error worth surfacing.
+    if (error.code === '23505') {
+      const theirs = await findMatchRow(profileId, targetId);
+      if (theirs) return mapMatchRow(theirs, profileId);
+    }
+    throw new Error(error.message);
   }
-  if (!Object.keys(update).length) return;
-  const { error } = await supabase.from('matches').update(update).eq('id', matchId).eq('profile_id', profileId);
+  return mapMatchRow(data as unknown as MatchRow, profileId);
+}
+
+/**
+ * `mode` is the only column of the shared row a participant may move — the rest
+ * of what the old per-user row held is either derived or kept locally.
+ */
+async function updateMatchMode(matchId: string, mode: ProfileMode): Promise<void> {
+  const { error } = await supabase.from('matches').update({ mode }).eq('id', matchId);
   if (error) throw new Error(error.message);
 }
 
-async function deleteMatch(profileId: string, matchId: string): Promise<void> {
-  const { error } = await supabase.from('matches').delete().eq('id', matchId).eq('profile_id', profileId);
+/** Unmatching ends the conversation for both sides — there is one row now. */
+async function deleteMatch(matchId: string): Promise<void> {
+  const { error } = await supabase.from('matches').delete().eq('id', matchId);
   if (error) throw new Error(error.message);
 }
 
@@ -273,8 +315,9 @@ export const matchesService = {
   fetchMatches,
   fetchChatHistory,
   fetchBlocked,
-  createMatch,
-  updateMatch,
+  findMatchRow,
+  ensureMatch,
+  updateMatchMode,
   deleteMatch,
   insertTextMessage,
   insertVoiceMessage,
