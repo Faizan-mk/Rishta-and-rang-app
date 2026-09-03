@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { favoritesService } from '../services/favoritesService';
 import { likesService } from '../services/likesService';
-import { ageFromDob } from '../utils/date';
 import { cache, CACHE_KEYS } from '../services/cache';
 import type { FavoriteProfile } from '../types/content';
 import { useAuth } from './AuthContext';
@@ -20,7 +19,7 @@ const FavoritesContext = createContext<FavoritesContextValue | undefined>(undefi
 
 export function FavoritesProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const { rishtaProfileIds, checkForMatch } = useMatches();
+  const { rishtaProfileIds, likeProfile } = useMatches();
   const [favorites, setFavorites] = useState<FavoriteProfile[]>([]);
 
   // Guards the cache write below, so one account's favourites can never be
@@ -87,23 +86,12 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
     } else {
       setFavorites((prev) => [profile, ...prev]);
       favoritesService.addFavorite(user.id, profile);
-      // The other side can't read our favourites, so the like is mirrored onto
-      // their own record — that list is what Explore+ unlocks.
-      likesService
-        .sendLike(profile.id, {
-          id: user.id,
-          kind: profile.kind,
-          name: user.fullName,
-          age: ageFromDob(user.dob) ?? 0,
-          city: user.city ?? '',
-          photo: user.photos?.[0] ?? '',
-        })
-        // A like is half a match. If the other side had already liked back, this
-        // is the moment the pair forms, and the shared row gets written.
-        .then(() =>
-          checkForMatch({ id: profile.id, name: profile.name, photo: profile.photo, mode: profile.kind })
-        )
-        .catch(() => undefined);
+      // One call does the like, the reciprocity check and the match. The card
+      // the other side sees in "who liked you" is copied from our own profile
+      // inside the RPC, so there is nothing to pass and nothing to disagree with.
+      likeProfile({ id: profile.id, name: profile.name, photo: profile.photo, mode: profile.kind }).catch(
+        () => undefined
+      );
     }
   };
 

@@ -46,8 +46,8 @@ interface MatchesContextValue {
   getMatchForProfile: (profileId: string) => Match | undefined;
   /** Blocks a member outright, thread or no thread. */
   blockProfile: (profile: ProfileRef) => void;
-  /** After a like: writes the match if this made it mutual. Null if it didn't. */
-  checkForMatch: (profile: ProfileRef) => Promise<Match | null>;
+  /** Likes a member; returns the thread if that completed the pair. */
+  likeProfile: (profile: ProfileRef) => Promise<{ match: Match | null; isNew: boolean }>;
 }
 
 const MatchesContext = createContext<MatchesContextValue | undefined>(undefined);
@@ -403,26 +403,40 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
   const getMatchForProfile = (profileId: string) => matches.find((m) => m.sourceProfileId === profileId);
 
   /**
-   * Called after a like is sent. A conversation now needs both sides to have
-   * liked, so this asks the database whether that just became true and writes
-   * the shared row if it did. Returns the match when this like was the one that
-   * completed the pair (the caller's cue to celebrate), and null otherwise —
-   * a one-sided like is not an error, it is the normal case.
+   * Likes someone, and returns the conversation if that made the pair mutual.
+   *
+   * One call: `like_profile` records the like, looks for the reciprocal one and
+   * writes the shared row inside a single transaction
+   * (supabase/27_like_profile.sql), so there is no window where the like landed
+   * and the match did not. `isNew` is true only on the call that created it,
+   * which is what a match celebration should fire on — a re-like of someone you
+   * already matched is not news.
    */
-  const checkForMatch = async (profile: ProfileRef): Promise<Match | null> => {
+  const likeProfile = async (profile: ProfileRef): Promise<{ match: Match | null; isNew: boolean }> => {
     if (!user) throw new AppError('authErrors.notSignedIn');
-    const existing = getMatchForProfile(profile.id);
-    if (existing) return existing;
 
-    const mutual = await likesService.isMutualLike(user.id, profile.id);
-    if (!mutual) return null;
+    const outcome = await likesService.likeProfile(profile.id, profile.mode);
+    if (!outcome.matched || !outcome.matchId) return { match: null, isNew: false };
 
-    const created = await matchesService.ensureMatch(user.id, profile.id, profile.mode);
-    // The row carries only ids; the card we were handed is what the list needs
-    // before the next reload fills it in from `profiles`.
-    const match: Match = { ...created, name: profile.name, photo: profile.photo };
+    const existing = matches.find((m) => m.id === outcome.matchId);
+    if (existing) return { match: existing, isNew: outcome.isNew };
+
+    // The RPC hands back ids; the card we were given is what the list needs
+    // until the next load fills it in from `profiles`.
+    const match: Match = {
+      id: outcome.matchId,
+      name: profile.name,
+      photo: profile.photo,
+      lastMessage: '',
+      lastMessageAt: new Date().toISOString(),
+      unread: false,
+      mode: profile.mode,
+      movedToRishta: profile.mode === 'rishta',
+      rishtaRequestPending: false,
+      sourceProfileId: profile.id,
+    };
     setMatches((prev) => (prev.some((m) => m.id === match.id) ? prev : [match, ...prev]));
-    return match;
+    return { match, isNew: outcome.isNew };
   };
 
   const unreadCount = useMemo(() => matches.filter((m) => m.unread).length, [matches]);
@@ -459,7 +473,7 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
       unblockUser,
       getMatchForProfile,
       blockProfile,
-      checkForMatch,
+      likeProfile,
     }),
     [matches, chatHistory, reactions, unreadCount, rishtaProfileIds, blockedProfiles, user?.id]
   );
