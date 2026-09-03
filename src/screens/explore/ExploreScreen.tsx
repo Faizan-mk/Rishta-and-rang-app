@@ -268,7 +268,7 @@ export function ExploreScreen() {
                       <PhotoTile
                         uri={like.photo}
                         name={like.name}
-                        title={`${like.name}, ${like.age}`}
+                        title={like.name}
                         caption={vocabularyLabel(like.city, t)}
                         accent={accent}
                         colors={colors}
@@ -439,7 +439,7 @@ export function ExploreScreen() {
                       </LinearGradient>
                       <View style={styles.historyTextWrap}>
                         <Text style={[styles.historyName, rtl && styles.rtlText]}>
-                          {entry.name}, {entry.age}
+                          {entry.name}
                         </Text>
                         <Text style={[styles.historyMeta, rtl && styles.rtlText]}>
                           {t('explore.viewedAt', { time: timeAgo(entry.viewedAt, t) })}
@@ -608,7 +608,7 @@ function ProfileRow({
               <PhotoTile
                 uri={profile.photos[0]}
                 name={profile.name}
-                title={`${profile.name}, ${profile.age}`}
+                title={profile.name}
                 caption={captionFor(profile)}
                 verified={profile.selfieVerified}
                 accent={accent}

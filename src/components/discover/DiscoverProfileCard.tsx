@@ -149,7 +149,7 @@ export const DiscoverProfileCard = React.memo(function DiscoverProfileCard({
 
         <View style={[styles.nameRow, rtl && styles.rowRtl]}>
           <Text style={[styles.name, rtl && styles.rtlText]} numberOfLines={1}>
-            {profile.name}, {profile.age}
+            {profile.name}
           </Text>
           {profile.selfieVerified && (
             <View style={styles.photoRing} accessibilityLabel={t('profile.photoAdded')}>
