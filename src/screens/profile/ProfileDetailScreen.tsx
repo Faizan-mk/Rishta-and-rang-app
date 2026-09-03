@@ -86,18 +86,24 @@ export function ProfileDetailScreen() {
     setActiveIndex(index);
   };
 
-  const onToggleFavorite = () => {
+  const onToggleFavorite = () =>
     toggleFavorite({ id: profile.id, kind, name: profile.name, age: profile.age, city: profile.city, photo: profile.photos[0] });
-  };
 
   const onPass = () => router.back();
   const onLike = async () => {
-    if (!isFavorite(profile.id)) onToggleFavorite();
-    // Celebration intentionally omitted — only fire when the match RPC returns matched = true.
-    // TODO(wk2-day5): wire celebration to the match-detection RPC result.
+    if (isFavorite(profile.id)) return;
+    // The RPC decides: `isNew` is true only when this like is the one that made
+    // the pair mutual, so nothing celebrates a one-sided like.
+    const outcome = await onToggleFavorite();
+    if (outcome?.isNew) {
+      await notify({
+        title: t('matches.itsAMatch'),
+        message: t('matches.matchedBody', { name: profile.name }),
+      });
+    }
   };
   const onExpressInterest = async () => {
-    if (!isFavorite(profile.id)) onToggleFavorite();
+    if (!isFavorite(profile.id)) await onToggleFavorite();
     await notify({
       title: t('profileDetail.interestSentTitle'),
       message: t('profileDetail.interestSentBody', { name: profile.name }),

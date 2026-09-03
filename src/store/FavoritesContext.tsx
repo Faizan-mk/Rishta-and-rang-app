@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useMemo, useRef, useState 
 import { favoritesService } from '../services/favoritesService';
 import { likesService } from '../services/likesService';
 import { cache, CACHE_KEYS } from '../services/cache';
-import type { FavoriteProfile } from '../types/content';
+import type { FavoriteProfile, Match } from '../types/content';
 import { useAuth } from './AuthContext';
 import { useMatches } from './MatchesContext';
 
@@ -11,7 +11,12 @@ export type { FavoriteProfile };
 interface FavoritesContextValue {
   favorites: FavoriteProfile[];
   isFavorite: (id: string) => boolean;
-  toggleFavorite: (profile: FavoriteProfile) => void;
+  /**
+   * Likes or un-likes a member. Liking resolves with the conversation if that
+   * completed the pair — `isNew` true only on the call that formed it, which is
+   * what a celebration may fire on. Un-liking resolves with null.
+   */
+  toggleFavorite: (profile: FavoriteProfile) => Promise<{ match: Match | null; isNew: boolean } | null>;
   removeFavorite: (id: string) => void;
 }
 
@@ -76,22 +81,26 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
 
   const isFavorite = (id: string) => favorites.some((f) => f.id === id);
 
-  const toggleFavorite = (profile: FavoriteProfile) => {
-    if (!user) return;
+  const toggleFavorite = async (profile: FavoriteProfile) => {
+    if (!user) return null;
     if (isFavorite(profile.id)) {
       setFavorites((prev) => prev.filter((f) => f.id !== profile.id));
       favoritesService.removeFavorite(user.id, profile.id);
       // Taking a like back also takes it off the other member's "who liked you".
       likesService.withdrawLike(profile.id, user.id).catch(() => undefined);
-    } else {
-      setFavorites((prev) => [profile, ...prev]);
-      favoritesService.addFavorite(user.id, profile);
-      // One call does the like, the reciprocity check and the match. The card
-      // the other side sees in "who liked you" is copied from our own profile
-      // inside the RPC, so there is nothing to pass and nothing to disagree with.
-      likeProfile({ id: profile.id, name: profile.name, photo: profile.photo, mode: profile.kind }).catch(
-        () => undefined
-      );
+      return null;
+    }
+    // One call does the like, the reciprocity check and the match. The card the
+    // other side sees in "who liked you" is copied from our own profile inside
+    // the RPC, so there is nothing to pass and nothing to disagree with.
+    setFavorites((prev) => [profile, ...prev]);
+    favoritesService.addFavorite(user.id, profile);
+    try {
+      return await likeProfile({ id: profile.id, name: profile.name, photo: profile.photo, mode: profile.kind });
+    } catch {
+      // Offline, or the like was refused. The favourite stands locally; the
+      // caller simply learns of no match.
+      return null;
     }
   };
 

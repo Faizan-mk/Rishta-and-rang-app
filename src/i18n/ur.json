@@ -286,7 +286,8 @@
     "itsAMatch": "یہ ایک میچ ہے!",
     "youAndLikedEachOther": "آپ اور {name} نے ایک دوسرے کو پسند کیا۔",
     "previewPhoto": "تصویر",
-    "previewVoice": "وائس پیغام"
+    "previewVoice": "وائس پیغام",
+    "matchedBody": "آپ اور {name} نے ایک دوسرے کو پسند کیا۔"
   },
   "chat": {
     "moveToRishta": "رشتے کی طرف بڑھیں",
