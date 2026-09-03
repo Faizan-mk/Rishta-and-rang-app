@@ -63,7 +63,6 @@ export function ProfileScreen() {
     religion: user.rishta.religion || undefined,
     sect: user.rishta.sect || undefined,
   };
-  const age = ageFromDob(user.dob);
   const completion = profileCompletion(user);
   const memberSince = new Date(user.createdAt).getFullYear();
   const accent = modeAccent(colors, user.activeMode);
@@ -154,10 +153,11 @@ export function ProfileScreen() {
         </View>
 
         <View style={styles.nameRow}>
-          <Text style={[styles.name, rtl && styles.rtlText]}>
-            {user.fullName}
-            {age ? `, ${age}` : ''}
-          </Text>
+          {/* The member's own name, as they typed it. Age belongs on the cards
+              other people browse, not on your own profile — seeing ", 22"
+              appended to a name you entered without it reads as the app having
+              got your name wrong. */}
+          <Text style={[styles.name, rtl && styles.rtlText]}>{user.fullName}</Text>
         </View>
         <View style={[styles.metaRow, rtl && styles.rowRtl]}>
           <Ionicons name="location" size={13} color={accent.primary} />
