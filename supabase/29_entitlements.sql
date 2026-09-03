@@ -29,17 +29,21 @@
 -- 1. Pin the columns a member must not write
 -- ---------------------------------------------------------------------------
 
+-- security INVOKER (the default), and that is the whole mechanism: inside a
+-- SECURITY DEFINER function `current_user` is the function's owner, so a definer
+-- trigger would have seen `postgres` on every call and pinned nothing. As an
+-- invoker function it sees the role the statement is actually running as —
+-- `authenticated` for a member's own request, the owner for a definer path like
+-- grant_explore_plus or the reports auto-hide, which is exactly the line to draw.
 create or replace function public.guard_profile_entitlements()
 returns trigger
 language plpgsql
-security definer
 set search_path = ''
 as $$
 begin
-  -- `authenticated` is the role PostgREST runs a member's request as. A definer
-  -- function runs as the owner instead, so the purchase path and the reports
-  -- trigger pass straight through this.
-  if current_user = 'authenticated' then
+  -- The two roles PostgREST runs member traffic as. Everything else — the
+  -- owner, service_role, a definer function — passes through.
+  if current_user in ('authenticated', 'anon') then
     new.is_explore_plus       := old.is_explore_plus;
     new.subscription_plan     := old.subscription_plan;
     new.subscription_renews_at := old.subscription_renews_at;
