@@ -213,6 +213,12 @@ const makeStyles = (colors: Palette) =>
       fontSize: typography.body.fontSize,
       backgroundColor: colors.surface,
       outlineWidth: 0,
+      // The border of this field belongs to searchRow, the pill around the icon
+      // and the box together — so this input must state that it has none of its
+      // own. Every other input in the app sets its own borderWidth, which is
+      // why only this one ever showed the browser's default 1px border, drawn
+      // square inside the pill's rounded corners.
+      borderWidth: 0,
     },
     list: { flexGrow: 0 },
     option: {
