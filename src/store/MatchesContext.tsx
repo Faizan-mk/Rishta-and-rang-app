@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { matchesService } from '../services/matchesService';
 import { likesService } from '../services/likesService';
+import { pushService } from '../services/pushService';
 import { supabase } from '../services/supabase';
 import { cache, CACHE_KEYS } from '../services/cache';
 import { reactionsService, rowToReaction } from '../services/reactionsService';
@@ -338,22 +339,34 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
     );
   };
 
+  // The notification goes out only once the row is in: a push about a message
+  // that failed to send would be worse than no push at all. `pushService.notify*`
+  // never throws, so it cannot take the send down with it either.
   const sendMessage = (matchId: string, text: string) => {
     const trimmed = text.trim();
     if (!trimmed || !user) return;
-    matchesService.insertTextMessage(user.id, matchId, trimmed).then((message) => pushMessage(matchId, message, trimmed));
+    matchesService.insertTextMessage(user.id, matchId, trimmed).then((message) => {
+      pushMessage(matchId, message, trimmed);
+      pushService.notifyMessage(matchId, trimmed);
+    });
   };
 
   const sendVoiceMessage = (matchId: string, uri: string, durationSec: number) => {
     if (!user) return;
-    matchesService
-      .insertVoiceMessage(user.id, matchId, uri, durationSec)
-      .then((message) => pushMessage(matchId, message, VOICE_PREVIEW));
+    matchesService.insertVoiceMessage(user.id, matchId, uri, durationSec).then((message) => {
+      pushMessage(matchId, message, VOICE_PREVIEW);
+      // No preview text: a voice note has no words to quote, so the function
+      // falls back to "sent you a message" in the recipient's own language.
+      pushService.notifyMessage(matchId);
+    });
   };
 
   const sendImageMessage = (matchId: string, uri: string) => {
     if (!user) return;
-    matchesService.insertImageMessage(user.id, matchId, uri).then((message) => pushMessage(matchId, message, PHOTO_PREVIEW));
+    matchesService.insertImageMessage(user.id, matchId, uri).then((message) => {
+      pushMessage(matchId, message, PHOTO_PREVIEW);
+      pushService.notifyMessage(matchId);
+    });
   };
 
   // Per side: this writes only this member's mark, and the other person's
@@ -376,6 +389,9 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
     // request must not exist, and no message about it should be sent either.
     await matchesService.requestRishta(matchId);
     setMatches((prev) => prev.map((m) => (m.id === matchId ? { ...m, rishtaRequestPending: true } : m)));
+    // One notification for the request itself, not two — the message that
+    // follows is the same event said twice.
+    pushService.notifyRishtaRequest(matchId);
     matchesService
       .insertTextMessage(user.id, matchId, requestText)
       .then((message) => pushMessage(matchId, message, requestText))
@@ -461,6 +477,12 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
     if (!user) throw new AppError('authErrors.notSignedIn');
 
     const outcome = await likesService.likeProfile(profile.id, profile.mode);
+
+    // A new pair is news for both; a one-sided like is the "someone liked you"
+    // nudge. Re-liking a pair that already matched is neither.
+    if (outcome.matched && outcome.isNew) pushService.notifyMatch(profile.id);
+    else if (!outcome.matched) pushService.notifyLike(profile.id);
+
     if (!outcome.matched || !outcome.matchId) {
       return { match: null, isNew: false, likesLeft: outcome.likesLeft };
     }
