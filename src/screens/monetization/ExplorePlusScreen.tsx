@@ -82,17 +82,31 @@ export function ExplorePlusScreen() {
 
   const onUpgrade = async () => {
     setUpgrading(true);
-    await updateUser({
+    // Since supabase/29_entitlements.sql these columns are pinned against a
+    // member's own writes, so this no longer grants anything — the tier is
+    // granted by a receipt-validating function, which real billing has yet to
+    // be wired to. The write is left in place for when it is; what changed is
+    // that the screen no longer claims success it did not get.
+    const saved = await updateUser({
       ...user,
       isExplorePlus: true,
       subscriptionPlan: plan,
       subscriptionRenewsAt: isoDateInDays(PLAN_DAYS[plan]),
       hasUsedTrial: user.hasUsedTrial || plan === 'trial',
     });
+    setUpgrading(false);
+
+    if (!saved.isExplorePlus) {
+      await notify({
+        title: t('explorePlus.billingPendingTitle'),
+        message: t('explorePlus.billingPendingBody'),
+      });
+      return;
+    }
+
     // A subscription comes with a pack of profile boosts — this is what the
     // boost sheet's "Get more Boosts" button sends members here for.
     addBoosts(BOOSTS_PER_SUBSCRIPTION);
-    setUpgrading(false);
     await notify({
       title: t('explorePlus.upgradeSuccessTitle'),
       message: plan === 'trial' ? t('explorePlus.trialStartedBody') : t('explorePlus.upgradeSuccessBody'),

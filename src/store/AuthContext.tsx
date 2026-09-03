@@ -10,7 +10,10 @@ interface AuthContextValue {
   signup: (input: SignupInput) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  updateUser: (updated: UserProfile) => Promise<void>;
+  /** Saves the profile and resolves with the row the server kept — which is not
+   *  always the row that was sent: entitlement columns are pinned server-side
+   *  (supabase/29_entitlements.sql), so a caller can tell what actually took. */
+  updateUser: (updated: UserProfile) => Promise<UserProfile>;
   setActiveMode: (mode: ProfileMode) => void;
   setIntent: (intent: Intent) => void;
   setReadiness: (readiness: RishtaReadiness) => void;
@@ -130,6 +133,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const saved = await authService.updateUser(updated);
     setUser(saved);
     await cache.write(saved.id, CACHE_KEYS.profile, saved);
+    return saved;
   }, []);
 
   // The toggle has to move on the tap, not on the round trip: state and cache

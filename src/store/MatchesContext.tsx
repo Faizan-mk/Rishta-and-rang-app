@@ -50,7 +50,7 @@ interface MatchesContextValue {
   /** Blocks a member outright, thread or no thread. */
   blockProfile: (profile: ProfileRef) => void;
   /** Likes a member; returns the thread if that completed the pair. */
-  likeProfile: (profile: ProfileRef) => Promise<{ match: Match | null; isNew: boolean }>;
+  likeProfile: (profile: ProfileRef) => Promise<{ match: Match | null; isNew: boolean; likesLeft: number }>;
 }
 
 const MatchesContext = createContext<MatchesContextValue | undefined>(undefined);
@@ -455,14 +455,18 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
    * which is what a match celebration should fire on — a re-like of someone you
    * already matched is not news.
    */
-  const likeProfile = async (profile: ProfileRef): Promise<{ match: Match | null; isNew: boolean }> => {
+  const likeProfile = async (
+    profile: ProfileRef
+  ): Promise<{ match: Match | null; isNew: boolean; likesLeft: number }> => {
     if (!user) throw new AppError('authErrors.notSignedIn');
 
     const outcome = await likesService.likeProfile(profile.id, profile.mode);
-    if (!outcome.matched || !outcome.matchId) return { match: null, isNew: false };
+    if (!outcome.matched || !outcome.matchId) {
+      return { match: null, isNew: false, likesLeft: outcome.likesLeft };
+    }
 
     const existing = matches.find((m) => m.id === outcome.matchId);
-    if (existing) return { match: existing, isNew: outcome.isNew };
+    if (existing) return { match: existing, isNew: outcome.isNew, likesLeft: outcome.likesLeft };
 
     // The RPC hands back ids; the card we were given is what the list needs
     // until the next load fills it in from `profiles`.
@@ -479,7 +483,7 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
       sourceProfileId: profile.id,
     };
     setMatches((prev) => (prev.some((m) => m.id === match.id) ? prev : [match, ...prev]));
-    return { match, isNew: outcome.isNew };
+    return { match, isNew: outcome.isNew, likesLeft: outcome.likesLeft };
   };
 
   const unreadCount = useMemo(() => matches.filter((m) => m.unread).length, [matches]);

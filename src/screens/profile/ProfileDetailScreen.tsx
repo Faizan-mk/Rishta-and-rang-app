@@ -94,7 +94,14 @@ export function ProfileDetailScreen() {
     if (isFavorite(profile.id)) return;
     // The RPC decides: `isNew` is true only when this like is the one that made
     // the pair mutual, so nothing celebrates a one-sided like.
-    const outcome = await onToggleFavorite();
+    let outcome: Awaited<ReturnType<typeof onToggleFavorite>> = null;
+    try {
+      outcome = await onToggleFavorite();
+    } catch {
+      // Out of free likes for today; the cap is refused server-side.
+      await notify({ title: t('discover.limitReachedTitle'), message: t('discover.limitReachedBody') });
+      return;
+    }
     if (outcome?.isNew) {
       await notify({
         title: t('matches.itsAMatch'),

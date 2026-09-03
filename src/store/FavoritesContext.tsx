@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useMemo, useRef, useState 
 import { favoritesService } from '../services/favoritesService';
 import { likesService } from '../services/likesService';
 import { cache, CACHE_KEYS } from '../services/cache';
+import { AppError } from '../utils/appError';
 import type { FavoriteProfile, Match } from '../types/content';
 import { useAuth } from './AuthContext';
 import { useMatches } from './MatchesContext';
@@ -16,7 +17,9 @@ interface FavoritesContextValue {
    * completed the pair — `isNew` true only on the call that formed it, which is
    * what a celebration may fire on. Un-liking resolves with null.
    */
-  toggleFavorite: (profile: FavoriteProfile) => Promise<{ match: Match | null; isNew: boolean } | null>;
+  toggleFavorite: (
+    profile: FavoriteProfile
+  ) => Promise<{ match: Match | null; isNew: boolean; likesLeft: number } | null>;
   removeFavorite: (id: string) => void;
 }
 
@@ -97,9 +100,18 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
     favoritesService.addFavorite(user.id, profile);
     try {
       return await likeProfile({ id: profile.id, name: profile.name, photo: profile.photo, mode: profile.kind });
-    } catch {
-      // Offline, or the like was refused. The favourite stands locally; the
-      // caller simply learns of no match.
+    } catch (error) {
+      // The cap is enforced server-side, so this is where hitting it surfaces.
+      // Put the favourite back — nothing was recorded — and let the caller
+      // decide what to show.
+      const reason = error instanceof Error ? error.message : '';
+      if (reason.includes('daily_like_limit_reached')) {
+        setFavorites((prev) => prev.filter((f) => f.id !== profile.id));
+        favoritesService.removeFavorite(user.id, profile.id);
+        throw new AppError('discover.limitReachedBody');
+      }
+      // Offline, or refused for another reason. The favourite stands locally;
+      // the caller simply learns of no match.
       return null;
     }
   };

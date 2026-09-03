@@ -10,7 +10,7 @@ interface UseProfileResult {
   /** Which of the two faces of the app the member is currently in. */
   mode: ProfileMode;
   setMode: (mode: ProfileMode) => void;
-  updateProfile: (updated: UserProfile) => Promise<void>;
+  updateProfile: (updated: UserProfile) => Promise<UserProfile>;
 }
 
 // Profile-shaped view of the auth store, for screens that care about the
