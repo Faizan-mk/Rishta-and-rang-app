@@ -49,9 +49,14 @@ declare
     -- as the row is created, immovable afterwards.
     -- Set by the reports auto-hide trigger (21_reports.sql), a definer function
     -- running as the owner. Without this a reported profile could un-hide itself.
-    'hidden_at',
-    -- Not an entitlement, but nothing should ever rewrite a row's identity.
-    'id'
+    'hidden_at'
+    -- `id` is NOT protected here, though it is tempting. Signup upserts
+    -- `{ id, ...profile }`, and PostgREST turns that into ON CONFLICT DO UPDATE
+    -- over every column in the payload — the key included — so revoking it
+    -- fails account creation with "permission denied for table profiles".
+    -- Nothing is lost: `profiles_update`'s `with check (auth.uid() = id)`
+    -- already refuses a row whose id is not the caller's, so the only id a
+    -- member can write is the one they already have.
   ];
   v_columns text;
 begin
