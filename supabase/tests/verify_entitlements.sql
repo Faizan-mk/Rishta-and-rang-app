@@ -7,13 +7,13 @@
 -- both must come to nothing: the trigger pins the columns, and the counter has
 -- no write policy at all.
 --
--- The cap itself is measured by running `like_profile` past 15, which also
--- checks the part that is easy to get wrong: re-liking the same person must not
--- cost a second like.
+-- The cap is measured by starting the counter one short of the limit rather
+-- than sending fifteen likes, so it needs three profiles instead of seventeen.
+-- It also checks the part that is easy to get wrong: re-liking someone already
+-- liked must not cost a second like.
 --
--- Needs at least 17 profiles to exercise the cap fully; with fewer it says so
--- and skips those steps rather than reporting a false pass. Everything rolls
--- back with the closing exception.
+-- Everything rolls back with the closing exception — the profile edit, the
+-- counter and the likes included.
 --
 -- Run after 29_entitlements.sql.
 -- ============================================================================
@@ -21,7 +21,6 @@
 do $$
 declare
   v_me       uuid;
-  v_target   uuid;
   v_uid      uuid;
   v_pro      boolean;
   v_count    integer;
@@ -29,30 +28,28 @@ declare
   v_targets  uuid[];
   v_hit      boolean := false;
   v_results  text := '';
-  i          integer;
 begin
   select p.id into v_me from public.profiles p where p.hidden_at is null order by p.id limit 1;
-  select p.id into v_target from public.profiles p
-    where p.hidden_at is null and p.id <> v_me and not public.is_blocked_pair(v_me, p.id)
-    order by p.id limit 1;
-
-  if v_target is null then
-    raise exception E'NEED AT LEAST TWO PROFILES\n\nCreate a second test account, then run this again.';
-  end if;
-
-  -- Known starting point, as the owner (a definer path, so the trigger lets it
-  -- through — which is itself the thing being relied on).
-  update public.profiles
-  set is_explore_plus = false, subscription_plan = null, subscription_renews_at = null
-  where id = v_me;
-  delete from public.daily_likes where id = v_me;
-  delete from public.likes where liker_id = v_me;
-
   select array_agg(p.id) into v_targets from (
     select p.id from public.profiles p
     where p.hidden_at is null and p.id <> v_me and not public.is_blocked_pair(v_me, p.id)
-    order by p.id limit 17
+    order by p.id limit 2
   ) p;
+
+  if coalesce(array_length(v_targets, 1), 0) < 2 then
+    raise exception E'NEED AT LEAST THREE PROFILES\n\nFound % other profile(s). Create another test account and run this again.',
+      coalesce(array_length(v_targets, 1), 0);
+  end if;
+
+  -- A known starting point, as the owner. The counter starts one short of the
+  -- limit so the cap can be reached with a single like.
+  update public.profiles
+  set is_explore_plus = false, subscription_plan = null, subscription_renews_at = null
+  where id = v_me;
+  delete from public.likes where liker_id = v_me and target_id = any(v_targets);
+  insert into public.daily_likes (id, date, count)
+  values (v_me, to_char(current_date, 'YYYY-MM-DD'), 14)
+  on conflict (id) do update set date = excluded.date, count = 14;
 
   -- --- become a member -----------------------------------------------------
   perform set_config('role', 'authenticated', true);
@@ -75,7 +72,7 @@ begin
 
   select p.is_explore_plus into v_pro from public.profiles p where p.id = v_me;
   v_results := v_results || format(
-    E'1. member writes is_explore_plus     -> is_explore_plus = %s -> %s\n',
+    E'1. member writes is_explore_plus   is_explore_plus = %s -> %s\n',
     v_pro, case when v_pro is false then 'PASS (pinned)' else 'FAIL (the paid tier is free)' end
   );
 
@@ -84,7 +81,7 @@ begin
   select count(*) into v_count from public.profiles p
   where p.id = v_me and p.city = 'test-city-entitlements';
   v_results := v_results || format(
-    E'2. member edits their own city       -> %s row(s) -> %s\n',
+    E'2. member edits their own city     %s row(s) -> %s\n',
     v_count, case when v_count = 1 then 'PASS (the guard is not blanket)' else 'FAIL (profile edits broke)' end
   );
 
@@ -94,47 +91,50 @@ begin
     values (v_me, to_char(current_date, 'YYYY-MM-DD'), 0)
     on conflict (id) do update set count = 0;
   exception when insufficient_privilege then
-    null; -- refused outright is also the right answer
+    null; -- refused outright is the same answer as changing nothing
   end;
-  select count(*) into v_count from public.daily_likes d where d.id = v_me;
+  select d.count into v_count from public.daily_likes d where d.id = v_me;
   v_results := v_results || format(
-    E'3. member writes daily_likes         -> %s row(s) -> %s\n',
-    v_count, case when v_count = 0 then 'PASS (no write policy)' else 'FAIL (the cap is erasable)' end
+    E'3. member zeroes daily_likes       count = %s -> %s\n',
+    coalesce(v_count, -1),
+    case when v_count = 14 then 'PASS (unchanged)' else 'FAIL (the cap is erasable)' end
   );
 
-  -- --- 4. the cap, counted by the RPC --------------------------------------
-  if array_length(v_targets, 1) < 16 then
-    v_results := v_results || format(
-      E'4. the 15-a-day cap                  SKIPPED (needs 16+ other profiles, found %s)\n',
-      coalesce(array_length(v_targets, 1), 0)
-    );
-  else
-    for i in 1..16 loop
-      begin
-        select l.likes_left into v_left from public.like_profile(v_targets[i], 'dating') l;
-      exception when others then
-        if sqlerrm like '%daily_like_limit_reached%' then
-          v_hit := true;
-          exit;
-        end if;
-        raise;
-      end;
-    end loop;
+  -- --- 4. the 15th like lands ----------------------------------------------
+  select l.likes_left into v_left from public.like_profile(v_targets[1], 'dating') l;
+  select d.count into v_count from public.daily_likes d where d.id = v_me;
+  v_results := v_results || format(
+    E'4. the 15th like                   likes_left = %s, count = %s -> %s\n',
+    v_left, v_count,
+    case when v_left = 0 and v_count = 15 then 'PASS' else 'FAIL' end
+  );
 
-    v_results := v_results || format(
-      E'4. the 16th like in a day            -> %s\n',
-      case when v_hit then 'PASS (refused at 15)' else 'FAIL (the cap does not bite)' end
-    );
+  -- --- 5. the 16th does not ------------------------------------------------
+  begin
+    perform public.like_profile(v_targets[2], 'dating');
+    v_hit := false;
+  exception when others then
+    v_hit := sqlerrm like '%daily_like_limit_reached%';
+  end;
+  v_results := v_results || format(
+    E'5. the 16th like                   -> %s\n',
+    case when v_hit then 'PASS (refused at 15)' else 'FAIL (the cap does not bite)' end
+  );
 
-    -- Re-liking someone already liked must not cost a second like.
-    select d.count into v_count from public.daily_likes d where d.id = v_me;
+  -- --- 6. re-liking the same person is free --------------------------------
+  begin
     select l.likes_left into v_left from public.like_profile(v_targets[1], 'rishta') l;
+    select d.count into v_count from public.daily_likes d where d.id = v_me;
     v_results := v_results || format(
-      E'5. re-liking the same person         count %s -> %s -> %s\n',
-      v_count, coalesce(15 - v_left, -1),
-      case when v_left = 15 - v_count then 'PASS (free)' else 'FAIL (charged twice for one person)' end
+      E'6. re-liking the same person       likes_left = %s, count = %s -> %s\n',
+      v_left, v_count,
+      case when v_left = 0 and v_count = 15 then 'PASS (free)' else 'FAIL (charged twice for one person)' end
     );
-  end if;
+  exception when others then
+    v_results := v_results || format(
+      E'6. re-liking the same person       -> FAIL (refused: %s)\n', sqlerrm
+    );
+  end;
 
   raise exception E'\n\n===== RESULTS =====\n\n%\n(rolled back - nothing above was kept)\n', v_results;
 end
