@@ -24,7 +24,9 @@ interface ProfileCard {
 export interface ChatMessageDoc {
   id: string;
   matchId: string;
-  fromMe: boolean;
+  // Who wrote it. `fromMe` is not stored any more — it is this against the
+  // signed-in member, worked out when the row is mapped (supabase/26_two_way_messaging.sql).
+  senderId: string;
   text: string;
   kind: ChatMessageKind;
   audioUrl: string | null;
@@ -45,7 +47,7 @@ const MATCH_SELECT: string = 'id, user_a, user_b, mode, created_at';
 // Typed as plain string on purpose: supabase-js's select-string parser rejects
 // quoted aliases, so we keep the query untyped and cast rows ourselves.
 const MESSAGE_SELECT: string =
-  'id, matchId:match_id, fromMe:from_me, text, kind, audioUrl:audio_path, durationSec:duration_sec, imageUrl:image_path, sentAt:sent_at';
+  'id, matchId:match_id, senderId:sender_id, text, kind, audioUrl:audio_path, durationSec:duration_sec, imageUrl:image_path, sentAt:sent_at';
 
 const BLOCKED_SELECT: string = 'id:blocked_user_id, name, photo, blockedAt:blocked_at';
 
@@ -72,9 +74,9 @@ export function mapMatchRow(row: MatchRow, userId: string, card?: ProfileCard): 
     // history it already loads. Until then the match sorts by when it formed.
     lastMessage: '',
     lastMessageAt: row.created_at,
-    // Per-user state with no column to live in — the row is shared, so `unread`
-    // on it would be one person's state that the other could read and write.
-    // The client keeps it locally until a per-participant table lands.
+    // Per-side state, so it is not on the shared row at all: it comes from
+    // `match_reads` (supabase/26_two_way_messaging.sql), which the caller folds
+    // in once it has the thread to compare against.
     unread: false,
     mode: row.mode,
     // The shared row's own mode is the crossing-over: once a pair moves to
@@ -85,11 +87,11 @@ export function mapMatchRow(row: MatchRow, userId: string, card?: ProfileCard): 
   };
 }
 
-export function mapChatMessageDoc(id: string, data: ChatMessageDoc): ChatMessage {
+export function mapChatMessageDoc(id: string, data: ChatMessageDoc, userId: string): ChatMessage {
   return {
     id,
     matchId: data.matchId,
-    fromMe: data.fromMe,
+    fromMe: data.senderId === userId,
     text: data.text,
     sentAt: data.sentAt,
     kind: data.kind,
@@ -137,19 +139,49 @@ async function fetchMatches(profileId: string): Promise<Match[]> {
   return rows.map((row) => mapMatchRow(row, profileId, cards.get(counterpartOf(row, profileId))));
 }
 
+/**
+ * Every message in every conversation this member is part of.
+ *
+ * No owner filter any more: `messages_select` narrows the read to the threads
+ * they participate in, so the unfiltered select is already the right set — and
+ * it is what brings the other person's half of the conversation in.
+ */
 async function fetchChatHistory(profileId: string): Promise<Record<string, ChatMessage[]>> {
   const { data, error } = await supabase
     .from('chat_messages')
     .select(MESSAGE_SELECT)
-    .eq('profile_id', profileId)
     .order('sent_at', { ascending: true });
   if (error) throw new Error(error.message);
   const history: Record<string, ChatMessage[]> = {};
   for (const row of data ?? []) {
-    const message = mapChatMessageDoc((row as unknown as ChatMessageDoc).id, row as unknown as ChatMessageDoc);
+    const doc = row as unknown as ChatMessageDoc;
+    const message = mapChatMessageDoc(doc.id, doc, profileId);
     (history[message.matchId] ??= []).push(message);
   }
   return history;
+}
+
+/** When this member last read each of their threads, keyed by match id. */
+async function fetchReads(profileId: string): Promise<Record<string, string>> {
+  const { data, error } = await supabase
+    .from('match_reads')
+    .select('match_id, last_read_at')
+    .eq('user_id', profileId);
+  if (error) throw new Error(error.message);
+  const reads: Record<string, string> = {};
+  for (const row of data ?? []) {
+    const read = row as unknown as { match_id: string; last_read_at: string };
+    reads[read.match_id] = read.last_read_at;
+  }
+  return reads;
+}
+
+/** Read state is per person, so this is an upsert on (match_id, user_id). */
+async function markRead(profileId: string, matchId: string, at: string): Promise<void> {
+  const { error } = await supabase
+    .from('match_reads')
+    .upsert({ match_id: matchId, user_id: profileId, last_read_at: at }, { onConflict: 'match_id,user_id' });
+  if (error) throw new Error(error.message);
 }
 
 async function fetchBlocked(profileId: string): Promise<BlockedProfile[]> {
@@ -218,13 +250,12 @@ async function deleteMatch(matchId: string): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
-async function insertMessage(profileId: string, data: Omit<ChatMessageDoc, 'id'>): Promise<ChatMessage> {
+async function insertMessage(profileId: string, data: Omit<ChatMessageDoc, 'id' | 'senderId'>): Promise<ChatMessage> {
   const { data: row, error } = await supabase
     .from('chat_messages')
     .insert({
-      profile_id: profileId,
       match_id: data.matchId,
-      from_me: data.fromMe,
+      sender_id: profileId,
       text: data.text,
       kind: data.kind,
       audio_path: data.audioUrl,
@@ -238,13 +269,12 @@ async function insertMessage(profileId: string, data: Omit<ChatMessageDoc, 'id'>
   // The inserted row, not the payload we sent: only the row carries the
   // database-generated `id`, and the Realtime channel de-dupes on it.
   const saved = row as unknown as ChatMessageDoc;
-  return mapChatMessageDoc(saved.id, saved);
+  return mapChatMessageDoc(saved.id, saved, profileId);
 }
 
-function baseMessage(matchId: string, fromMe: boolean, kind: ChatMessageKind): Omit<ChatMessageDoc, 'id'> {
+function baseMessage(matchId: string, kind: ChatMessageKind): Omit<ChatMessageDoc, 'id' | 'senderId'> {
   return {
     matchId,
-    fromMe,
     kind,
     text: '',
     audioUrl: null,
@@ -258,13 +288,8 @@ function baseMessage(matchId: string, fromMe: boolean, kind: ChatMessageKind): O
   };
 }
 
-async function insertTextMessage(
-  profileId: string,
-  matchId: string,
-  fromMe: boolean,
-  text: string
-): Promise<ChatMessage> {
-  return insertMessage(profileId, { ...baseMessage(matchId, fromMe, 'text'), text });
+async function insertTextMessage(profileId: string, matchId: string, text: string): Promise<ChatMessage> {
+  return insertMessage(profileId, { ...baseMessage(matchId, 'text'), text });
 }
 
 async function insertVoiceMessage(
@@ -274,12 +299,12 @@ async function insertVoiceMessage(
   durationSec: number
 ): Promise<ChatMessage> {
   const audioUrl = await mediaUpload.uploadChatAudio(profileId, matchId, localUri);
-  return insertMessage(profileId, { ...baseMessage(matchId, true, 'voice'), audioUrl, durationSec });
+  return insertMessage(profileId, { ...baseMessage(matchId, 'voice'), audioUrl, durationSec });
 }
 
 async function insertImageMessage(profileId: string, matchId: string, localUri: string): Promise<ChatMessage> {
   const imageUrl = await mediaUpload.uploadChatImage(profileId, matchId, localUri);
-  return insertMessage(profileId, { ...baseMessage(matchId, true, 'image'), imageUrl });
+  return insertMessage(profileId, { ...baseMessage(matchId, 'image'), imageUrl });
 }
 
 async function blockUser(profileId: string, blocked: BlockedProfile): Promise<void> {
@@ -314,6 +339,8 @@ async function unblockUser(profileId: string, blockedUserId: string): Promise<vo
 export const matchesService = {
   fetchMatches,
   fetchChatHistory,
+  fetchReads,
+  markRead,
   fetchBlocked,
   findMatchRow,
   ensureMatch,

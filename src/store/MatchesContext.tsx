@@ -9,7 +9,6 @@ import type { BlockedProfile, ChatMessage, Match, MessageReaction } from '../typ
 import type { ProfileMode } from '../types/user';
 import { PHOTO_PREVIEW, VOICE_PREVIEW, previewFor } from '../utils/messagePreview';
 import { useAuth } from './AuthContext';
-import { useNotifications } from './NotificationContext';
 
 interface ProfileRef {
   id: string;
@@ -39,7 +38,7 @@ interface MatchesContextValue {
   sendVoiceMessage: (matchId: string, uri: string, durationSec: number) => void;
   sendImageMessage: (matchId: string, uri: string) => void;
   markMatchRead: (matchId: string) => void;
-  sendRishtaRequest: (matchId: string, requestText: string, acceptedText: string) => void;
+  sendRishtaRequest: (matchId: string, requestText: string) => void;
   removeMatch: (matchId: string) => void;
   blockMatch: (matchId: string) => void;
   unblockUser: (id: string) => void;
@@ -56,11 +55,12 @@ const MatchesContext = createContext<MatchesContextValue | undefined>(undefined)
 const NO_REACTIONS: MessageReaction[] = [];
 
 /** A `chat_messages` row (snake_case, from PostgreSQL/Realtime) → ChatMessage. */
-function rowToMessage(row: Record<string, unknown>): ChatMessage {
+function rowToMessage(row: Record<string, unknown>, userId: string): ChatMessage {
   return {
     id: String(row.id),
     matchId: String(row.match_id),
-    fromMe: Boolean(row.from_me),
+    // Not a stored column: whose message this is, is who is reading it.
+    fromMe: String(row.sender_id) === userId,
     text: (row.text as string) ?? '',
     sentAt: (row.sent_at as string) ?? new Date().toISOString(),
     kind: (row.kind as ChatMessage['kind']) ?? 'text',
@@ -75,28 +75,28 @@ function rowToMessage(row: Record<string, unknown>): ChatMessage {
  *
  * Since supabase/24_matching.sql a match is (user_a, user_b, mode) and nothing
  * else — a preview column on a row both people can write would be one person's
- * state in the other's hands. The preview and its timestamp are therefore read
- * back off the thread, and `unread` is local: the cached list is trusted
- * wherever it already knows about the newest message, so a thread the member
- * has read does not come back unread on every launch.
+ * state in the other's hands. The preview comes off the thread instead, and
+ * unread is per side: `match_reads` holds when this member last opened each
+ * conversation, so the other person reading their copy leaves this one alone.
  */
 function withThreadState(
   fresh: Match[],
   history: Record<string, ChatMessage[]>,
-  cached: Match[] | null
+  reads: Record<string, string>
 ): Match[] {
-  const previous = new Map((cached ?? []).map((match) => [match.id, match]));
   return fresh
     .map((match) => {
       const thread = history[match.id];
       const last = thread?.[thread.length - 1];
       if (!last) return match;
-      const before = previous.get(match.id);
+      const readAt = reads[match.id];
       return {
         ...match,
         lastMessage: previewFor(last),
         lastMessageAt: last.sentAt,
-        unread: before && before.lastMessageAt >= last.sentAt ? before.unread : !last.fromMe,
+        // Their message, arriving after the last time this side opened the
+        // thread. Our own messages never count, however long ago we read.
+        unread: !last.fromMe && (!readAt || last.sentAt > readAt),
       };
     })
     .sort((a, b) => b.lastMessageAt.localeCompare(a.lastMessageAt));
@@ -104,7 +104,6 @@ function withThreadState(
 
 export function MatchesProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const { addNotification } = useNotifications();
   const [matches, setMatches] = useState<Match[]>([]);
   const [chatHistory, setChatHistory] = useState<Record<string, ChatMessage[]>>({});
   const [blockedProfiles, setBlockedProfiles] = useState<BlockedProfile[]>([]);
@@ -142,14 +141,15 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
       }
       if (cachedBlocked) setBlockedProfiles(cachedBlocked);
 
-      const [freshMatches, freshBlocked, freshHistory, freshReactions] = await Promise.all([
+      const [freshMatches, freshBlocked, freshHistory, freshReactions, freshReads] = await Promise.all([
         matchesService.fetchMatches(userId),
         matchesService.fetchBlocked(userId),
         matchesService.fetchChatHistory(userId),
         reactionsService.fetchReactions(),
+        matchesService.fetchReads(userId),
       ]);
       if (cancelled) return;
-      setMatches(withThreadState(freshMatches, freshHistory, cachedMatches));
+      setMatches(withThreadState(freshMatches, freshHistory, freshReads));
       setBlockedProfiles(freshBlocked);
       setChatHistory(freshHistory);
       setReactions(freshReactions);
@@ -206,21 +206,25 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
 
     const channel = supabase
       .channel(`chat_messages_${userId}`)
+      // No `profile_id`/`user_id` filter any more. A filter here would put us
+      // back to hearing only our own writes, which is exactly what stopped the
+      // other person's message from arriving; RLS is what narrows the stream
+      // now, and it narrows it to the conversations we are in.
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: `profile_id=eq.${userId}` },
-        (payload) => applyMessage(rowToMessage(payload.new as Record<string, unknown>))
+        { event: 'INSERT', schema: 'public', table: 'chat_messages' },
+        (payload) => applyMessage(rowToMessage(payload.new as Record<string, unknown>, userId))
       )
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'message_reactions', filter: `user_id=eq.${userId}` },
+        { event: 'INSERT', schema: 'public', table: 'message_reactions' },
         (payload) => applyReaction(rowToReaction(payload.new as Record<string, unknown>))
       )
       .on(
         // The DELETE payload only carries message_id because the table is
         // `replica identity full` (see supabase/20_message_reactions.sql).
         'postgres_changes',
-        { event: 'DELETE', schema: 'public', table: 'message_reactions', filter: `user_id=eq.${userId}` },
+        { event: 'DELETE', schema: 'public', table: 'message_reactions' },
         (payload) => dropReaction(rowToReaction(payload.old as Record<string, unknown>))
       )
       .subscribe();
@@ -308,7 +312,7 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
   const sendMessage = (matchId: string, text: string) => {
     const trimmed = text.trim();
     if (!trimmed || !user) return;
-    matchesService.insertTextMessage(user.id, matchId, true, trimmed).then((message) => pushMessage(matchId, message, trimmed));
+    matchesService.insertTextMessage(user.id, matchId, trimmed).then((message) => pushMessage(matchId, message, trimmed));
   };
 
   const sendVoiceMessage = (matchId: string, uri: string, durationSec: number) => {
@@ -323,52 +327,34 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
     matchesService.insertImageMessage(user.id, matchId, uri).then((message) => pushMessage(matchId, message, PHOTO_PREVIEW));
   };
 
-  // Also local: read state is per-person, and the shared row has nowhere to put
-  // it that the other side could not also read and write.
+  // Per side: this writes only this member's mark, and the other person's
+  // unread is untouched by it (supabase/26_two_way_messaging.sql).
   const markMatchRead = (matchId: string) => {
     const match = matches.find((m) => m.id === matchId);
     if (!match || !match.unread || !user) return;
     setMatches((prev) => prev.map((m) => (m.id === matchId ? { ...m, unread: false } : m)));
+    matchesService.markRead(user.id, matchId, new Date().toISOString()).catch(() => undefined);
   };
 
-  // Sends a Move to Rishta request and simulates the other side responding after a
-  // short delay. There's no live backend/second user in this app, so a real accept/
-  // decline from a counterparty isn't possible — this models the pending state and
-  // resolution honestly rather than flipping the match to "moved" instantly.
-  const sendRishtaRequest = (matchId: string, requestText: string, acceptedText: string) => {
+  // Sends a Move to Rishta request as a message in the thread.
+  //
+  // The 2.2-second `setTimeout` that used to fake an acceptance is gone: it
+  // worked by writing a message as the other person, which the participant RLS
+  // in supabase/26_two_way_messaging.sql refuses outright — a message is signed
+  // by whoever sent it now. The real handshake (a pending state on the shared
+  // row, an Accept / Decline banner on the other side) is its own roadmap item;
+  // until it lands the request is a message the other member genuinely receives,
+  // and nothing flips the mode on their behalf.
+  const sendRishtaRequest = (matchId: string, requestText: string) => {
     const match = matches.find((m) => m.id === matchId);
     if (!match || match.movedToRishta || match.rishtaRequestPending || !user) return;
-    const userId = user.id;
 
-    matchesService.insertTextMessage(userId, matchId, true, requestText).then((message) => pushMessage(matchId, message, requestText));
-    // Pending is a local, in-flight state: it exists only between the request
-    // and the simulated answer below, and the shared row has no column for it.
+    matchesService
+      .insertTextMessage(user.id, matchId, requestText)
+      .then((message) => pushMessage(matchId, message, requestText));
+    // Local and in-flight: it keeps the button from being pressed twice in a
+    // sitting. The shared row has no column for it, by design.
     setMatches((prev) => prev.map((m) => (m.id === matchId ? { ...m, rishtaRequestPending: true } : m)));
-
-    setTimeout(() => {
-      matchesService.insertTextMessage(userId, matchId, false, acceptedText).then((acceptedMessage) => {
-        setMatches((prev) =>
-          prev.map((m) =>
-            m.id === matchId && m.rishtaRequestPending
-              ? {
-                  ...m,
-                  // The thread itself crosses over: a friendship match that both
-                  // sides moved is a rishta-stage match from here on.
-                  mode: 'rishta' as const,
-                  movedToRishta: true,
-                  rishtaRequestPending: false,
-                  lastMessage: acceptedText,
-                  lastMessageAt: acceptedMessage.sentAt,
-                }
-              : m
-          )
-        );
-        // `mode` is the whole of the crossing-over now: the row is shared, so
-        // moving it moves the conversation for both sides at once.
-        matchesService.updateMatchMode(matchId, 'rishta').catch(() => undefined);
-        addNotification('rishta_request', match.name, acceptedText);
-      });
-    }, 2200);
   };
 
   // One row, so unmatching removes the conversation for both sides — which is
