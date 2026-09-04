@@ -426,3 +426,53 @@ schema, and it is far easier to read there.
 **Not run, and it cannot be from here:** the two-device walk itself needs two
 physical devices, two real accounts and a development build. Nothing in this
 change verifies it; it makes it verifiable, and says exactly what to look at.
+
+## Push — wired to real events (10.1)
+
+The scaffolding from Day 3 is now fired by something. Every send goes through
+`pushService.notify*` → the `send-push` Edge Function, and the function decides
+the recipient and the wording itself from a relationship the caller
+demonstrably has — a member can neither address a stranger nor sign a
+notification with someone else's name.
+
+| Moment | Fired from | Recipient |
+|---|---|---|
+| New match | `likeProfile`, on the call that created the pair | the person who liked first |
+| One-sided like | `likeProfile` | the person liked |
+| New message (text, voice, photo) | `sendMessage` / `sendVoiceMessage` / `sendImageMessage` | the other participant |
+| Move to Rishta asked | `sendRishtaRequest` | the other participant |
+| …accepted / declined | `respondRishtaRequest` | the requester |
+
+Each fires only after the write it is about has succeeded — a push about a
+message that failed to send would be worse than no push — and `notify` never
+throws, so a dead notification cannot take the message down with it.
+
+**Tap routing was the missing half.** `send-push` had been putting `matchId` in
+every notification's `data` and nothing read it, so a push about a message
+opened the app whereever it was last left — the one thing a notification is
+supposed to save you from. `usePushNavigation` (mounted in the root layout)
+handles both paths: a listener for taps while the app is alive, and
+`getLastNotificationResponseAsync` for the tap that launched a killed app, which
+no listener is around to hear. A match opens the Matches list and a like opens
+the feed, because neither payload carries a thread to open.
+
+**The prefs gate is written twice, and both are the same rule:** `PREF_COLUMN`
+in the Edge Function and the `case` in `notify_member`, each falling back to the
+table's own defaults when the member has no `notification_prefs` row (everything
+on except product updates). `supabase/tests/verify_notification_prefs.sql`
+proves the in-app half: a muted category writes nothing, an unmuted one writes
+once, a member with no prefs row still hears — and, the assertion worth having,
+**muting the notification does not break the thing being notified about**. The
+request still lands on the row; only the telling is suppressed.
+
+### Still not proven, and it needs a device
+
+10.1's own criterion — "a message to a closed app arrives as a push, and turning
+the pref off actually stops it" — is **not met**. `push_tokens` has never held a
+real token: Expo Go cannot mint one on SDK 53+, and Android needs FCM
+credentials on the EAS project. Everything up to Expo's API is verified (see the
+2 September entries above); a phone receiving a notification is not.
+
+To close it: `npx eas build --profile development --platform android`, install,
+sign in, confirm `select count(*) from push_tokens;` is 1, then walk step 10 of
+docs/smoke-test.md.
