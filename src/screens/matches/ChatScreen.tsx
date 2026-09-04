@@ -17,6 +17,7 @@ import { useTheme } from '../../store/ThemeContext';
 import { useDialog } from '../../store/DialogContext';
 import { useMatches } from '../../store/MatchesContext';
 import { useAuth } from '../../store/AuthContext';
+import { rishtaProfileComplete } from '../../utils/rishtaProfile';
 import { radius, spacing, typography } from '../../theme';
 import { glow, modeAccent, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
@@ -102,7 +103,24 @@ export function ChatScreen() {
     }
   };
 
+  // What the other person would be asked to consider. Without it there is
+  // nothing to decide on, so the request cannot be sent — the database refuses
+  // it either way (`rishta_profile_incomplete`), and this is so the bar says so
+  // up front and offers the screen that fixes it rather than an error.
+  const canRequestRishta = rishtaProfileComplete(user);
+
   const onMoveToRishta = async () => {
+    if (!canRequestRishta) {
+      const goToProfile = await confirm({
+        title: t('chat.rishtaProfileNeededTitle'),
+        message: t('chat.rishtaProfileNeededBody'),
+        confirmLabel: t('chat.rishtaProfileNeededAction'),
+        cancelLabel: t('common.cancel'),
+      });
+      if (goToProfile) router.push('/rishta-profile');
+      return;
+    }
+
     const confirmed = await confirm({
       title: t('chat.moveToRishtaConfirmTitle'),
       message: t('chat.moveToRishtaConfirmBody', { name: match.name }),
@@ -242,7 +260,13 @@ export function ChatScreen() {
           <Pressable
             onPress={onMoveToRishta}
             disabled={match.rishtaRequestPending}
-            style={[styles.moveToRishtaWrap, match.rishtaRequestPending && styles.moveToRishtaBarPending]}
+            // Muted while the request is out, and muted again while the rishta
+            // profile is empty — but still tappable in that second case, since
+            // the tap is what offers the screen that fills it in.
+            style={[
+              styles.moveToRishtaWrap,
+              (match.rishtaRequestPending || !canRequestRishta) && styles.moveToRishtaBarPending,
+            ]}
           >
             <LinearGradient
               colors={[colors.rishta, colors.plum]}
@@ -250,7 +274,17 @@ export function ChatScreen() {
               end={GRADIENT_END}
               style={[styles.moveToRishtaBar, glow(colors.rishta, 0.45, 12, 5)]}
             >
-              <Ionicons name={match.rishtaRequestPending ? 'time-outline' : 'git-merge'} size={16} color="#FFFFFF" />
+              <Ionicons
+                name={
+                  match.rishtaRequestPending
+                    ? 'time-outline'
+                    : canRequestRishta
+                      ? 'git-merge'
+                      : 'alert-circle-outline'
+                }
+                size={16}
+                color="#FFFFFF"
+              />
               <Text style={styles.moveToRishtaText}>
                 {match.rishtaRequestPending ? t('chat.moveToRishtaPending') : t('chat.moveToRishta')}
               </Text>

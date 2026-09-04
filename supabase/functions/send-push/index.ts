@@ -30,14 +30,28 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
 
 // Which notification_prefs column gates which event. An event with no entry
-// here is not gated — keep this in step with types/content.ts NotificationType.
+// here is not gated. The three rishta events are one stored notification type
+// (types/content.ts NotificationType) under one preference switch — a member
+// who wants to hear about rishta requests wants to hear the answer to their own.
 const PREF_COLUMN: Record<string, string> = {
   match: 'new_matches',
   message: 'messages',
   like: 'likes',
   rishta_request: 'rishta_requests',
+  rishta_accepted: 'rishta_requests',
+  rishta_declined: 'rishta_requests',
   system: 'product_updates',
 };
+
+// The events a member may send about a match they are in. `rishta_accepted`
+// and `rishta_declined` are additionally checked against the row itself below —
+// a member cannot announce an answer they did not give.
+const MATCH_EVENTS = ['message', 'rishta_request', 'rishta_accepted', 'rishta_declined'];
+
+// How long after answering a request that answer may still be pushed. Long
+// enough for a slow network on the call that follows the RPC, short enough that
+// a stale row is not a standing licence to re-send it.
+const ANSWER_WINDOW_MS = 5 * 60 * 1000;
 
 interface SendPushBody {
   event: keyof typeof PREF_COLUMN | string;
@@ -74,6 +88,19 @@ const COPY: Record<string, Record<string, string>> = {
     en: 'would like to move to Rishta stage.',
     ur: 'آپ کے ساتھ رشتہ مرحلے میں جانا چاہتے ہیں۔',
     roman: 'aap ke sath Rishta marhale mein jana chahte hain.',
+  },
+  // Kept word for word in step with public.rishta_copy
+  // (supabase/32_rishta_notifications.sql), which writes the in-app row for the
+  // same event — the same sentence should not arrive twice in two wordings.
+  rishta_accepted: {
+    en: 'accepted your Rishta request — you are both in Rishta stage now.',
+    ur: 'نے آپ کی رشتہ درخواست قبول کر لی — اب آپ دونوں رشتہ مرحلے میں ہیں۔',
+    roman: 'ne aap ki Rishta darkhwast qubool kar li — ab aap dono Rishta marhale mein hain.',
+  },
+  rishta_declined: {
+    en: 'is not ready for Rishta stage yet.',
+    ur: 'ابھی رشتہ مرحلے کے لیے تیار نہیں ہیں۔',
+    roman: 'abhi Rishta marhale ke liye tayyar nahi hain.',
   },
   message: {
     en: 'sent you a message.',
@@ -146,13 +173,13 @@ Deno.serve(async (req: Request) => {
       .eq('id', callerId)
       .maybeSingle();
 
-    if (event === 'message' || event === 'rishta_request') {
+    if (MATCH_EVENTS.includes(event)) {
       const matchId = payload.matchId;
       if (!matchId) return json({ error: 'missing_fields', required: ['matchId'] }, 400);
 
       const { data: match } = await supabase
         .from('matches')
-        .select('id, user_a, user_b')
+        .select('id, user_a, user_b, mode, rishta_requested_by, rishta_answered_by, rishta_answered_at')
         .eq('id', matchId)
         .maybeSingle();
 
@@ -160,6 +187,29 @@ Deno.serve(async (req: Request) => {
       if (match.user_a !== callerId && match.user_b !== callerId) {
         return json({ error: 'not_a_participant' }, 403);
       }
+
+      // "They accepted your request" is the one line the *other* half of the
+      // pair would want to be able to send, so an answer is only carried for
+      // the member the row says actually gave it, and only while it is the
+      // answer the row still holds. `respond_rishta` stamps both
+      // (supabase/32_rishta_notifications.sql); the client sends this the
+      // moment that call returns, so the window is generous on purpose.
+      if (event === 'rishta_accepted' || event === 'rishta_declined') {
+        if (match.rishta_answered_by !== callerId) {
+          return json({ error: 'not_the_answerer' }, 403);
+        }
+        const answeredAt = match.rishta_answered_at ? Date.parse(match.rishta_answered_at) : NaN;
+        if (!Number.isFinite(answeredAt) || Date.now() - answeredAt > ANSWER_WINDOW_MS) {
+          return json({ error: 'answer_too_old' }, 403);
+        }
+        if (event === 'rishta_accepted' && match.mode !== 'rishta') {
+          return json({ error: 'not_in_rishta' }, 403);
+        }
+        if (event === 'rishta_declined' && match.rishta_requested_by !== null) {
+          return json({ error: 'request_still_pending' }, 403);
+        }
+      }
+
       userId = match.user_a === callerId ? match.user_b : match.user_a;
       routing = { matchId };
     } else if (event === 'like' || event === 'match') {

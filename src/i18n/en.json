@@ -314,6 +314,7 @@
     "rishtaDeclinedTitle": "Request declined",
     "rishtaDeclinedBody": "You've let {name} know you're not ready for Rishta stage yet.",
     "rishtaProfileNeededTitle": "Fill in your Rishta profile first",
+    "rishtaProfileNeededAction": "Complete Rishta profile",
     "rishtaProfileNeededBody": "Add your religion, education, family background and readiness before asking someone to move to Rishta stage — that is what they will be deciding on.",
     "rishtaRequestFailed": "That didn't go through. Try again in a moment."
   },

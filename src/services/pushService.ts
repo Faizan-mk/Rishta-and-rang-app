@@ -6,7 +6,7 @@ import { supabase } from './supabase';
 // ---------------------------------------------------------------------------
 // Push registration.
 //
-// Registration plus the four moments that fire one. The device address is
+// Registration plus the moments that fire one. The device address is
 // stored here; the sending itself is the `send-push` Edge Function
 // (supabase/functions/send-push), which the notify helpers below call.
 //
@@ -189,6 +189,23 @@ function notifyRishtaRequest(matchId: string): Promise<void> {
   return notify({ event: 'rishta_request', matchId });
 }
 
+/**
+ * The answer to a request, sent by the person who answered it.
+ *
+ * The requester is the one side of the handshake that has nothing on screen to
+ * tell it: their `mode` flips (or their pending bar clears) under them, from a
+ * write they did not make. The in-app row is written by `respond_rishta` itself
+ * (supabase/32_rishta_notifications.sql); this is the half that reaches a phone
+ * that is not open.
+ */
+function notifyRishtaAccepted(matchId: string): Promise<void> {
+  return notify({ event: 'rishta_accepted', matchId });
+}
+
+function notifyRishtaDeclined(matchId: string): Promise<void> {
+  return notify({ event: 'rishta_declined', matchId });
+}
+
 function notifyLike(targetId: string): Promise<void> {
   return notify({ event: 'like', targetId });
 }
@@ -203,6 +220,8 @@ export const pushService = {
   unregisterPushToken,
   notifyMessage,
   notifyRishtaRequest,
+  notifyRishtaAccepted,
+  notifyRishtaDeclined,
   notifyLike,
   notifyMatch,
 };
