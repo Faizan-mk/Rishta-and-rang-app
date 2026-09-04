@@ -28,7 +28,14 @@ export function Badge({ label, tone = 'neutral', icon }: BadgeProps) {
   return (
     <View style={[styles.badge, { backgroundColor: palette.bg }]}>
       {icon && <Ionicons name={icon} size={11} color={palette.fg} style={styles.icon} />}
-      <Text style={[styles.text, { color: palette.fg }]}>{label}</Text>
+      {/* One line, always. A pill that wraps stops being a pill: in a tight
+          column (the chat header, where four icons and an avatar leave very
+          little) "Moved to Rishta" broke in two and doubled the header's
+          height. Narrow space now shortens the label instead of growing the
+          badge. */}
+      <Text style={[styles.text, { color: palette.fg }]} numberOfLines={1}>
+        {label}
+      </Text>
     </View>
   );
 }
@@ -39,10 +46,14 @@ const makeStyles = (colors: Palette) =>
       flexDirection: 'row',
       alignItems: 'center',
       alignSelf: 'flex-start',
+      // Hugs its label, but never spills past the column it sits in.
+      maxWidth: '100%',
       borderRadius: radius.pill,
       paddingHorizontal: spacing.sm + 2,
       paddingVertical: 4,
     },
     icon: { marginRight: 3 },
-    text: { ...typography.caption, fontWeight: '600' },
+    // `flexShrink` is what lets the ellipsis happen — without it the text keeps
+    // its full width and pushes out of the pill instead of being trimmed.
+    text: { ...typography.caption, fontWeight: '600', flexShrink: 1 },
   });

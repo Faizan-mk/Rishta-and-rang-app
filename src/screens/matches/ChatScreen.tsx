@@ -215,8 +215,13 @@ export function ChatScreen() {
           <Image source={{ uri: match.photo }} style={styles.headerAvatar} />
         </LinearGradient>
         <View style={styles.headerTextWrap}>
-          <Text style={styles.headerName}>{match.name}</Text>
-          {match.movedToRishta && <Badge label={t('matches.movedToRishta')} tone="rishta" />}
+          <Text style={styles.headerName} numberOfLines={1}>
+            {match.name}
+          </Text>
+          {/* "Moved to Rishta" is the list's wording, where a row has the width
+              for it. Here the column is what is left after an avatar and four
+              icons, so the badge says the stage and the header says the rest. */}
+          {match.movedToRishta && <Badge label={t('chat.rishtaBadge')} tone="rishta" />}
         </View>
         <Pressable onPress={() => router.push({ pathname: '/call', params: { name: match.name, photo: match.photo } })} style={styles.headerIconButton}>
           <Ionicons name="call-outline" size={20} color={colors.teal} />
@@ -385,12 +390,19 @@ const makeStyles = (colors: Palette) =>
     // Back button, avatar and the call/report icons all mirror together, so
     // the back chevron stays under the thumb that reaches the reading edge.
     headerRtl: { flexDirection: 'row-reverse' },
+    // Symmetric on purpose: the row mirrors wholesale in Urdu, so a directional
+    // margin here would end up on the wrong side of the chevron.
     backButton: { padding: spacing.xs, marginHorizontal: spacing.xs },
     headerAvatarRing: { width: 42, height: 42, borderRadius: radius.pill, padding: 2 },
     headerAvatar: { width: '100%', height: '100%', borderRadius: radius.pill, backgroundColor: colors.skeleton },
-    headerTextWrap: { flex: 1, marginHorizontal: spacing.sm, gap: 2 },
+    // The only column here that can give: everything else in the row is a fixed
+    // size, so this is what a long name or a badge has to fit inside.
+    headerTextWrap: { flex: 1, minWidth: 0, marginHorizontal: spacing.sm, gap: 2 },
     headerName: { ...typography.bodyBold, color: colors.textPrimary, fontWeight: '800' },
-    headerIconButton: { padding: spacing.xs, marginHorizontal: spacing.xs },
+    // Four of these sit in the row, so their margins are what the name and the
+    // badge are actually competing against. The tap target stays 40dp-ish via
+    // the padding; only the space between them comes down.
+    headerIconButton: { padding: spacing.xs, marginHorizontal: 2 },
     rishtaBannerWrap: { paddingHorizontal: spacing.md, paddingTop: spacing.sm },
     rishtaBanner: { borderRadius: radius.lg, padding: spacing.md, gap: spacing.sm },
     rishtaBannerText: { ...typography.label, color: '#FFFFFF', fontWeight: '800' },
