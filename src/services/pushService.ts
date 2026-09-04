@@ -134,6 +134,56 @@ export async function requestPushToken(): Promise<string | null> {
   }
 }
 
+/**
+ * What `send-push` puts in a notification's `data`, for the app to route on.
+ *
+ * Every field is optional because it arrives off the wire: a notification sent
+ * by hand from curl, or by an older build, carries whatever it carries. The
+ * router treats anything it does not recognise as "just open the app".
+ */
+export interface PushRouting {
+  event?: string;
+  matchId?: string;
+}
+
+function routingOf(data: unknown): PushRouting {
+  if (!data || typeof data !== 'object') return {};
+  const { event, matchId } = data as Record<string, unknown>;
+  return {
+    event: typeof event === 'string' ? event : undefined,
+    matchId: typeof matchId === 'string' ? matchId : undefined,
+  };
+}
+
+/**
+ * Calls back when a member taps one of our notifications while the app is
+ * running (foreground or backgrounded). Returns its own unsubscribe.
+ */
+function onNotificationTap(handler: (routing: PushRouting) => void): () => void {
+  const Notifications = loadNotifications();
+  if (!Notifications) return () => undefined;
+  const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
+    handler(routingOf(response.notification.request.content.data));
+  });
+  return () => subscription.remove();
+}
+
+/**
+ * The tap that launched the app, when that is how it was opened.
+ *
+ * A killed app is not listening when the tap happens, so the response is not
+ * delivered to a listener at all — it is waiting here instead. Without this, a
+ * push that wakes a closed app drops the member on whatever screen they left,
+ * which is the case the notification exists for.
+ */
+async function initialNotificationTap(): Promise<PushRouting | null> {
+  const Notifications = loadNotifications();
+  if (!Notifications) return null;
+  const response = await Notifications.getLastNotificationResponseAsync();
+  if (!response) return null;
+  return routingOf(response.notification.request.content.data);
+}
+
 /** What the device is, for debugging "why did only the iPhones miss it". */
 function deviceInfo(): Record<string, unknown> {
   return {
@@ -218,6 +268,8 @@ export const pushService = {
   requestPushToken,
   registerPushToken,
   unregisterPushToken,
+  onNotificationTap,
+  initialNotificationTap,
   notifyMessage,
   notifyRishtaRequest,
   notifyRishtaAccepted,

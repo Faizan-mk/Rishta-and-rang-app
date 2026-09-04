@@ -262,6 +262,64 @@ from public.reports where reporter_id = :a and target_id = :b;
 `reports` has no select policy, so this query only works from the SQL editor —
 a reporter cannot read back their own report, by design.
 
+## 10 · Push, on a closed app
+
+**Development build only.** Expo Go cannot mint a push token on SDK 53+, and
+Android additionally needs FCM credentials on the EAS project. In Expo Go every
+step below silently does nothing, which is not a failure of the wiring.
+
+**First, is there anywhere to send to?**
+
+```sql
+select user_id, device_info->>'platform' as platform, created_at
+from public.push_tokens;
+-- expect one row per signed-in device
+```
+
+Empty means no device ever got a token. The app says why in the dev console:
+`[push] no token: <reason>` — Expo Go, not a physical device, permission
+declined, or no FCM credentials.
+
+**Do:** on B, **close the app completely** (swipe it out of recents — not just
+background it). On A, send a message.
+
+**See on B:** a system notification with **A's name** as the title and the
+message text as the body. Tap it → the app opens **on that thread**, not on
+whichever screen it was left on.
+
+Then the same for the other three events, in whatever order suits:
+
+| Fire it by | B should see |
+|---|---|
+| A likes B (no match yet) | "A liked your profile." → tap opens Notifications |
+| B likes A back | "You matched! Say salaam." → tap opens Matches |
+| A sends a Move to Rishta request | "A would like to move to Rishta stage." → tap opens the thread |
+| B accepts, A's app closed | A gets "B accepted your Rishta request…" → tap opens the thread |
+
+**Then prove the preference actually stops it:** on B, Settings → Notifications
+→ turn **Messages** off. A sends another message.
+
+**See:** no push on B. **But the message still arrives in the thread** — muting
+is about the telling, not the feature. Turn it back on, send again, the push
+returns.
+
+The database half of that gate is provable without a phone:
+`supabase/tests/verify_notification_prefs.sql` mutes a category, confirms
+nothing is written, confirms the underlying request still landed, and confirms a
+member with no prefs row at all still hears (the table's defaults).
+
+**If nothing arrives**, work down this list before touching the app code:
+
+1. `select count(*) from public.push_tokens;` — no row means the device never
+   registered, and nothing after this matters.
+2. Is `send-push` deployed, and is it the current version?
+   `npx supabase functions deploy send-push --project-ref <ref>`
+3. Dashboard → Edge Functions → send-push → Logs. `{"skipped":"no_devices"}`
+   means step 1; `{"skipped":"muted_by_prefs"}` means the pref is off;
+   `expo_rejected` means Expo refused the token or the payload.
+4. Android with no FCM credentials on the EAS project cannot be reached at all,
+   however correct everything else is: `npx eas credentials`.
+
 ---
 
 ## What "done" means
@@ -279,6 +337,10 @@ itself about an event that did not happen.
 - [ ] Decline tells the requester rather than silently reverting
 - [ ] Block removes the pair from each other in both directions
 - [ ] Report lands as a real row with a stable reason key
+- [ ] A message to a **closed** app arrives as a system push, and tapping it
+      opens that thread
+- [ ] Turning the category off in Settings actually stops the push, without
+      stopping the message
 
 ## When something breaks
 

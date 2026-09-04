@@ -20,6 +20,7 @@ import { DialogProvider } from '../store/DialogContext';
 import { OnboardingProvider } from '../store/onboardingStore';
 import { ResponsiveFrame } from '../components/common/ResponsiveFrame';
 import { usePushRegistration } from '../hooks/usePushRegistration';
+import { usePushNavigation } from '../hooks/usePushNavigation';
 
 // The signed-in and signed-out route groups are gated with <Stack.Protected>, so
 // a deep link into a protected screen falls back to the anchor route ("index"),
@@ -28,9 +29,11 @@ function RootNavigator() {
   const { user, initializing } = useAuth();
   const { colors, isDark } = useTheme();
   const { t } = useLanguage();
-  // Stores this device's push address once someone is signed in. Nothing sends
-  // yet — see supabase/functions/send-push.
+  // Stores this device's push address once someone is signed in; the sending
+  // itself is supabase/functions/send-push, fired from the moments in
+  // MatchesContext. The second hook opens whatever a tapped push was about.
   usePushRegistration();
+  usePushNavigation();
 
   const navigationTheme = useMemo<Theme>(() => {
     const base = isDark ? DarkTheme : DefaultTheme;
