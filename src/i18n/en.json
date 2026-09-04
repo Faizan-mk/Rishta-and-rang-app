@@ -309,6 +309,7 @@
     "timePm": "PM",
     "reactionPickerTitle": "React with",
     "rishtaIncoming": "{name} wants to move this to Rishta stage.",
+    "rishtaBadge": "Rishta",
     "rishtaAccept": "Accept",
     "rishtaDecline": "Not yet",
     "rishtaDeclinedTitle": "Request declined",
