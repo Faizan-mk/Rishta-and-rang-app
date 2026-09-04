@@ -609,7 +609,25 @@ async function login(email: string, password: string): Promise<UserProfile> {
 }
 
 /** Stamps "seen just now" on the public card. Fire-and-forget on app start. */
+/**
+ * Marks the signed-in member as around, now.
+ *
+ * Through an RPC rather than a direct update for two reasons: the time is the
+ * database's rather than the phone's, and the write is skipped entirely for a
+ * member who has turned "Show when I'm online" off
+ * (supabase/34_last_active.sql). The `userId` argument is kept for the callers'
+ * sake — the function stamps `auth.uid()` and takes no parameters, so it cannot
+ * be pointed at anyone else.
+ */
 async function touchLastActive(userId: string): Promise<void> {
+  const { error } = await supabase.rpc('touch_last_active');
+  if (!error) return;
+  // PGRST202: the function is not in the schema cache, which on a project that
+  // has not run supabase/34_last_active.sql yet is simply "not deployed". The
+  // direct update is what the app did before, so falling back to it keeps the
+  // badge working during a rollout instead of silently never being written.
+  // Every other error is left alone — a heartbeat is not worth retrying.
+  if (error.code !== 'PGRST202') return;
   await supabase.from('profiles').update({ last_active_at: new Date().toISOString() }).eq('id', userId);
 }
 

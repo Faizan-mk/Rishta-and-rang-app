@@ -18,23 +18,59 @@ export function timeAgo(isoDate: string, t: Translate): string {
   return t('time.weeksAgo', { count: weeks });
 }
 
-// True when the profile was seen within the last 24h. Undefined/blank timestamps
-// (demo or legacy records) count as not-active so the badge stays honest.
+/**
+ * The "Active today" browse filter.
+ *
+ * Deliberately the same rule as the badge rather than a 24-hour window: a
+ * filter labelled "Active today" that returns cards reading "Active yesterday"
+ * is broken on its face. Undefined/blank timestamps (demo or legacy records)
+ * count as not-active so the filter stays honest.
+ */
 export function isActiveToday(isoDate?: string): boolean {
-  if (!isoDate) return false;
-  const ts = new Date(isoDate).getTime();
-  if (Number.isNaN(ts)) return false;
-  return Date.now() - ts < 24 * 60 * 60 * 1000;
+  const level = activityLevel(isoDate);
+  return level === 'online' || level === 'today';
 }
 
-// How recently the profile was seen, for the card's activity badge. Undefined or
-// unparseable timestamps return null so the badge simply doesn't render.
-export function activityLevel(isoDate?: string): 'today' | 'week' | null {
+/** Seen within this long counts as "right now" rather than "today". */
+const ONLINE_WINDOW_MS = 10 * 60 * 1000;
+
+export type ActivityLevel = 'online' | 'today' | 'yesterday' | 'week';
+
+/**
+ * How recently the profile was seen, for the card's activity badge.
+ *
+ * **Today means today, not "within 24 hours".** Those are different things and
+ * the difference is exactly where a badge starts lying: at 9am, someone last
+ * seen at 11pm the night before is inside 24 hours, and saying "Active today"
+ * about them is wrong in the way a reader would notice if they knew. The day
+ * boundaries are real calendar days in the reader's own timezone.
+ *
+ * **Null past a week** is the other rule worth stating. A green live-dot pill
+ * saying "active" over someone last seen in March is the kind of thing that
+ * decides whether a person bothers messaging, so beyond a week the badge does
+ * not render at all rather than reaching for a vaguer word.
+ *
+ * `null` is also what an absent or unparseable timestamp gives — which is what a
+ * member who has turned "Show when I'm online" off now has
+ * (supabase/34_last_active.sql), so their card simply carries no badge.
+ */
+export function activityLevel(isoDate?: string): ActivityLevel | null {
   if (!isoDate) return null;
   const ts = new Date(isoDate).getTime();
   if (Number.isNaN(ts)) return null;
+
+  // A clock ahead of the server's would otherwise read as "not yet active".
   const elapsed = Date.now() - ts;
-  if (elapsed < 24 * 60 * 60 * 1000) return 'today';
+  if (elapsed < ONLINE_WINDOW_MS) return 'online';
+
+  const now = new Date();
+  const key = dayKey(isoDate);
+  if (key === dayKey(now.toISOString())) return 'today';
+
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if (key === dayKey(yesterday.toISOString())) return 'yesterday';
+
   if (elapsed < 7 * 24 * 60 * 60 * 1000) return 'week';
   return null;
 }

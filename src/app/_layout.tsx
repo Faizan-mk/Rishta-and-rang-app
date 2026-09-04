@@ -22,6 +22,7 @@ import { OnboardingProvider } from '../store/onboardingStore';
 import { ResponsiveFrame } from '../components/common/ResponsiveFrame';
 import { usePushRegistration } from '../hooks/usePushRegistration';
 import { usePushNavigation } from '../hooks/usePushNavigation';
+import { useActivityHeartbeat } from '../hooks/useActivityHeartbeat';
 
 // The signed-in and signed-out route groups are gated with <Stack.Protected>, so
 // a deep link into a protected screen falls back to the anchor route ("index"),
@@ -35,6 +36,8 @@ function RootNavigator() {
   // MatchesContext. The second hook opens whatever a tapped push was about.
   usePushRegistration();
   usePushNavigation();
+  // Keeps the "Active now / today" badge honest — see the hook.
+  useActivityHeartbeat();
 
   const navigationTheme = useMemo<Theme>(() => {
     const base = isDark ? DarkTheme : DefaultTheme;
