@@ -218,10 +218,9 @@ export function ChatScreen() {
           <Text style={styles.headerName} numberOfLines={1}>
             {match.name}
           </Text>
-          {/* "Moved to Rishta" is the list's wording, where a row has the width
-              for it. Here the column is what is left after an avatar and four
-              icons, so the badge says the stage and the header says the rest. */}
-          {match.movedToRishta && <Badge label={t('chat.rishtaBadge')} tone="rishta" />}
+          {/* The stage, not the sentence: this column is what is left after an
+              avatar and four icons. Same short label the Matches list uses. */}
+          {match.movedToRishta && <Badge label={t('matches.rishtaBadge')} tone="rishta" />}
         </View>
         <Pressable onPress={() => router.push({ pathname: '/call', params: { name: match.name, photo: match.photo } })} style={styles.headerIconButton}>
           <Ionicons name="call-outline" size={20} color={colors.teal} />
