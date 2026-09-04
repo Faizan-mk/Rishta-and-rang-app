@@ -43,6 +43,16 @@ export interface Palette {
   skeleton: string;
 }
 
+/**
+ * The green that means "here right now" — the deck's live pill and the chat
+ * header's dot.
+ *
+ * Deliberately outside the light/dark palettes: it is a signal borrowed from
+ * every other messaging app, and a reader has to recognise it as the same green
+ * in both themes and on both surfaces. One definition so the two cannot drift.
+ */
+export const ONLINE_GREEN = '#22C55E';
+
 // Warm, editorial palette matching the roadmap doc's own branding (deep teal + gold + sage/plum
 // section accents), extended with a dark variant that keeps the same hue relationships.
 export const lightPalette: Palette = {

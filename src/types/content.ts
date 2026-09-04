@@ -118,6 +118,10 @@ export interface Match {
   // when they have turned their online status off — a receipt is the same class
   // of signal as "last seen" and is behind the same switch.
   theirReadAt?: string;
+  // When the other member was last seen. Absent when they have never been
+  // stamped or have turned their online status off, which is the same absence
+  // and shows the same nothing.
+  lastActiveAt?: string;
   // Links back to the Discover/Rishta listing this match was created from, so
   // "Message" on a profile can find (or create) the same match instead of duplicating it.
   sourceProfileId?: string;
