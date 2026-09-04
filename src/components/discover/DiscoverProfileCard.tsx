@@ -20,10 +20,21 @@ import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
 import { vocabularyLabel } from '../../i18n/vocabulary';
-import { activityLevel } from '../../utils/time';
+import { activityLevel, type ActivityLevel } from '../../utils/time';
 
 // Reads the same in both themes, so it isn't a palette token.
 const ACTIVE_GREEN = '#22C55E';
+
+// Four degrees, and past a week `activityLevel` returns null and the pill does
+// not render at all — a live dot over someone last seen months ago is the kind
+// of thing a person decides whether to message on. "Today" is a real calendar
+// day, so nobody last seen last night is described as having been here today.
+const ACTIVITY_LABEL: Record<ActivityLevel, string> = {
+  online: 'discover.activeNow',
+  today: 'discover.activeToday',
+  yesterday: 'discover.activeYesterday',
+  week: 'discover.activeThisWeek',
+};
 
 interface DiscoverProfileCardProps {
   profile: BrowseProfile;
@@ -129,10 +140,10 @@ export const DiscoverProfileCard = React.memo(function DiscoverProfileCard({
 
           {activity && (
             <View style={[styles.activePill, glow(ACTIVE_GREEN, 0.55, 10, 4)]} pointerEvents="none">
-              <LiveDot />
-              <Text style={styles.activeText}>
-                {t(activity === 'today' ? 'discover.activeToday' : 'discover.activeThisWeek')}
-              </Text>
+              {/* The pulsing dot belongs to "now". Keeping it on a week-old
+                  badge is what made every card look live. */}
+              {activity === 'online' ? <LiveDot /> : <View style={styles.activeDotStill} />}
+              <Text style={styles.activeText}>{t(ACTIVITY_LABEL[activity])}</Text>
             </View>
           )}
 
@@ -257,6 +268,8 @@ const makeStyles = (colors: Palette) =>
       paddingVertical: 6,
     },
     activeText: { color: colors.textPrimary, fontSize: scaleFont(12), fontWeight: '700' },
+    // Same dot, not pulsing: they were here, they are not here now.
+    activeDotStill: { width: 8, height: 8, borderRadius: 4, backgroundColor: ACTIVE_GREEN, opacity: 0.55 },
     likedBadge: {
       position: 'absolute',
       top: spacing.md,

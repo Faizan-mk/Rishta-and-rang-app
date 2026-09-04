@@ -612,3 +612,62 @@ dropped inside the current one.
 day for a Pakistani reader, and the divider with it. `src/utils/__tests__/time.test.ts`
 pins that, and that "today" is computed against the real clock rather than a
 fixed date.
+
+## "Active now" that means it
+
+The card badge said **Active this week** for anything between a day and seven
+days old, and the pulsing live dot sat on all of it — so every card looked
+lively. Two things were wrong underneath.
+
+**`last_active_at` was written once, on sign-in.** On a phone that keeps the app
+resident that is days from the truth: the badge said "opened the app at some
+point", not "this person is around". `useActivityHeartbeat` (root layout) stamps
+it on two signals — coming back to the app, **and a five-minute timer while it
+stays open**. The timer is the one that matters for "Active now": without it a
+member reading their matches for half an hour dropped out of the badge's
+ten-minute window while actively using the app, which is the single case the
+badge exists for.
+
+**And the viewer's copy was as old as their deck.** The deck is fetched once and
+held, so even a perfectly fresh `last_active_at` reached the card as whatever it
+had been when the deck loaded — "Active now" could only ever have been right for
+the instant of the fetch. `DiscoveryContext` re-reads just `id, last_active_at`
+for the profiles on hand, every three minutes and whenever the app is looked at
+again, and patches them in place: no re-order, no change to where the member is
+in the deck, and the same array back when nothing moved so a quiet refresh costs
+no render.
+
+`authService.touchLastActive` falls back to the old direct update if the RPC is
+missing (`PGRST202`), so a project that has not run `34` yet keeps writing the
+column instead of silently never writing it again.
+
+**"Show when I'm online" did nothing.** Privacy & safety offered the switch and
+nothing read it: a member could turn it off and carry on publishing their
+last-seen time to every card in the deck. A switch that does nothing is worse
+than no switch, because it is a promise.
+
+`supabase/34_last_active.sql` moves the write into `touch_last_active` — a
+definer function taking no arguments, so it stamps `auth.uid()` and cannot be
+pointed at anyone else — which checks the preference through the same
+`shows_online_status` the read receipts go through. Turning the switch off also
+**clears** what is already stored, and the migration clears it once for members
+who had it off already: the last value is the one timestamp somebody turning
+that switch most wants gone.
+
+The badge now reads **Active now** (under ten minutes, with the pulsing dot),
+**Active today**, **Active yesterday**, **Active this week** — and past a week it
+does not render at all. A green live-dot pill over someone last seen in March is
+the kind of thing a person decides whether to message on, so beyond a week the
+honest answer is nothing rather than a vaguer word. An absent timestamp gives the
+same nothing, which is what a member with the switch off now has.
+
+**"Today" is a real calendar day, not "within 24 hours".** Those are different
+things, and the difference is exactly where the badge started lying: at 9am,
+someone last seen at 11pm the night before is inside 24 hours, and describing
+them as having been here today is wrong in the way a reader would notice if they
+knew. Day boundaries are computed in the reader's own timezone through `dayKey`,
+the same helper the chat's day dividers use.
+
+The **"Active today" browse filter** runs the same rule rather than its old
+24-hour window — a filter with that label returning cards that read "Active
+yesterday" is broken on its face.

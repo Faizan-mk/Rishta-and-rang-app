@@ -1,4 +1,4 @@
-import { dayKey, dayLabel, sameDay } from '../time';
+import { activityLevel, dayKey, dayLabel, isActiveToday, sameDay } from '../time';
 import type { Translate } from '../../i18n';
 
 // A bubble carries a clock time and nothing else, so the day divider is the only
@@ -85,5 +85,74 @@ describe('dayLabel', () => {
 
   it('is empty for an unparseable timestamp', () => {
     expect(dayLabel('not a date', t)).toBe('');
+  });
+});
+
+// The green pill on a card. What matters most here is the last case: past a
+// week it returns null and the badge does not render, rather than reaching for
+// a vaguer word over someone last seen months ago.
+describe('activityLevel', () => {
+  const ago = (ms: number) => new Date(Date.now() - ms).toISOString();
+  const MINUTE = 60 * 1000;
+  const DAY = 24 * 60 * MINUTE;
+
+  /** A given clock time on a day N days back, so the calendar edges can be tested. */
+  function daysBackAt(days: number, hour: number, minute = 0): string {
+    const date = new Date();
+    date.setDate(date.getDate() - days);
+    date.setHours(hour, minute, 0, 0);
+    return date.toISOString();
+  }
+
+  it('is online within the last few minutes', () => {
+    expect(activityLevel(ago(2 * MINUTE))).toBe('online');
+  });
+
+  // The whole point of the calendar boundary: 11pm last night is inside 24
+  // hours, and calling that today is the lie the badge used to tell.
+  it('calls last night yesterday, not today, even inside 24 hours', () => {
+    expect(activityLevel(daysBackAt(1, 23, 30))).toBe('yesterday');
+  });
+
+  it('calls this morning today', () => {
+    const earlier = new Date();
+    earlier.setHours(0, 30, 0, 0);
+    // Only meaningful when the test is not itself running inside that window.
+    if (Date.now() - earlier.getTime() > 15 * MINUTE) {
+      expect(activityLevel(earlier.toISOString())).toBe('today');
+    }
+  });
+
+  it('is this week three days back', () => {
+    expect(activityLevel(daysBackAt(3, 12))).toBe('week');
+  });
+
+  it('is nothing at all past a week', () => {
+    expect(activityLevel(ago(8 * DAY))).toBeNull();
+    expect(activityLevel(ago(200 * DAY))).toBeNull();
+  });
+
+  it('is nothing when there is no timestamp — a hidden online status shows no badge', () => {
+    expect(activityLevel(undefined)).toBeNull();
+    expect(activityLevel('')).toBeNull();
+    expect(activityLevel('not a date')).toBeNull();
+  });
+
+  it('reads a clock that is slightly ahead as online rather than as not-yet-active', () => {
+    expect(activityLevel(new Date(Date.now() + 30 * 1000).toISOString())).toBe('online');
+  });
+});
+
+// The browse filter has to agree with the badge, or turning it on returns cards
+// that say 'Active yesterday'.
+describe('isActiveToday', () => {
+  it('accepts online and today, and nothing older', () => {
+    const yesterdayEvening = new Date();
+    yesterdayEvening.setDate(yesterdayEvening.getDate() - 1);
+    yesterdayEvening.setHours(23, 30, 0, 0);
+
+    expect(isActiveToday(new Date().toISOString())).toBe(true);
+    expect(isActiveToday(yesterdayEvening.toISOString())).toBe(false);
+    expect(isActiveToday(undefined)).toBe(false);
   });
 });

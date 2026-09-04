@@ -1,4 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { AppState } from 'react-native';
 import { discoveryService } from '../services/discoveryService';
 import { cache, CACHE_KEYS } from '../services/cache';
 import type { DiscoverProfile, RishtaListingProfile } from '../types/content';
@@ -34,6 +35,12 @@ const FALLBACK_AVATAR = 'https://placehold.co/900x1200/EDE9E1/8B9A9C/png?text=No
 // Below this many real members, the demo deck (dev-only) is appended so there is
 // always something to browse. Demo profiles never overwrite real ones — they follow them.
 const MIN_DECK_SIZE = 8;
+
+// How often the held deck's last-seen times are re-read, and how many of them.
+// Shorter than the badge's ten-minute "now" window, so a member who comes online
+// while the deck is on screen shows as online before that window has passed.
+const ACTIVITY_REFRESH_MS = 3 * 60 * 1000;
+const ACTIVITY_REFRESH_LIMIT = 100;
 
 function fillWithDemo<T extends { id: string }>(real: T[], demo: T[] | undefined): T[] {
   if (real.length >= MIN_DECK_SIZE) return real;
@@ -77,6 +84,13 @@ export function DiscoveryProvider({ children }: { children: React.ReactNode }) {
   const page = useRef(0);
   const fetching = useRef(false);
   const { showError } = useToast();
+
+  // The current decks, for the activity refresh below — which is set up once per
+  // sign-in and so cannot read them from its own closure.
+  const decks = useRef({ dating: datingProfiles, rishta: rishtaProfiles });
+  useEffect(() => {
+    decks.current = { dating: datingProfiles, rishta: rishtaProfiles };
+  }, [datingProfiles, rishtaProfiles]);
 
   const reload = useCallback(async () => {
     if (!user) {
@@ -162,6 +176,69 @@ export function DiscoveryProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     reload();
   }, [reload]);
+
+  /**
+   * Re-reads only the last-seen times of the profiles already held.
+   *
+   * The deck is fetched once, so without this the "Active now" badge could only
+   * ever be right for the instant the deck loaded — someone who came online a
+   * minute ago went on reading as whatever they were then. Two columns for the
+   * ids on hand, patched in place, so nothing about the deck's order or the
+   * member's position in it moves.
+   */
+  useEffect(() => {
+    if (!user) return;
+
+    let cancelled = false;
+    const refresh = async () => {
+      // Read through the ref, not the closure: this effect is deliberately set
+      // up once per sign-in, so the lists it captured would be whatever the deck
+      // held before the first fetch landed — usually nothing.
+      const { dating, rishta } = decks.current;
+      // The front of the deck is what is being looked at; beyond that the badge
+      // will be refreshed by the time it is reached.
+      const ids = [...new Set([...dating, ...rishta].slice(0, ACTIVITY_REFRESH_LIMIT).map((p) => p.id))];
+      if (ids.length === 0) return;
+      try {
+        const activity = await discoveryService.fetchActivity(ids);
+        if (cancelled || activity.size === 0) return;
+        // Returns the very same array when nothing moved, so a quiet refresh —
+        // which is most of them — costs no re-render and no cache write.
+        const patch = <T extends { id: string; lastActiveAt?: string }>(list: T[]): T[] => {
+          let changed = false;
+          const next = list.map((profile) => {
+            if (!activity.has(profile.id)) return profile;
+            const lastActiveAt = activity.get(profile.id) ?? undefined;
+            if (lastActiveAt === profile.lastActiveAt) return profile;
+            changed = true;
+            return { ...profile, lastActiveAt };
+          });
+          return changed ? next : list;
+        };
+        setDatingProfiles(patch);
+        setRishtaProfiles(patch);
+      } catch {
+        // A stale badge is the cost, and it only ever understates how recently
+        // someone was here. Not worth a toast.
+      }
+    };
+
+    void refresh();
+    const timer = setInterval(refresh, ACTIVITY_REFRESH_MS);
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') void refresh();
+    });
+
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+      subscription.remove();
+    };
+    // Deliberately not re-run per deck change — that would tear down and rebuild
+    // the timer on every page appended. The current deck reaches it through the
+    // ref above instead.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   useEffect(() => {
     if (!user || hydratedFor.current !== user.id) return;
