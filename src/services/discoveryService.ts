@@ -22,12 +22,23 @@ interface ProfileEntry {
   data: ProfileDoc;
 }
 
-async function fetchProfiles(viewer?: Gender): Promise<ProfileEntry[]> {
+/** How many members one page of the deck carries. */
+export const DECK_PAGE_SIZE = 30;
+
+async function fetchProfiles(viewer: Gender | undefined, page: number, pageSize: number): Promise<ProfileEntry[]> {
+  const from = page * pageSize;
   // male sees female, female sees male, 'other' sees both — see utils/genderMatch.
+  //
+  // Ordered before it is ranged, or "page 2" means nothing: without an explicit
+  // order PostgreSQL may return rows in any order it likes, and two pages could
+  // repeat a member or skip one. Newest first is also the order a deck wants.
   const { data, error } = await supabase
     .from('profiles')
     .select(PROFILE_SELECT)
-    .in('gender', targetGenders(viewer));
+    .in('gender', targetGenders(viewer))
+    .order('created_at', { ascending: false })
+    .order('id', { ascending: false })
+    .range(from, from + pageSize - 1);
   if (error) throw new Error(error.message);
   return (data ?? []).map((row) => {
     const profile = row as unknown as ProfileDoc;
@@ -129,14 +140,37 @@ function mapToRishtaProfile({ id, data }: ProfileEntry): RishtaListingProfile {
   };
 }
 
-async function fetchDiscoverProfiles(viewerGender?: Gender, excludeId?: string): Promise<DiscoverProfile[]> {
-  const rows = await fetchProfiles(viewerGender);
-  return rows.filter((row) => row.id !== excludeId).map(mapToDiscoverProfile);
+export interface DeckPage {
+  dating: DiscoverProfile[];
+  rishta: RishtaListingProfile[];
+  /** A full page came back, so there is probably another behind it. */
+  hasMore: boolean;
 }
 
-async function fetchRishtaProfiles(viewerGender?: Gender, excludeId?: string): Promise<RishtaListingProfile[]> {
-  const rows = await fetchProfiles(viewerGender);
-  return rows.filter((row) => row.id !== excludeId).map(mapToRishtaProfile);
+/**
+ * One page of the member pool, mapped into both shapes.
+ *
+ * Both decks read the same rows and the same columns, so fetching them
+ * separately — which is what `fetchDiscoverProfiles` and `fetchRishtaProfiles`
+ * did, one after the other — was the same query run twice for the same data.
+ * It is one query now, mapped twice, which is free.
+ */
+async function fetchDeckPage(
+  viewerGender: Gender | undefined,
+  excludeId: string | undefined,
+  page: number = 0,
+  pageSize: number = DECK_PAGE_SIZE
+): Promise<DeckPage> {
+  const rows = await fetchProfiles(viewerGender, page, pageSize);
+  // Filtered after the range, so a page that contains the viewer is one short
+  // rather than reaching into the next page — `hasMore` is measured on what the
+  // database returned, not on what survived the filter.
+  const visible = rows.filter((row) => row.id !== excludeId);
+  return {
+    dating: visible.map(mapToDiscoverProfile),
+    rishta: visible.map(mapToRishtaProfile),
+    hasMore: rows.length >= pageSize,
+  };
 }
 
 /** Single profile lookup used by ProfileDetailScreen. */
@@ -151,7 +185,6 @@ async function fetchProfileById(
 }
 
 export const discoveryService = {
-  fetchDiscoverProfiles,
-  fetchRishtaProfiles,
+  fetchDeckPage,
   fetchProfileById,
 };

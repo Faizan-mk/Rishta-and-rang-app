@@ -304,8 +304,16 @@
     "reportConfirmTitle": "{name} ki report karein?",
     "reportSentTitle": "Report jama ho gayi",
     "reportSentBody": "Shukriya — hamari hifazati team is guftagu ka jaiza legi.",
+    "statusSending": "Bheja ja raha hai",
+    "statusSent": "Bhej diya",
+    "statusRead": "Parh liya",
     "recording": "Recording ho rahi hai...",
     "photoUnavailable": "Tasveer dastyaab nahi",
+    "today": "Aaj",
+    "yesterday": "Kal",
+    "dateShort": "{day} {month}",
+    "dateFull": "{day} {month} {year}",
+    "loadingOlder": "Pehle ke paighamaat load ho rahe hain…",
     "timeAm": "AM",
     "timePm": "PM",
     "reactionPickerTitle": "Radd-e-amal chunein",
@@ -807,6 +815,14 @@
     "month9": "October",
     "month10": "November",
     "month11": "December"
+  },
+  "netErrors": {
+    "retry": "Dobara koshish",
+    "messageNotSent": "Paigham nahi bheja ja saka.",
+    "olderMessages": "Purane paighamaat load nahi ho sake.",
+    "deckRefresh": "Profiles refresh nahi ho sakin.",
+    "matchesRefresh": "Aap ki matches refresh nahi ho sakin.",
+    "likeNotSent": "Like nahi bheja ja saka."
   },
   "authErrors": {
     "emailTaken": "Yeh email pehle se registered hai. Log in karke dekhein.",

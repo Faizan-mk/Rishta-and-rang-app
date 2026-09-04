@@ -17,26 +17,32 @@ handshake was a 2.2-second `setTimeout` for months and looked perfect.
 ### 1. The database is up to date
 
 Run, in order, anything not already applied. As of the last check against the
-live project, `27` and `28` are applied and **`32` is not**:
+live project, everything through `32` is applied and **`33` is not**:
 
 ```sql
--- supabase/32_rishta_notifications.sql   <- required for steps 7-9 below
+-- supabase/33_chat_paging_and_receipts.sql   <- the app does not load a thread without it
 ```
+
+That one is not optional: the chat reads its messages through two functions this
+migration creates, so until it is run a thread shows only its last line and a
+toast. It creates an index, three functions and one replacement policy — nothing
+is deleted, and it can be run again safely.
 
 `31_drop_legacy_message_columns.sql` is optional (the app works either way —
 `26` already made those columns nullable), but run it if every build in the wild
 is on the current client.
 
-A quick check of what is live, without a password (uses the anon key from `.env`):
+A quick check of what is live, without a password (uses the anon key from
+`.env`; `message_page` is the newest of them):
 
 ```bash
-curl -s -X POST "$EXPO_PUBLIC_SUPABASE_URL/rest/v1/rpc/rishta_copy" \
+curl -s -X POST "$EXPO_PUBLIC_SUPABASE_URL/rest/v1/rpc/message_page" \
   -H "apikey: $EXPO_PUBLIC_SUPABASE_ANON_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"p_event":"rishta_request","p_language":"en"}'
+  -d '{"p_match_id":"00000000-0000-0000-0000-000000000000"}'
 ```
 
-`PGRST202` (not found) means 32 has not been run. `42501` (permission denied)
+`PGRST202` (not found) means 33 has not been run. `42501` (permission denied)
 means it has — the function exists and is not yours to call from out there.
 
 ### 2. The data half, before the device half
@@ -127,6 +133,24 @@ from public.chat_messages where match_id = :m order by sent_at;
 
 If a message never arrives live but the row is there, the fault is the
 subscription, not the policies — `verify_two_way_messaging.sql` separates the two.
+
+**Check the three states of your own message.** On A's bubbles: a clock while
+sending, two grey ticks once it is on the server, and the same two ticks turning
+**blue** once B opens the thread. Put the phone in aeroplane mode and send — the bubble should appear
+immediately, then get a **Retry** pill and a toast, not vanish.
+
+```sql
+select user_id, last_read_at from public.match_reads where match_id = :m;
+-- the double tick on A's side is B's row here, nothing more is stored
+```
+
+If B has turned **Settings → Privacy → online status** off, A's ticks stay grey
+however many times B reads it. That is deliberate — a read receipt is the same
+class of signal as "last seen", so it is behind the same switch.
+
+**A long thread.** Send enough messages that the thread is longer than a screen
+(or open one that already is), scroll up, and watch older messages page in 30 at
+a time with a spinner at the top. Nothing should jump or repeat.
 
 ## 4 · Per-side unread
 
@@ -341,6 +365,12 @@ itself about an event that did not happen.
       opens that thread
 - [ ] Turning the category off in Settings actually stops the push, without
       stopping the message
+- [ ] A message appears the instant it is sent, and a failed one offers Retry
+      rather than disappearing
+- [ ] Ticks: clock → two grey ticks → two blue ticks when the other side opens
+      the thread
+- [ ] A long thread pages in older messages instead of loading whole
+- [ ] The deck keeps producing cards past the first 30 without a pause
 
 ## When something breaks
 

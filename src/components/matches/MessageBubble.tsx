@@ -47,12 +47,35 @@ function groupReactions(reactions: MessageReaction[], userId: string | undefined
   return order.map((emoji) => ({ emoji, ...counts.get(emoji)! }));
 }
 
+/**
+ * How far one of my own messages got, as one glyph.
+ *
+ * `read` is not stored anywhere: it is the other member's `match_reads` mark
+ * against this message's own timestamp (supabase/33_chat_paging_and_receipts.sql),
+ * which is absent when they have never opened the thread or have turned their
+ * online status off — and an absent mark simply leaves the ticks grey.
+ */
+function deliveryOf(
+  message: ChatMessage,
+  theirReadAt?: string
+): 'sending' | 'failed' | 'sent' | 'read' | null {
+  if (!message.fromMe) return null;
+  if (message.status === 'sending') return 'sending';
+  if (message.status === 'failed') return 'failed';
+  if (theirReadAt && message.sentAt <= theirReadAt) return 'read';
+  return 'sent';
+}
+
 export const MessageBubble = React.memo(function MessageBubble({
   message,
   currentUserId,
+  theirReadAt,
+  onRetry,
 }: {
   message: ChatMessage;
   currentUserId?: string;
+  theirReadAt?: string;
+  onRetry?: (message: ChatMessage) => void;
 }) {
   const { colors } = useTheme();
   const { t, rtl } = useLanguage();
@@ -64,6 +87,7 @@ export const MessageBubble = React.memo(function MessageBubble({
   const pills = useMemo(() => groupReactions(reactions, currentUserId), [reactions, currentUserId]);
 
   const textColor = message.fromMe ? styles.textMe : styles.textThem;
+  const delivery = deliveryOf(message, theirReadAt);
 
   let content: React.ReactNode;
   if (message.kind === 'voice' && message.audioUri) {
@@ -127,9 +151,45 @@ export const MessageBubble = React.memo(function MessageBubble({
           </View>
         )}
 
-        <Text style={[styles.timestamp, message.fromMe ? styles.timestampMe : styles.timestampThem]}>
-          {formatMessageTime(message.sentAt, t)}
-        </Text>
+        <View style={[styles.metaRow, message.fromMe ? styles.metaRowMe : styles.metaRowThem]}>
+          <Text style={[styles.timestamp, message.fromMe ? styles.timestampMe : styles.timestampThem]}>
+            {formatMessageTime(message.sentAt, t)}
+          </Text>
+          {delivery === 'sending' && (
+            <Ionicons name="time-outline" size={12} color={colors.textTertiary} accessibilityLabel={t('chat.statusSending')} />
+          )}
+          {/* Two ticks either way — the colour is what changes. Grey means the
+              message reached the server; blue means their read mark has passed
+              it. A different glyph for each would make "delivered" read as a
+              lesser thing than it is. */}
+          {delivery === 'sent' && (
+            <Ionicons
+              name="checkmark-done"
+              size={14}
+              color={colors.textTertiary}
+              accessibilityLabel={t('chat.statusSent')}
+            />
+          )}
+          {delivery === 'read' && (
+            <Ionicons
+              name="checkmark-done"
+              size={14}
+              color={colors.readReceipt}
+              accessibilityLabel={t('chat.statusRead')}
+            />
+          )}
+          {delivery === 'failed' && (
+            <Pressable
+              onPress={() => onRetry?.(message)}
+              style={styles.retry}
+              accessibilityRole="button"
+              accessibilityLabel={t('netErrors.retry')}
+            >
+              <Ionicons name="refresh" size={12} color={colors.danger} />
+              <Text style={styles.retryLabel}>{t('netErrors.retry')}</Text>
+            </Pressable>
+          )}
+        </View>
       </View>
 
       <ReactionPicker
@@ -338,7 +398,22 @@ const makeStyles = (colors: Palette) =>
     pickerButtonMine: { backgroundColor: withAlpha(colors.teal, 0.18) },
     pickerEmoji: { fontSize: scaleFont(24) },
 
-    timestamp: { ...typography.caption, fontSize: scaleFont(10), marginTop: 3, fontWeight: '600' },
+    timestamp: { ...typography.caption, fontSize: scaleFont(10), fontWeight: '600' },
     timestampMe: { color: colors.textTertiary, textAlign: 'right' },
     timestampThem: { color: colors.textTertiary, textAlign: 'left' },
+    // The time and the delivery glyph read as one line, trailing the bubble on
+    // whichever side the bubble itself sits.
+    metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 },
+    metaRowMe: { justifyContent: 'flex-end' },
+    metaRowThem: { justifyContent: 'flex-start' },
+    retry: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
+      paddingHorizontal: spacing.xs,
+      paddingVertical: 2,
+      borderRadius: radius.pill,
+      backgroundColor: withAlpha(colors.danger, 0.12),
+    },
+    retryLabel: { ...typography.caption, fontSize: scaleFont(10), color: colors.danger, fontWeight: '800' },
   });

@@ -105,6 +105,8 @@ export function mapChatMessageDoc(id: string, data: ChatMessageDoc, userId: stri
     audioUri: data.audioUrl ?? undefined,
     durationSec: data.durationSec ?? undefined,
     imageUri: data.imageUrl ?? undefined,
+    // This maps a row the server returned, so it is on the server by definition.
+    status: 'sent',
   };
 }
 
@@ -146,41 +148,102 @@ async function fetchMatches(profileId: string): Promise<Match[]> {
   return rows.map((row) => mapMatchRow(row, profileId, cards.get(counterpartOf(row, profileId))));
 }
 
-/**
- * Every message in every conversation this member is part of.
- *
- * No owner filter any more: `messages_select` narrows the read to the threads
- * they participate in, so the unfiltered select is already the right set — and
- * it is what brings the other person's half of the conversation in.
- */
-async function fetchChatHistory(profileId: string): Promise<Record<string, ChatMessage[]>> {
-  const { data, error } = await supabase
-    .from('chat_messages')
-    .select(MESSAGE_SELECT)
-    .order('sent_at', { ascending: true });
-  if (error) throw new Error(error.message);
-  const history: Record<string, ChatMessage[]> = {};
-  for (const row of data ?? []) {
-    const doc = row as unknown as ChatMessageDoc;
-    const message = mapChatMessageDoc(doc.id, doc, profileId);
-    (history[message.matchId] ??= []).push(message);
-  }
-  return history;
+/** How many messages one page of a thread carries. */
+export const MESSAGE_PAGE_SIZE = 30;
+
+/** A `chat_messages` row as PostgreSQL hands it over — snake_case, unaliased. */
+export function rowToMessage(row: Record<string, unknown>, userId: string): ChatMessage {
+  return {
+    id: String(row.id),
+    matchId: String(row.match_id),
+    // Not a stored column: whose message this is, is who is reading it.
+    fromMe: String(row.sender_id) === userId,
+    text: (row.text as string) ?? '',
+    sentAt: (row.sent_at as string) ?? new Date().toISOString(),
+    kind: (row.kind as ChatMessage['kind']) ?? 'text',
+    audioUri: row.audio_path ? String(row.audio_path) : undefined,
+    durationSec: typeof row.duration_sec === 'number' ? row.duration_sec : undefined,
+    imageUri: row.image_path ? String(row.image_path) : undefined,
+    // Anything that came back from the server is on the server.
+    status: 'sent',
+  };
 }
 
-/** When this member last read each of their threads, keyed by match id. */
-async function fetchReads(profileId: string): Promise<Record<string, string>> {
-  const { data, error } = await supabase
-    .from('match_reads')
-    .select('match_id, last_read_at')
-    .eq('user_id', profileId);
+/**
+ * The newest message of each conversation, and nothing else.
+ *
+ * This used to be every message of every thread, fetched before the matches
+ * list could render — the whole history, to show one line per row. `distinct
+ * on` does that server-side now (supabase/33_chat_paging_and_receipts.sql); the
+ * thread itself is paged in when it is opened.
+ */
+async function fetchThreadPreviews(profileId: string): Promise<ChatMessage[]> {
+  const { data, error } = await supabase.rpc('thread_previews');
   if (error) throw new Error(error.message);
-  const reads: Record<string, string> = {};
+  return ((data ?? []) as Record<string, unknown>[]).map((row) => rowToMessage(row, profileId));
+}
+
+export interface MessagePage {
+  /** Oldest first, the order the thread renders in. */
+  messages: ChatMessage[];
+  /** Whether a full page came back — the only honest "there may be more". */
+  hasMore: boolean;
+}
+
+/**
+ * One page of one conversation, newest first, ending just before `cursor`.
+ *
+ * The cursor is a whole message rather than a timestamp: two messages can carry
+ * the same `sent_at` (they are stamped by the client), so a time alone would
+ * either skip one or repeat it. The RPC compares `(sent_at, id)` as a pair.
+ */
+async function fetchMessagePage(
+  profileId: string,
+  matchId: string,
+  cursor?: { sentAt: string; id: string },
+  limit: number = MESSAGE_PAGE_SIZE
+): Promise<MessagePage> {
+  const { data, error } = await supabase.rpc('message_page', {
+    p_match_id: matchId,
+    p_before_at: cursor?.sentAt ?? null,
+    p_before_id: cursor?.id ?? null,
+    p_limit: limit,
+  });
+  if (error) throw new Error(error.message);
+  const rows = (data ?? []) as Record<string, unknown>[];
+  return {
+    // The RPC answers newest first because that is what the index is sorted by;
+    // the screen wants oldest first.
+    messages: rows.map((row) => rowToMessage(row, profileId)).reverse(),
+    hasMore: rows.length >= limit,
+  };
+}
+
+export interface ReadMarks {
+  /** When I last opened each thread — what my own unread badge is measured against. */
+  mine: Record<string, string>;
+  /** When the other member last opened it — what a read receipt is measured against. */
+  theirs: Record<string, string>;
+}
+
+/**
+ * Both sides' read marks in one query.
+ *
+ * `match_reads_select` returns my own row plus my counterpart's, for matches I
+ * am in and unless they have turned their online status off — so the split
+ * below is on `user_id`, and a missing `theirs` entry is simply "no receipt",
+ * whether that is because they never opened it or because they do not share it.
+ */
+async function fetchReads(profileId: string): Promise<ReadMarks> {
+  const { data, error } = await supabase.from('match_reads').select('match_id, user_id, last_read_at');
+  if (error) throw new Error(error.message);
+  const marks: ReadMarks = { mine: {}, theirs: {} };
   for (const row of data ?? []) {
-    const read = row as unknown as { match_id: string; last_read_at: string };
-    reads[read.match_id] = read.last_read_at;
+    const read = row as unknown as { match_id: string; user_id: string; last_read_at: string };
+    const side = read.user_id === profileId ? marks.mine : marks.theirs;
+    side[read.match_id] = read.last_read_at;
   }
-  return reads;
+  return marks;
 }
 
 /** Read state is per person, so this is an upsert on (match_id, user_id). */
@@ -271,7 +334,10 @@ async function deleteMatch(matchId: string): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
-async function insertMessage(profileId: string, data: Omit<ChatMessageDoc, 'id' | 'senderId'>): Promise<ChatMessage> {
+/** What a caller supplies. `sentAt` is not among it — see below. */
+type NewMessage = Omit<ChatMessageDoc, 'id' | 'senderId' | 'sentAt'>;
+
+async function insertMessage(profileId: string, data: NewMessage): Promise<ChatMessage> {
   const { data: row, error } = await supabase
     .from('chat_messages')
     .insert({
@@ -282,18 +348,29 @@ async function insertMessage(profileId: string, data: Omit<ChatMessageDoc, 'id' 
       audio_path: data.audioUrl,
       duration_sec: data.durationSec,
       image_path: data.imageUrl,
-      sent_at: data.sentAt,
+      // `sent_at` is deliberately NOT sent: the column defaults to the
+      // database's own `now()`.
+      //
+      // It used to be stamped from the device, which meant a phone with a wrong
+      // clock wrote a wrong time — and wrote it for both people, since the two
+      // sides read the same row. A message could sit hours in the past, or in
+      // the future, with nothing in the app disagreeing. The reason it was done
+      // that way (a pending timestamp reading back as null and making the
+      // message jump) no longer holds: the insert reads the saved row back, so
+      // the server's own time arrives with it, and the optimistic copy covers
+      // the moment in between.
     })
     .select(MESSAGE_SELECT)
     .single();
   if (error) throw new Error(error.message);
   // The inserted row, not the payload we sent: only the row carries the
-  // database-generated `id`, and the Realtime channel de-dupes on it.
+  // database-generated `id` and `sent_at`, and the Realtime channel de-dupes on
+  // the id.
   const saved = row as unknown as ChatMessageDoc;
   return mapChatMessageDoc(saved.id, saved, profileId);
 }
 
-function baseMessage(matchId: string, kind: ChatMessageKind): Omit<ChatMessageDoc, 'id' | 'senderId'> {
+function baseMessage(matchId: string, kind: ChatMessageKind): NewMessage {
   return {
     matchId,
     kind,
@@ -301,11 +378,6 @@ function baseMessage(matchId: string, kind: ChatMessageKind): Omit<ChatMessageDo
     audioUrl: null,
     durationSec: null,
     imageUrl: null,
-    // Client ISO timestamps (rather than the DB default) keep ordering stable
-    // in the local snapshot — a pending server timestamp at insert time read
-    // back as null and would jump the message around as soon as the write
-    // landed. The same applies here, so we keep stamping client-side.
-    sentAt: new Date().toISOString(),
   };
 }
 
@@ -359,7 +431,8 @@ async function unblockUser(profileId: string, blockedUserId: string): Promise<vo
 
 export const matchesService = {
   fetchMatches,
-  fetchChatHistory,
+  fetchThreadPreviews,
+  fetchMessagePage,
   fetchReads,
   markRead,
   fetchBlocked,

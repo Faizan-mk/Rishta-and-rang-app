@@ -1,0 +1,519 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rishta &amp; Rang — V1 Status Report</title>
+<style>
+  @page { size: A4; margin: 15mm 13mm 16mm 13mm; }
+  :root {
+    --ink:#14232b; --ink-soft:#4a5f68; --ink-faint:#7d9099;
+    --teal:#14606b; --teal-deep:#0d434b; --gold:#b07d2a; --rose:#a8324a;
+    --line:#d9e2e5; --line-soft:#eaf0f2; --wash:#f4f8f9; --wash-warm:#fdf7ec;
+    --ok:#1c6b4a; --ok-bg:#e6f4ec; --warn:#96601a; --warn-bg:#fbf0dc;
+    --stop:#9a2b3f; --stop-bg:#fae9ec;
+  }
+  * { box-sizing:border-box; }
+  body {
+    margin:0; font-family:"Segoe UI","Helvetica Neue",Arial,sans-serif;
+    font-size:9.6pt; line-height:1.45; color:var(--ink);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact;
+  }
+  .cover { border-top:6px solid var(--teal); padding:24px 0 20px; margin-bottom:20px; border-bottom:1px solid var(--line); }
+  .cover .eyebrow { font-size:8.5pt; letter-spacing:.16em; text-transform:uppercase; color:var(--gold); font-weight:700; margin-bottom:10px; }
+  .cover h1 { font-size:26pt; line-height:1.12; margin:0 0 6px; color:var(--teal-deep); letter-spacing:-.01em; }
+  .cover h2 { font-size:12.5pt; font-weight:500; margin:0 0 16px; color:var(--ink-soft); }
+  .meta { display:flex; flex-wrap:wrap; gap:0 32px; font-size:8.8pt; color:var(--ink-soft); }
+  .meta div { margin-bottom:3px; }
+  .meta b { color:var(--ink); font-weight:600; }
+
+  h3 { font-size:13.5pt; color:var(--teal-deep); margin:28px 0 4px; padding-bottom:6px; border-bottom:2px solid var(--teal); page-break-after:avoid; }
+  h4 { font-size:10pt; color:var(--teal); margin:18px 0 6px; text-transform:uppercase; letter-spacing:.07em; page-break-after:avoid; }
+  p { margin:0 0 8px; }
+  ul { margin:0 0 8px; padding-left:16px; }
+  li { margin-bottom:3px; }
+  code { font-family:"Cascadia Mono",Consolas,monospace; font-size:8.2pt; background:var(--wash); padding:1px 4px; border-radius:3px; color:var(--teal-deep); }
+  .lead { font-size:10pt; color:var(--ink-soft); }
+
+  .callout { border-left:4px solid var(--teal); background:var(--wash); padding:10px 13px; margin:11px 0 15px; border-radius:0 5px 5px 0; page-break-inside:avoid; }
+  .callout.warm { border-left-color:var(--gold); background:var(--wash-warm); }
+  .callout.stop { border-left-color:var(--rose); background:var(--stop-bg); }
+  .callout.good { border-left-color:var(--ok); background:var(--ok-bg); }
+  .callout p:last-child { margin-bottom:0; }
+  .callout .h { font-weight:700; display:block; margin-bottom:4px; color:var(--teal-deep); }
+  .callout.warm .h { color:var(--gold); }
+  .callout.stop .h { color:var(--stop); }
+  .callout.good .h { color:var(--ok); }
+
+  .score { display:flex; gap:9px; margin:15px 0 18px; page-break-inside:avoid; }
+  .score div { flex:1; border:1px solid var(--line); border-radius:6px; padding:11px 8px; text-align:center; background:#fff; }
+  .score .n { font-size:20pt; font-weight:700; line-height:1; color:var(--teal-deep); }
+  .score .l { font-size:7.2pt; text-transform:uppercase; letter-spacing:.07em; color:var(--ink-faint); margin-top:6px; }
+  .score .done .n { color:var(--ok); }
+  .score .part .n { color:var(--warn); }
+  .score .miss .n { color:var(--stop); }
+
+  table { width:100%; border-collapse:collapse; margin:8px 0 16px; font-size:8.5pt; page-break-inside:auto; }
+  thead { display:table-header-group; }
+  tr { page-break-inside:avoid; page-break-after:auto; }
+  th { background:var(--teal-deep); color:#fff; text-align:left; padding:6px 7px; font-weight:600; font-size:8pt; letter-spacing:.04em; text-transform:uppercase; }
+  td { padding:6px 7px; border-bottom:1px solid var(--line-soft); vertical-align:top; }
+  tbody tr:nth-child(even) td { background:#fafcfc; }
+  td.num { text-align:center; font-weight:700; color:var(--teal-deep); white-space:nowrap; }
+  td.ctr { text-align:center; white-space:nowrap; }
+
+  .pill { display:inline-block; padding:2px 7px; border-radius:10px; font-size:7.3pt; font-weight:700; white-space:nowrap; letter-spacing:.03em; text-transform:uppercase; }
+  .pill.ok   { background:var(--ok-bg);   color:var(--ok); }
+  .pill.part { background:var(--warn-bg); color:var(--warn); }
+  .pill.miss { background:var(--stop-bg); color:var(--stop); }
+
+  .sev { font-weight:700; white-space:nowrap; }
+  .sev.p0 { color:var(--stop); }
+  .sev.p1 { color:var(--warn); }
+  .sev.p2 { color:var(--ink-faint); }
+
+  .grp-row td { background:var(--teal) !important; color:#fff; font-weight:700; font-size:8pt; letter-spacing:.08em; text-transform:uppercase; }
+  .strike { color:var(--ink-faint); }
+
+  .break { page-break-before:always; }
+  footer { margin-top:26px; padding-top:10px; border-top:1px solid var(--line); font-size:8pt; color:var(--ink-faint); text-align:center; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div class="eyebrow">Status Report &amp; Remaining Scope</div>
+  <h1>Rishta &amp; Rang</h1>
+  <h2>Version 1 (MVP) — Where the build stands now</h2>
+  <div class="meta">
+    <div><b>Prepared</b> 4 September 2026</div>
+    <div><b>Branch</b> <code>dev-faizan</code> @ <code>746f112</code> · app <code>1.0.3</code> (versionCode 4)</div>
+    <div><b>Stack</b> Expo SDK 54 / RN 0.81 · Supabase (Postgres + Auth + Storage + Realtime)</div>
+    <div><b>Supersedes</b> <i>V1 TODO List</i>, prepared 1 September 2026 @ <code>39ebd3a</code></div>
+  </div>
+</div>
+
+<h3>1. Snapshot</h3>
+
+<p class="lead">The blocker the previous report was built around is gone. Matches and messages are pair rows
+that both people can read, the "Move to Rishta" handshake is a real exchange between two accounts, and
+blocking and reporting are enforced by the database rather than by the client. Ten of the eighteen open
+items are closed. <b>What is left divides cleanly in two: one feature that was never started (billing), and a
+set of things that are written but not yet witnessed on two physical devices.</b></p>
+
+<div class="score">
+  <div class="done"><div class="n">12</div><div class="l">Done</div></div>
+  <div class="part"><div class="n">2</div><div class="l">Partial</div></div>
+  <div class="miss"><div class="n">0</div><div class="l">Not started</div></div>
+  <div><div class="n">14</div><div class="l">V1 features</div></div>
+  <div><div class="n">8</div><div class="l">Open todos</div></div>
+  <div class="miss"><div class="n">2</div><div class="l">P0 open</div></div>
+</div>
+
+<div class="callout good">
+  <span class="h">The blocker is cleared</span>
+  <p><code>matches</code> now holds one row per pair, <code>(user_a, user_b)</code> stored in ascending
+  order so a pair can only produce one row, readable by either participant. <code>chat_messages</code> is
+  keyed on <code>(match_id, sender_id)</code> and <code>from_me</code> is derived per reader rather than
+  stored. Unread moved to <code>match_reads</code>, one row per person per conversation, so one member
+  reading their copy leaves the other's alone. The <code>setTimeout</code> that answered a Move to Rishta
+  request on the other person's behalf is deleted; the request is a state on the shared row that only the
+  <i>other</i> member may answer.</p>
+</div>
+
+<div class="callout warm">
+  <span class="h">The distinction this report is organised around</span>
+  <p>Something can be <b>written</b>, <b>proven in the data</b>, or <b>seen working on a phone</b>. Most of
+  this build is now proven in the data — nineteen assertions across the whole journey pass against the live
+  project (§5). Two things are seen working on a phone: the rishta request and its acceptance. Three things
+  are only written: push arriving on a closed device, live Realtime delivery between two devices, and
+  billing. §5 says exactly which is which, and nothing in this report claims more than that.</p>
+</div>
+
+<h3>2. What changed since 1 September</h3>
+
+<p>Thirteen new migrations (<code>20</code> through <code>32</code>), an Edge Function, eleven SQL
+verification scripts, and the first automated tests the repository has had.</p>
+
+<table>
+  <thead>
+    <tr><th style="width:22%">Migration</th><th>What it closed</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>20_message_reactions</code></td><td>Emoji reactions — table, RLS, and the Realtime stream they ride.</td></tr>
+    <tr><td><code>21_reports</code></td><td>A real <code>reports</code> table, insert-only for members, plus auto-hide once three distinct people report a profile.</td></tr>
+    <tr><td><code>22_block_hardening</code></td><td><code>blocked_id</code> became the person's uuid; blocks enforced in the database, both directions.</td></tr>
+    <tr><td><code>23_push_tokens</code></td><td>One row per device, written through a definer RPC so a device that changes hands moves accounts.</td></tr>
+    <tr><td><code>24_matching</code></td><td><b>The pair row.</b> <code>likes</code> + <code>matches</code> reshaped; both added to the Realtime publication.</td></tr>
+    <tr><td><code>25</code>, <code>26</code></td><td>Like write policies; two-way messaging — one thread, both people in it, per-side read marks.</td></tr>
+    <tr><td><code>27_like_profile</code></td><td>One call for the like, the reciprocity check and the match, in one transaction.</td></tr>
+    <tr><td><code>28_rishta_request</code></td><td>The Move to Rishta handshake: request state on the shared row, and only the other member may answer.</td></tr>
+    <tr><td><code>29</code>, <code>30</code></td><td>Entitlements a member cannot grant themselves; the 15-a-day cap moved inside <code>like_profile</code>.</td></tr>
+    <tr><td><code>31</code></td><td>Dropped the one-sided message columns left behind for rollout.</td></tr>
+    <tr><td><code>32_rishta_notifications</code></td><td>Both sides told when a request is asked, accepted or declined; the notifications feed joined Realtime.</td></tr>
+  </tbody>
+</table>
+
+<p>Also added: <code>supabase/functions/send-push</code> (deployed), <code>docs/smoke-test.md</code> (the
+two-device script), <code>docs/handover-notes.md</code> (a written statement of known limits), and a Jest
+suite — <b>4 suites, 41 tests</b>, against a repository that had zero.</p>
+
+<h3 class="break">3. V1 Feature Checklist</h3>
+
+<p class="lead">The same fourteen features, re-measured.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width:4%">#</th><th style="width:17%">Feature</th><th style="width:9%">Status</th>
+      <th style="width:36%">Where it stands</th><th>What is still missing</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr class="grp-row"><td colspan="5">Universal — both modes</td></tr>
+    <tr>
+      <td class="num">1</td><td>Onboarding &amp; Intent Setting</td><td class="ctr"><span class="pill ok">Done</span></td>
+      <td>Unchanged, plus an explicit 18+ affirmation at signup and a link into the Legal screen.</td>
+      <td>—</td>
+    </tr>
+    <tr>
+      <td class="num">2</td><td>Photo Upload &amp; Selfie Verification</td><td class="ctr"><span class="pill part">Partial</span></td>
+      <td>Every badge now says what the system actually checks: <b>"Photo added"</b> for the selfie,
+      <b>"ID photo submitted"</b> for the CNIC. The bureau badge is hidden behind
+      <code>FEATURE_BUREAU</code> (false) because nothing ran a background check. The tick visuals are gone
+      — a camera glyph on neutral ink replaces them.</td>
+      <td>No review queue, so no badge is identity verification (deferred to Day 12). The <b>"Verified
+      only" filter</b> still promises more than it means.</td>
+    </tr>
+    <tr>
+      <td class="num">3</td><td>Urdu + English UI</td><td class="ctr"><span class="pill ok">Done</span></td>
+      <td>795 paths in each of English, Urdu and Roman Urdu, parity enforced by construction. Service errors
+      throw dictionary keys rather than English sentences; fixed option lists translate the label while the
+      stored value stays canonical.</td>
+      <td>Accessibility labels are not yet systematic (item 16).</td>
+    </tr>
+    <tr>
+      <td class="num">4</td><td>In-App Text Messaging</td><td class="ctr"><span class="pill ok">Done</span></td>
+      <td><b>Two-way.</b> One thread, both participants, RLS scoped to match membership; text, voice and
+      image kinds; emoji reactions on the same Realtime channel; unread per side.</td>
+      <td>No pagination and no delivered/read state (item 15). Live delivery between two devices is not yet
+      witnessed (§5).</td>
+    </tr>
+    <tr>
+      <td class="num">5</td><td>Block &amp; Report</td><td class="ctr"><span class="pill ok">Done</span></td>
+      <td>A report is a row a moderator can act on, with a stable reason key and auto-hide at three distinct
+      reporters. Blocking is per person and enforced in the database in <b>both</b> directions — discovery,
+      messages, likes and the match row itself.</td>
+      <td>Moderation is a Studio view (<code>report_queue</code>), not a screen.</td>
+    </tr>
+    <tr>
+      <td class="num">6</td><td>Basic Match Suggestions</td><td class="ctr"><span class="pill ok">Done</span></td>
+      <td>The mock deck top-up is behind <code>__DEV__ &amp;&amp; ENABLE_MOCK_PROFILES</code> (false), and
+      the mock data is lazily required so it stays out of production bundles. A thin area gets an honest
+      empty state.</td>
+      <td>The deck still fetches without pagination (item 17).</td>
+    </tr>
+    <tr class="grp-row"><td colspan="5">Dating mode</td></tr>
+    <tr>
+      <td class="num">7</td><td>Swipe Discovery</td><td class="ctr"><span class="pill ok">Done</span></td>
+      <td>Unchanged.</td><td>—</td>
+    </tr>
+    <tr>
+      <td class="num">8</td><td>Vibe Tags</td><td class="ctr"><span class="pill ok">Done</span></td>
+      <td>Unchanged.</td><td>—</td>
+    </tr>
+    <tr>
+      <td class="num">9</td><td>'Move to Rishta' Button</td><td class="ctr"><span class="pill ok">Done</span></td>
+      <td><b>The simulation is deleted.</b> The request is a state on the shared row; the other member gets
+      a live banner with Accept / Decline; accepting flips <code>mode</code> for both in one write and
+      writes a notification to each of them; declining tells the requester rather than silently reverting.
+      The request is refused unless the asker's rishta fields are filled — in the database, and in the
+      button, which offers the profile screen instead of an error.</td>
+      <td>Verified in the data and, on 4 September, request-and-accept was seen working on a phone. The rest
+      of the two-device walk is still to do.</td>
+    </tr>
+    <tr class="grp-row"><td colspan="5">Rishta mode</td></tr>
+    <tr>
+      <td class="num">10</td><td>Basic Matrimonial Profile</td><td class="ctr"><span class="pill ok">Done</span></td>
+      <td>Unchanged, and now load-bearing: these four fields are what gates a Move to Rishta request.</td>
+      <td>—</td>
+    </tr>
+    <tr>
+      <td class="num">11</td><td>Rishta Readiness Signal</td><td class="ctr"><span class="pill ok">Done</span></td>
+      <td>Unchanged. "Just browsing" is the one value that does not satisfy the rishta gate.</td>
+      <td>—</td>
+    </tr>
+    <tr>
+      <td class="num">12</td><td>Manual Filters</td><td class="ctr"><span class="pill ok">Done</span></td>
+      <td>Unchanged.</td><td>—</td>
+    </tr>
+    <tr class="grp-row"><td colspan="5">Monetization</td></tr>
+    <tr>
+      <td class="num">13</td><td>Free Tier</td><td class="ctr"><span class="pill ok">Done</span></td>
+      <td>The 15-a-day cap moved inside <code>like_profile</code>, and <code>daily_likes</code> has no
+      insert, update or delete policy left — the counter cannot be reset by writing to it.</td>
+      <td>—</td>
+    </tr>
+    <tr>
+      <td class="num">14</td><td>Single Paid Unlock (Explore+ lite)</td><td class="ctr"><span class="pill part">Partial</span></td>
+      <td>The hole is closed from the other end: <code>is_explore_plus</code>,
+      <code>subscription_plan</code> and <code>subscription_renews_at</code> are pinned against a member's
+      own writes, so the tier can no longer be granted by tapping. The screen now reports that the upgrade
+      did not take rather than claiming a success it never got.</td>
+      <td><b>No payment of any kind.</b> Nothing can grant the tier until a receipt-validating function
+      exists — which needs the client's decision first (item 9).</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 class="break">4. The TODO list, re-measured</h3>
+
+<p class="lead">Ten of eighteen closed. <span class="sev p0">P0</span> blocks delivery,
+<span class="sev p1">P1</span> blocks a public launch, <span class="sev p2">P2</span> is quality that
+should still land before handover.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width:4%">#</th><th style="width:17%">Task</th><th style="width:5%">Pri</th>
+      <th style="width:10%">Status</th><th>Where it stands</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr class="grp-row"><td colspan="5">A · Make the core loop real</td></tr>
+    <tr>
+      <td class="num">1</td><td class="strike">Mutual matching schema</td><td class="sev p0">P0</td>
+      <td class="ctr"><span class="pill ok">Closed</span></td>
+      <td><code>24_matching.sql</code>. Two accounts read the same match row; a third reads nothing. Proven
+      — §5, rows 1 and 3.</td>
+    </tr>
+    <tr>
+      <td class="num">2</td><td class="strike">Mutual like → match</td><td class="sev p0">P0</td>
+      <td class="ctr"><span class="pill ok">Closed</span></td>
+      <td><code>like_profile</code> does the like, the reciprocity check and the match in one transaction,
+      and returns whether this call is the one that formed the pair.</td>
+    </tr>
+    <tr>
+      <td class="num">3</td><td class="strike">Two-way messaging</td><td class="sev p0">P0</td>
+      <td class="ctr"><span class="pill ok">Closed</span></td>
+      <td>Schema, RLS and per-side unread all proven (§5, rows 2 and 4). The "within a second on the other
+      device" half is the one part still unwitnessed.</td>
+    </tr>
+    <tr>
+      <td class="num">4</td><td class="strike">'Move to Rishta' for real</td><td class="sev p0">P0</td>
+      <td class="ctr"><span class="pill ok">Closed</span></td>
+      <td><code>28</code> + <code>32</code>. Proven in the data and seen on a phone (§5, rows 5–7 and 10).</td>
+    </tr>
+    <tr>
+      <td class="num">5</td><td class="strike">Celebrate real matches only</td><td class="sev p1">P1</td>
+      <td class="ctr"><span class="pill ok">Closed</span></td>
+      <td>The celebration fires on the RPC's <code>is_new</code>, so a re-like of an existing match does not
+      celebrate again.</td>
+    </tr>
+    <tr class="grp-row"><td colspan="5">B · Safety and trust</td></tr>
+    <tr>
+      <td class="num">6</td><td class="strike">Reporting that goes somewhere</td><td class="sev p0">P0</td>
+      <td class="ctr"><span class="pill ok">Closed</span></td>
+      <td>A real row, a stable reason key, auto-hide at three reporters, and a <code>report_queue</code>
+      view for the client. A failed report now says so instead of confirming.</td>
+    </tr>
+    <tr>
+      <td class="num">7</td><td class="strike">Block hardening</td><td class="sev p1">P1</td>
+      <td class="ctr"><span class="pill ok">Closed</span></td>
+      <td>Enforced in the database from both seats, and a blocked pair cannot re-form a match by liking
+      again. Proven — §5, rows 8 and 9.</td>
+    </tr>
+    <tr>
+      <td class="num">8</td><td>Selfie / CNIC honesty</td><td class="sev p1">P1</td>
+      <td class="ctr"><span class="pill part">Mostly</span></td>
+      <td>Every <b>badge</b> now claims only what is checked, and the limits are written down for handover.
+      <b>Remaining:</b> the "Verified only" filter still says verified while meaning "uploaded a selfie" —
+      relabel it, or point it at the review queue when that lands. <b>~0.25 day.</b></td>
+    </tr>
+    <tr class="grp-row"><td colspan="5">C · Money</td></tr>
+    <tr>
+      <td class="num">9</td><td><b>Explore+ billing</b></td><td class="sev p0">P0</td>
+      <td class="ctr"><span class="pill miss">Open</span></td>
+      <td><b>The one feature still at zero, and the only true blocker left.</b> Needs the client's decision
+      before any work starts: Play Billing + StoreKit via RevenueCat, or a local PKR gateway (JazzCash /
+      Easypaisa). Then a receipt-validating Edge Function — the columns are already locked and waiting for
+      exactly one caller. <b>~1.5 days after the decision.</b></td>
+    </tr>
+    <tr>
+      <td class="num">10</td><td class="strike">Server-side entitlements</td><td class="sev p1">P1</td>
+      <td class="ctr"><span class="pill ok">Closed</span></td>
+      <td><code>29</code> + <code>30</code>. A hand-crafted API call can grant itself neither Explore+ nor
+      extra likes. Proven — <code>verify_entitlements.sql</code>.</td>
+    </tr>
+    <tr class="grp-row"><td colspan="5">D · Reach, real content, compliance</td></tr>
+    <tr>
+      <td class="num">11</td><td>Push notifications</td><td class="sev p1">P1</td>
+      <td class="ctr"><span class="pill part">Written</span></td>
+      <td>Installed, tokens stored per device, function deployed, and fired at seven moments: new match,
+      like, message, and each step of the rishta handshake. Tapping a notification now opens what it is
+      about. The preference gate is proven for the in-app half
+      (<code>verify_notification_prefs.sql</code>). <b>Remaining:</b> no real device has ever held a token,
+      so nothing has been seen arriving. Needs a development build and FCM credentials. <b>~0.5 day.</b></td>
+    </tr>
+    <tr>
+      <td class="num">12</td><td class="strike">Real content only</td><td class="sev p1">P1</td>
+      <td class="ctr"><span class="pill ok">Closed</span></td>
+      <td>Mock profiles behind a dev-only flag, Events behind <code>FEATURE_EVENTS</code> (false), honest
+      empty states for a thin user base.</td>
+    </tr>
+    <tr>
+      <td class="num">13</td><td>Legal &amp; store compliance</td><td class="sev p0">P0</td>
+      <td class="ctr"><span class="pill part">Mostly</span></td>
+      <td>A real Privacy Policy (11 clauses) and Terms (12), in all three languages, generated to hosted
+      pages from the same dictionary the app reads so the two cannot drift; 18+ gate at signup; account
+      deletion in place. <b>Remaining, and none of it is code:</b> a lawyer has to review both documents,
+      the two URLs have to be live, and the Play Data Safety form and App Store privacy labels have to be
+      filled in. <b>~0.5 day plus the client's legal review.</b></td>
+    </tr>
+    <tr class="grp-row"><td colspan="5">E · Completeness, hardening, handover</td></tr>
+    <tr>
+      <td class="num">14</td><td class="strike">Emoji reactions in chat</td><td class="sev p2">P2</td>
+      <td class="ctr"><span class="pill ok">Closed</span></td>
+      <td>Long-press picker, pills under the bubble, streamed on the same channel as the messages.</td>
+    </tr>
+    <tr>
+      <td class="num">15</td><td>Chat completeness</td><td class="sev p2">P2</td>
+      <td class="ctr"><span class="pill miss">Open</span></td>
+      <td>Voice and image messages survived the new schema. <b>Remaining:</b> history pagination (a thread
+      still loads whole) and delivered/read state. <b>~0.5 day.</b></td>
+    </tr>
+    <tr>
+      <td class="num">16</td><td>Urdu / RTL &amp; a11y sweep</td><td class="sev p2">P2</td>
+      <td class="ctr"><span class="pill part">Mostly</span></td>
+      <td>Dictionaries are at full parity and the RTL pass is done. <b>Remaining:</b> accessibility labels,
+      and raw Supabase auth/storage error strings still surface in English. <b>~0.5 day.</b></td>
+    </tr>
+    <tr>
+      <td class="num">17</td><td>Performance &amp; error states</td><td class="sev p2">P2</td>
+      <td class="ctr"><span class="pill miss">Open</span></td>
+      <td>A cache layer renders last session's data instantly and survives being offline. <b>Remaining:</b>
+      deck pagination (every matching profile is still fetched at once) and image caching. <b>~1 day.</b></td>
+    </tr>
+    <tr>
+      <td class="num">18</td><td>Tests, QA pass &amp; handover</td><td class="sev p2">P2</td>
+      <td class="ctr"><span class="pill part">Started</span></td>
+      <td>4 Jest suites / 41 tests, plus eleven SQL verification scripts that prove behaviour against the
+      live project and roll themselves back. <b>Remaining:</b> no CI; the two-device walk through the whole
+      journey; production builds and store listings. <b>~2 days.</b></td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 class="break">5. Evidence — what is actually proven</h3>
+
+<p class="lead">Every row below was measured, not asserted. The SQL scripts impersonate real members
+(<code>role</code> plus both JWT claim GUCs, exactly what PostgREST sets per request), so the real policies
+are exercised rather than bypassed by Studio's superuser, and each rolls itself back.</p>
+
+<table>
+  <thead>
+    <tr><th style="width:4%">#</th><th style="width:38%">Claim</th><th style="width:30%">How it was checked</th><th>Result</th></tr>
+  </thead>
+  <tbody>
+    <tr><td class="num">1</td><td>A mutual like produces exactly one match row, and both members read it</td><td><code>verify_core_loop.sql</code> 1–3</td><td><span class="pill ok">Pass</span></td></tr>
+    <tr><td class="num">2</td><td>Both halves of a thread are readable by both people, and by nobody else</td><td><code>verify_core_loop.sql</code> 4–6</td><td><span class="pill ok">Pass</span></td></tr>
+    <tr><td class="num">3</td><td>A third account sees nothing of a conversation it is not in</td><td><code>verify_core_loop.sql</code> 6</td><td><span class="pill ok">Pass</span></td></tr>
+    <tr><td class="num">4</td><td>Unread is per side — one member reading does not clear the other's</td><td><code>verify_core_loop.sql</code> 7</td><td><span class="pill ok">Pass</span></td></tr>
+    <tr><td class="num">5</td><td>A Move to Rishta request is refused when the rishta profile is empty</td><td><code>verify_core_loop.sql</code> 8</td><td><span class="pill ok">Pass</span></td></tr>
+    <tr><td class="num">6</td><td>Only the <i>other</i> member may answer, and accepting moves both sides</td><td><code>verify_rishta_request.sql</code>; <code>verify_core_loop.sql</code> 9–11</td><td><span class="pill ok">Pass</span></td></tr>
+    <tr><td class="num">7</td><td>Both members are notified when a request is accepted</td><td><code>verify_core_loop.sql</code> 12–13</td><td><span class="pill ok">Pass</span></td></tr>
+    <tr><td class="num">8</td><td>A report lands as a row nobody can read back, not even the reporter</td><td><code>verify_core_loop.sql</code> 14</td><td><span class="pill ok">Pass</span></td></tr>
+    <tr><td class="num">9</td><td>A block removes the pair from each other in both directions, and cannot be liked through</td><td><code>verify_core_loop.sql</code> 15–18; <code>verify_block_both_ways.sql</code></td><td><span class="pill ok">Pass</span></td></tr>
+    <tr><td class="num">10</td><td>A member cannot grant themselves Explore+ or extra likes</td><td><code>verify_entitlements.sql</code></td><td><span class="pill ok">Pass</span></td></tr>
+    <tr><td class="num">11</td><td>A muted category writes no notification — and muting does not break the request itself</td><td><code>verify_notification_prefs.sql</code></td><td><span class="pill ok">Pass</span></td></tr>
+    <tr><td class="num">12</td><td>The mapping layer derives each reader's own view of a shared row</td><td>Jest — 41 tests, 4 suites</td><td><span class="pill ok">Pass</span></td></tr>
+    <tr><td class="num">13</td><td>A rishta request sent from one account, accepted from another, on a phone</td><td>Developer, 4 September 2026</td><td><span class="pill ok">Pass</span></td></tr>
+    <tr><td class="num">14</td><td>A message appears on the other device within a second (Realtime)</td><td>—</td><td><span class="pill miss">Not tested</span></td></tr>
+    <tr><td class="num">15</td><td>A push arrives on a closed device, and the preference stops it</td><td>—</td><td><span class="pill miss">Not tested</span></td></tr>
+    <tr><td class="num">16</td><td>A real purchase unlocks Explore+</td><td>—</td><td><span class="pill miss">Not built</span></td></tr>
+  </tbody>
+</table>
+
+<div class="callout">
+  <span class="h">How to close rows 14 and 15</span>
+  <p><code>docs/smoke-test.md</code> is the script: two devices, two real accounts, nine steps from signup to
+  report, each with what the screen should show <b>and</b> the query that proves it landed. Step 10 covers
+  push on a closed app. Run <code>verify_core_loop.sql</code> first — if the data half fails, what you would
+  be debugging is the schema, and it is far easier to read there.</p>
+</div>
+
+<h3>6. Remaining work, in order</h3>
+
+<table>
+  <thead>
+    <tr><th style="width:5%">Order</th><th style="width:30%">Work</th><th style="width:8%">Est.</th><th>Why here</th></tr>
+  </thead>
+  <tbody>
+    <tr><td class="num">1</td><td>Two-device smoke test (item 18)</td><td class="ctr">1</td><td>Everything below assumes the loop works on real phones. It is also the cheapest place to find what is broken.</td></tr>
+    <tr><td class="num">2</td><td>Development build + push delivery (item 11)</td><td class="ctr">0.5</td><td>The build is needed for the smoke test's push step anyway, so it pairs with it.</td></tr>
+    <tr><td class="num">3</td><td><b>Client decision:</b> billing rails</td><td class="ctr">—</td><td>RevenueCat or a local PKR gateway. Nothing about item 9 can start until this is answered — raise it now, not when you reach it.</td></tr>
+    <tr><td class="num">4</td><td>Explore+ billing (item 9)</td><td class="ctr">1.5</td><td>The only V1 feature still at zero.</td></tr>
+    <tr><td class="num">5</td><td>Legal paperwork (item 13)</td><td class="ctr">0.5</td><td>Store forms and live URLs. The lawyer's review runs in parallel and is the client's to schedule.</td></tr>
+    <tr><td class="num">6</td><td>Performance (item 17)</td><td class="ctr">1</td><td>Deck pagination matters once there are more than a few hundred profiles.</td></tr>
+    <tr><td class="num">7</td><td>Chat completeness, a11y, badge filter (15, 16, 8)</td><td class="ctr">1.25</td><td>Quality that should land before handover.</td></tr>
+    <tr><td class="num">8</td><td>Production builds, store listings, handover pack (item 18)</td><td class="ctr">1</td><td>Last, because it packages everything above.</td></tr>
+  </tbody>
+</table>
+
+<div class="callout warm">
+  <span class="h">Roughly 6.5 working days remain for one developer</span>
+  <p>Down from 18.5. The shape of the work has changed as much as the size: the previous list was mostly
+  <i>building</i>, and this one is mostly <i>witnessing</i> — plus one feature that has not started and one
+  decision that has not been made.</p>
+</div>
+
+<h3 class="break">7. Known limits and open risks</h3>
+
+<p class="lead">Stated here so nothing in this report has to be read charitably. The full versions live in
+<code>docs/handover-notes.md</code>.</p>
+
+<ul>
+  <li><b>Push delivery has never been witnessed.</b> <code>push_tokens</code> has never held a real token:
+  Expo Go cannot mint one on SDK 53+, and Android additionally needs FCM credentials on the EAS project.
+  The pipeline is verified as far as Expo's API; a phone receiving a notification is not.</li>
+
+  <li><b>Realtime delivery between two devices is unproven.</b> The rows are proven to exist and to be
+  readable by both people; that they arrive within a second is a separate claim that only two open phones
+  can settle.</li>
+
+  <li><b>A security grant worth closing.</b> <code>is_blocked_pair</code> is granted to
+  <code>authenticated</code> but was never revoked from <code>public</code>, and a definer function is
+  executable by <code>public</code> unless told otherwise — so anyone holding the anon key can ask whether
+  any two account ids block each other. Confirmed against the live project. It is called from inside RLS
+  policies, so revoking needs a check of which roles those policies serve first. The same pattern was found
+  and fixed on <code>rishta_profile_complete</code> in migration 32.</li>
+
+  <li><b>Neither badge is identity verification.</b> The selfie is stored but never reviewed; the CNIC check
+  is a format regex plus a colour/aspect-ratio heuristic. The wording is honest about this now; the review
+  queue that would make it real is Day 12 work.</li>
+
+  <li><b>The legal text is not reviewed legal advice.</b> It is drafted to be accurate about what this app
+  actually does, which is not the same thing.</li>
+
+  <li><b>No CI.</b> The tests exist and pass; nothing runs them automatically.</li>
+
+  <li><b>Migration 32 must be run before the notification behaviour exists.</b> It is applied to the current
+  project; any other environment needs it. All migrations are numbered and re-runnable except
+  <code>24</code>, which is destructive by design and documented as such.</li>
+
+  <li><b>One uncommitted change</b> at the time of writing: the push tap-routing hook and the notification
+  preference verification script.</li>
+</ul>
+
+<h3>8. Still out of scope for V1</h3>
+
+<p>Unchanged from the roadmap, and none of it should take development time now, even where a screen exists
+in the branch (<code>wali-dashboard.tsx</code>, <code>cnic-verification.tsx</code>, <code>call.tsx</code>):
+AI compatibility scoring, Family Account Mode, Wali Dashboard, bureau verification, Nikah Journey, Overseas
+Mode, voice and video calling, and the full six-tier pricing structure. Bureau verification is already
+behind a flag; the remaining decision per screen is whether to hide it for V1 or leave it visible as a
+preview.</p>
+
+<footer>Rishta &amp; Rang · V1 status report · prepared 4 September 2026 · branch <code>dev-faizan</code> @ <code>746f112</code></footer>
+
+</body>
+</html>

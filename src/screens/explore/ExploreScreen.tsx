@@ -1,5 +1,17 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Image, Modal, Pressable, RefreshControl, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import {
+  Image,
+  Modal,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  Share,
+  StyleSheet,
+  Text,
+  View,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
@@ -71,7 +83,14 @@ export function ExploreScreen() {
   const { rishtaProfileIds, blockedProfiles } = useMatches();
   const { history, clearHistory } = useViewHistory();
   const { confirm } = useDialog();
-  const { datingProfiles, rishtaProfiles } = useDiscovery();
+  const { datingProfiles, rishtaProfiles, loadMore } = useDiscovery();
+
+  // Within a screen's height of the bottom counts as "reached it", so the next
+  // page is asked for before the member is staring at the end of the grid.
+  const onReachedBottom = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+    if (contentOffset.y + layoutMeasurement.height * 2 >= contentSize.height) loadMore();
+  };
   const [tab, setTab] = useState<ExploreTab>('forYou');
   const [filters, setFilters] = useState<BrowseFilters>(DEFAULT_BROWSE_FILTERS);
   const [filtersVisible, setFiltersVisible] = useState(false);
@@ -249,6 +268,9 @@ export function ExploreScreen() {
         showsVerticalScrollIndicator={false}
         onScroll={onScroll}
         scrollEventThrottle={16}
+        // The grid is paged the same way the swipe deck is; reaching the bottom
+        // is what asks for the next page.
+        onMomentumScrollEnd={onReachedBottom}
         refreshControl={
           <RefreshControl refreshing={loadingLikes} onRefresh={loadLikes} tintColor={colors.teal} colors={[colors.teal]} />
         }

@@ -44,6 +44,7 @@ import { ProfileActionsFooter } from '../../components/discover/ProfileActionsFo
 import { ProfileUtilityBar } from '../../components/discover/ProfileUtilityBar';
 import { ReportDialog, type ReportSubmission } from '../../components/common/ReportDialog';
 import { reportsService } from '../../services/reportsService';
+import { prefetchImages } from '../../services/imageCache';
 import type { BrowseProfile, DiscoverProfile, RishtaListingProfile } from '../../types/content';
 import type { ProfileMode, UserProfile } from '../../types/user';
 import { useDiscovery } from '../../store/DiscoveryContext';
@@ -68,6 +69,10 @@ import type { Palette } from '../../theme/palettes';
 // Clearance under the scroll content so the floating action bar never covers the
 // last row of a profile.
 const ACTION_BAR_CLEARANCE = 92;
+
+// How few cards may be left before the next page is fetched. Far enough ahead
+// that a fast swiper never reaches the end of the deck while it loads.
+const DECK_LOW_WATER = 5;
 
 interface SortContext {
   user: UserProfile | null;
@@ -136,7 +141,7 @@ export function HomeScreen() {
   const { confirm, notify } = useDialog();
   const { recordLike, applyServerCount } = useLikeLimit();
   const { isBoostActive } = useBoost();
-  const { datingProfiles, rishtaProfiles, loading, reload } = useDiscovery();
+  const { datingProfiles, rishtaProfiles, loading, loadMore, reload } = useDiscovery();
   const { matches, rishtaProfileIds, blockedProfiles, blockProfile } = useMatches();
   const { addNotification, unreadCount } = useNotifications();
   const { recordView } = useViewHistory();
@@ -205,6 +210,15 @@ export function HomeScreen() {
 
   const safeCursor = Math.min(cursor, visibleProfiles.length);
   const currentProfile = visibleProfiles[safeCursor];
+
+  // The deck arrives a page at a time now, so the next page is fetched while
+  // there are still cards left to swipe — not when the member hits the end and
+  // has to wait. The filters run client-side over what has been fetched, so a
+  // narrow filter is exactly the case that needs more pages.
+  useEffect(() => {
+    if (visibleProfiles.length - safeCursor <= DECK_LOW_WATER) loadMore();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [safeCursor, visibleProfiles.length]);
   const canUndo = safeCursor > 0;
   const filtersActive = countActiveFilters(filters);
 
@@ -216,10 +230,16 @@ export function HomeScreen() {
       p.photos.forEach((uri) => {
         if (uri.startsWith('http')) Image.prefetch(uri).catch(() => {});
       });
+      // `Image.prefetch` only fills the in-memory cache, which is gone the next
+      // time the app starts. This one lands on disk, so a deck reopened tomorrow
+      // costs nothing (see services/imageCache.ts).
+      prefetchImages(p.photos);
     };
     warm(currentProfile);
     warm(visibleDatingProfiles[0]);
     warm(visibleRishtaProfiles[0]);
+    // The card after this one, so a swipe never lands on a blank photo.
+    warm(visibleProfiles[safeCursor + 1]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, currentProfile?.id]);
 

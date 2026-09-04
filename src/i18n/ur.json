@@ -304,8 +304,16 @@
     "reportConfirmTitle": "{name} کی رپورٹ کریں؟",
     "reportSentTitle": "رپورٹ جمع ہو گئی",
     "reportSentBody": "شکریہ — ہماری حفاظتی ٹیم جلد اس گفتگو کا جائزہ لے گی۔",
+    "statusSending": "بھیجا جا رہا ہے",
+    "statusSent": "بھیج دیا",
+    "statusRead": "پڑھ لیا",
     "recording": "ریکارڈنگ جاری ہے...",
     "photoUnavailable": "تصویر دستیاب نہیں",
+    "today": "آج",
+    "yesterday": "کل",
+    "dateShort": "{day} {month}",
+    "dateFull": "{day} {month} {year}",
+    "loadingOlder": "پہلے کے پیغامات لوڈ ہو رہے ہیں…",
     "timeAm": "قبل دوپہر",
     "timePm": "بعد دوپہر",
     "reactionPickerTitle": "ردعمل چنیں",
@@ -807,6 +815,14 @@
     "month9": "اکتوبر",
     "month10": "نومبر",
     "month11": "دسمبر"
+  },
+  "netErrors": {
+    "retry": "دوبارہ کوشش",
+    "messageNotSent": "پیغام نہیں بھیجا جا سکا۔",
+    "olderMessages": "پرانے پیغامات لوڈ نہیں ہو سکے۔",
+    "deckRefresh": "پروفائلز ریفریش نہیں ہو سکیں۔",
+    "matchesRefresh": "آپ کی میچز ریفریش نہیں ہو سکیں۔",
+    "likeNotSent": "لائیک نہیں بھیجا جا سکا۔"
   },
   "authErrors": {
     "emailTaken": "یہ ای میل پہلے سے رجسٹرڈ ہے۔ لاگ ان کرکے دیکھیں۔",
