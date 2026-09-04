@@ -671,3 +671,20 @@ the same helper the chat's day dividers use.
 The **"Active today" browse filter** runs the same rule rather than its old
 24-hour window — a filter with that label returning cards that read "Active
 yesterday" is broken on its face.
+
+### And in the chat header
+
+A green dot and **Online** beside the name, and only that: anything older is not
+something to say under someone's name mid-conversation — "active this week"
+belongs on a deck card, where you are deciding whether to write at all.
+
+`matches` carries the counterpart's `last_active_at` now (one more column on the
+card lookup it already ran), and the chat screen re-reads it every minute while
+it is open and whenever the app is looked at again. Without that the dot would be
+as old as the screen: a chat left open for ten minutes would still be showing
+what was true when it was opened, and "online" is the one badge that has to be
+true *now* or not shown at all.
+
+The green itself is `ONLINE_GREEN` in the theme — one definition, outside the
+light/dark palettes, because it is a borrowed signal that has to read as the
+same green in both themes and on both surfaces.

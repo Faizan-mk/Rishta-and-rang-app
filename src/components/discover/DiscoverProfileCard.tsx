@@ -16,14 +16,15 @@ import type { ProfileMode } from '../../types/user';
 import { radius, spacing, typography } from '../../theme';
 import { scaleFont } from '../../theme/responsive';
 import { glow, modeAccent, withAlpha } from '../../theme/glow';
-import type { Palette } from '../../theme/palettes';
+import { ONLINE_GREEN, type Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
 import { vocabularyLabel } from '../../i18n/vocabulary';
 import { activityLevel, type ActivityLevel } from '../../utils/time';
 
-// Reads the same in both themes, so it isn't a palette token.
-const ACTIVE_GREEN = '#22C55E';
+// Reads the same in both themes, so it isn't a palette token. The one
+// definition lives in the theme — the chat header's dot shows the same green.
+const ACTIVE_GREEN = ONLINE_GREEN;
 
 // Four degrees, and past a week `activityLevel` returns null and the pill does
 // not render at all — a live dot over someone last seen months ago is the kind

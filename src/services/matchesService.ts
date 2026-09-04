@@ -22,6 +22,10 @@ export interface MatchRow {
 interface ProfileCard {
   name: string;
   photo: string;
+  // Null when they have never been stamped, or when they have turned "Show when
+  // I'm online" off — in which case there is nothing to show and no badge
+  // (supabase/34_last_active.sql).
+  lastActiveAt?: string;
 }
 
 export interface ChatMessageDoc {
@@ -73,6 +77,8 @@ export function mapMatchRow(row: MatchRow, userId: string, card?: ProfileCard): 
     // mid-render; the block flow is what removes it.
     name: card?.name ?? '',
     photo: card?.photo ?? '',
+    // The counterpart's, so the chat header can say whether they are here now.
+    lastActiveAt: card?.lastActiveAt,
     // The row has no message columns any more: the preview and its timestamp
     // come from the thread itself, and the caller fills them in from the chat
     // history it already loads. Until then the match sorts by when it formed.
@@ -123,11 +129,23 @@ function mapBlockedDoc(data: BlockedDoc): BlockedProfile {
 async function fetchProfileCards(ids: string[]): Promise<Map<string, ProfileCard>> {
   const cards = new Map<string, ProfileCard>();
   if (ids.length === 0) return cards;
-  const { data, error } = await supabase.from('profiles').select('id, full_name, photos').in('id', ids);
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, full_name, photos, last_active_at')
+    .in('id', ids);
   if (error) throw new Error(error.message);
   for (const row of data ?? []) {
-    const profile = row as unknown as { id: string; full_name: string; photos: string[] | null };
-    cards.set(profile.id, { name: profile.full_name, photo: profile.photos?.[0] ?? '' });
+    const profile = row as unknown as {
+      id: string;
+      full_name: string;
+      photos: string[] | null;
+      last_active_at: string | null;
+    };
+    cards.set(profile.id, {
+      name: profile.full_name,
+      photo: profile.photos?.[0] ?? '',
+      lastActiveAt: profile.last_active_at ?? undefined,
+    });
   }
   return cards;
 }

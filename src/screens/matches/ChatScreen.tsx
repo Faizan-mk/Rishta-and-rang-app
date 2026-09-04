@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  AppState,
   FlatList,
   Image,
   KeyboardAvoidingView,
@@ -29,13 +30,18 @@ import { useDialog } from '../../store/DialogContext';
 import { useMatches } from '../../store/MatchesContext';
 import { useAuth } from '../../store/AuthContext';
 import { rishtaProfileComplete } from '../../utils/rishtaProfile';
-import { dayLabel, sameDay } from '../../utils/time';
+import { activityLevel, dayLabel, sameDay } from '../../utils/time';
+import { discoveryService } from '../../services/discoveryService';
 import { radius, spacing, typography } from '../../theme';
 import { glow, modeAccent, withAlpha } from '../../theme/glow';
-import type { Palette } from '../../theme/palettes';
+import { ONLINE_GREEN, type Palette } from '../../theme/palettes';
 
 const GRADIENT_START = { x: 0, y: 0 } as const;
 const GRADIENT_END = { x: 1, y: 1 } as const;
+
+// Well inside the badge's ten-minute window, so someone who arrives while the
+// chat is open shows as online rather than a few minutes later.
+const ONLINE_POLL_MS = 60 * 1000;
 
 export function ChatScreen() {
   const router = useRouter();
@@ -72,6 +78,39 @@ export function ChatScreen() {
   const [inputFocused, setInputFocused] = useState(false);
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
 
+  // The other member's last-seen time, kept current while this screen is open.
+  // The match row carries it from the last matches fetch, which on a chat left
+  // open for ten minutes is exactly as old as the screen — and "online" is the
+  // one badge that has to be true *now* or not shown at all.
+  const counterpartId = match?.sourceProfileId;
+  const [seenAt, setSeenAt] = useState<string | undefined>(match?.lastActiveAt);
+
+  useEffect(() => {
+    if (!counterpartId) return;
+    let cancelled = false;
+
+    const refresh = async () => {
+      try {
+        const activity = await discoveryService.fetchActivity([counterpartId]);
+        if (!cancelled && activity.has(counterpartId)) setSeenAt(activity.get(counterpartId) ?? undefined);
+      } catch {
+        // Keep whatever is on screen; a stale dot only ever understates.
+      }
+    };
+
+    void refresh();
+    const timer = setInterval(refresh, ONLINE_POLL_MS);
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') void refresh();
+    });
+
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+      subscription.remove();
+    };
+  }, [counterpartId]);
+
   useEffect(() => {
     markMatchRead(matchId);
     // The thread is paged in, so opening it is what fetches the newest page.
@@ -85,6 +124,10 @@ export function ChatScreen() {
 
   // The thread's own world colours the header and the outgoing bubbles' company.
   const accent = modeAccent(colors, match.movedToRishta ? 'rishta' : match.mode);
+  // Same rule as the deck's pill, so "online" means one thing across the app —
+  // and a member who has hidden their online status has no timestamp at all,
+  // which lands here as simply not online.
+  const online = activityLevel(seenAt) === 'online';
 
   const sendMessage = () => {
     const trimmed = draft.trim();
@@ -241,9 +284,20 @@ export function ChatScreen() {
           <Text style={styles.headerName} numberOfLines={1}>
             {match.name}
           </Text>
-          {/* The stage, not the sentence: this column is what is left after an
-              avatar and four icons. Same short label the Matches list uses. */}
-          {match.movedToRishta && <Badge label={t('matches.rishtaBadge')} tone="rishta" />}
+          <View style={[styles.headerMetaRow, rtl && styles.headerMetaRowRtl]}>
+            {/* Only "now". Anything older is not something to say under
+                someone's name in a conversation — the deck's card is where
+                "active this week" belongs. */}
+            {online && (
+              <View style={styles.onlineRow}>
+                <View style={styles.onlineDot} />
+                <Text style={styles.onlineText}>{t('chat.online')}</Text>
+              </View>
+            )}
+            {/* The stage, not the sentence: this column is what is left after an
+                avatar and four icons. Same short label the Matches list uses. */}
+            {match.movedToRishta && <Badge label={t('matches.rishtaBadge')} tone="rishta" />}
+          </View>
         </View>
         <Pressable onPress={() => router.push({ pathname: '/call', params: { name: match.name, photo: match.photo } })} style={styles.headerIconButton}>
           <Ionicons name="call-outline" size={20} color={colors.teal} />
@@ -459,6 +513,11 @@ const makeStyles = (colors: Palette) =>
     // size, so this is what a long name or a badge has to fit inside.
     headerTextWrap: { flex: 1, minWidth: 0, marginHorizontal: spacing.sm, gap: 2 },
     headerName: { ...typography.bodyBold, color: colors.textPrimary, fontWeight: '800' },
+    headerMetaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+    headerMetaRowRtl: { flexDirection: 'row-reverse' },
+    onlineRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    onlineDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: ONLINE_GREEN },
+    onlineText: { ...typography.caption, color: ONLINE_GREEN, fontWeight: '800' },
     // Four of these sit in the row, so their margins are what the name and the
     // badge are actually competing against. The tap target stays 40dp-ish via
     // the padding; only the space between them comes down.
