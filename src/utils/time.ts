@@ -38,3 +38,46 @@ export function activityLevel(isoDate?: string): 'today' | 'week' | null {
   if (elapsed < 7 * 24 * 60 * 60 * 1000) return 'week';
   return null;
 }
+
+/**
+ * The calendar day an instant falls on, in the reader's own timezone.
+ *
+ * Deliberately built from the local parts rather than sliced off the ISO
+ * string: `sentAt` is UTC, so `iso.slice(0, 10)` would put anything sent after
+ * 5am PKT on the wrong day for a Pakistani reader — and put the day separator
+ * in the wrong place with it.
+ */
+export function dayKey(isoDate: string): string {
+  const date = new Date(isoDate);
+  if (Number.isNaN(date.getTime())) return '';
+  return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+}
+
+/** True when the two instants fall on the same local day. */
+export function sameDay(a: string, b: string): boolean {
+  const keyA = dayKey(a);
+  return keyA !== '' && keyA === dayKey(b);
+}
+
+/**
+ * "Today", "Yesterday", or the date itself — the label on a chat's day divider.
+ *
+ * A bubble only carries a clock time, so without this a message from last week
+ * at 12:48 reads exactly like one from this morning at 12:48. The year is
+ * dropped within the current one, where it says nothing.
+ */
+export function dayLabel(isoDate: string, t: Translate): string {
+  const date = new Date(isoDate);
+  if (Number.isNaN(date.getTime())) return '';
+
+  const now = new Date();
+  const key = dayKey(isoDate);
+  if (key === dayKey(now.toISOString())) return t('chat.today');
+
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if (key === dayKey(yesterday.toISOString())) return t('chat.yesterday');
+
+  const params = { day: date.getDate(), month: t(`calendar.month${date.getMonth()}`), year: date.getFullYear() };
+  return date.getFullYear() === now.getFullYear() ? t('chat.dateShort', params) : t('chat.dateFull', params);
+}

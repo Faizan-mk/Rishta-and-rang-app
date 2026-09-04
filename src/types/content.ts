@@ -113,6 +113,11 @@ export interface Match {
   // gets Accept / Decline (supabase/28_rishta_request.sql).
   rishtaRequestPending?: boolean;
   rishtaRequestIncoming?: boolean;
+  // When the *other* member last opened this conversation. Any message of mine
+  // sent before it has been read. Absent when they have never opened it, or
+  // when they have turned their online status off — a receipt is the same class
+  // of signal as "last seen" and is behind the same switch.
+  theirReadAt?: string;
   // Links back to the Discover/Rishta listing this match was created from, so
   // "Message" on a profile can find (or create) the same match instead of duplicating it.
   sourceProfileId?: string;
@@ -129,6 +134,19 @@ export interface CommunityEvent {
 
 export type ChatMessageKind = 'text' | 'voice' | 'image';
 
+/**
+ * How far one of my own messages has got. Only ever set on messages I sent —
+ * a message from the other person has no state worth showing.
+ *
+ * `sending` is the optimistic copy that goes on screen the instant Send is
+ * tapped; `sent` means the row is on the server, which is the only "delivered"
+ * this app can honestly claim (there is no device acknowledgement); `failed`
+ * means the insert did not land and the message is still only on this phone.
+ * Whether they have *read* it is not stored here — it is the counterpart's
+ * `match_reads` mark against `sentAt` (supabase/33_chat_paging_and_receipts.sql).
+ */
+export type MessageStatus = 'sending' | 'sent' | 'failed';
+
 export interface ChatMessage {
   id: string;
   matchId: string;
@@ -139,6 +157,10 @@ export interface ChatMessage {
   audioUri?: string;
   durationSec?: number;
   imageUri?: string;
+  status?: MessageStatus;
+  // Set on a failed message so the retry can send exactly what was typed —
+  // a voice note or a photo cannot be recovered from the bubble alone.
+  localUri?: string;
 }
 
 // A single emoji one person put on one message. Reactions are stored apart from

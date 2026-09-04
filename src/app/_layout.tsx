@@ -17,6 +17,7 @@ import { BoostProvider } from '../store/BoostContext';
 import { PrivacyProvider } from '../store/PrivacyContext';
 import { DiscoveryProvider }  from '../store/DiscoveryContext';
 import { DialogProvider } from '../store/DialogContext';
+import { ToastProvider } from '../store/ToastContext';
 import { OnboardingProvider } from '../store/onboardingStore';
 import { ResponsiveFrame } from '../components/common/ResponsiveFrame';
 import { usePushRegistration } from '../hooks/usePushRegistration';
@@ -112,6 +113,9 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <ThemeProvider>
           <LanguageProvider>
+            {/* Above everything that makes a network call, so a failure has
+                somewhere to be said instead of being swallowed. */}
+            <ToastProvider>
             <AuthProvider>
               <OnboardingProvider>
                 <NotificationProvider>
@@ -135,6 +139,7 @@ export default function RootLayout() {
                 </NotificationProvider>
               </OnboardingProvider>
             </AuthProvider>
+            </ToastProvider>
           </LanguageProvider>
         </ThemeProvider>
       </SafeAreaProvider>

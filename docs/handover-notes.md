@@ -476,3 +476,139 @@ credentials on the EAS project. Everything up to Expo's API is verified (see the
 To close it: `npx eas build --profile development --platform android`, install,
 sign in, confirm `select count(*) from push_tokens;` is 1, then walk step 10 of
 docs/smoke-test.md.
+
+## Chat completeness and performance (11.1, 11.2)
+
+### The thread does not load whole any more
+
+`fetchChatHistory` fetched **every message of every conversation** on sign-in —
+an unfiltered select over the whole history, before the matches list could
+render. Invisible at a hundred messages; the slowest thing in the app at five
+hundred, and it grew with use.
+
+`supabase/33_chat_paging_and_receipts.sql` replaces it with two functions, both
+`security invoker` so the same RLS that narrows a plain select narrows them:
+
+- **`thread_previews()`** — `distinct on (match_id)`, the newest message per
+  conversation and nothing else. That is all a list row ever needed, and it is
+  what seeds each thread so a chat opens on its last line rather than on blank.
+- **`message_page(match_id, before_at, before_id, limit)`** — one page, newest
+  first, 30 by default. **Keyset, not offset:** `(sent_at, id) < (before_at,
+  before_id)` is one row comparison the new index seeks straight to, and it
+  stays correct while messages arrive underneath. An offset would repeat a
+  message every time one was inserted between two pages — and `sent_at` alone
+  would not do, because timestamps are stamped by the client and can collide.
+
+`chat_messages_thread_idx (match_id, sent_at desc, id desc)` is what both read.
+
+The chat list is **inverted** now, which is what makes paging possible at all:
+the newest message is index 0 at the bottom, so "load older" is the list's own
+`onEndReached` and the scroll position does not jump when a page lands above
+what is being read.
+
+### Delivered and read, out of state that already existed
+
+Nothing new is stored. `match_reads` (26) already recorded when each member last
+opened each conversation; "they have read this message" is that mark against the
+message's own timestamp. What was missing is that a member could only read their
+**own** mark — so the one side that needs it, the sender, could not see it.
+
+`match_reads_select` now also returns the counterpart's row, for matches you are
+in, **and only if they have not turned their online status off**. A read receipt
+is the same class of signal as "last seen", so it is behind the same switch;
+their side simply shows no receipt. That check goes through
+`shows_online_status`, a definer function, because `privacy_prefs` is owner-only
+— a plain subquery would be filtered to nothing by that table's own RLS and
+`coalesce(..., true)` would then answer "yes, show it" for everyone: a gate that
+silently never closes.
+
+A bubble shows a clock while sending, two grey ticks once the row is on the
+server, the same two ticks in blue (`colors.readReceipt`, its own palette token
+so it cannot drift with the mode accents) once their mark passes it, and a
+**Retry** pill if the insert failed.
+`match_reads` is already in the Realtime publication, so a tick turns while the
+sender is looking at it.
+
+### Messages appear when you send them
+
+They used to appear only when the Realtime echo of their own insert came back —
+so on a slow network the thread sat there having apparently swallowed what was
+typed, and on a failed one it swallowed it for good, **silently**. Sends are
+optimistic now: the bubble is there on the tap with a placeholder id, which is
+swapped for the saved row's id when the insert lands (that swap is also what
+stops the echo showing it twice). A failure marks the bubble, tells the member,
+and offers to send it again — a voice note or photo keeps its `localUri` so the
+retry re-sends the same file rather than nothing.
+
+### The deck is paged, and fetched once instead of twice
+
+`fetchDiscoverProfiles` and `fetchRishtaProfiles` read the same rows and the
+same columns, one after the other — the same query, run twice, for the same
+data. It is `fetchDeckPage` now: one query, mapped into both shapes.
+
+It also takes a page. 30 members at a time, `order by created_at desc, id desc`
+before the range — **without an explicit order a range means nothing**, and two
+pages can repeat a member or skip one. The Home deck asks for the next page when
+five cards are left, the Explore grid when the scroll is within two screens of
+the bottom, and both de-dupe by id so a member who signs up between two pages
+cannot appear twice.
+
+### Photos are cached to disk
+
+`Image.prefetch` only fills the in-memory cache, which is gone at the next
+launch. `services/imageCache.ts` writes a file per URL, named by a hash of it,
+into the OS cache directory — the one the system may empty when it needs space,
+which is the right guarantee for something that can always be fetched again. No
+index, no expiry: a photo URL here is a storage path whose contents do not
+change. `SmartImage` renders the remote URL until the local copy exists, so
+caching never delays a photo that could already be shown, and a cached file that
+will not decode falls back to the network once before giving up.
+
+### Failures are said out loud
+
+`ToastContext` is the third notice in the app and the narrowest: `DialogContext`
+is modal and demands an answer (right for "block this person?"), and this is for
+"that did not go through" — seen, then forgotten. Wired into the paths where a
+member would otherwise be left guessing: the initial matches load, an older
+page of messages, sending a message, and both deck loads. Each offers a retry
+where there is something sensible to retry.
+
+**Not every network call in the app goes through it yet.** The ones that do are
+the ones a member is watching when they fail; the rest still fail into a
+`catch` that keeps the cached copy on screen.
+
+### Still open here
+
+- `reactionsService.fetchReactions()` is still unbounded — it fetches every
+  reaction the member can see, on sign-in. Small rows, so it is nowhere near the
+  message problem, but it is the same shape and should follow the same fix.
+- The Explore grid is a `ScrollView` with `.map()`, so it renders every card it
+  holds. Paging keeps that list short today; it wants to be a `FlatList` before
+  the pool is large.
+
+### Message times are the server's now, not the phone's
+
+`sent_at` was written from the device clock. A phone whose time is wrong wrote a
+wrong timestamp — and wrote it for **both** people, since the two sides read the
+same row: a message could sit hours in the past or in the future with nothing in
+the app disagreeing. The insert no longer sends the column at all; the table's
+`default now()` stamps it on the server, and the insert reads the saved row back
+so the true time arrives with it. The optimistic copy covers the moment in
+between, and is replaced when the row lands.
+
+The old reason for stamping client-side (a pending timestamp reading back as
+null and making the message jump) stopped applying when the insert started
+returning the row.
+
+### Day dividers
+
+A bubble carries a clock and nothing else, so a message from last Tuesday at
+12:48 read exactly like one from this morning. The thread now carries a divider
+wherever the day changes — **Today**, **Yesterday**, then the date, with the year
+dropped inside the current one.
+
+`dayKey` builds the day from **local** parts rather than slicing the ISO string:
+`sentAt` is UTC, so `iso.slice(0, 10)` puts anything after 5am PKT on the wrong
+day for a Pakistani reader, and the divider with it. `src/utils/__tests__/time.test.ts`
+pins that, and that "today" is computed against the real clock rather than a
+fixed date.

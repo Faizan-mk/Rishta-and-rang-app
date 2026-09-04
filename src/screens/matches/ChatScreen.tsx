@@ -1,5 +1,16 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { FlatList, Image, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  ActivityIndicator,
+  FlatList,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -18,6 +29,7 @@ import { useDialog } from '../../store/DialogContext';
 import { useMatches } from '../../store/MatchesContext';
 import { useAuth } from '../../store/AuthContext';
 import { rishtaProfileComplete } from '../../utils/rishtaProfile';
+import { dayLabel, sameDay } from '../../utils/time';
 import { radius, spacing, typography } from '../../theme';
 import { glow, modeAccent, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
@@ -36,6 +48,10 @@ export function ChatScreen() {
   const {
     getMatch,
     getMessages,
+    openThread,
+    loadOlderMessages,
+    getThreadPaging,
+    retryMessage,
     sendMessage: sendToMatch,
     sendVoiceMessage,
     sendImageMessage,
@@ -47,6 +63,9 @@ export function ChatScreen() {
 
   const match = getMatch(matchId);
   const messages = getMessages(matchId);
+  const thread = getThreadPaging(matchId);
+  // The store keeps a thread oldest-first; an inverted list reads newest-first.
+  const ordered = useMemo(() => [...messages].reverse(), [messages]);
   const [draft, setDraft] = useState('');
   const [reportVisible, setReportVisible] = useState(false);
   const [recording, setRecording] = useState(false);
@@ -55,6 +74,10 @@ export function ChatScreen() {
 
   useEffect(() => {
     markMatchRead(matchId);
+    // The thread is paged in, so opening it is what fetches the newest page.
+    // Until then the list holds only the preview the matches list was built
+    // from — one line, which is better than an empty screen.
+    openThread(matchId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [matchId]);
 
@@ -298,18 +321,56 @@ export function ChatScreen() {
       )}
 
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        {/* Inverted, which is what makes paging possible at all: the newest
+            message is index 0 and sits at the bottom, so "load older" is the
+            list's own end and the scroll position does not jump when a page
+            lands above what is being read. */}
         <FlatList
-          data={messages}
+          data={ordered}
+          inverted
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <Animated.View entering={FadeInUp.duration(220)}>
-              <MessageBubble message={item} currentUserId={user?.id} />
-            </Animated.View>
-          )}
+          renderItem={({ item, index }) => {
+            // The list is newest-first, so the message *after* this one is the
+            // older one. A divider belongs above this message whenever the two
+            // fall on different days — and above the oldest message always,
+            // which is what the `index + 1` miss means.
+            const older = ordered[index + 1];
+            const startsDay = !older || !sameDay(item.sentAt, older.sentAt);
+            return (
+              <Animated.View entering={FadeInUp.duration(220)}>
+                {/* An inverted list flips each cell back the right way up, so
+                    this renders above the bubble exactly as it reads here. */}
+                {startsDay && (
+                  <View style={styles.dayDivider}>
+                    <Text style={styles.dayLabel}>{dayLabel(item.sentAt, t)}</Text>
+                  </View>
+                )}
+                <MessageBubble
+                  message={item}
+                  currentUserId={user?.id}
+                  theirReadAt={match.theirReadAt}
+                  onRetry={retryMessage}
+                />
+              </Animated.View>
+            );
+          }}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
-          ListHeaderComponent={
-            messages.length > 0 ? <Text style={styles.reactionHint}>{t('reactions.hint')}</Text> : null
+          onEndReached={() => loadOlderMessages(matchId)}
+          onEndReachedThreshold={0.4}
+          // Inverted, so the "footer" renders at the top — where older messages
+          // are being fetched from.
+          ListFooterComponent={
+            thread.loading ? (
+              // Inverted, so this sits at the visual top — where a member who
+              // has scrolled up is waiting to see that something is happening.
+              <View style={styles.loadingOlder}>
+                <ActivityIndicator size="small" color={colors.teal} />
+                <Text style={styles.loadingOlderLabel}>{t('chat.loadingOlder')}</Text>
+              </View>
+            ) : messages.length > 0 && !thread.hasMore ? (
+              <Text style={styles.reactionHint}>{t('reactions.hint')}</Text>
+            ) : null
           }
         />
 
@@ -434,7 +495,28 @@ const makeStyles = (colors: Palette) =>
     },
     moveToRishtaBarPending: { opacity: 0.6 },
     moveToRishtaText: { ...typography.label, color: '#FFFFFF', fontWeight: '800' },
-    listContent: { padding: spacing.md, flexGrow: 1, justifyContent: 'flex-end' },
+    // An inverted list grows from the bottom on its own, so `justifyContent`
+    // is not needed here any more — and would push a short thread the wrong way.
+    listContent: { padding: spacing.md, flexGrow: 1 },
+    loadingOlder: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.xs,
+      paddingVertical: spacing.md,
+    },
+    loadingOlderLabel: { ...typography.caption, color: colors.textTertiary, fontWeight: '600' },
+    // A quiet marker, not a heading: it separates days without competing with
+    // the messages on either side of it.
+    dayDivider: {
+      alignSelf: 'center',
+      marginVertical: spacing.sm,
+      paddingHorizontal: spacing.sm + 2,
+      paddingVertical: 3,
+      borderRadius: radius.pill,
+      backgroundColor: withAlpha(colors.textPrimary, 0.06),
+    },
+    dayLabel: { ...typography.caption, color: colors.textSecondary, fontWeight: '700' },
     reactionHint: {
       ...typography.caption,
       color: colors.textTertiary,

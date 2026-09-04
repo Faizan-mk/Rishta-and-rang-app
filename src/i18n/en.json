@@ -304,8 +304,16 @@
     "reportConfirmTitle": "Report {name}?",
     "reportSentTitle": "Report submitted",
     "reportSentBody": "Thanks — our safety team will review this conversation shortly.",
+    "statusSending": "Sending",
+    "statusSent": "Sent",
+    "statusRead": "Read",
     "recording": "Recording...",
     "photoUnavailable": "Photo unavailable",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "dateShort": "{day} {month}",
+    "dateFull": "{day} {month} {year}",
+    "loadingOlder": "Loading earlier messages…",
     "timeAm": "AM",
     "timePm": "PM",
     "reactionPickerTitle": "React with",
@@ -807,6 +815,14 @@
     "month9": "October",
     "month10": "November",
     "month11": "December"
+  },
+  "netErrors": {
+    "retry": "Retry",
+    "messageNotSent": "Message didn't send.",
+    "olderMessages": "Couldn't load older messages.",
+    "deckRefresh": "Couldn't refresh profiles.",
+    "matchesRefresh": "Couldn't refresh your matches.",
+    "likeNotSent": "That like didn't go through."
   },
   "authErrors": {
     "emailTaken": "That email is already registered. Try logging in instead.",

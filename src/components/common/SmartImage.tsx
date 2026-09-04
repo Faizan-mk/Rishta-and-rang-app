@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Image, StyleSheet, Text, View, type ImageStyle, type StyleProp, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { cachedImageUri } from '../../services/imageCache';
 import { useTheme } from '../../store/ThemeContext';
 import { typography } from '../../theme';
 
@@ -33,9 +34,25 @@ function initialsOf(name?: string): string {
 export function SmartImage({ uri, name, style, fallbackStyle, size = 28, blurRadius }: SmartImageProps) {
   const { colors } = useTheme();
   const [failed, setFailed] = useState(false);
+  // The on-disk copy, once there is one. Until then the remote URL renders, so
+  // caching never delays a photo that could already be shown — it only makes
+  // the next launch free.
+  const [localUri, setLocalUri] = useState<string | null>(null);
 
   // A new photo deserves a fresh attempt.
   useEffect(() => setFailed(false), [uri]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLocalUri(null);
+    if (!uri) return;
+    cachedImageUri(uri).then((cached) => {
+      if (!cancelled && cached) setLocalUri(cached);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [uri]);
 
   if (!uri || failed) {
     const initials = initialsOf(name);
@@ -50,7 +67,16 @@ export function SmartImage({ uri, name, style, fallbackStyle, size = 28, blurRad
     );
   }
 
-  return <Image source={{ uri }} style={style} blurRadius={blurRadius} onError={() => setFailed(true)} />;
+  return (
+    <Image
+      source={{ uri: localUri ?? uri }}
+      style={style}
+      blurRadius={blurRadius}
+      // A cached file that will not decode is worse than no cache at all, so a
+      // failure falls back to the network copy once before giving up entirely.
+      onError={() => (localUri ? setLocalUri(null) : setFailed(true))}
+    />
+  );
 }
 
 const styles = StyleSheet.create({

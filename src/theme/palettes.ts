@@ -33,6 +33,11 @@ export interface Palette {
   warning: string;
   warningSoft: string;
 
+  // The blue of a read receipt. Its own token rather than one of the accents
+  // above: it has to mean "they read it" and nothing else, so it must not move
+  // when the Friends or Rishta accents do.
+  readReceipt: string;
+
   overlay: string;
   shadow: string;
   skeleton: string;
@@ -74,6 +79,8 @@ export const lightPalette: Palette = {
   dangerSoft: '#FAEAE8',
   warning: '#C98A3D',
   warningSoft: '#F7EBDA',
+
+  readReceipt: '#2B7FB8',
 
   overlay: 'rgba(18, 50, 52, 0.55)',
   shadow: 'rgba(18, 42, 46, 0.12)',
@@ -118,6 +125,9 @@ export const darkPalette: Palette = {
   dangerSoft: '#331716',
   warning: '#F2B84B',
   warningSoft: '#332710',
+
+  // Brighter against near-black, the same way the other dark accents are.
+  readReceipt: '#5AB6E8',
 
   overlay: 'rgba(0, 0, 0, 0.75)',
   shadow: 'rgba(0, 0, 0, 0.7)',
