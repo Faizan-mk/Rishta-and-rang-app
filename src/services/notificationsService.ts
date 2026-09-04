@@ -10,6 +10,18 @@ interface NotificationRow {
   read: boolean;
 }
 
+/** A `notifications` row (snake_case, from PostgreSQL/Realtime) → NotificationItem. */
+export function rowToNotification(row: Record<string, unknown>): NotificationItem {
+  return {
+    id: String(row.id),
+    type: row.type as NotificationItem['type'],
+    title: (row.title as string) ?? '',
+    body: (row.body as string) ?? '',
+    createdAt: (row.created_at as string) ?? new Date().toISOString(),
+    read: Boolean(row.read),
+  };
+}
+
 function mapNotification(row: NotificationRow): NotificationItem {
   return {
     id: row.id,

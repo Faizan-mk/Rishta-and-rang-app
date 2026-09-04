@@ -338,3 +338,91 @@ npx eas build --profile development --platform android
 #   select * from push_tokens;          -> expect one row
 # then invoke send-push with that account's userId and watch the phone
 ```
+
+## Move to Rishta — the handshake, and being told about it
+
+`supabase/28_rishta_request.sql` made the handshake real: the request is two
+columns on the shared match row (`rishta_requested_by`, `rishta_requested_at`),
+`request_rishta` / `respond_rishta` are the only ways either moves, and 24's
+blanket `matches_update` policy is gone — so `mode` becomes `rishta` by
+acceptance and by nothing else. The 2.2-second `setTimeout` that used to fake
+the other person's answer is gone with it.
+
+`supabase/32_rishta_notifications.sql` is the half that tells people:
+
+- The three moments each leave a `notifications` row — **asked** → the other
+  member, **accepted** → *both* of them off the one write that moved them,
+  **declined** → the requester, so a pending bar never just disappears.
+- It has to be server-side. `notifications_insert` is `profile_id = auth.uid()`,
+  so the client can only ever write a notification to itself; the rows are
+  written inside the definer functions that already own the transition, through
+  `notify_member`, which is deliberately **not** granted to `authenticated`.
+- Wording is in the recipient's language (`rishta_copy`), word for word the same
+  as the push copy in `send-push` — the same event should not arrive twice in
+  two wordings.
+- `notifications` joins the Realtime publication, and `NotificationContext`
+  subscribes. Without that the feed was fetched once per sign-in, so a row
+  written while the app was open showed up on the next launch — which, for the
+  requester, is long after the moment.
+- Push rides along: `rishta_accepted` / `rishta_declined` are new `send-push`
+  events, sent by the member who answered. "They accepted your request" is the
+  one line the *other* half of a pair would want to be able to send, so the row
+  now records `rishta_answered_by` / `rishta_answered_at` and the function
+  carries an answer only for the member the row says gave it, only while that is
+  still the answer it holds, and only within five minutes of it.
+
+**The gate is in both places on purpose.** `rishta_profile_complete` (religion,
+education, family background, readiness ≠ browsing) is what refuses the request;
+`src/utils/rishtaProfile.ts` is the same rule in the client, so the bar can grey
+itself and offer the Rishta profile screen instead of turning a tap into an
+error. Both `btrim` now, so a field holding only spaces fails on both sides
+rather than one.
+
+**Found while checking what was deployed:** `rishta_profile_complete` (28) and
+`is_blocked_pair` (22) were both granted to `authenticated` without being
+revoked from `public` — and a definer function is executable by `public` unless
+told otherwise, so **anyone holding the anon key could call them**. Confirmed
+against the live project: both answered HTTP 200 to an unauthenticated caller.
+32 revokes `rishta_profile_complete`. **`is_blocked_pair` is left alone and is
+still open**: it is called from inside RLS policies, which run as the querying
+role, so revoking it needs a check of which roles those policies serve before it
+is safe. Worth doing — it answers "do these two people block each other?" about
+any pair of ids to anyone with the public key.
+
+### Status against 7.1's "done when"
+
+> The signature feature works between two real accounts and is visible in the data.
+
+Everything on the request side is written and its logic is provable —
+`supabase/tests/verify_rishta_request.sql` proves the handshake and
+`verify_core_loop.sql` the whole journey around it, both rolled back. **What has
+not happened is 7.2: nobody has run it on two devices.** 32 is not applied to
+the live project yet either (checked: `rishta_copy` answers `PGRST202`), so the
+notifications half is code, not behaviour, until it is run.
+
+Note on the ticket's wording: it asked for `rishta_request_status`
+(null/pending/accepted/declined). The status is derived rather than stored —
+`mode = 'rishta'` is accepted, a non-null `rishta_requested_by` is pending, and
+declined returns to null so the requester may ask again. A stored status column
+would be a second name for facts the row already carries, and could disagree
+with `mode`. If a decline needs to *persist* (to show the requester "not yet"
+until they ask again, say), that is the change to make, and it is a column plus
+a clause in `respond_rishta`.
+
+## Full smoke test — the walk-through, not the walk
+
+`docs/smoke-test.md` is the two-device script: match → chat → Move to Rishta →
+block → report, with, for every step, what the devices should show **and** the
+query that proves it landed. It exists because a step that looks right on screen
+and leaves nothing in the database is exactly the failure this project has
+already shipped once.
+
+`supabase/tests/verify_core_loop.sql` is its data half — the same journey
+through the same RPCs and policies, with both members impersonated
+(`role` + both jwt claim GUCs), rolled back by a closing exception. Run it
+before touching the devices: if it fails, what you would be debugging is the
+schema, and it is far easier to read there.
+
+**Not run, and it cannot be from here:** the two-device walk itself needs two
+physical devices, two real accounts and a development build. Nothing in this
+change verifies it; it makes it verifiable, and says exactly what to look at.

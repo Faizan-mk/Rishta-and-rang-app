@@ -400,6 +400,12 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
 
   const respondRishtaRequest = async (matchId: string, accept: boolean) => {
     const outcome = await matchesService.respondRishta(matchId, accept);
+    // The in-app row is written inside `respond_rishta` for both of them — the
+    // client cannot write a notification addressed to anyone but itself. This
+    // is the push half, and it is aimed at the requester: they are the side
+    // whose screen changes from a write they did not make.
+    if (outcome === 'accepted') pushService.notifyRishtaAccepted(matchId);
+    else pushService.notifyRishtaDeclined(matchId);
     setMatches((prev) =>
       prev.map((m) =>
         m.id === matchId
