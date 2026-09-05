@@ -118,7 +118,10 @@
     "minRequired": "Add at least 2 photos to continue",
     "primaryPhoto": "Primary",
     "makePrimary": "Make primary",
-    "primaryHint": "Your primary photo is the first one people see. Tap a photo, or its star, to make it primary."
+    "primaryHint": "Your primary photo is the first one people see. Tap a photo, or its star, to make it primary.",
+    "cropTitle": "Crop photo",
+    "cropHint": "Drag to move, pinch to zoom. Whatever fills the frame is what people see.",
+    "cropAction": "Crop photo"
   },
   "selfie": {
     "title": "Quick verification selfie",

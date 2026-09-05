@@ -118,7 +118,10 @@
     "minRequired": "Jari rakhne ke liye kam az kam 2 tasveerein shamil karein",
     "primaryPhoto": "Primary",
     "makePrimary": "Primary banayein",
-    "primaryHint": "Primary photo wo hai jo log sab se pehle dekhte hain. Kisi photo ya uske star par tap kar ke usay primary banayein."
+    "primaryHint": "Primary photo wo hai jo log sab se pehle dekhte hain. Kisi photo ya uske star par tap kar ke usay primary banayein.",
+    "cropTitle": "Tasveer Crop Karein",
+    "cropHint": "Move karne ke liye drag karein, zoom ke liye pinch karein. Frame mein jo hissa aayega, log wahi dekhenge.",
+    "cropAction": "Tasveer Crop Karein"
   },
   "selfie": {
     "title": "Fori Tasdeeqi Selfie",

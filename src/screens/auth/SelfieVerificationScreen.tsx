@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { AccentHeading } from '../../components/common/AccentHeading';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ImageCropper } from '../../components/common/ImageCropper';
 import { Button } from '../../components/Button';
 import { StepHeader } from '../../components/common/StepHeader';
 import { FadeIn } from '../../components/common/FadeInUp';
@@ -29,6 +30,8 @@ export function SelfieVerificationScreen() {
   const { notify } = useDialog();
   const { draft } = useOnboarding();
   const [selfieUri, setSelfieUri] = useState<string | null>(null);
+  // The shot waiting to be cropped; null while the cropper is closed.
+  const [pendingSelfie, setPendingSelfie] = useState<string | null>(null);
   const [cnicPhotoUri, setCnicPhotoUri] = useState<string | null>(null);
   const [checkingCnicPhoto, setCheckingCnicPhoto] = useState(false);
   const [cnicPhotoError, setCnicPhotoError] = useState<string | null>(null);
@@ -41,15 +44,20 @@ export function SelfieVerificationScreen() {
       await notify({ title: t('permissions.cameraTitle'), message: t('permissions.cameraBody') });
       return;
     }
+    // `allowsEditing` is deliberately off — see ImageCropper for why the OS crop
+    // screen is not dependable. Cropping happens in-app instead.
     const result = await ImagePicker.launchCameraAsync({
       cameraType: ImagePicker.CameraType.front,
-      quality: 0.6,
-      allowsEditing: true,
-      aspect: [1, 1],
+      quality: 1,
     });
     if (!result.canceled && result.assets[0]) {
-      setSelfieUri(result.assets[0].uri);
+      setPendingSelfie(result.assets[0].uri);
     }
+  };
+
+  const onSelfieCropped = (uri: string) => {
+    setPendingSelfie(null);
+    setSelfieUri(uri);
   };
 
   const pickCnicPhoto = async () => {
@@ -160,6 +168,8 @@ export function SelfieVerificationScreen() {
         loading={submitting}
         style={styles.submit}
       />
+
+      <ImageCropper uri={pendingSelfie} aspect={1} round onCancel={() => setPendingSelfie(null)} onCropped={onSelfieCropped} />
     </ScreenContainer>
   );
 }

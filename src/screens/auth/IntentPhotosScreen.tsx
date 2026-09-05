@@ -7,6 +7,7 @@ import Animated, { FadeInUp } from 'react-native-reanimated';
 import type { Intent } from '../../types/user';
 import { AccentHeading } from '../../components/common/AccentHeading';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ImageCropper } from '../../components/common/ImageCropper';
 import { Button } from '../../components/Button';
 import { StepHeader } from '../../components/common/StepHeader';
 import { useLanguage } from '../../store/LanguageContext';
@@ -38,6 +39,8 @@ export function IntentPhotosScreen() {
   const { draft, patchDraft } = useOnboarding();
   const [selected, setSelected] = useState<Intent | null>(null);
   const [photos, setPhotos] = useState<string[]>([]);
+  // The photo waiting to be cropped; null while the cropper is closed.
+  const [pending, setPending] = useState<string | null>(null);
 
   const pickPhoto = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -45,15 +48,21 @@ export function IntentPhotosScreen() {
       await notify({ title: t('permissions.photoLibraryTitle'), message: t('permissions.photoLibraryBody') });
       return;
     }
+    // `allowsEditing` is deliberately off: the OS crop screen it opens hides or
+    // drops its confirm button on many Android builds, and ignores a 3:4 aspect
+    // on iOS. ImageCropper below does the framing instead.
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
-      quality: 0.9,
-      allowsEditing: true,
-      aspect: [3, 4],
+      quality: 1,
     });
     if (!result.canceled && result.assets[0]) {
-      setPhotos((prev) => [...prev, result.assets[0].uri].slice(0, MAX_PHOTOS));
+      setPending(result.assets[0].uri);
     }
+  };
+
+  const onCropped = (uri: string) => {
+    setPending(null);
+    setPhotos((prev) => [...prev, uri].slice(0, MAX_PHOTOS));
   };
 
   // The first photo is the one everyone sees on the deck card, so it has to be
@@ -139,6 +148,8 @@ export function IntentPhotosScreen() {
         gradient={canContinue ? onboardRamp : undefined}
         style={styles.submit}
       />
+
+      <ImageCropper uri={pending} aspect={3 / 4} onCancel={() => setPending(null)} onCropped={onCropped} />
     </ScreenContainer>
   );
 }
