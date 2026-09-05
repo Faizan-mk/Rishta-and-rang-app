@@ -10,6 +10,7 @@ import { useAudioPlayer, useAudioPlayerStatus, useAudioRecorder, RecordingPreset
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { AccentHeading } from '../../components/common/AccentHeading';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ImageCropper } from '../../components/common/ImageCropper';
 import { TextField } from '../../components/common/TextField';
 import { SelectField } from '../../components/common/SelectField';
 import { Button } from '../../components/Button';
@@ -104,6 +105,8 @@ export function EditProfileScreen() {
   const [bio, setBio] = useState(user?.bio ?? '');
   const [city, setCity] = useState<string | null>(user?.city || null);
   const [photos, setPhotos] = useState<string[]>(user?.photos ?? []);
+  // The photo waiting to be cropped; null while the cropper is closed.
+  const [pendingPhoto, setPendingPhoto] = useState<string | null>(null);
   const [vibeTags, setVibeTags] = useState<string[]>(user?.dating.vibeTags ?? []);
   const [tagInput, setTagInput] = useState('');
   const [details, setDetails] = useState<DetailsState>(() => initDetails(user));
@@ -188,15 +191,20 @@ export function EditProfileScreen() {
       await notify({ title: t('permissions.photoLibraryTitle'), message: t('permissions.photoLibraryBody') });
       return;
     }
+    // `allowsEditing` is deliberately off — see ImageCropper for why the OS crop
+    // screen is not dependable. Cropping happens in-app instead.
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
-      quality: 0.9,
-      allowsEditing: true,
-      aspect: [3, 4],
+      quality: 1,
     });
     if (!result.canceled && result.assets[0]) {
-      setPhotos((prev) => [...prev, result.assets[0].uri].slice(0, MAX_PHOTOS));
+      setPendingPhoto(result.assets[0].uri);
     }
+  };
+
+  const onPhotoCropped = (uri: string) => {
+    setPendingPhoto(null);
+    setPhotos((prev) => [...prev, uri].slice(0, MAX_PHOTOS));
   };
 
   const removePhoto = (uri: string) => setPhotos((prev) => prev.filter((p) => p !== uri));
@@ -478,6 +486,8 @@ export function EditProfileScreen() {
 
       <Button label={t('common.save')} onPress={onSave} loading={saving} gradient={accent.ramp} style={styles.submit} />
       <Button label={t('common.cancel')} variant="ghost" onPress={() => router.back()} />
+
+      <ImageCropper uri={pendingPhoto} aspect={3 / 4} onCancel={() => setPendingPhoto(null)} onCropped={onPhotoCropped} />
     </ScreenContainer>
   );
 }
