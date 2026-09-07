@@ -220,7 +220,7 @@ export function HomeScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [safeCursor, visibleProfiles.length]);
   const canUndo = safeCursor > 0;
-  const filtersActive = countActiveFilters(filters);
+  const filtersActive = countActiveFilters(filters, mode);
 
   // Warm the photo caches up front so a mode or profile change never sits on
   // a blank card while the new profile's image downloads from the network.

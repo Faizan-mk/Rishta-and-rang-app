@@ -32,6 +32,14 @@ interface ImageCropperProps {
 // 4000px original is slow and the result is pointlessly heavy.
 const MAX_SOURCE_WIDTH = 1440;
 const MAX_ZOOM = 6;
+// baseScale (below) is a strict "cover" fit: it makes the photo exactly fill the
+// frame on whichever axis is tighter, which leaves that axis with zero slack to
+// pan — a portrait photo cropped into the 3:4 frame, say, sits flush against the
+// left/right edges with nothing to reveal, so only up/down panning does anything
+// until the member discovers pinch-to-zoom. Starting a notch past the cover fit
+// gives a little slack on both axes from the first frame, so panning works either
+// way immediately.
+const INITIAL_ZOOM = 1.15;
 const JPEG = ImageManipulator.SaveFormat.JPEG;
 
 interface Source {
@@ -106,7 +114,7 @@ export function ImageCropper({ uri, aspect = 3 / 4, round = false, onCancel, onC
   useEffect(() => {
     translateX.value = 0;
     translateY.value = 0;
-    scale.value = 1;
+    scale.value = INITIAL_ZOOM;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [source?.uri]);
 
