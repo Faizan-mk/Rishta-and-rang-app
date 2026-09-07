@@ -1,4 +1,4 @@
-import type { Intent, RishtaReadiness } from '../../types/user';
+import type { Intent, ProfileMode, RishtaReadiness } from '../../types/user';
 
 // Shared shape of the Home deck's browse controls (the Filters and Sort chips in
 // the top bar), kept out of the screen so the sheets and the screen agree on one
@@ -46,13 +46,16 @@ export const DEFAULT_BROWSE_FILTERS: BrowseFilters = {
 export const DEFAULT_BROWSE_SORT: BrowseSortKey = 'recommended';
 
 // How many filters differ from the defaults — drives the count on the Filters chip.
-export function countActiveFilters(filters: BrowseFilters): number {
+// Sect and readiness only ever filter the Rishta deck (see HomeScreen's
+// visibleProfiles), so counting them on the Friends side would show an "active"
+// badge for a filter that isn't actually doing anything to that deck.
+export function countActiveFilters(filters: BrowseFilters, mode: ProfileMode): number {
   let count = 0;
   if (filters.ageMin !== AGE_FLOOR || filters.ageMax !== AGE_CEILING) count += 1;
   if (filters.city) count += 1;
   if (filters.intent) count += 1;
-  if (filters.sect) count += 1;
-  if (filters.readiness) count += 1;
+  if (mode === 'rishta' && filters.sect) count += 1;
+  if (mode === 'rishta' && filters.readiness) count += 1;
   if (filters.verifiedOnly) count += 1;
   if (filters.activeToday) count += 1;
   return count;

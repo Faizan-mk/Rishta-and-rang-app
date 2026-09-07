@@ -103,7 +103,7 @@ export function ExploreScreen() {
   const isPro = Boolean(user?.isExplorePlus);
   const mode = user?.activeMode ?? 'dating';
   const accent = modeAccent(colors, mode);
-  const activeFilters = countActiveFilters(filters);
+  const activeFilters = countActiveFilters(filters, mode);
 
   // Real data, not a slice of the deck: these are the members who actually
   // liked this profile (mirrored onto users/{me}/likesReceived when they do).
