@@ -9,8 +9,8 @@ export const SECT_OPTIONS: string[] = [
   'Deobandi',
   'Barelvi',
   'Salafi/Ahle Hadith',
-  'Other',
   'Prefer not to say',
+  'Other',
 ];
 
 export const RELIGION_OPTIONS: string[] = [

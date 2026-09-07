@@ -154,28 +154,70 @@ export function ExplorePlusScreen() {
                 style={[styles.planOption, plan === 'trial' && styles.planOptionSelected]}
               >
                 <View style={[styles.saveBadge, styles.trialBadge]}>
-                  <Text style={styles.saveBadgeText}>{t('explorePlus.trialBadge')}</Text>
+                  <Text style={styles.saveBadgeText} numberOfLines={1}>{t('explorePlus.trialBadge')}</Text>
                 </View>
-                <Text style={[styles.planLabel, plan === 'trial' && styles.planLabelSelected]}>{t('explorePlus.trial')}</Text>
-                <Text style={[styles.planPrice, plan === 'trial' && styles.planLabelSelected]}>{t('explorePlus.trialPrice')}</Text>
+                <Text
+                  style={[styles.planLabel, plan === 'trial' && styles.planLabelSelected]}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.8}
+                >
+                  {t('explorePlus.trial')}
+                </Text>
+                <Text
+                  style={[styles.planPrice, plan === 'trial' && styles.planLabelSelected]}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.6}
+                >
+                  {t('explorePlus.trialPrice')}
+                </Text>
               </Pressable>
             )}
             <Pressable
               onPress={() => setPlan('monthly')}
               style={[styles.planOption, plan === 'monthly' && styles.planOptionSelected]}
             >
-              <Text style={[styles.planLabel, plan === 'monthly' && styles.planLabelSelected]}>{t('explorePlus.monthly')}</Text>
-              <Text style={[styles.planPrice, plan === 'monthly' && styles.planLabelSelected]}>{t('explorePlus.monthlyPrice')}</Text>
+              <Text
+                style={[styles.planLabel, plan === 'monthly' && styles.planLabelSelected]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.8}
+              >
+                {t('explorePlus.monthly')}
+              </Text>
+              <Text
+                style={[styles.planPrice, plan === 'monthly' && styles.planLabelSelected]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.6}
+              >
+                {t('explorePlus.monthlyPrice')}
+              </Text>
             </Pressable>
             <Pressable
               onPress={() => setPlan('yearly')}
               style={[styles.planOption, plan === 'yearly' && styles.planOptionSelected]}
             >
               <View style={styles.saveBadge}>
-                <Text style={styles.saveBadgeText}>{t('explorePlus.save25')}</Text>
+                <Text style={styles.saveBadgeText} numberOfLines={1}>{t('explorePlus.save25')}</Text>
               </View>
-              <Text style={[styles.planLabel, plan === 'yearly' && styles.planLabelSelected]}>{t('explorePlus.yearly')}</Text>
-              <Text style={[styles.planPrice, plan === 'yearly' && styles.planLabelSelected]}>{t('explorePlus.yearlyPrice')}</Text>
+              <Text
+                style={[styles.planLabel, plan === 'yearly' && styles.planLabelSelected]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.8}
+              >
+                {t('explorePlus.yearly')}
+              </Text>
+              <Text
+                style={[styles.planPrice, plan === 'yearly' && styles.planLabelSelected]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.6}
+              >
+                {t('explorePlus.yearlyPrice')}
+              </Text>
             </Pressable>
           </View>
           {plan === 'trial' && (
@@ -347,13 +389,22 @@ const makeStyles = (colors: Palette) =>
       borderColor: colors.borderSoft,
       borderRadius: radius.md,
       paddingHorizontal: spacing.xs,
-      paddingVertical: spacing.sm + 2,
+      // Extra top clearance (beyond the bottom padding) for the badge that floats
+      // above this box — three options sharing one row on a narrow phone leaves
+      // little width, so the badge's own text sits right at the edge of wrapping,
+      // and a wrapped second line needs somewhere to go without covering the
+      // label/price text right below it.
+      paddingTop: spacing.md + spacing.xs,
+      paddingBottom: spacing.sm + 2,
       alignItems: 'center',
     },
+    // Border only — the translucent gold fill plus drop-shadow this used to carry
+    // rendered as a hard, offset rectangle over the label/price text on some
+    // Android devices instead of a soft tint, so selection is shown with just a
+    // thicker, coloured border now.
     planOptionSelected: {
+      borderWidth: 2,
       borderColor: colors.gold,
-      backgroundColor: withAlpha(colors.gold, 0.12),
-      ...glow(colors.gold, 0.35, 12, 5),
     },
     planLabel: { ...typography.label, color: colors.textSecondary, fontWeight: '700' },
     planLabelSelected: { color: colors.gold },
@@ -361,12 +412,17 @@ const makeStyles = (colors: Palette) =>
     saveBadge: {
       position: 'absolute',
       top: -10,
+      maxWidth: '92%',
       backgroundColor: colors.gold,
       borderRadius: radius.pill,
-      paddingHorizontal: spacing.sm,
+      paddingHorizontal: spacing.xs,
       paddingVertical: 2,
     },
-    saveBadgeText: { ...typography.caption, color: '#FFFFFF', fontWeight: '800' },
+    // Smaller than typography.caption and forced to one line (see numberOfLines
+    // on the Text itself) — at caption size "7 days free" wraps to two lines in
+    // the trial column when three plan options share a phone-width row, which is
+    // what let this badge grow tall enough to cover the label below it.
+    saveBadgeText: { fontSize: 10, lineHeight: 13, color: '#FFFFFF', fontWeight: '800' },
     trialBadge: { backgroundColor: colors.success },
     trialHint: { ...typography.caption, color: colors.textSecondary, textAlign: 'center', marginTop: -spacing.xs, marginBottom: spacing.md },
     featureRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
