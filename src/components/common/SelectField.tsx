@@ -106,7 +106,11 @@ export function SelectField({
 
       {error ? <Text style={[styles.errorText, rtl && styles.rtlText]}>{error}</Text> : null}
 
-      <BottomSheet visible={open} onClose={() => setOpen(false)}>
+      {/* A fixed height (rather than a content-hugging maxHeight) makes the FlatList's
+          flex: 1 below unambiguous on every platform — see BottomSheet's note on why
+          a maxHeight-only cap let a long list (e.g. every Pakistani city) scroll and
+          reach "Other" on web while it stayed clipped on a phone. */}
+      <BottomSheet visible={open} onClose={() => setOpen(false)} height="75%">
         <View style={styles.sheetBody}>
           <Text style={[styles.sheetTitle, rtl && styles.rtlText]}>{label}</Text>
           <View style={[styles.searchRow, searchFocused && styles.searchRowFocused, rtl && styles.rowRtl]}>
@@ -191,7 +195,9 @@ const makeStyles = (colors: Palette) =>
     placeholder: { color: colors.textTertiary },
     errorText: { ...typography.caption, color: colors.danger, marginTop: spacing.xs },
     // The panel itself (backdrop, rounded top, handle, slide) is BottomSheet's.
-    sheetBody: { paddingHorizontal: spacing.lg, paddingBottom: spacing.lg },
+    // flex: 1 against the sheet's now-fixed height, not flexShrink against an
+    // ambiguous auto height — see the note above the BottomSheet call.
+    sheetBody: { paddingHorizontal: spacing.lg, paddingBottom: spacing.lg, flex: 1 },
     sheetTitle: { ...typography.h3, color: colors.textPrimary, marginBottom: spacing.md },
     searchRow: {
       flexDirection: 'row',
@@ -220,7 +226,9 @@ const makeStyles = (colors: Palette) =>
       // square inside the pill's rounded corners.
       borderWidth: 0,
     },
-    list: { flexGrow: 0 },
+    // flex: 1 fills whatever space is left below the search row and scrolls
+    // internally for it, identically on web and native.
+    list: { flex: 1 },
     option: {
       flexDirection: 'row',
       alignItems: 'center',

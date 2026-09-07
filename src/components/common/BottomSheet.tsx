@@ -8,6 +8,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { radius, spacing } from '../../theme';
 import { useTheme } from '../../store/ThemeContext';
 
@@ -34,6 +35,7 @@ const FALLBACK_TRAVEL = 600;
 
 export function BottomSheet({ visible, onClose, children, maxHeight = '88%', height, showHandle = true }: BottomSheetProps) {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const [rendered, setRendered] = useState(visible);
   const progress = useSharedValue(0);
   const sheetHeight = useSharedValue(0);
@@ -83,7 +85,7 @@ export function BottomSheet({ visible, onClose, children, maxHeight = '88%', hei
           onLayout={onSheetLayout}
           style={[
             styles.sheet,
-            { backgroundColor: colors.surfaceElevated, maxHeight, height },
+            { backgroundColor: colors.surfaceElevated, maxHeight, height, paddingBottom: insets.bottom },
             sheetStyle,
           ]}
         >
@@ -96,7 +98,7 @@ export function BottomSheet({ visible, onClose, children, maxHeight = '88%', hei
             style={styles.topRule}
           />
           {showHandle && <View style={[styles.handle, { backgroundColor: colors.border }]} />}
-          {children}
+          <View style={styles.childArea}>{children}</View>
         </Animated.View>
       </View>
     </Modal>
@@ -120,4 +122,9 @@ const styles = StyleSheet.create({
     marginTop: 2,
     marginBottom: spacing.sm,
   },
+  // No flexBasis here (i.e. not the `flex: 1` shorthand): with an explicit `height`
+  // prop this still grows to fill it, but flexBasis: 0 would make Yoga collapse it
+  // toward zero for a maxHeight-only, content-hugging sheet (e.g. BoostSheet) instead
+  // of sizing to its content.
+  childArea: { flexGrow: 1, flexShrink: 1 },
 });
