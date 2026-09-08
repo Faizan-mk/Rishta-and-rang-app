@@ -19,6 +19,7 @@ import { DiscoveryProvider }  from '../store/DiscoveryContext';
 import { DialogProvider } from '../store/DialogContext';
 import { ToastProvider } from '../store/ToastContext';
 import { OnboardingProvider } from '../store/onboardingStore';
+import { OnboardingGateProvider, useOnboardingGate } from '../store/OnboardingGateContext';
 import { ResponsiveFrame } from '../components/common/ResponsiveFrame';
 import { usePushRegistration } from '../hooks/usePushRegistration';
 import { usePushNavigation } from '../hooks/usePushNavigation';
@@ -29,6 +30,7 @@ import { useActivityHeartbeat } from '../hooks/useActivityHeartbeat';
 // which forwards the visitor to whichever group they belong in.
 function RootNavigator() {
   const { user, initializing } = useAuth();
+  const { seenOnboarding } = useOnboardingGate();
   const { colors, isDark } = useTheme();
   const { t } = useLanguage();
   // Stores this device's push address once someone is signed in; the sending
@@ -55,7 +57,7 @@ function RootNavigator() {
     };
   }, [colors, isDark]);
 
-  if (initializing) {
+  if (initializing || seenOnboarding === null) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background }}>
         <ActivityIndicator color={colors.teal} size="large" />
@@ -81,7 +83,15 @@ function RootNavigator() {
               unmount itself the moment the link worked. */}
           <Stack.Screen name="reset-password" options={{ headerShown: false }} />
 
-          <Stack.Protected guard={!user}>
+          {/* Structural gate, not just a redirect: while the two-page intro
+              hasn't been marked seen, (auth) isn't mounted at all, so no
+              direct link, restored nav state, or stray redirect can land on
+              welcome/login/signup ahead of it. */}
+          <Stack.Protected guard={!user && !seenOnboarding}>
+            <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+          </Stack.Protected>
+
+          <Stack.Protected guard={!user && seenOnboarding}>
             <Stack.Screen name="(auth)" options={{ headerShown: false }} />
           </Stack.Protected>
 
@@ -116,33 +126,35 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <ThemeProvider>
           <LanguageProvider>
-            {/* Above everything that makes a network call, so a failure has
-                somewhere to be said instead of being swallowed. */}
-            <ToastProvider>
-            <AuthProvider>
-              <OnboardingProvider>
-                <NotificationProvider>
-                  <MatchesProvider>
-                    <FavoritesProvider>
-                      <ViewHistoryProvider>
-                        <LikeLimitProvider>
-                          <BoostProvider>
-                            <PrivacyProvider>
-                              <DiscoveryProvider>
-                                <DialogProvider>
-                                  <RootNavigator />
-                                </DialogProvider>
-                              </DiscoveryProvider>
-                            </PrivacyProvider>
-                          </BoostProvider>
-                        </LikeLimitProvider>
-                      </ViewHistoryProvider>
-                    </FavoritesProvider>
-                  </MatchesProvider>
-                </NotificationProvider>
-              </OnboardingProvider>
-            </AuthProvider>
-            </ToastProvider>
+            <OnboardingGateProvider>
+              {/* Above everything that makes a network call, so a failure has
+                  somewhere to be said instead of being swallowed. */}
+              <ToastProvider>
+              <AuthProvider>
+                <OnboardingProvider>
+                  <NotificationProvider>
+                    <MatchesProvider>
+                      <FavoritesProvider>
+                        <ViewHistoryProvider>
+                          <LikeLimitProvider>
+                            <BoostProvider>
+                              <PrivacyProvider>
+                                <DiscoveryProvider>
+                                  <DialogProvider>
+                                    <RootNavigator />
+                                  </DialogProvider>
+                                </DiscoveryProvider>
+                              </PrivacyProvider>
+                            </BoostProvider>
+                          </LikeLimitProvider>
+                        </ViewHistoryProvider>
+                      </FavoritesProvider>
+                    </MatchesProvider>
+                  </NotificationProvider>
+                </OnboardingProvider>
+              </AuthProvider>
+              </ToastProvider>
+            </OnboardingGateProvider>
           </LanguageProvider>
         </ThemeProvider>
       </SafeAreaProvider>
