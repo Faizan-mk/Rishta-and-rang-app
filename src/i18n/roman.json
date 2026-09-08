@@ -137,6 +137,19 @@
     "urdu": "اردو",
     "roman": "Roman English"
   },
+  "onboarding": {
+    "getStarted": "Shuru Karein",
+    "page1": {
+      "title": "Sanjeeda rishtay, asaan tareeqay se",
+      "subtitle": "Verified profiles, wali ki shumooliyat, aur privacy controls — har qadam par aapke saath."
+    },
+    "page2": {
+      "title": "Dosti aur rang, apne andaaz mein",
+      "subtitle": "Ek mehfooz aur ba-waqar mahol mein baat cheet karein aur haqeeqi taalluqaat banayein.",
+      "chipSafe": "Mehfooz baat cheet",
+      "chipReal": "Haqeeqi log"
+    }
+  },
   "nav": {
     "home": "Home",
     "discover": "Discover",

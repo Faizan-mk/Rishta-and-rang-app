@@ -137,6 +137,19 @@
     "urdu": "اردو",
     "roman": "Roman English"
   },
+  "onboarding": {
+    "getStarted": "Get Started",
+    "page1": {
+      "title": "Serious rishtas, made simple",
+      "subtitle": "Verified profiles, wali involvement, and privacy controls — built in every step of the way."
+    },
+    "page2": {
+      "title": "Friends & rang, your way",
+      "subtitle": "Chat, connect, and build genuine relationships in a safe, respectful space.",
+      "chipSafe": "Safe chat",
+      "chipReal": "Real people"
+    }
+  },
   "nav": {
     "home": "Home",
     "discover": "Discover",
