@@ -67,6 +67,15 @@ describe('analyzeIdCardPhoto', () => {
     expect(decode).not.toHaveBeenCalled();
   });
 
+  it('accepts a portrait-oriented photo of a landscape card (camera held upright)', async () => {
+    manipulateAsync.mockResolvedValue({ base64: 'AAAA', width: 30, height: 48 }); // same ~1.6 ratio, rotated
+    decode.mockReturnValue({ data: buildPixels(100, 0.3, 0.3), width: 10, height: 10 });
+
+    const result = await analyzeIdCardPhoto('file://photo.jpg');
+
+    expect(result).toEqual({ looksValid: true });
+  });
+
   it('flags notCardColored when both green and light pixel ratios are too low', async () => {
     manipulateAsync.mockResolvedValue({ base64: 'AAAA', width: 48, height: 30 }); // ~1.6 aspect, valid shape
     decode.mockReturnValue({ data: buildPixels(100, 0, 0), width: 10, height: 10 });
