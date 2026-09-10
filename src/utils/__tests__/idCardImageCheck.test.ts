@@ -67,7 +67,7 @@ describe('analyzeIdCardPhoto', () => {
     expect(decode).not.toHaveBeenCalled();
   });
 
-  it('flags notCardColored when green/light pixel ratios are too low', async () => {
+  it('flags notCardColored when both green and light pixel ratios are too low', async () => {
     manipulateAsync.mockResolvedValue({ base64: 'AAAA', width: 48, height: 30 }); // ~1.6 aspect, valid shape
     decode.mockReturnValue({ data: buildPixels(100, 0, 0), width: 10, height: 10 });
 
@@ -79,6 +79,24 @@ describe('analyzeIdCardPhoto', () => {
   it('accepts an image with a plausible CNIC color profile and aspect ratio', async () => {
     manipulateAsync.mockResolvedValue({ base64: 'AAAA', width: 48, height: 30 });
     decode.mockReturnValue({ data: buildPixels(100, 0.3, 0.3), width: 10, height: 10 });
+
+    const result = await analyzeIdCardPhoto('file://photo.jpg');
+
+    expect(result).toEqual({ looksValid: true });
+  });
+
+  it('accepts a mostly-green photo even when the card does not fill the frame with white', async () => {
+    manipulateAsync.mockResolvedValue({ base64: 'AAAA', width: 48, height: 30 });
+    decode.mockReturnValue({ data: buildPixels(100, 0.2, 0), width: 10, height: 10 });
+
+    const result = await analyzeIdCardPhoto('file://photo.jpg');
+
+    expect(result).toEqual({ looksValid: true });
+  });
+
+  it('accepts a mostly-light photo even with little green (e.g. an older-style ID card)', async () => {
+    manipulateAsync.mockResolvedValue({ base64: 'AAAA', width: 48, height: 30 });
+    decode.mockReturnValue({ data: buildPixels(100, 0, 0.2), width: 10, height: 10 });
 
     const result = await analyzeIdCardPhoto('file://photo.jpg');
 

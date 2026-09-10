@@ -485,9 +485,9 @@
   },
   "cnic": {
     "title": "CNIC / ID document",
-    "subtitle": "Upload a photo of your CNIC or ID card. It will be reviewed against your details.",
+    "subtitle": "Scan your CNIC or ID card with your camera. It will be reviewed against your details.",
     "detailSubtitle": "Collected when you created your account.",
-    "uploadId": "Upload ID photo",
+    "uploadId": "Scan ID photo",
     "number": "CNIC number",
     "numberPlaceholder": "12345-1234567-1",
     "invalidFormat": "Enter a valid 13-digit CNIC number (12345-1234567-1).",

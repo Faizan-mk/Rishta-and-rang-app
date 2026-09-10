@@ -485,9 +485,9 @@
   },
   "cnic": {
     "title": "CNIC / ID Document",
-    "subtitle": "Apne CNIC ya ID card ki tasveer upload karein. Yeh aapki tafseelat ke mutabiq review ki jayegi.",
+    "subtitle": "Apne CNIC ya ID card ko camera se scan karein. Yeh aapki tafseelat ke mutabiq review ki jayegi.",
     "detailSubtitle": "Aapka account banate waqt jama ki gayi.",
-    "uploadId": "ID Tasveer Upload Karein",
+    "uploadId": "ID Scan Karein",
     "number": "CNIC Number",
     "numberPlaceholder": "12345-1234567-1",
     "invalidFormat": "Sahi 13 hindson ka CNIC number darj karein (12345-1234567-1).",

@@ -63,15 +63,18 @@ export async function analyzeIdCardPhoto(uri: string): Promise<IdCardCheckResult
     const g = data[i + 1];
     const b = data[i + 2];
     // The CNIC's dominant background tone is a muted green.
-    if (g > r + 8 && g > b + 8 && g > 60 && g < 220) greenish++;
+    if (g > r + 5 && g > b + 5 && g > 45 && g < 235) greenish++;
     // CNIC cards carry large white text panels.
-    if (r > 175 && g > 175 && b > 175) light++;
+    if (r > 150 && g > 150 && b > 150) light++;
   }
 
   const greenRatio = greenish / totalPixels;
   const lightRatio = light / totalPixels;
 
-  if (greenRatio < 0.06 || lightRatio < 0.15) {
+  // The card rarely fills the whole frame exactly, and lighting/white-balance
+  // varies a lot, so only reject when the photo shows *neither* signal —
+  // that's the "obviously wrong upload" case this check exists for.
+  if (greenRatio < 0.03 && lightRatio < 0.08) {
     return { looksValid: false, reason: 'notCardColored' };
   }
 
