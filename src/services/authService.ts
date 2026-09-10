@@ -4,6 +4,22 @@ import { mediaUpload } from './mediaUpload';
 import { AppError } from '../utils/appError';
 import type { AppLanguage, Intent, ProfileMode, UserProfile } from '../types/user';
 
+/**
+ * Set for the duration of `inspectEmail`'s trial sign-in.
+ *
+ * `AuthContext`'s onAuthStateChange listener reacts to every SIGNED_IN event by
+ * loading the profile and putting the app in the logged-in state — necessary
+ * for a real login, wrong here: this probe signs in only to test a password,
+ * on step 1 of signup, before the caller has decided anything. Without this
+ * flag the listener fired the instant the probe's `signInWithPassword`
+ * resolved and logged the member into whatever account it just opened —
+ * including a stranger's fully-registered one — before `inspectEmail` had even
+ * finished checking whether the profile was a placeholder, let alone shown
+ * "already registered". `createAccount`'s own trial sign-in doesn't need this:
+ * it runs inside `signup()`, which `AuthContext.runAuthAction` already guards.
+ */
+export const authProbeInFlight = { current: false };
+
 export interface SignupInput {
   fullName: string;
   email: string;
@@ -258,12 +274,34 @@ async function inspectEmail(email: string, password: string): Promise<'free' | '
   const normalized = email.trim().toLowerCase();
   if (!(await emailExists(normalized))) return 'free';
 
+  // Guarded until this settles — see the comment on `authProbeInFlight`. This
+  // is a trial sign-in to test a password, not a real login; the app must not
+  // react to it as one.
+  authProbeInFlight.current = true;
+  try {
+    return await inspectEmailAfterProbe(normalized, password);
+  } finally {
+    authProbeInFlight.current = false;
+  }
+}
+
+async function inspectEmailAfterProbe(normalized: string, password: string): Promise<'free' | 'resume' | 'taken'> {
   const { data, error } = await supabase.auth.signInWithPassword({ email: normalized, password });
   if (error || !data.user) return 'taken';
 
   // A placeholder row doesn't count as a finished account — it is the marker of
   // the very failure this path exists to undo, so it resumes like a missing one.
-  const profile = await fetchProfileRow(data.user.id).catch(() => null);
+  // A failed read (RLS/grant misconfiguration, network blip) must NOT be read
+  // the same as "no row yet" — that would let anyone who guesses a real
+  // member's password in past an unreadable profile as if it were their own
+  // dead signup. Fail closed: treat an unreadable profile as taken.
+  let profile;
+  try {
+    profile = await fetchProfileRow(data.user.id);
+  } catch {
+    await supabase.auth.signOut({ scope: 'local' });
+    return 'taken';
+  }
   if (profile && !isPlaceholderProfile(profile, normalized)) {
     // A finished account. Drop the session we just opened so the member stays
     // on the signup screen and sees "already registered" rather than being
@@ -446,9 +484,30 @@ async function createAccount(email: string, input: SignupInput): Promise<string>
     const message = (err as { message?: string })?.message ?? '';
     if (code === 'email_exists' || /already registered|already been registered/i.test(message)) {
       // Same person retrying their own half-finished signup, or someone typing
-      // an address that isn't theirs — the password tells the two apart.
+      // an address that isn't theirs — a matching password alone can't tell the
+      // two apart, since it also matches a stranger's account with the same
+      // (coincidentally identical) password. Only a placeholder profile — the
+      // marker `login` leaves behind for a signup that died before writing its
+      // rows — proves it's the former.
       const { data, error } = await supabase.auth.signInWithPassword({ email, password: input.password });
-      if (!error && data.user) return data.user.id;
+      if (!error && data.user) {
+        // A failed read must NOT be treated as "no row yet" — fail closed, the
+        // same as `inspectEmail`, or an unreadable profile (RLS/grant issue,
+        // network blip) would look identical to a genuinely missing one and let
+        // the caller in as if this were their own dead signup.
+        let profile;
+        try {
+          profile = await fetchProfileRow(data.user.id);
+        } catch {
+          await supabase.auth.signOut({ scope: 'local' });
+          throw new AppError('authErrors.emailTaken');
+        }
+        if (!profile || isPlaceholderProfile(profile, email)) {
+          return data.user.id;
+        }
+        await supabase.auth.signOut({ scope: 'local' });
+      }
+      throw new AppError('authErrors.emailTaken');
     }
     throw new AppError(signupErrorMessage(err));
   }
