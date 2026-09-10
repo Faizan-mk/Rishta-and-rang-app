@@ -131,7 +131,15 @@ export function ProfileDetailScreen() {
     }
     router.push(`/chat/${match.id}`);
   };
-  const onCall = () => {
+  const onCall = async () => {
+    // Same rule as messaging: no call channel exists until the like is mutual.
+    if (!getMatchForProfile(profile.id)) {
+      await notify({
+        title: t('profileDetail.callLockedTitle'),
+        message: t('profileDetail.callLockedBody', { name: profile.name }),
+      });
+      return;
+    }
     router.push({ pathname: '/call', params: { name: profile.name, photo: profile.photos[0] } });
   };
 

@@ -6,12 +6,13 @@ import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { Button } from '../../components/Button';
 import { TextField } from '../../components/common/TextField';
 import { FadeIn } from '../../components/common/FadeInUp';
+import { ImageCropper } from '../../components/common/ImageCropper';
 import { useLanguage } from '../../store/LanguageContext';
 import { useAuth } from '../../store/AuthContext';
 import { useTheme } from '../../store/ThemeContext';
 import { useDialog } from '../../store/DialogContext';
 import { digitsToCnicDisplay, isValidCnicFormat, cnicMatchesGender, maskCnic } from '../../utils/cnic';
-import { analyzeIdCardPhoto } from '../../utils/idCardImageCheck';
+import { analyzeIdCardPhoto, CNIC_ASPECT } from '../../utils/idCardImageCheck';
 import { radius, spacing, typography } from '../../theme';
 import { scaleFont } from '../../theme/responsive';
 import { glow, withAlpha } from '../../theme/glow';
@@ -27,6 +28,7 @@ export function CnicVerificationScreen() {
   const [editing, setEditing] = useState(false);
   const [cnicNumber, setCnicNumber] = useState('');
   const [cnicPhotoUri, setCnicPhotoUri] = useState<string | null>(null);
+  const [pendingCnicPhoto, setPendingCnicPhoto] = useState<string | null>(null);
   const [checkingPhoto, setCheckingPhoto] = useState(false);
   const [photoError, setPhotoError] = useState<string | null>(null);
   const [numberError, setNumberError] = useState<string | null>(null);
@@ -61,15 +63,20 @@ export function CnicVerificationScreen() {
 
     setPhotoError(null);
     setCnicPhotoUri(null);
+    setPendingCnicPhoto(result.assets[0].uri);
+  };
+
+  const onCnicPhotoCropped = async (uri: string) => {
+    setPendingCnicPhoto(null);
     setCheckingPhoto(true);
-    const check = await analyzeIdCardPhoto(result.assets[0].uri);
+    const check = await analyzeIdCardPhoto(uri);
     setCheckingPhoto(false);
 
     if (!check.looksValid) {
       setPhotoError(t(`cnic.imageCheckFailed_${check.reason ?? 'notCardColored'}`));
       return;
     }
-    setCnicPhotoUri(result.assets[0].uri);
+    setCnicPhotoUri(uri);
   };
 
   const onSave = async () => {
@@ -168,6 +175,13 @@ export function CnicVerificationScreen() {
           </View>
         )}
       </FadeIn>
+
+      <ImageCropper
+        uri={pendingCnicPhoto}
+        aspect={CNIC_ASPECT}
+        onCancel={() => setPendingCnicPhoto(null)}
+        onCropped={onCnicPhotoCropped}
+      />
     </ScreenContainer>
   );
 }

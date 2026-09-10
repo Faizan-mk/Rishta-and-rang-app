@@ -1,6 +1,8 @@
 import React from 'react';
+import { ActivityIndicator } from 'react-native';
 import { fireEvent, screen, waitFor, render } from '@testing-library/react-native';
 import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
 import { withProviders } from '../../../components/__tests__/testWrappers';
 import { CnicVerificationScreen } from '../CnicVerificationScreen';
 import { useAuth } from '../../../store/AuthContext';
@@ -15,12 +17,35 @@ jest.mock('expo-image-picker', () => ({
   requestCameraPermissionsAsync: jest.fn(),
   launchCameraAsync: jest.fn(),
 }));
-jest.mock('../../../utils/idCardImageCheck', () => ({ analyzeIdCardPhoto: jest.fn() }));
+jest.mock('expo-image-manipulator', () => ({
+  manipulateAsync: jest.fn(),
+  SaveFormat: { JPEG: 'jpeg' },
+}));
+jest.mock('../../../utils/idCardImageCheck', () => ({
+  analyzeIdCardPhoto: jest.fn(),
+  CNIC_ASPECT: 1.586,
+}));
 
 const mockUseAuth = useAuth as jest.Mock;
 const mockUseDialog = useDialog as jest.Mock;
+const manipulateAsync = ImageManipulator.manipulateAsync as jest.Mock;
 let updateUser: jest.Mock;
 let notify: jest.Mock;
+
+// Drives a scanned photo through the in-app cropper: waits for it to load,
+// then presses its confirm button (also the screen title, so press every match).
+async function confirmCrop() {
+  // The cropper mounts asynchronously (permission + camera capture resolve
+  // before its `uri` prop goes non-null), so "no spinner" alone is a false
+  // positive before it mounts at all — gate on the modal actually being up too.
+  await waitFor(() => {
+    expect(screen.queryAllByText('Crop photo').length).toBeGreaterThan(0);
+    expect(screen.UNSAFE_queryAllByType(ActivityIndicator)).toHaveLength(0);
+  }, { timeout: 15000 });
+  for (const node of screen.getAllByText('Crop photo')) {
+    fireEvent.press(node);
+  }
+}
 
 function user(overrides: Partial<UserProfile> = {}): UserProfile {
   return {
@@ -152,11 +177,15 @@ describe('CnicVerificationScreen', () => {
     });
     (ImagePicker.requestCameraPermissionsAsync as jest.Mock).mockResolvedValue({ granted: true });
     (ImagePicker.launchCameraAsync as jest.Mock).mockResolvedValue({ canceled: false, assets: [{ uri: 'photo.jpg' }] });
+    manipulateAsync
+      .mockResolvedValueOnce({ uri: 'file:///normalized.jpg', width: 800, height: 1000 })
+      .mockResolvedValueOnce({ uri: 'file:///cropped.jpg', width: 300, height: 189 });
     (analyzeIdCardPhoto as jest.Mock).mockResolvedValue({ looksValid: false, reason: 'wrongShape' });
     renderScreen();
 
     fireEvent.press(screen.getByText('Update CNIC'));
     fireEvent.press(screen.getByText('Scan ID photo'));
+    await confirmCrop();
 
     await waitFor(() =>
       expect(
@@ -172,11 +201,15 @@ describe('CnicVerificationScreen', () => {
     });
     (ImagePicker.requestCameraPermissionsAsync as jest.Mock).mockResolvedValue({ granted: true });
     (ImagePicker.launchCameraAsync as jest.Mock).mockResolvedValue({ canceled: false, assets: [{ uri: 'photo.jpg' }] });
+    manipulateAsync
+      .mockResolvedValueOnce({ uri: 'file:///normalized.jpg', width: 800, height: 1000 })
+      .mockResolvedValueOnce({ uri: 'file:///cropped.jpg', width: 300, height: 189 });
     (analyzeIdCardPhoto as jest.Mock).mockResolvedValue({ looksValid: true });
     renderScreen();
 
     fireEvent.press(screen.getByText('Update CNIC'));
     fireEvent.press(screen.getByText('Scan ID photo'));
+    await confirmCrop();
 
     await waitFor(() => expect(screen.getByText('Retake')).toBeTruthy());
   });

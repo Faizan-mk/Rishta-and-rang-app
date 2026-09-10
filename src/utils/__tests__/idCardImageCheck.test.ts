@@ -94,22 +94,22 @@ describe('analyzeIdCardPhoto', () => {
     expect(result).toEqual({ looksValid: true });
   });
 
-  it('accepts a mostly-green photo even when the card does not fill the frame with white', async () => {
+  it('flags notCardColored for an all-green photo with no white panel (not a CNIC layout)', async () => {
     manipulateAsync.mockResolvedValue({ base64: 'AAAA', width: 48, height: 30 });
     decode.mockReturnValue({ data: buildPixels(100, 0.2, 0), width: 10, height: 10 });
 
     const result = await analyzeIdCardPhoto('file://photo.jpg');
 
-    expect(result).toEqual({ looksValid: true });
+    expect(result).toEqual({ looksValid: false, reason: 'notCardColored' });
   });
 
-  it('accepts a mostly-light photo even with little green (e.g. an older-style ID card)', async () => {
+  it('flags notCardColored for a mostly-light, non-green card (e.g. a different country\'s ID)', async () => {
     manipulateAsync.mockResolvedValue({ base64: 'AAAA', width: 48, height: 30 });
     decode.mockReturnValue({ data: buildPixels(100, 0, 0.2), width: 10, height: 10 });
 
     const result = await analyzeIdCardPhoto('file://photo.jpg');
 
-    expect(result).toEqual({ looksValid: true });
+    expect(result).toEqual({ looksValid: false, reason: 'notCardColored' });
   });
 
   it('passes the resize width and JPEG format through to the manipulator', async () => {

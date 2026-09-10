@@ -13,7 +13,7 @@ import { useAuth } from '../../store/AuthContext';
 import { useTheme } from '../../store/ThemeContext';
 import { useDialog } from '../../store/DialogContext';
 import { useOnboarding } from '../../store/onboardingStore';
-import { analyzeIdCardPhoto } from '../../utils/idCardImageCheck';
+import { analyzeIdCardPhoto, CNIC_ASPECT } from '../../utils/idCardImageCheck';
 import { errorMessage } from '../../utils/appError';
 import { radius, spacing, typography } from '../../theme';
 import { scaleFont } from '../../theme/responsive';
@@ -32,6 +32,7 @@ export function SelfieVerificationScreen() {
   const [selfieUri, setSelfieUri] = useState<string | null>(null);
   // The shot waiting to be cropped; null while the cropper is closed.
   const [pendingSelfie, setPendingSelfie] = useState<string | null>(null);
+  const [pendingCnicPhoto, setPendingCnicPhoto] = useState<string | null>(null);
   const [cnicPhotoUri, setCnicPhotoUri] = useState<string | null>(null);
   const [checkingCnicPhoto, setCheckingCnicPhoto] = useState(false);
   const [cnicPhotoError, setCnicPhotoError] = useState<string | null>(null);
@@ -73,15 +74,20 @@ export function SelfieVerificationScreen() {
 
     setCnicPhotoError(null);
     setCnicPhotoUri(null);
+    setPendingCnicPhoto(result.assets[0].uri);
+  };
+
+  const onCnicPhotoCropped = async (uri: string) => {
+    setPendingCnicPhoto(null);
     setCheckingCnicPhoto(true);
-    const check = await analyzeIdCardPhoto(result.assets[0].uri);
+    const check = await analyzeIdCardPhoto(uri);
     setCheckingCnicPhoto(false);
 
     if (!check.looksValid) {
       setCnicPhotoError(t(`cnic.imageCheckFailed_${check.reason ?? 'notCardColored'}`));
       return;
     }
-    setCnicPhotoUri(result.assets[0].uri);
+    setCnicPhotoUri(uri);
   };
 
   const onFinish = async () => {
@@ -169,6 +175,12 @@ export function SelfieVerificationScreen() {
       />
 
       <ImageCropper uri={pendingSelfie} aspect={1} round onCancel={() => setPendingSelfie(null)} onCropped={onSelfieCropped} />
+      <ImageCropper
+        uri={pendingCnicPhoto}
+        aspect={CNIC_ASPECT}
+        onCancel={() => setPendingCnicPhoto(null)}
+        onCropped={onCnicPhotoCropped}
+      />
     </ScreenContainer>
   );
 }

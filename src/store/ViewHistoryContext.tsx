@@ -24,7 +24,7 @@ export function ViewHistoryProvider({ children }: { children: React.ReactNode })
       setHistory([]);
       return;
     }
-    viewHistoryService.fetchHistory(user.id).then(setHistory);
+    viewHistoryService.fetchHistory(user.id).then(setHistory).catch(() => undefined);
   }, [user?.id]);
 
   const recordView = (profile: Omit<ViewedProfile, 'viewedAt'>) => {
@@ -32,13 +32,13 @@ export function ViewHistoryProvider({ children }: { children: React.ReactNode })
     lastRecordedId.current = profile.id;
     const viewedAt = new Date().toISOString();
     setHistory((prev) => [{ ...profile, viewedAt }, ...prev.filter((p) => p.id !== profile.id)]);
-    viewHistoryService.recordView(user.id, profile);
+    viewHistoryService.recordView(user.id, profile).catch(() => undefined);
   };
 
   const clearHistory = () => {
     if (!user) return;
     setHistory([]);
-    viewHistoryService.clearHistory(user.id);
+    viewHistoryService.clearHistory(user.id).catch(() => undefined);
   };
 
   const value = useMemo(() => ({ history, recordView, clearHistory }), [history, user?.id]);

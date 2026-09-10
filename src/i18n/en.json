@@ -766,7 +766,9 @@
     "call": "Call",
     "photosHidden": "Photos hidden until you match",
     "messageLockedTitle": "Not matched yet",
-    "messageLockedBody": "You can message {{name}} once you both like each other."
+    "messageLockedBody": "You can message {{name}} once you both like each other.",
+    "callLockedTitle": "Not matched yet",
+    "callLockedBody": "You can call {{name}} once you both like each other."
   },
   "call": {
     "ringing": "Ringing...",

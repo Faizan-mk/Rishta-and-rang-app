@@ -766,7 +766,9 @@
     "call": "Call",
     "photosHidden": "Match hone tak tasveerein posheeda hain",
     "messageLockedTitle": "Abhi match nahi hua",
-    "messageLockedBody": "Jab aap dono ek doosre ko pasand kar lenge, tab aap {{name}} ko message bhej sakenge."
+    "messageLockedBody": "Jab aap dono ek doosre ko pasand kar lenge, tab aap {{name}} ko message bhej sakenge.",
+    "callLockedTitle": "Abhi match nahi hua",
+    "callLockedBody": "Jab aap dono ek doosre ko pasand kar lenge, tab aap {{name}} ko call kar sakenge."
   },
   "call": {
     "ringing": "Ring ho rahi hai...",
