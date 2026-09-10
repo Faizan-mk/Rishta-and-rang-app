@@ -59,6 +59,7 @@ export function ImageCropper({ uri, aspect = 3 / 4, round = false, onCancel, onC
   const [source, setSource] = useState<Source | null>(null);
   const [failed, setFailed] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [rotating, setRotating] = useState(false);
 
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
@@ -104,6 +105,26 @@ export function ImageCropper({ uri, aspect = 3 / 4, round = false, onCancel, onC
       alive = false;
     };
   }, [uri]);
+
+  // Rotates the actual source pixels (rather than just the on-screen preview),
+  // so the existing cover-fit/pan/zoom math below — which already handles any
+  // source width/height — picks up the new (possibly swapped) dimensions for
+  // free, and the reset-on-uri-change effect clears any pan/zoom from before.
+  const rotate = async () => {
+    if (!source || rotating || saving) return;
+    setRotating(true);
+    try {
+      const result = await ImageManipulator.manipulateAsync(source.uri, [{ rotate: 90 }], {
+        compress: 0.95,
+        format: JPEG,
+      });
+      setSource({ uri: result.uri, width: result.width, height: result.height });
+    } catch {
+      setFailed(true);
+    } finally {
+      setRotating(false);
+    }
+  };
 
   // Scale at which the photo exactly covers the frame — the zoomed-out limit, so
   // a crop can never include empty space.
@@ -162,7 +183,7 @@ export function ImageCropper({ uri, aspect = 3 / 4, round = false, onCancel, onC
   }));
 
   const applyCrop = async () => {
-    if (!source || saving) return;
+    if (!source || saving || rotating) return;
     setSaving(true);
     try {
       const zoom = scale.value;
@@ -201,11 +222,19 @@ export function ImageCropper({ uri, aspect = 3 / 4, round = false, onCancel, onC
             <Ionicons name="close" size={22} color="#FFFFFF" />
           </Pressable>
           <Text style={styles.title}>{t('photos.cropTitle')}</Text>
-          <View style={styles.close} />
+          <Pressable
+            onPress={rotate}
+            disabled={!source || rotating || saving}
+            hitSlop={10}
+            style={styles.close}
+            accessibilityLabel={t('photos.cropRotate')}
+          >
+            <Ionicons name="refresh-outline" size={22} color="#FFFFFF" />
+          </Pressable>
         </View>
 
         <View style={styles.stage}>
-          {source ? (
+          {source && !rotating ? (
             <GestureDetector gesture={gesture}>
               <View style={[styles.frame, frameSize]}>
                 <Animated.Image source={{ uri: source.uri }} style={imageStyle} resizeMode="cover" />
