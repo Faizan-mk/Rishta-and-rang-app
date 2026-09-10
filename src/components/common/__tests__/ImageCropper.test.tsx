@@ -89,4 +89,36 @@ describe('ImageCropper', () => {
     // Jest's own default 5s test timeout applies on top of any waitFor
     // timeout — this test needs matching headroom for a busy full-suite run.
   }, 45000);
+
+  it('rotates the loaded photo in place before cropping', async () => {
+    manipulateAsync
+      .mockResolvedValueOnce({ uri: 'file:///normalized.jpg', width: 800, height: 1000 }) // load
+      .mockResolvedValueOnce({ uri: 'file:///rotated.jpg', width: 1000, height: 800 }) // rotate
+      .mockResolvedValueOnce({ uri: 'file:///cropped.jpg', width: 400, height: 300 }); // crop
+    const onCropped = jest.fn();
+    renderWithProviders(<ImageCropper uri="file:///picked.jpg" onCancel={jest.fn()} onCropped={onCropped} />);
+    await waitFor(() => expect(screen.UNSAFE_queryAllByType(ActivityIndicator)).toHaveLength(0), { timeout: 15000 });
+
+    fireEvent.press(screen.getByLabelText('Rotate'));
+
+    await waitFor(
+      () =>
+        expect(manipulateAsync).toHaveBeenLastCalledWith('file:///normalized.jpg', [{ rotate: 90 }], expect.any(Object)),
+      { timeout: 15000 }
+    );
+    // Rotating swaps back to the loaded (non-spinner) state on the new, rotated source.
+    await waitFor(() => expect(screen.UNSAFE_queryAllByType(ActivityIndicator)).toHaveLength(0), { timeout: 15000 });
+
+    for (const node of screen.getAllByText('Crop photo')) {
+      fireEvent.press(node);
+    }
+
+    await waitFor(() => expect(onCropped).toHaveBeenCalledWith('file:///cropped.jpg'), { timeout: 15000 });
+    // The crop reads from the rotated source, not the pre-rotation one.
+    expect(manipulateAsync).toHaveBeenLastCalledWith(
+      'file:///rotated.jpg',
+      [{ crop: expect.objectContaining({ originX: expect.any(Number), originY: expect.any(Number) }) }],
+      expect.any(Object)
+    );
+  }, 45000);
 });
