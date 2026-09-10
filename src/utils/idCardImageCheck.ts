@@ -43,9 +43,11 @@ export async function analyzeIdCardPhoto(uri: string): Promise<IdCardCheckResult
     return { looksValid: false, reason: 'tooSmall' };
   }
 
-  // Pakistani CNIC is a standard ID-1 card (~1.586:1 landscape). Wide margin since
-  // users rarely crop perfectly.
-  const aspect = resized.width / resized.height;
+  // Pakistani CNIC is a standard ID-1 card (~1.586:1). Compare the long side to the
+  // short side rather than width/height directly — the camera (unlike the old
+  // gallery picker) is just as likely to hand back a portrait-oriented photo of a
+  // landscape card, and that's still a valid shot.
+  const aspect = Math.max(resized.width, resized.height) / Math.min(resized.width, resized.height);
   if (aspect < 1.2 || aspect > 2.2) {
     return { looksValid: false, reason: 'wrongShape' };
   }
