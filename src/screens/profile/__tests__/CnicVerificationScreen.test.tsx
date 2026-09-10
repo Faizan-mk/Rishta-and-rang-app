@@ -12,8 +12,8 @@ jest.mock('react-native-safe-area-context', () => require('react-native-safe-are
 jest.mock('../../../store/AuthContext', () => ({ useAuth: jest.fn() }));
 jest.mock('../../../store/DialogContext', () => ({ useDialog: jest.fn() }));
 jest.mock('expo-image-picker', () => ({
-  requestMediaLibraryPermissionsAsync: jest.fn(),
-  launchImageLibraryAsync: jest.fn(),
+  requestCameraPermissionsAsync: jest.fn(),
+  launchCameraAsync: jest.fn(),
 }));
 jest.mock('../../../utils/idCardImageCheck', () => ({ analyzeIdCardPhoto: jest.fn() }));
 
@@ -136,27 +136,27 @@ describe('CnicVerificationScreen', () => {
       user: user({ cnicVerified: true, cnicNumber: '12345-1234567-2' }),
       updateUser,
     });
-    (ImagePicker.requestMediaLibraryPermissionsAsync as jest.Mock).mockResolvedValue({ granted: false });
+    (ImagePicker.requestCameraPermissionsAsync as jest.Mock).mockResolvedValue({ granted: false });
     renderScreen();
 
     fireEvent.press(screen.getByText('Update CNIC'));
-    fireEvent.press(screen.getByText('Upload ID photo'));
+    fireEvent.press(screen.getByText('Scan ID photo'));
 
     await waitFor(() => expect(notify).toHaveBeenCalledWith(expect.objectContaining({ title: 'Permission needed' })));
   });
 
-  it('shows an error when the picked photo does not look like an ID card', async () => {
+  it('shows an error when the scanned photo does not look like an ID card', async () => {
     mockUseAuth.mockReturnValue({
       user: user({ cnicVerified: true, cnicNumber: '12345-1234567-2' }),
       updateUser,
     });
-    (ImagePicker.requestMediaLibraryPermissionsAsync as jest.Mock).mockResolvedValue({ granted: true });
-    (ImagePicker.launchImageLibraryAsync as jest.Mock).mockResolvedValue({ canceled: false, assets: [{ uri: 'photo.jpg' }] });
+    (ImagePicker.requestCameraPermissionsAsync as jest.Mock).mockResolvedValue({ granted: true });
+    (ImagePicker.launchCameraAsync as jest.Mock).mockResolvedValue({ canceled: false, assets: [{ uri: 'photo.jpg' }] });
     (analyzeIdCardPhoto as jest.Mock).mockResolvedValue({ looksValid: false, reason: 'wrongShape' });
     renderScreen();
 
     fireEvent.press(screen.getByText('Update CNIC'));
-    fireEvent.press(screen.getByText('Upload ID photo'));
+    fireEvent.press(screen.getByText('Scan ID photo'));
 
     await waitFor(() =>
       expect(
@@ -170,13 +170,13 @@ describe('CnicVerificationScreen', () => {
       user: user({ cnicVerified: true, cnicNumber: '12345-1234567-2' }),
       updateUser,
     });
-    (ImagePicker.requestMediaLibraryPermissionsAsync as jest.Mock).mockResolvedValue({ granted: true });
-    (ImagePicker.launchImageLibraryAsync as jest.Mock).mockResolvedValue({ canceled: false, assets: [{ uri: 'photo.jpg' }] });
+    (ImagePicker.requestCameraPermissionsAsync as jest.Mock).mockResolvedValue({ granted: true });
+    (ImagePicker.launchCameraAsync as jest.Mock).mockResolvedValue({ canceled: false, assets: [{ uri: 'photo.jpg' }] });
     (analyzeIdCardPhoto as jest.Mock).mockResolvedValue({ looksValid: true });
     renderScreen();
 
     fireEvent.press(screen.getByText('Update CNIC'));
-    fireEvent.press(screen.getByText('Upload ID photo'));
+    fireEvent.press(screen.getByText('Scan ID photo'));
 
     await waitFor(() => expect(screen.getByText('Retake')).toBeTruthy());
   });

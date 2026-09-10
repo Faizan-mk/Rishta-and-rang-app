@@ -68,13 +68,13 @@ async function captureSelfie() {
 }
 
 async function uploadCnicPhoto() {
-  (ImagePicker.requestMediaLibraryPermissionsAsync as jest.Mock).mockResolvedValue({ granted: true });
-  (ImagePicker.launchImageLibraryAsync as jest.Mock).mockResolvedValue({
+  (ImagePicker.requestCameraPermissionsAsync as jest.Mock).mockResolvedValue({ granted: true });
+  (ImagePicker.launchCameraAsync as jest.Mock).mockResolvedValue({
     canceled: false,
     assets: [{ uri: 'file:///cnic.jpg' }],
   });
   (analyzeIdCardPhoto as jest.Mock).mockResolvedValue({ looksValid: true });
-  fireEvent.press(screen.getByText('Upload ID photo'));
+  fireEvent.press(screen.getByText('Scan ID photo'));
   await waitFor(() => expect(analyzeIdCardPhoto).toHaveBeenCalled());
 }
 
@@ -94,15 +94,15 @@ describe('SelfieVerificationScreen', () => {
   });
 
   it('rejects a CNIC photo that fails the image check', async () => {
-    (ImagePicker.requestMediaLibraryPermissionsAsync as jest.Mock).mockResolvedValue({ granted: true });
-    (ImagePicker.launchImageLibraryAsync as jest.Mock).mockResolvedValue({
+    (ImagePicker.requestCameraPermissionsAsync as jest.Mock).mockResolvedValue({ granted: true });
+    (ImagePicker.launchCameraAsync as jest.Mock).mockResolvedValue({
       canceled: false,
       assets: [{ uri: 'file:///cnic.jpg' }],
     });
     (analyzeIdCardPhoto as jest.Mock).mockResolvedValue({ looksValid: false, reason: 'wrongShape' });
     renderScreen();
 
-    fireEvent.press(screen.getByText('Upload ID photo'));
+    fireEvent.press(screen.getByText('Scan ID photo'));
 
     await waitFor(() =>
       expect(screen.getByText(/make sure the whole card fills the frame/)).toBeTruthy()

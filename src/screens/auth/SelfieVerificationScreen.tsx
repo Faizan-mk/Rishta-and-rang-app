@@ -61,13 +61,12 @@ export function SelfieVerificationScreen() {
   };
 
   const pickCnicPhoto = async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (!permission.granted) {
-      await notify({ title: t('permissions.photoLibraryTitle'), message: t('permissions.photoLibraryBody') });
+      await notify({ title: t('permissions.cameraTitle'), message: t('permissions.cameraBody') });
       return;
     }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
+    const result = await ImagePicker.launchCameraAsync({
       quality: 0.7,
     });
     if (result.canceled || !result.assets[0]) return;
