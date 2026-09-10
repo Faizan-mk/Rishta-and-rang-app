@@ -19,6 +19,7 @@ jest.mock('../../services/authService', () => ({
     setReadiness: jest.fn(),
     deleteAccount: jest.fn(),
   },
+  authProbeInFlight: { current: false },
 }));
 
 jest.mock('../../services/supabase', () => ({

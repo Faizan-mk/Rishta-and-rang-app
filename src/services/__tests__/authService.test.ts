@@ -418,13 +418,47 @@ describe('authService.signup', () => {
     expect(profile.id).toBe('u1');
   });
 
-  it('signs into the existing account when signup reports "already registered"', async () => {
+  it('resumes a half-finished signup when the existing account has no profile yet', async () => {
     auth.signUp.mockRejectedValue({ code: 'email_exists' });
     auth.signInWithPassword.mockResolvedValue({ data: { user: { id: 'u1' } }, error: null });
-    mockProfileTables();
+    // First `profiles` read is the placeholder check inside createAccount, before
+    // the upsert has written anything — it must see no row. Every read after that
+    // is `fetchFullProfile` assembling the response, once the upsert below it landed.
+    let profileReads = 0;
+    from.mockImplementation((table: string) => {
+      if (table === 'profiles') {
+        profileReads += 1;
+        return chain(profileReads === 1 ? ok(null) : fullProfileRows().profile);
+      }
+      if (table === 'profile_private') return chain(fullProfileRows().private);
+      if (table === 'profile_verification') return chain(fullProfileRows().verification);
+      return chain(ok(null));
+    });
 
     const profile = await authService.signup(baseInput);
     expect(profile.id).toBe('u1');
+  });
+
+  it('throws AppError(emailTaken) and signs back out when the address belongs to a finished account', async () => {
+    auth.signUp.mockRejectedValue({ code: 'email_exists' });
+    auth.signInWithPassword.mockResolvedValue({ data: { user: { id: 'u1' } }, error: null });
+    auth.signOut.mockResolvedValue({ error: null });
+    mockProfileTables();
+
+    await expect(authService.signup(baseInput)).rejects.toMatchObject({ key: 'authErrors.emailTaken' });
+    expect(auth.signOut).toHaveBeenCalledWith({ scope: 'local' });
+  });
+
+  it('fails closed (does not log in) when the profile read errors instead of returning no row', async () => {
+    auth.signUp.mockRejectedValue({ code: 'email_exists' });
+    auth.signInWithPassword.mockResolvedValue({ data: { user: { id: 'u1' } }, error: null });
+    auth.signOut.mockResolvedValue({ error: null });
+    from.mockImplementation((table: string) =>
+      table === 'profiles' ? chain(fail('permission denied for table profiles')) : chain(ok(null))
+    );
+
+    await expect(authService.signup(baseInput)).rejects.toMatchObject({ key: 'authErrors.emailTaken' });
+    expect(auth.signOut).toHaveBeenCalledWith({ scope: 'local' });
   });
 
   it('throws AppError(emailTaken) when the retry sign-in also fails', async () => {

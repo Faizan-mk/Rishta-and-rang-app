@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { authService, SignupInput } from '../services/authService';
+import { authService, authProbeInFlight, SignupInput } from '../services/authService';
 import { supabase } from '../services/supabase';
 import { cache, CACHE_KEYS } from '../services/cache';
 import type { Intent, ProfileMode, RishtaReadiness, UserProfile } from '../types/user';
@@ -74,7 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (!active) return;
       if (event === 'TOKEN_REFRESHED') return;
-      if (authActionInFlight.current) return;
+      if (authActionInFlight.current || authProbeInFlight.current) return;
       if (!session?.user) {
         setUser(null);
         setInitializing(false);
