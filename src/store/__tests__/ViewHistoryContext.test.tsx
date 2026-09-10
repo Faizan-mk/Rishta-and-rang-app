@@ -20,6 +20,8 @@ function renderHistory() {
 beforeEach(() => {
   jest.clearAllMocks();
   (viewHistoryService.fetchHistory as jest.Mock).mockResolvedValue([]);
+  (viewHistoryService.recordView as jest.Mock).mockResolvedValue(undefined);
+  (viewHistoryService.clearHistory as jest.Mock).mockResolvedValue(undefined);
 });
 
 const profile = { id: 'p1', kind: 'dating' as const, name: 'Sara', age: 26, city: 'Lahore', photo: 'a.jpg' };

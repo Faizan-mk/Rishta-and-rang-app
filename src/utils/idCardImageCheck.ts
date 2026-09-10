@@ -10,6 +10,11 @@ import * as jpeg from 'jpeg-js';
 const SAMPLE_WIDTH = 48;
 const BASE64_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
+// Standard ID-1 card ratio (85.60mm x 53.98mm) — used to pre-crop the photo so
+// it actually matches the shape this check expects, instead of guessing at the
+// aspect of a raw, uncropped camera photo.
+export const CNIC_ASPECT = 1.586;
+
 export type IdCardCheckReason = 'tooSmall' | 'wrongShape' | 'notCardColored';
 
 export interface IdCardCheckResult {
@@ -73,10 +78,11 @@ export async function analyzeIdCardPhoto(uri: string): Promise<IdCardCheckResult
   const greenRatio = greenish / totalPixels;
   const lightRatio = light / totalPixels;
 
-  // The card rarely fills the whole frame exactly, and lighting/white-balance
-  // varies a lot, so only reject when the photo shows *neither* signal —
-  // that's the "obviously wrong upload" case this check exists for.
-  if (greenRatio < 0.03 && lightRatio < 0.08) {
+  // A Pakistani CNIC's layout is specifically a green background band *plus*
+  // white text panels — either one alone (all-white driving licence/student
+  // card, or a plain green surface) isn't enough to tell it apart from other
+  // ID-1 cards, so both signals are required together.
+  if (greenRatio < 0.05 || lightRatio < 0.05) {
     return { looksValid: false, reason: 'notCardColored' };
   }
 
