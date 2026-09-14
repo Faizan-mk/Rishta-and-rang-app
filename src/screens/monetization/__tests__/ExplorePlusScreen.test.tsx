@@ -1,4 +1,5 @@
 import React from 'react';
+import { Linking } from 'react-native';
 import { fireEvent, screen, waitFor, render } from '@testing-library/react-native';
 import { withProviders } from '../../../components/__tests__/testWrappers';
 import { ExplorePlusScreen } from '../ExplorePlusScreen';
@@ -10,6 +11,12 @@ import { usePrivacy } from '../../../store/PrivacyContext';
 import { useMatches } from '../../../store/MatchesContext';
 import { likesService } from '../../../services/likesService';
 import type { LikeReceived } from '../../../services/likesService';
+import {
+  fetchExplorePlusPackages,
+  purchaseExplorePlus,
+  syncExplorePlusEntitlement,
+  PurchaseCancelledError,
+} from '../../../services/billingService';
 import type { UserProfile } from '../../../types/user';
 
 jest.mock('react-native-safe-area-context', () => require('react-native-safe-area-context/jest/mock').default);
@@ -20,6 +27,12 @@ jest.mock('../../../store/LikeLimitContext', () => ({ useLikeLimit: jest.fn() })
 jest.mock('../../../store/PrivacyContext', () => ({ usePrivacy: jest.fn() }));
 jest.mock('../../../store/MatchesContext', () => ({ useMatches: jest.fn() }));
 jest.mock('../../../services/likesService', () => ({ likesService: { fetchLikesReceived: jest.fn() } }));
+jest.mock('../../../services/billingService', () => ({
+  fetchExplorePlusPackages: jest.fn(),
+  purchaseExplorePlus: jest.fn(),
+  syncExplorePlusEntitlement: jest.fn(),
+  PurchaseCancelledError: class PurchaseCancelledError extends Error {},
+}));
 
 const mockUseAuth = useAuth as jest.Mock;
 const mockUseBoost = useBoost as jest.Mock;
@@ -27,11 +40,16 @@ const mockUseDialog = useDialog as jest.Mock;
 const mockUseLikeLimit = useLikeLimit as jest.Mock;
 const mockUsePrivacy = usePrivacy as jest.Mock;
 const mockUseMatches = useMatches as jest.Mock;
+const mockFetchPackages = fetchExplorePlusPackages as jest.Mock;
+const mockPurchase = purchaseExplorePlus as jest.Mock;
+const mockSync = syncExplorePlusEntitlement as jest.Mock;
 
-let updateUser: jest.Mock;
+let refreshUser: jest.Mock;
 let addBoosts: jest.Mock;
 let notify: jest.Mock;
-let confirm: jest.Mock;
+
+const monthlyPackage = { identifier: '$rc_monthly', product: { identifier: 'explore_plus_monthly', priceString: 'PKR 999/mo' } };
+const yearlyPackage = { identifier: '$rc_annual', product: { identifier: 'explore_plus_yearly', priceString: 'PKR 8,990/yr' } };
 
 function user(overrides: Partial<UserProfile> = {}): UserProfile {
   return {
@@ -65,22 +83,26 @@ function renderScreen() {
 
 beforeEach(() => {
   jest.clearAllMocks();
-  updateUser = jest.fn().mockImplementation((next) => Promise.resolve(next));
-  mockUseAuth.mockReturnValue({ user: user(), updateUser });
+  refreshUser = jest.fn().mockResolvedValue(user({ isExplorePlus: true, subscriptionPlan: 'monthly' }));
+  mockUseAuth.mockReturnValue({ user: user(), refreshUser });
   addBoosts = jest.fn();
   mockUseBoost.mockReturnValue({ addBoosts });
   notify = jest.fn().mockResolvedValue(undefined);
-  confirm = jest.fn().mockResolvedValue(false);
-  mockUseDialog.mockReturnValue({ notify, confirm });
+  mockUseDialog.mockReturnValue({ notify, confirm: jest.fn().mockResolvedValue(false) });
   mockUseLikeLimit.mockReturnValue({ used: 2, limit: 5 });
   mockUsePrivacy.mockReturnValue({ prefs: { profileVisible: true } });
   mockUseMatches.mockReturnValue({ blockedProfiles: [] });
   (likesService.fetchLikesReceived as jest.Mock).mockResolvedValue([]);
+  mockFetchPackages.mockResolvedValue({ monthly: monthlyPackage, yearly: yearlyPackage });
+  mockPurchase.mockResolvedValue(true);
+  mockSync.mockResolvedValue(undefined);
+  jest.spyOn(Linking, 'canOpenURL').mockResolvedValue(true);
+  jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined as never);
 });
 
 describe('ExplorePlusScreen', () => {
   it('renders nothing while signed out', () => {
-    mockUseAuth.mockReturnValue({ user: null, updateUser });
+    mockUseAuth.mockReturnValue({ user: null, refreshUser });
     const { toJSON } = renderScreen();
     expect(toJSON()).toBeNull();
   });
@@ -94,29 +116,66 @@ describe('ExplorePlusScreen', () => {
   });
 
   it('hides the trial option once the trial has been used', () => {
-    mockUseAuth.mockReturnValue({ user: user({ hasUsedTrial: true }), updateUser });
+    mockUseAuth.mockReturnValue({ user: user({ hasUsedTrial: true }), refreshUser });
     renderScreen();
     expect(screen.queryByText('Free Trial')).toBeNull();
   });
 
-  it('switches to the yearly plan and shows its price', () => {
+  it('shows real Play prices once billing is available', async () => {
     renderScreen();
+    await waitFor(() => expect(screen.getByText('PKR 999/mo')).toBeTruthy());
     fireEvent.press(screen.getByText('Yearly'));
     expect(screen.getByText('PKR 8,990/yr')).toBeTruthy();
   });
 
-  it('upgrades to Explore+ and grants boosts', async () => {
+  it('falls back to the static price when billing is unavailable', async () => {
+    mockFetchPackages.mockResolvedValue(null);
     renderScreen();
+    await waitFor(() => expect(mockFetchPackages).toHaveBeenCalled());
+    expect(screen.getByText('PKR 999/mo')).toBeTruthy();
+  });
+
+  it('buys the monthly package, syncs the entitlement, and grants boosts', async () => {
+    renderScreen();
+    await waitFor(() => expect(mockFetchPackages).toHaveBeenCalled());
     fireEvent.press(screen.getByText('Upgrade to Explore+'));
 
-    await waitFor(() => expect(updateUser).toHaveBeenCalledWith(expect.objectContaining({ isExplorePlus: true, subscriptionPlan: 'monthly' })));
+    await waitFor(() => expect(mockPurchase).toHaveBeenCalledWith(monthlyPackage));
+    await waitFor(() => expect(mockSync).toHaveBeenCalled());
     await waitFor(() => expect(addBoosts).toHaveBeenCalledWith(5));
     await waitFor(() => expect(notify).toHaveBeenCalledWith(expect.objectContaining({ title: 'Welcome to Explore+' })));
   });
 
-  it('shows a billing-pending notice when the upgrade write does not stick', async () => {
-    updateUser.mockResolvedValue(user({ isExplorePlus: false }));
+  it('starts a free trial by buying the monthly package', async () => {
+    refreshUser.mockResolvedValue(user({ isExplorePlus: true, subscriptionPlan: 'trial' }));
     renderScreen();
+    await waitFor(() => expect(mockFetchPackages).toHaveBeenCalled());
+    fireEvent.press(screen.getByText('Free Trial'));
+    fireEvent.press(screen.getByText('Start free trial'));
+
+    await waitFor(() => expect(mockPurchase).toHaveBeenCalledWith(monthlyPackage));
+    await waitFor(() =>
+      expect(notify).toHaveBeenCalledWith(expect.objectContaining({ message: expect.stringContaining('7-day free trial') }))
+    );
+  });
+
+  it('shows a billing-pending notice when no Play package is available', async () => {
+    mockFetchPackages.mockResolvedValue(null);
+    renderScreen();
+    await waitFor(() => expect(mockFetchPackages).toHaveBeenCalled());
+    fireEvent.press(screen.getByText('Upgrade to Explore+'));
+
+    await waitFor(() =>
+      expect(notify).toHaveBeenCalledWith(expect.objectContaining({ title: 'Billing is not connected yet' }))
+    );
+    expect(mockPurchase).not.toHaveBeenCalled();
+    expect(addBoosts).not.toHaveBeenCalled();
+  });
+
+  it('shows a billing-pending notice when the purchase does not stick', async () => {
+    refreshUser.mockResolvedValue(user({ isExplorePlus: false }));
+    renderScreen();
+    await waitFor(() => expect(mockFetchPackages).toHaveBeenCalled());
     fireEvent.press(screen.getByText('Upgrade to Explore+'));
 
     await waitFor(() =>
@@ -125,47 +184,48 @@ describe('ExplorePlusScreen', () => {
     expect(addBoosts).not.toHaveBeenCalled();
   });
 
-  it('starts a free trial', async () => {
+  it('says nothing when the member cancels the Play purchase sheet', async () => {
+    mockPurchase.mockRejectedValue(new PurchaseCancelledError());
     renderScreen();
-    fireEvent.press(screen.getByText('Free Trial'));
-    fireEvent.press(screen.getByText('Start free trial'));
+    await waitFor(() => expect(mockFetchPackages).toHaveBeenCalled());
+    fireEvent.press(screen.getByText('Upgrade to Explore+'));
 
-    await waitFor(() => expect(updateUser).toHaveBeenCalledWith(expect.objectContaining({ subscriptionPlan: 'trial' })));
-    await waitFor(() =>
-      expect(notify).toHaveBeenCalledWith(expect.objectContaining({ message: expect.stringContaining('7-day free trial') }))
-    );
+    await waitFor(() => expect(mockPurchase).toHaveBeenCalled());
+    expect(notify).not.toHaveBeenCalled();
   });
 
   it('shows the manage-subscription card for an existing Explore+ member', () => {
     mockUseAuth.mockReturnValue({
       user: user({ isExplorePlus: true, subscriptionPlan: 'yearly', subscriptionRenewsAt: '2027-01-01' }),
-      updateUser,
+      refreshUser,
     });
     renderScreen();
     expect(screen.getByText("You're on Explore+")).toBeTruthy();
-    expect(screen.getByText('Cancel subscription')).toBeTruthy();
+    expect(screen.getByText('Manage subscription')).toBeTruthy();
   });
 
-  it('cancels the subscription after confirming', async () => {
-    mockUseAuth.mockReturnValue({ user: user({ isExplorePlus: true, subscriptionPlan: 'monthly' }), updateUser });
-    confirm.mockResolvedValue(true);
+  it('opens Play Store subscription management', async () => {
+    mockUseAuth.mockReturnValue({ user: user({ isExplorePlus: true, subscriptionPlan: 'monthly' }), refreshUser });
     renderScreen();
 
-    fireEvent.press(screen.getByText('Cancel subscription'));
+    fireEvent.press(screen.getByText('Manage subscription'));
 
-    await waitFor(() => expect(updateUser).toHaveBeenCalledWith(expect.objectContaining({ isExplorePlus: false })));
-    await waitFor(() => expect(notify).toHaveBeenCalledWith(expect.objectContaining({ title: 'Subscription cancelled' })));
+    await waitFor(() =>
+      expect(Linking.openURL).toHaveBeenCalledWith(
+        'https://play.google.com/store/account/subscriptions?package=com.rishtaandrang.app'
+      )
+    );
   });
 
-  it('does not cancel when the confirmation is declined', async () => {
-    mockUseAuth.mockReturnValue({ user: user({ isExplorePlus: true, subscriptionPlan: 'monthly' }), updateUser });
-    confirm.mockResolvedValue(false);
+  it('shows a fallback notice when the Play Store link cannot be opened', async () => {
+    (Linking.canOpenURL as jest.Mock).mockResolvedValue(false);
+    mockUseAuth.mockReturnValue({ user: user({ isExplorePlus: true, subscriptionPlan: 'monthly' }), refreshUser });
     renderScreen();
 
-    fireEvent.press(screen.getByText('Cancel subscription'));
+    fireEvent.press(screen.getByText('Manage subscription'));
 
-    await waitFor(() => expect(confirm).toHaveBeenCalled());
-    expect(updateUser).not.toHaveBeenCalled();
+    await waitFor(() => expect(notify).toHaveBeenCalled());
+    expect(Linking.openURL).not.toHaveBeenCalled();
   });
 
   it('shows admirers blurred for a free member', async () => {
@@ -177,7 +237,7 @@ describe('ExplorePlusScreen', () => {
   });
 
   it('shows admirer names unlocked for an Explore+ member', async () => {
-    mockUseAuth.mockReturnValue({ user: user({ isExplorePlus: true, subscriptionPlan: 'monthly' }), updateUser });
+    mockUseAuth.mockReturnValue({ user: user({ isExplorePlus: true, subscriptionPlan: 'monthly' }), refreshUser });
     (likesService.fetchLikesReceived as jest.Mock).mockResolvedValue([admirer()]);
     renderScreen();
 
@@ -186,7 +246,7 @@ describe('ExplorePlusScreen', () => {
 
   it('excludes blocked profiles from the admirers list', async () => {
     mockUseMatches.mockReturnValue({ blockedProfiles: [{ id: 'p1' }] });
-    mockUseAuth.mockReturnValue({ user: user({ isExplorePlus: true }), updateUser });
+    mockUseAuth.mockReturnValue({ user: user({ isExplorePlus: true }), refreshUser });
     (likesService.fetchLikesReceived as jest.Mock).mockResolvedValue([admirer(), admirer({ id: 'p2', name: 'Sara' })]);
     renderScreen();
 

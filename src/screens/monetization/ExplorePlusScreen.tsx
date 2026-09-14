@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -9,6 +9,13 @@ import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { Button } from '../../components/Button';
 import { useBoost } from '../../store/BoostContext';
 import { likesService, type LikeReceived } from '../../services/likesService';
+import {
+  fetchExplorePlusPackages,
+  purchaseExplorePlus,
+  syncExplorePlusEntitlement,
+  PurchaseCancelledError,
+  type ExplorePlusPackages,
+} from '../../services/billingService';
 import { useLanguage } from '../../store/LanguageContext';
 import { useAuth } from '../../store/AuthContext';
 import { useTheme } from '../../store/ThemeContext';
@@ -17,19 +24,18 @@ import { useLikeLimit } from '../../store/LikeLimitContext';
 import { usePrivacy } from '../../store/PrivacyContext';
 import { useMatches } from '../../store/MatchesContext';
 import { isoToDisplay } from '../../utils/date';
+import { errorMessage } from '../../utils/appError';
 import { radius, spacing, typography } from '../../theme';
 import { glow, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 
 type Plan = 'trial' | 'monthly' | 'yearly';
 
-function isoDateInDays(days: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
-}
-
-const PLAN_DAYS: Record<Plan, number> = { trial: 7, monthly: 30, yearly: 365 };
+/** Google Play's account-management page for this app — RevenueCat's REST API
+ *  can validate a subscription but cannot cancel one, and it shouldn't: the
+ *  member's own Play account is the one place that actually is the billing
+ *  relationship. */
+const PLAY_SUBSCRIPTIONS_URL = 'https://play.google.com/store/account/subscriptions?package=com.rishtaandrang.app';
 
 const GRADIENT_START = { x: 0, y: 0 } as const;
 const GRADIENT_END = { x: 1, y: 1 } as const;
@@ -44,16 +50,31 @@ export function ExplorePlusScreen() {
   const { colors, isDark } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
-  const { user, updateUser } = useAuth();
+  const { user, refreshUser } = useAuth();
   const { addBoosts } = useBoost();
-  const { notify, confirm } = useDialog();
+  const { notify } = useDialog();
   const { used, limit } = useLikeLimit();
   const { prefs } = usePrivacy();
   const { blockedProfiles } = useMatches();
   const [upgrading, setUpgrading] = useState(false);
-  const [cancelling, setCancelling] = useState(false);
   const [plan, setPlan] = useState<Plan>('monthly');
   const canTrial = !user?.hasUsedTrial;
+
+  // Fetched once per visit — the only place that knows Google Play's actual
+  // packages for this build. Null on a build with no RevenueCat key, in Expo
+  // Go, or on a platform other than Android (see billingService).
+  const [packages, setPackages] = useState<ExplorePlusPackages | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    fetchExplorePlusPackages()
+      .then((result) => {
+        if (!cancelled) setPackages(result);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const blockedProfileIds = useMemo(
     () => new Set(blockedProfiles.map((b) => b.id)),
@@ -80,52 +101,60 @@ export function ExplorePlusScreen() {
   if (!user) return null;
   const isPro = Boolean(user.isExplorePlus);
 
+  // "trial" buys the same package as "monthly" — a trial is a free phase of
+  // that base plan in Play Console, not a separate product. Play itself
+  // decides whether this member is actually eligible for it.
   const onUpgrade = async () => {
-    setUpgrading(true);
-    // Since supabase/29_entitlements.sql these columns are pinned against a
-    // member's own writes, so this no longer grants anything — the tier is
-    // granted by a receipt-validating function, which real billing has yet to
-    // be wired to. The write is left in place for when it is; what changed is
-    // that the screen no longer claims success it did not get.
-    const saved = await updateUser({
-      ...user,
-      isExplorePlus: true,
-      subscriptionPlan: plan,
-      subscriptionRenewsAt: isoDateInDays(PLAN_DAYS[plan]),
-      hasUsedTrial: user.hasUsedTrial || plan === 'trial',
-    });
-    setUpgrading(false);
-
-    if (!saved.isExplorePlus) {
-      await notify({
-        title: t('explorePlus.billingPendingTitle'),
-        message: t('explorePlus.billingPendingBody'),
-      });
+    const pkg = packages && (plan === 'yearly' ? packages.yearly : packages.monthly);
+    if (!pkg) {
+      await notify({ title: t('explorePlus.billingPendingTitle'), message: t('explorePlus.billingPendingBody') });
       return;
     }
 
-    // A subscription comes with a pack of profile boosts — this is what the
-    // boost sheet's "Get more Boosts" button sends members here for.
-    addBoosts(BOOSTS_PER_SUBSCRIPTION);
-    await notify({
-      title: t('explorePlus.upgradeSuccessTitle'),
-      message: plan === 'trial' ? t('explorePlus.trialStartedBody') : t('explorePlus.upgradeSuccessBody'),
-    });
+    setUpgrading(true);
+    try {
+      // The purchase only unlocks the ask — sync-entitlement is what actually
+      // checks RevenueCat's record and calls grant_explore_plus
+      // (supabase/29_entitlements.sql), which is the only thing this screen
+      // trusts to say the tier really took.
+      const purchased = await purchaseExplorePlus(pkg);
+      if (!purchased) {
+        await notify({ title: t('explorePlus.billingPendingTitle'), message: t('explorePlus.billingPendingBody') });
+        return;
+      }
+      await syncExplorePlusEntitlement();
+      const fresh = await refreshUser();
+
+      if (!fresh?.isExplorePlus) {
+        await notify({ title: t('explorePlus.billingPendingTitle'), message: t('explorePlus.billingPendingBody') });
+        return;
+      }
+
+      // A subscription comes with a pack of profile boosts — this is what the
+      // boost sheet's "Get more Boosts" button sends members here for.
+      addBoosts(BOOSTS_PER_SUBSCRIPTION);
+      await notify({
+        title: t('explorePlus.upgradeSuccessTitle'),
+        message: plan === 'trial' ? t('explorePlus.trialStartedBody') : t('explorePlus.upgradeSuccessBody'),
+      });
+    } catch (e) {
+      if (e instanceof PurchaseCancelledError) return;
+      await notify({ title: t('common.somethingWentWrong'), message: errorMessage(e, t) });
+    } finally {
+      setUpgrading(false);
+    }
   };
 
-  const onCancel = async () => {
-    const confirmed = await confirm({
-      title: t('explorePlus.cancelConfirmTitle'),
-      message: t('explorePlus.cancelConfirmBody'),
-      confirmLabel: t('explorePlus.cancelConfirmLabel'),
-      cancelLabel: t('common.cancel'),
-      destructive: true,
-    });
-    if (!confirmed) return;
-    setCancelling(true);
-    await updateUser({ ...user, isExplorePlus: false, subscriptionPlan: undefined, subscriptionRenewsAt: undefined });
-    setCancelling(false);
-    await notify({ title: t('explorePlus.cancelledTitle'), message: t('explorePlus.cancelledBody') });
+  // Our backend can tell whether a subscription is active; it cannot cancel
+  // one — the member's own Play account is the actual billing relationship,
+  // and that is the one place a cancellation is real.
+  const onManage = async () => {
+    const canOpen = await Linking.canOpenURL(PLAY_SUBSCRIPTIONS_URL).catch(() => false);
+    if (!canOpen) {
+      await notify({ title: t('explorePlus.title'), message: t('common.linkUnavailable') });
+      return;
+    }
+    await Linking.openURL(PLAY_SUBSCRIPTIONS_URL);
   };
 
   return (
@@ -192,7 +221,7 @@ export function ExplorePlusScreen() {
                 adjustsFontSizeToFit
                 minimumFontScale={0.6}
               >
-                {t('explorePlus.monthlyPrice')}
+                {packages?.monthly?.product.priceString ?? t('explorePlus.monthlyPrice')}
               </Text>
             </Pressable>
             <Pressable
@@ -216,7 +245,7 @@ export function ExplorePlusScreen() {
                 adjustsFontSizeToFit
                 minimumFontScale={0.6}
               >
-                {t('explorePlus.yearlyPrice')}
+                {packages?.yearly?.product.priceString ?? t('explorePlus.yearlyPrice')}
               </Text>
             </Pressable>
           </View>
@@ -283,10 +312,9 @@ export function ExplorePlusScreen() {
           </View>
 
           <Button
-            label={t('explorePlus.cancelSubscription')}
-            variant="danger"
-            onPress={onCancel}
-            loading={cancelling}
+            label={t('explorePlus.manageSubscription')}
+            variant="secondary"
+            onPress={onManage}
             style={styles.cancelButton}
           />
         </Animated.View>

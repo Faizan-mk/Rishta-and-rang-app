@@ -14,6 +14,9 @@ interface AuthContextValue {
    *  always the row that was sent: entitlement columns are pinned server-side
    *  (supabase/29_entitlements.sql), so a caller can tell what actually took. */
   updateUser: (updated: UserProfile) => Promise<UserProfile>;
+  /** Re-fetches the profile row from the server — for state a server-side writer
+   *  (grant_explore_plus, the reports auto-hide) changed out from under `updateUser`. */
+  refreshUser: () => Promise<UserProfile | null>;
   setActiveMode: (mode: ProfileMode) => void;
   setIntent: (intent: Intent) => void;
   setReadiness: (readiness: RishtaReadiness) => void;
@@ -136,6 +139,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return saved;
   }, []);
 
+  const refreshUser = useCallback(async () => {
+    const fresh = await authService.getCurrentUser();
+    setUser(fresh);
+    if (fresh) await cache.write(fresh.id, CACHE_KEYS.profile, fresh);
+    return fresh;
+  }, []);
+
   // The toggle has to move on the tap, not on the round trip: state and cache
   // flip immediately and the one-field write follows behind. If that write
   // fails the old value goes back, rather than leaving the UI showing a mode
@@ -197,8 +207,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user]);
 
   const value = useMemo(
-    () => ({ user, initializing, signup, login, logout, updateUser, setActiveMode, setIntent, setReadiness, deleteAccount }),
-    [user, initializing, signup, login, logout, updateUser, setActiveMode, setIntent, setReadiness, deleteAccount]
+    () => ({
+      user,
+      initializing,
+      signup,
+      login,
+      logout,
+      updateUser,
+      refreshUser,
+      setActiveMode,
+      setIntent,
+      setReadiness,
+      deleteAccount,
+    }),
+    [user, initializing, signup, login, logout, updateUser, refreshUser, setActiveMode, setIntent, setReadiness, deleteAccount]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

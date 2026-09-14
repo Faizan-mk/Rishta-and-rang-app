@@ -750,12 +750,6 @@
     "currentPlan": "Current plan",
     "renewsOn": "Renews on",
     "unlimitedLikes": "Unlimited",
-    "cancelSubscription": "Cancel subscription",
-    "cancelConfirmTitle": "Cancel Explore+?",
-    "cancelConfirmBody": "You'll lose unlimited likes and your admirers list right away.",
-    "cancelConfirmLabel": "Cancel plan",
-    "cancelledTitle": "Subscription cancelled",
-    "cancelledBody": "You're back on the free plan.",
     "billingPendingTitle": "Billing is not connected yet",
     "billingPendingBody": "Explore+ can't be switched on from the app — it's granted once a real purchase is verified, and payments aren't wired up yet."
   },

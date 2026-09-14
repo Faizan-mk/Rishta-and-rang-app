@@ -24,6 +24,7 @@ import { ResponsiveFrame } from '../components/common/ResponsiveFrame';
 import { usePushRegistration } from '../hooks/usePushRegistration';
 import { usePushNavigation } from '../hooks/usePushNavigation';
 import { useActivityHeartbeat } from '../hooks/useActivityHeartbeat';
+import { useBillingRegistration } from '../hooks/useBillingRegistration';
 
 // The signed-in and signed-out route groups are gated with <Stack.Protected>, so
 // a deep link into a protected screen falls back to the anchor route ("index"),
@@ -40,6 +41,9 @@ function RootNavigator() {
   usePushNavigation();
   // Keeps the "Active now / today" badge honest — see the hook.
   useActivityHeartbeat();
+  // Points RevenueCat at the signed-in member so a purchase and sync-entitlement
+  // agree on whose row to grant Explore+ on.
+  useBillingRegistration();
 
   const navigationTheme = useMemo<Theme>(() => {
     const base = isDark ? DarkTheme : DefaultTheme;
