@@ -688,3 +688,72 @@ true *now* or not shown at all.
 The green itself is `ONLINE_GREEN` in the theme — one definition, outside the
 light/dark palettes, because it is a borrowed signal that has to read as the
 same green in both themes and on both surfaces.
+
+## Explore+ billing (Single Paid Unlock) — real Google Play purchases
+
+Item 9/14 from `docs/todos.html`: "Upgrade" used to just set `isExplorePlus:
+true` on the member's own row. `supabase/29_entitlements.sql` closed that hole
+from the database side (a member can no longer write it at all), which left
+the button granting nothing and showing "Billing is not connected yet" —
+correct, but the one V1 paywall had gone from free-for-anyone to not-working.
+
+This wires it to real Google Play Billing through RevenueCat, per the
+client's decision (Google Play, not a local PKR gateway):
+
+- **`src/services/billingService.ts`** wraps `react-native-purchases`, gated
+  the same way `pushService` gates `expo-notifications` — a lazy `require`
+  behind an Expo Go / platform check, so importing it is harmless on a build
+  that has neither the native module nor a RevenueCat key yet. `configureBilling`
+  sets RevenueCat's `appUserID` to the member's own Supabase id, which is the
+  thread the rest of this connects along.
+- **`ExplorePlusScreen`** now buys a real Google Play package (`onUpgrade`)
+  instead of writing the entitlement itself, then calls `sync-entitlement` and
+  refetches the profile — it never trusts a purchase result on its own, only
+  what comes back from the server. "Manage subscription" opens the member's
+  own Play Store subscriptions page; nothing server-side can cancel a Play
+  subscription, so that page is genuinely the one place it happens.
+- **`supabase/functions/sync-entitlement`** — called by the app right after a
+  purchase. Verifies the caller's session, asks RevenueCat's REST API (not the
+  client) whether `explore_plus` is active for that id, and only then calls
+  `grant_explore_plus` / `revoke_explore_plus` (both `service_role`-only,
+  29_entitlements.sql).
+- **`supabase/functions/revenuecat-webhook`** — the half that keeps a
+  subscription correct while the app is closed (renewal, expiration).
+  Authenticated by a shared secret set in both the function's env and the
+  RevenueCat dashboard's webhook config, not a member session.
+- Both functions land through **`supabase/functions/_shared/entitlement.ts`**,
+  so a purchase synced on demand and a renewal delivered by webhook cannot
+  disagree about what "active" means.
+
+### Not done, and it needs the client first
+
+Nothing above can be exercised end to end yet, because none of its external
+accounts exist:
+
+1. **A Google Play Console app + a real subscription product** for
+   `com.rishtaandrang.app`, priced and published to at least internal testing.
+2. **A RevenueCat project**, with the Play Console service account linked and
+   an offering built from that product. Its Google API key goes in
+   `EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY` (`.env`, and the EAS project's own
+   environment variables for `eas build`); its **secret** key goes to
+   `supabase secrets set REVENUECAT_SECRET_KEY=...` — never into the app.
+3. **The webhook**, pointed at
+   `https://<project>.supabase.co/functions/v1/revenuecat-webhook`, with a
+   matching `REVENUECAT_WEBHOOK_SECRET` on both sides.
+4. **A development build** (`eas build --profile development --platform
+   android`) — `react-native-purchases` is a native module, so none of this
+   exists in Expo Go, same limitation as push.
+5. Deploy both functions: `supabase functions deploy sync-entitlement` and
+   `supabase functions deploy revenuecat-webhook --no-verify-jwt`.
+
+Until 1–3 exist, `fetchExplorePlusPackages` has nothing to return and the
+screen falls back to its honest "Billing is not connected yet" state — the
+same state it was already in, not a regression.
+
+**What is verified:** `billingService`, the screen's purchase/sync/refresh
+flow, and both Edge Functions' logic have unit and jest coverage (`npm test`),
+and `npx tsc --noEmit` is clean. **What is not:** a real purchase on a real
+device, exactly like 10.1/7.2 above for push and Rishta — this needs the five
+things listed, then the walk is: buy on a signed test device, confirm
+`profiles.is_explore_plus` flips, cancel from Play, confirm the webhook flips
+it back at `EXPIRATION`.

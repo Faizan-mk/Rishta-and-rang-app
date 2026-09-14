@@ -6,6 +6,8 @@
 export const config = {
   supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
   supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+  /** RevenueCat's Google project API key. Empty until the Play Console + RevenueCat setup is done — see billingService. */
+  revenueCatAndroidApiKey: process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY ?? '',
 } as const;
 
 /** Storage buckets — mirrored in supabase/schema.sql. */
