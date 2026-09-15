@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
@@ -49,18 +49,25 @@ export function HomeTopBar({
   const { t, rtl } = useLanguage();
   const accent = modeAccent(colors, mode);
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const [filtersHovered, setFiltersHovered] = useState(false);
+  const [sortHovered, setSortHovered] = useState(false);
+
+  const filtersLit = activeFilterCount > 0 || filtersHovered;
+  const sortLit = sortHovered;
 
   return (
     <View style={[styles.wrap, rtl && styles.rowRtl]}>
-      <Pressable onPress={onOpenFilters} style={[styles.chip, activeFilterCount > 0 && styles.chipActive]}>
-        <Ionicons
-          name="options-outline"
-          size={16}
-          color={activeFilterCount > 0 ? colors.teal : colors.textSecondary}
-        />
-        <Text style={[styles.chipLabel, activeFilterCount > 0 && styles.chipLabelActive]}>
-          {t('discover.filters')}
-        </Text>
+      <Pressable
+        onPress={onOpenFilters}
+        onHoverIn={() => setFiltersHovered(true)}
+        onHoverOut={() => setFiltersHovered(false)}
+        style={({ pressed }) => [
+          styles.chip,
+          (activeFilterCount > 0 || filtersHovered || pressed) && styles.chipActive,
+        ]}
+      >
+        <Ionicons name="options-outline" size={16} color={filtersLit ? colors.teal : colors.textSecondary} />
+        <Text style={[styles.chipLabel, filtersLit && styles.chipLabelActive]}>{t('discover.filters')}</Text>
         {activeFilterCount > 0 && (
           <View style={[styles.countPill, glow(colors.teal, 0.7, 8, 4)]}>
             <Text style={styles.countPillText}>{activeFilterCount}</Text>
@@ -68,9 +75,14 @@ export function HomeTopBar({
         )}
       </Pressable>
 
-      <Pressable onPress={onOpenSort} style={styles.chip}>
-        <Ionicons name="swap-vertical" size={16} color={colors.textSecondary} />
-        <Text style={styles.chipLabel}>{t('discover.sort')}</Text>
+      <Pressable
+        onPress={onOpenSort}
+        onHoverIn={() => setSortHovered(true)}
+        onHoverOut={() => setSortHovered(false)}
+        style={({ pressed }) => [styles.chip, (sortHovered || pressed) && styles.chipActive]}
+      >
+        <Ionicons name="swap-vertical" size={16} color={sortLit ? colors.teal : colors.textSecondary} />
+        <Text style={[styles.chipLabel, sortLit && styles.chipLabelActive]}>{t('discover.sort')}</Text>
       </Pressable>
 
       <View style={styles.spacer} />
@@ -233,6 +245,15 @@ const makeStyles = (colors: Palette) =>
       backgroundColor: withAlpha(colors.textPrimary, 0.05),
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
+      // Hover/press just flips to chipActive's colors below — the web-only
+      // transition is what makes that flip read as a fade instead of a snap.
+      ...(Platform.OS === 'web'
+        ? ({
+            transitionProperty: 'background-color, border-color',
+            transitionDuration: '160ms',
+            transitionTimingFunction: 'ease',
+          } as object)
+        : null),
     },
     chipActive: { backgroundColor: colors.tealSoft, borderColor: colors.teal },
     chipLabel: { ...typography.label, color: colors.textSecondary, fontWeight: '700' },

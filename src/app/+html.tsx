@@ -55,4 +55,10 @@ const resetStyles = `
     -webkit-background-clip: text;
     background-clip: text;
   }
+  /* Edge/IE draw their own "reveal password" eye inside type=password inputs,
+     which doubled up with TextField's own Ionicons toggle. Password fields
+     already have custom reveal UI, so the browser's native one is redundant. */
+  input::-ms-reveal, input::-ms-clear {
+    display: none;
+  }
 `;
