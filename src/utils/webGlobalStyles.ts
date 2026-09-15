@@ -37,6 +37,26 @@ if (Platform.OS === 'web' && typeof document !== 'undefined' && !document.getEle
     input::-ms-reveal, input::-ms-clear {
       display: none;
     }
+    /* dvh follows the visual viewport (shrinks when the on-screen keyboard
+       opens), where the % rules in Expo's own web template only follow the
+       *layout* viewport — which by default stays full-height under the
+       keyboard on Android Chrome, pushing anything pinned to the bottom of a
+       flex:1 column (chat's composer bar, here) behind it. The % rule stays
+       first as the fallback for browsers with no dvh support. */
+    html, body, #root {
+      height: 100%;
+      height: 100dvh;
+    }
   `;
   document.head.appendChild(style);
+
+  // Chrome's default is to resize only the *visual* viewport for the on-screen
+  // keyboard, leaving 100%/100dvh-sized layout untouched — resizes-content is
+  // what makes the layout viewport (and so the dvh rule above) actually
+  // shrink around the keyboard instead of being covered by it.
+  const viewportMeta = document.querySelector('meta[name="viewport"]');
+  const content = viewportMeta?.getAttribute('content') ?? '';
+  if (viewportMeta && !content.includes('interactive-widget')) {
+    viewportMeta.setAttribute('content', `${content}, interactive-widget=resizes-content`);
+  }
 }
