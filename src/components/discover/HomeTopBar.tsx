@@ -48,7 +48,10 @@ export function HomeTopBar({
   const { colors } = useTheme();
   const { t, rtl } = useLanguage();
   const accent = modeAccent(colors, mode);
-  const styles = useMemo(() => makeStyles(colors), [colors]);
+  // Filters/Sort borrow the deck's own accent (plum for Rishta, coral for
+  // Friends) instead of a fixed teal, so the chips never clash with whichever
+  // world the member is currently browsing.
+  const styles = useMemo(() => makeStyles(colors, accent.primary), [colors, accent.primary]);
   const [filtersHovered, setFiltersHovered] = useState(false);
   const [sortHovered, setSortHovered] = useState(false);
 
@@ -66,10 +69,10 @@ export function HomeTopBar({
           (activeFilterCount > 0 || filtersHovered || pressed) && styles.chipActive,
         ]}
       >
-        <Ionicons name="options-outline" size={16} color={filtersLit ? colors.teal : colors.textSecondary} />
+        <Ionicons name="options-outline" size={16} color={filtersLit ? accent.primary : colors.textSecondary} />
         <Text style={[styles.chipLabel, filtersLit && styles.chipLabelActive]}>{t('discover.filters')}</Text>
         {activeFilterCount > 0 && (
-          <View style={[styles.countPill, glow(colors.teal, 0.7, 8, 4)]}>
+          <View style={[styles.countPill, glow(accent.primary, 0.7, 8, 4)]}>
             <Text style={styles.countPillText}>{activeFilterCount}</Text>
           </View>
         )}
@@ -81,7 +84,7 @@ export function HomeTopBar({
         onHoverOut={() => setSortHovered(false)}
         style={({ pressed }) => [styles.chip, (sortHovered || pressed) && styles.chipActive]}
       >
-        <Ionicons name="swap-vertical" size={16} color={sortLit ? colors.teal : colors.textSecondary} />
+        <Ionicons name="swap-vertical" size={16} color={sortLit ? accent.primary : colors.textSecondary} />
         <Text style={[styles.chipLabel, sortLit && styles.chipLabelActive]}>{t('discover.sort')}</Text>
       </Pressable>
 
@@ -197,7 +200,7 @@ const GRADIENT_END = { x: 1, y: 1 } as const;
 // Reads as "lit" against either theme, so it isn't a palette token.
 const BOOST_GRADIENT = ['#F5A623', '#E8642E'] as const;
 
-const makeStyles = (colors: Palette) =>
+const makeStyles = (colors: Palette, accentColor: string) =>
   StyleSheet.create({
     wrap: {
       flexDirection: 'row',
@@ -255,15 +258,15 @@ const makeStyles = (colors: Palette) =>
           } as object)
         : null),
     },
-    chipActive: { backgroundColor: colors.tealSoft, borderColor: colors.teal },
+    chipActive: { backgroundColor: withAlpha(accentColor, 0.12), borderColor: accentColor },
     chipLabel: { ...typography.label, color: colors.textSecondary, fontWeight: '700' },
-    chipLabelActive: { color: colors.teal },
+    chipLabelActive: { color: accentColor },
     countPill: {
       minWidth: 18,
       height: 18,
       borderRadius: 9,
       paddingHorizontal: 4,
-      backgroundColor: colors.teal,
+      backgroundColor: accentColor,
       alignItems: 'center',
       justifyContent: 'center',
     },
