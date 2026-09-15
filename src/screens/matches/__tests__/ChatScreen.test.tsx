@@ -9,7 +9,7 @@ import { useAuth } from '../../../store/AuthContext';
 import { useMatches } from '../../../store/MatchesContext';
 import { discoveryService } from '../../../services/discoveryService';
 import { reportsService } from '../../../services/reportsService';
-import type { ChatMessage, Match } from '../../../types/content';
+import type { BlockedProfile, ChatMessage, Match } from '../../../types/content';
 import type { UserProfile } from '../../../types/user';
 
 jest.mock('expo-router', () => ({ useLocalSearchParams: jest.fn(), useRouter: jest.fn() }));
@@ -52,6 +52,7 @@ let openThread: jest.Mock;
 let sendRishtaRequest: jest.Mock;
 let respondRishtaRequest: jest.Mock;
 let blockMatch: jest.Mock;
+let unblockUser: jest.Mock;
 
 function user(overrides: Partial<UserProfile> = {}): UserProfile {
   return {
@@ -89,7 +90,11 @@ function match(overrides: Partial<Match> = {}): Match {
   };
 }
 
-function setupMatches(overrides: Partial<Match> = {}, messages: ChatMessage[] = []) {
+function setupMatches(
+  overrides: Partial<Match> = {},
+  messages: ChatMessage[] = [],
+  blockedProfiles: BlockedProfile[] = []
+) {
   mockUseMatches.mockReturnValue({
     getMatch: () => match(overrides),
     getMessages: () => messages,
@@ -104,6 +109,8 @@ function setupMatches(overrides: Partial<Match> = {}, messages: ChatMessage[] = 
     sendRishtaRequest,
     respondRishtaRequest,
     blockMatch,
+    blockedProfiles,
+    unblockUser,
   });
 }
 
@@ -126,6 +133,7 @@ beforeEach(() => {
   sendRishtaRequest = jest.fn().mockResolvedValue(undefined);
   respondRishtaRequest = jest.fn().mockResolvedValue('accepted');
   blockMatch = jest.fn();
+  unblockUser = jest.fn();
   (discoveryService.fetchActivity as jest.Mock).mockResolvedValue(new Map());
   setupMatches();
 });
@@ -153,6 +161,8 @@ describe('ChatScreen', () => {
       sendRishtaRequest,
       respondRishtaRequest,
       blockMatch,
+      blockedProfiles: [],
+      unblockUser,
     });
     const { toJSON } = renderScreen();
     expect(toJSON()).toBeNull();
@@ -239,14 +249,28 @@ describe('ChatScreen', () => {
     await waitFor(() => expect(respondRishtaRequest).toHaveBeenCalledWith('m1', false));
   });
 
-  it('blocks the match after confirming and goes back', async () => {
+  it('blocks the match after confirming, staying on the thread', async () => {
     confirm.mockResolvedValue(true);
     renderScreen();
 
     fireEvent.press(screen.UNSAFE_getByProps({ name: 'hand-left-outline' }));
 
     await waitFor(() => expect(blockMatch).toHaveBeenCalledWith('m1'));
-    expect(back).toHaveBeenCalled();
+    // Blocking used to also delete the match, so the screen navigated away —
+    // it keeps the thread now (supabase/35_block_keeps_thread.sql), so the
+    // member stays put and sees the blocked banner instead.
+    expect(back).not.toHaveBeenCalled();
+  });
+
+  it('shows the blocked banner instead of the composer, and unblocks from it', () => {
+    setupMatches({}, [], [{ id: 'p1', name: 'Sara', photo: 'a.jpg', blockedAt: '2026-01-01T00:00:00.000Z' }]);
+    renderScreen();
+
+    expect(screen.getByText('You blocked Sara. Unblock to send messages again.')).toBeTruthy();
+    expect(screen.queryByPlaceholderText('Type a message...')).toBeNull();
+
+    fireEvent.press(screen.getByText('Unblock'));
+    expect(unblockUser).toHaveBeenCalledWith('p1');
   });
 
   it('does not block when the confirmation is declined', async () => {

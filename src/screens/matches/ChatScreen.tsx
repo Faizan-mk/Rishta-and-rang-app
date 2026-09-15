@@ -65,6 +65,8 @@ export function ChatScreen() {
     sendRishtaRequest,
     respondRishtaRequest,
     blockMatch,
+    blockedProfiles,
+    unblockUser,
   } = useMatches();
 
   const match = getMatch(matchId);
@@ -121,6 +123,12 @@ export function ChatScreen() {
   }, [matchId]);
 
   if (!match) return null;
+
+  // The block stands until this member lifts it themselves — checked against
+  // the counterpart's id rather than kept on the match, since it is
+  // `blocked_users` that `messages_insert` actually gates
+  // (supabase/22_block_hardening.sql, supabase/35_block_keeps_thread.sql).
+  const isBlocked = Boolean(match.sourceProfileId) && blockedProfiles.some((b) => b.id === match.sourceProfileId);
 
   // The thread's own world colours the header and the outgoing bubbles' company.
   const accent = modeAccent(colors, match.movedToRishta ? 'rishta' : match.mode);
@@ -237,10 +245,13 @@ export function ChatScreen() {
       cancelLabel: t('common.cancel'),
       destructive: true,
     });
-    if (confirmed) {
-      blockMatch(matchId);
-      router.back();
-    }
+    // Stays on the thread rather than leaving it, now that a block no longer
+    // deletes it — the blocked banner below is what shows the result.
+    if (confirmed) blockMatch(matchId);
+  };
+
+  const onUnblock = () => {
+    if (match.sourceProfileId) unblockUser(match.sourceProfileId);
   };
 
   const onReport = () => setReportVisible(true);
@@ -313,7 +324,7 @@ export function ChatScreen() {
         </Pressable>
       </FadeIn>
 
-      {!match.movedToRishta && match.rishtaRequestIncoming && (
+      {!isBlocked && !match.movedToRishta && match.rishtaRequestIncoming && (
         <FadeIn delay={80}>
           <View style={styles.rishtaBannerWrap}>
             <LinearGradient
@@ -336,7 +347,7 @@ export function ChatScreen() {
         </FadeIn>
       )}
 
-      {!match.movedToRishta && !match.rishtaRequestIncoming && (
+      {!isBlocked && !match.movedToRishta && !match.rishtaRequestIncoming && (
         <FadeIn delay={80}>
           <Pressable
             onPress={onMoveToRishta}
@@ -428,54 +439,65 @@ export function ChatScreen() {
           }
         />
 
-        <View style={[styles.inputRow, rtl && styles.inputRowRtl]}>
-          <Pressable onPress={pickImage} style={styles.attachButton} disabled={recording}>
-            <Ionicons name="image-outline" size={22} color={recording ? colors.textTertiary : colors.textSecondary} />
-          </Pressable>
-
-          {recording ? (
-            <View style={styles.recordingRow}>
-              <View style={styles.recordingDot} />
-              <Text style={styles.recordingText}>{t('chat.recording')}</Text>
-            </View>
-          ) : (
-            <TextInput
-              value={draft}
-              onChangeText={setDraft}
-              placeholder={t('matches.typeMessage')}
-              placeholderTextColor={colors.textTertiary}
-              style={[styles.input, inputFocused && styles.inputFocused, rtl && styles.rtlInput]}
-              multiline
-              onFocus={() => setInputFocused(true)}
-              onBlur={() => setInputFocused(false)}
-            />
-          )}
-
-          {draft.trim() ? (
-            <Pressable onPress={sendMessage}>
-              <LinearGradient
-                colors={[colors.teal, colors.sage]}
-                start={GRADIENT_START}
-                end={GRADIENT_END}
-                style={[styles.sendButton, glow(colors.teal, 0.6, 14, 6)]}
-              >
-                <Ionicons name="send" size={18} color="#FFFFFF" />
-              </LinearGradient>
+        {isBlocked ? (
+          <View style={[styles.blockedBar, rtl && styles.inputRowRtl]}>
+            <Text style={[styles.blockedText, rtl && styles.rtlText]}>
+              {t('chat.blockedBannerBody', { name: match.name })}
+            </Text>
+            <Pressable onPress={onUnblock} style={styles.unblockButton}>
+              <Text style={styles.unblockButtonText}>{t('privacy.unblock')}</Text>
             </Pressable>
-          ) : (
-            <Pressable onPressIn={startRecording} onPressOut={stopRecording}>
-              {recording ? (
-                <View style={[styles.sendButton, styles.sendButtonRecording, glow(colors.danger, 0.7, 14, 6)]}>
-                  <Ionicons name="mic" size={18} color="#FFFFFF" />
-                </View>
-              ) : (
-                <View style={[styles.sendButton, styles.sendButtonIdle]}>
-                  <Ionicons name="mic" size={18} color={colors.teal} />
-                </View>
-              )}
+          </View>
+        ) : (
+          <View style={[styles.inputRow, rtl && styles.inputRowRtl]}>
+            <Pressable onPress={pickImage} style={styles.attachButton} disabled={recording}>
+              <Ionicons name="image-outline" size={22} color={recording ? colors.textTertiary : colors.textSecondary} />
             </Pressable>
-          )}
-        </View>
+
+            {recording ? (
+              <View style={styles.recordingRow}>
+                <View style={styles.recordingDot} />
+                <Text style={styles.recordingText}>{t('chat.recording')}</Text>
+              </View>
+            ) : (
+              <TextInput
+                value={draft}
+                onChangeText={setDraft}
+                placeholder={t('matches.typeMessage')}
+                placeholderTextColor={colors.textTertiary}
+                style={[styles.input, inputFocused && styles.inputFocused, rtl && styles.rtlInput]}
+                multiline
+                onFocus={() => setInputFocused(true)}
+                onBlur={() => setInputFocused(false)}
+              />
+            )}
+
+            {draft.trim() ? (
+              <Pressable onPress={sendMessage}>
+                <LinearGradient
+                  colors={[colors.teal, colors.sage]}
+                  start={GRADIENT_START}
+                  end={GRADIENT_END}
+                  style={[styles.sendButton, glow(colors.teal, 0.6, 14, 6)]}
+                >
+                  <Ionicons name="send" size={18} color="#FFFFFF" />
+                </LinearGradient>
+              </Pressable>
+            ) : (
+              <Pressable onPressIn={startRecording} onPressOut={stopRecording}>
+                {recording ? (
+                  <View style={[styles.sendButton, styles.sendButtonRecording, glow(colors.danger, 0.7, 14, 6)]}>
+                    <Ionicons name="mic" size={18} color="#FFFFFF" />
+                  </View>
+                ) : (
+                  <View style={[styles.sendButton, styles.sendButtonIdle]}>
+                    <Ionicons name="mic" size={18} color={colors.teal} />
+                  </View>
+                )}
+              </Pressable>
+            )}
+          </View>
+        )}
       </KeyboardAvoidingView>
 
       <ReportDialog
@@ -592,6 +614,25 @@ const makeStyles = (colors: Palette) =>
       backgroundColor: colors.surfaceElevated,
     },
     inputRowRtl: { flexDirection: 'row-reverse' },
+    blockedBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: spacing.sm,
+      gap: spacing.sm,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: colors.borderSoft,
+      backgroundColor: colors.surfaceElevated,
+    },
+    blockedText: { ...typography.caption, color: colors.textSecondary, flex: 1 },
+    unblockButton: {
+      borderRadius: radius.pill,
+      borderWidth: 1.5,
+      borderColor: colors.teal,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    unblockButtonText: { ...typography.label, color: colors.teal, fontWeight: '800' },
+    rtlText: { textAlign: 'right', writingDirection: 'rtl' },
     input: {
       flex: 1,
       maxHeight: 100,

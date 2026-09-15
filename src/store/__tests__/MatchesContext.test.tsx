@@ -411,11 +411,15 @@ describe('MatchesProvider block / unmatch', () => {
     expect(matchesService.deleteMatch).toHaveBeenCalledWith('m1');
   });
 
-  it('blockMatch blocks the counterpart and removes the thread', async () => {
+  it('blockMatch blocks the counterpart but keeps the thread', async () => {
+    // Blocking used to delete the match outright (supabase/24_matching.sql's
+    // like/mode design predates this), which meant unblocking later had
+    // nothing to lead back to. It now only blocks the person —
+    // supabase/35_block_keeps_thread.sql / messages_insert is what actually
+    // stops them messaging, not the thread's existence.
     mockUseAuth.mockReturnValue({ user: { id: 'u1' } });
     (matchesService.fetchMatches as jest.Mock).mockResolvedValue([match()]);
     (matchesService.blockUser as jest.Mock).mockResolvedValue(undefined);
-    (matchesService.deleteMatch as jest.Mock).mockResolvedValue(undefined);
     const { result } = renderMatches();
     await waitFor(() => expect(result.current.getMatch('m1')).toBeTruthy());
 
@@ -424,7 +428,8 @@ describe('MatchesProvider block / unmatch', () => {
     });
 
     expect(result.current.blockedProfiles[0]?.id).toBe('p1');
-    expect(result.current.getMatch('m1')).toBeUndefined();
+    expect(result.current.getMatch('m1')).toBeTruthy();
+    expect(matchesService.deleteMatch).not.toHaveBeenCalled();
   });
 
   it('unblockUser removes the entry locally and on the server', async () => {

@@ -61,12 +61,16 @@ function renderScreen() {
   return render(withProviders(<TabBarVisibilityProvider><MatchesScreen /></TabBarVisibilityProvider>));
 }
 
+function mockMatches(matches: Match[], blockedProfiles: { id: string }[] = []) {
+  mockUseMatches.mockReturnValue({ matches, blockedProfiles });
+}
+
 beforeEach(() => {
   jest.clearAllMocks();
   mockUseRouter.mockReturnValue({ push });
   setActiveMode = jest.fn();
   mockUseAuth.mockReturnValue({ user: user(), setActiveMode });
-  mockUseMatches.mockReturnValue({ matches: [] });
+  mockMatches([]);
 });
 
 describe('MatchesScreen', () => {
@@ -76,40 +80,40 @@ describe('MatchesScreen', () => {
   });
 
   it('lists the current mode\'s matches', () => {
-    mockUseMatches.mockReturnValue({ matches: [match()] });
+    mockMatches([match()]);
     renderScreen();
     expect(screen.getByText('Sara')).toBeTruthy();
   });
 
   it('excludes a rishta-mode match from the Friends list', () => {
-    mockUseMatches.mockReturnValue({ matches: [match({ mode: 'rishta' })] });
+    mockMatches([match({ mode: 'rishta' })]);
     renderScreen();
     expect(screen.queryByText('Sara')).toBeNull();
   });
 
   it('treats a movedToRishta thread as rishta even if `mode` still says dating', () => {
-    mockUseMatches.mockReturnValue({ matches: [match({ mode: 'dating', movedToRishta: true })] });
+    mockMatches([match({ mode: 'dating', movedToRishta: true })]);
     renderScreen();
     // On the Friends (dating) tab it should not appear...
     expect(screen.queryByText('Sara')).toBeNull();
   });
 
   it('shows the hint and switch button when the other mode has matches', () => {
-    mockUseMatches.mockReturnValue({ matches: [match({ mode: 'rishta' })] });
+    mockMatches([match({ mode: 'rishta' })]);
     renderScreen();
     expect(screen.getByText(/1 waiting in Rishta/)).toBeTruthy();
     expect(screen.getByText('Go to Rishta')).toBeTruthy();
   });
 
   it('switches mode when the switch button is pressed', () => {
-    mockUseMatches.mockReturnValue({ matches: [match({ mode: 'rishta' })] });
+    mockMatches([match({ mode: 'rishta' })]);
     renderScreen();
     fireEvent.press(screen.getByText('Go to Rishta'));
     expect(setActiveMode).toHaveBeenCalledWith('rishta');
   });
 
   it('navigates to the chat screen when a match row is pressed', () => {
-    mockUseMatches.mockReturnValue({ matches: [match()] });
+    mockMatches([match()]);
     renderScreen();
     fireEvent.press(screen.getByText('Sara'));
     expect(push).toHaveBeenCalledWith('/chat/m1');
@@ -118,8 +122,15 @@ describe('MatchesScreen', () => {
   it('shows the unread count badge', () => {
     // "2" also appears in the ModeToggle's own tally for this mode, so this
     // just confirms it renders somewhere rather than picking one instance.
-    mockUseMatches.mockReturnValue({ matches: [match({ unread: true }), match({ id: 'm2', name: 'Zara', unread: true })] });
+    mockMatches([match({ unread: true }), match({ id: 'm2', name: 'Zara', unread: true })]);
     renderScreen();
     expect(screen.getAllByText('2').length).toBeGreaterThan(0);
+  });
+
+  it('hides a blocked match from the list even though the thread is kept', () => {
+    mockMatches([match(), match({ id: 'm2', name: 'Zara', sourceProfileId: 'p2' })], [{ id: 'p2' }]);
+    renderScreen();
+    expect(screen.getByText('Sara')).toBeTruthy();
+    expect(screen.queryByText('Zara')).toBeNull();
   });
 });
