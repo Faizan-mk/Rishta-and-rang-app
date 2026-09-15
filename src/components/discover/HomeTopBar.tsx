@@ -23,6 +23,10 @@ interface HomeTopBarProps {
   activeFilterCount: number;
   onOpenFilters: () => void;
   onOpenSort: () => void;
+  // Whether each chip's own sheet is currently open, so the chip stays lit
+  // once tapped instead of only lighting up on hover (which touch has none of).
+  filtersOpen: boolean;
+  sortOpen: boolean;
   onBoost: () => void;
   // Fills the boost chip while a boost is running.
   boostActive: boolean;
@@ -39,6 +43,8 @@ export function HomeTopBar({
   activeFilterCount,
   onOpenFilters,
   onOpenSort,
+  filtersOpen,
+  sortOpen,
   onBoost,
   boostActive,
   notificationCount,
@@ -55,8 +61,12 @@ export function HomeTopBar({
   const [filtersHovered, setFiltersHovered] = useState(false);
   const [sortHovered, setSortHovered] = useState(false);
 
-  const filtersLit = activeFilterCount > 0 || filtersHovered;
-  const sortLit = sortHovered;
+  // "Lit" covers three distinct reasons: filters are actually applied, the
+  // chip's own sheet is open (tapped state, persists after the press ends —
+  // this is what makes a touch tap register visually, not just a mouse hover),
+  // or the pointer is hovering/pressing it right now.
+  const filtersLit = activeFilterCount > 0 || filtersOpen || filtersHovered;
+  const sortLit = sortOpen || sortHovered;
 
   return (
     <View style={[styles.wrap, rtl && styles.rowRtl]}>
@@ -66,7 +76,7 @@ export function HomeTopBar({
         onHoverOut={() => setFiltersHovered(false)}
         style={({ pressed }) => [
           styles.chip,
-          (activeFilterCount > 0 || filtersHovered || pressed) && styles.chipActive,
+          (activeFilterCount > 0 || filtersOpen || filtersHovered || pressed) && styles.chipActive,
         ]}
       >
         <Ionicons name="options-outline" size={16} color={filtersLit ? accent.primary : colors.textSecondary} />
@@ -82,7 +92,7 @@ export function HomeTopBar({
         onPress={onOpenSort}
         onHoverIn={() => setSortHovered(true)}
         onHoverOut={() => setSortHovered(false)}
-        style={({ pressed }) => [styles.chip, (sortHovered || pressed) && styles.chipActive]}
+        style={({ pressed }) => [styles.chip, (sortOpen || sortHovered || pressed) && styles.chipActive]}
       >
         <Ionicons name="swap-vertical" size={16} color={sortLit ? accent.primary : colors.textSecondary} />
         <Text style={[styles.chipLabel, sortLit && styles.chipLabelActive]}>{t('discover.sort')}</Text>

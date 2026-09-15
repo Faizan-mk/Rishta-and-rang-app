@@ -8,6 +8,8 @@ function props(overrides: Partial<Parameters<typeof HomeTopBar>[0]> = {}) {
     activeFilterCount: 0,
     onOpenFilters: jest.fn(),
     onOpenSort: jest.fn(),
+    filtersOpen: false,
+    sortOpen: false,
     onBoost: jest.fn(),
     boostActive: false,
     notificationCount: 0,
