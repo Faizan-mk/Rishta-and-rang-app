@@ -212,6 +212,20 @@ Deno.serve(async (req: Request) => {
 
       userId = match.user_a === callerId ? match.user_b : match.user_a;
       routing = { matchId };
+
+      // A message the shared-row RLS is about to hide from `userId`
+      // (supabase/36_shadow_block_messages.sql: sender_id = caller, blocked on
+      // or after `blocked_at`) must not still reach them as a push — that
+      // would preview the very text the chat itself never shows them.
+      if (event === 'message') {
+        const { data: blocked } = await supabase
+          .from('blocked_users')
+          .select('id')
+          .eq('profile_id', userId)
+          .eq('blocked_user_id', callerId)
+          .maybeSingle();
+        if (blocked) return json({ skipped: 'blocked', event }, 200);
+      }
     } else if (event === 'like' || event === 'match') {
       const targetId = payload.targetId;
       if (!targetId) return json({ error: 'missing_fields', required: ['targetId'] }, 400);
