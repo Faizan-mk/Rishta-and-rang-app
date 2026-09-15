@@ -89,7 +89,12 @@ export function SwipeableCard({ profileId, onSwipeRight, onSwipeLeft, children }
   }));
 
   return (
-    <GestureDetector gesture={pan}>
+    // touchAction="pan-y": GestureDetector defaults to CSS touch-action:none
+    // on web, which blocks the browser's own touch-scroll outright — the pan
+    // gesture's activeOffsetX/failOffsetY never gets a chance to hand vertical
+    // drags back. pan-y tells the browser to keep handling vertical scrolling
+    // itself while this gesture still claims horizontal drags via JS.
+    <GestureDetector gesture={pan} touchAction="pan-y">
       <Animated.View style={cardStyle}>
         {children}
 
