@@ -127,10 +127,10 @@ describe('MatchesScreen', () => {
     expect(screen.getAllByText('2').length).toBeGreaterThan(0);
   });
 
-  it('hides a blocked match from the list even though the thread is kept', () => {
+  it('keeps a blocked match in the list — the chat itself carries the blocked state', () => {
     mockMatches([match(), match({ id: 'm2', name: 'Zara', sourceProfileId: 'p2' })], [{ id: 'p2' }]);
     renderScreen();
     expect(screen.getByText('Sara')).toBeTruthy();
-    expect(screen.queryByText('Zara')).toBeNull();
+    expect(screen.getByText('Zara')).toBeTruthy();
   });
 });

@@ -38,7 +38,7 @@ export function MatchesScreen() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
   const { user, setActiveMode } = useAuth();
-  const { matches, blockedProfiles } = useMatches();
+  const { matches } = useMatches();
   const insets = useSafeAreaInsets();
   const onScroll = useHideTabBarOnScroll();
 
@@ -46,16 +46,11 @@ export function MatchesScreen() {
   // until both sides accept a Move to Rishta, which flips it over to Rishta.
   const mode: ProfileMode = user?.activeMode ?? 'dating';
   const accent = modeAccent(colors, mode);
-  // Blocking keeps the thread (so unblocking from Settings can reopen it —
-  // supabase/35_block_keeps_thread.sql), it just steps out of this list while
-  // the block stands.
-  const blockedIds = useMemo(() => new Set(blockedProfiles.map((b) => b.id)), [blockedProfiles]);
-  const unblockedMatches = useMemo(
-    () => matches.filter((m) => !m.sourceProfileId || !blockedIds.has(m.sourceProfileId)),
-    [matches, blockedIds]
-  );
-  const friendsMatches = useMemo(() => unblockedMatches.filter((m) => threadMode(m) === 'dating'), [unblockedMatches]);
-  const rishtaMatches = useMemo(() => unblockedMatches.filter((m) => threadMode(m) === 'rishta'), [unblockedMatches]);
+  // Blocking keeps the thread (supabase/35_block_keeps_thread.sql) and keeps
+  // it right here too, rather than stepping it out of the list — the chat
+  // itself is what shows the blocked state and the way to undo it.
+  const friendsMatches = useMemo(() => matches.filter((m) => threadMode(m) === 'dating'), [matches]);
+  const rishtaMatches = useMemo(() => matches.filter((m) => threadMode(m) === 'rishta'), [matches]);
   const visibleMatches = mode === 'dating' ? friendsMatches : rishtaMatches;
 
   const otherMode: ProfileMode = mode === 'dating' ? 'rishta' : 'dating';
