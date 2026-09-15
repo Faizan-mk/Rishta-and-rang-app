@@ -449,6 +449,8 @@ export function HomeScreen() {
         activeFilterCount={filtersActive}
         onOpenFilters={() => setFiltersVisible(true)}
         onOpenSort={() => setSortVisible(true)}
+        filtersOpen={filtersVisible}
+        sortOpen={sortVisible}
         onBoost={() => setBoostVisible(true)}
         boostActive={isBoostActive}
         notificationCount={unreadCount}
