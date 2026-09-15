@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { matchesService, rowToMessage, type ReadMarks } from '../services/matchesService';
+import { mapMatchRow, matchesService, rowToMessage, type ReadMarks } from '../services/matchesService';
 import { likesService } from '../services/likesService';
 import { pushService } from '../services/pushService';
 import { supabase } from '../services/supabase';
@@ -704,20 +704,28 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
     const existing = matches.find((m) => m.id === outcome.matchId);
     if (existing) return { match: existing, isNew: outcome.isNew, likesLeft: outcome.likesLeft };
 
-    // The RPC hands back ids; the card we were given is what the list needs
-    // until the next load fills it in from `profiles`.
-    const match: Match = {
-      id: outcome.matchId,
-      name: profile.name,
-      photo: profile.photo,
-      lastMessage: '',
-      lastMessageAt: new Date().toISOString(),
-      unread: false,
-      mode: profile.mode,
-      movedToRishta: profile.mode === 'rishta',
-      rishtaRequestPending: false,
-      sourceProfileId: profile.id,
-    };
+    // The RPC hands back ids only. `profile.mode` is which deck THIS like
+    // happened from — not necessarily the row's mode: the match may already
+    // have existed, created a moment earlier by the other person's like from a
+    // *different* deck (or moved to rishta since). Trusting profile.mode here
+    // is what used to make a fresh match land in the wrong tab on whichever
+    // side discovered it second — the shared row is the only source of truth
+    // for mode, so it is read back rather than guessed.
+    const row = await matchesService.findMatchRow(user.id, profile.id);
+    const match: Match = row
+      ? mapMatchRow(row, user.id, { name: profile.name, photo: profile.photo })
+      : {
+          id: outcome.matchId,
+          name: profile.name,
+          photo: profile.photo,
+          lastMessage: '',
+          lastMessageAt: new Date().toISOString(),
+          unread: false,
+          mode: profile.mode,
+          movedToRishta: profile.mode === 'rishta',
+          rishtaRequestPending: false,
+          sourceProfileId: profile.id,
+        };
     setMatches((prev) => (prev.some((m) => m.id === match.id) ? prev : [match, ...prev]));
     return { match, isNew: outcome.isNew, likesLeft: outcome.likesLeft };
   };

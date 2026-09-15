@@ -22,6 +22,7 @@ jest.mock('../../services/matchesService', () => {
       fetchReads: jest.fn(),
       markRead: jest.fn(),
       fetchBlocked: jest.fn(),
+      findMatchRow: jest.fn(),
       requestRishta: jest.fn(),
       respondRishta: jest.fn(),
       deleteMatch: jest.fn(),
@@ -118,6 +119,7 @@ beforeEach(() => {
   (matchesService.fetchBlocked as jest.Mock).mockResolvedValue([]);
   (matchesService.fetchReads as jest.Mock).mockResolvedValue({ mine: {}, theirs: {} });
   (matchesService.markRead as jest.Mock).mockResolvedValue(undefined);
+  (matchesService.findMatchRow as jest.Mock).mockResolvedValue(null);
   (reactionsService.fetchReactions as jest.Mock).mockResolvedValue({});
 });
 
@@ -483,6 +485,40 @@ describe('MatchesProvider.likeProfile', () => {
     expect(outcome.match?.id).toBe('new-match');
     expect(result.current.getMatch('new-match')).toBeTruthy();
     expect(pushService.notifyMatch).toHaveBeenCalledWith('p9');
+  });
+
+  it('trusts the shared row over the deck the like happened from, when the match already existed', async () => {
+    // The other person's like completed this match earlier from their Rishta
+    // deck, so the row is already 'rishta' — even though this like was made
+    // from the Friends deck ('dating'). The mode shown must come from the row,
+    // not from `profile.mode`, or the two sides disagree on which tab it's in.
+    mockUseAuth.mockReturnValue({ user: { id: 'u1' } });
+    (likesService.likeProfile as jest.Mock).mockResolvedValue({
+      matched: true,
+      matchId: 'already-rishta',
+      isNew: false,
+      likesLeft: 3,
+    });
+    (matchesService.findMatchRow as jest.Mock).mockResolvedValue({
+      id: 'already-rishta',
+      user_a: 'u1',
+      user_b: 'p9',
+      mode: 'rishta',
+      created_at: '2026-01-01T00:00:00.000Z',
+      rishta_requested_by: null,
+      rishta_requested_at: null,
+    });
+    const { result } = renderMatches();
+    await waitFor(() => expect(matchesService.fetchMatches).toHaveBeenCalled());
+
+    let outcome!: { match: Match | null };
+    await act(async () => {
+      outcome = await result.current.likeProfile({ id: 'p9', name: 'Bilal', photo: 'b.jpg', mode: 'dating' });
+    });
+
+    expect(outcome.match?.mode).toBe('rishta');
+    expect(outcome.match?.movedToRishta).toBe(true);
+    expect(result.current.getMatch('already-rishta')?.mode).toBe('rishta');
   });
 
   it('notifies a one-sided like when there is no match', async () => {
