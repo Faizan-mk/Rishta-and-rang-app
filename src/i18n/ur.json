@@ -320,6 +320,7 @@
     "report": "رپورٹ کریں",
     "blockConfirmTitle": "{name} کو بلاک کریں؟",
     "blockConfirmBody": "وہ آپ کو پیغام نہیں بھیج سکیں گے یا آپ کی پروفائل نہیں دیکھ سکیں گے۔",
+    "blockedBannerBody": "آپ نے {name} کو بلاک کر دیا ہے۔ دوبارہ پیغام بھیجنے کے لیے ان بلاک کریں۔",
     "reportConfirmTitle": "{name} کی رپورٹ کریں؟",
     "reportSentTitle": "رپورٹ جمع ہو گئی",
     "reportSentBody": "شکریہ — ہماری حفاظتی ٹیم جلد اس گفتگو کا جائزہ لے گی۔",

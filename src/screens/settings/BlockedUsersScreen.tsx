@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react';
-import { FlatList, Image, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { AccentHeading } from '../../components/common/AccentHeading';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
@@ -14,22 +15,41 @@ import { glow } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 
 export function BlockedUsersScreen() {
+  const router = useRouter();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
-  const { blockedProfiles, unblockUser } = useMatches();
+  const { blockedProfiles, unblockUser, getMatchForProfile } = useMatches();
   // Safety screens keep the app's calm teal rather than a deck's mode colour.
   const safeRamp = [colors.teal, colors.sage] as const;
 
-  const renderItem = ({ item, index }: { item: BlockedProfile; index: number }) => (
-    <Animated.View entering={FadeInUp.delay(Math.min(index * 60, 300)).duration(320)} style={styles.row}>
-      <View style={styles.avatarRing}>
-        <Image source={{ uri: item.photo }} style={styles.avatar} />
-      </View>
-      <Text style={[styles.name, rtl && styles.rtlText]}>{item.name}</Text>
-      <Button label={t('privacy.unblock')} variant="secondary" onPress={() => unblockUser(item.id)} style={styles.unblockButton} />
-    </Animated.View>
-  );
+  const renderItem = ({ item, index }: { item: BlockedProfile; index: number }) => {
+    // Blocking keeps the thread now (supabase/35_block_keeps_thread.sql), so
+    // there is somewhere to go back to — unless this block predates that, or
+    // the thread was unmatched separately, in which case there is nothing to
+    // open and the row is just the unblock action.
+    const match = getMatchForProfile(item.id);
+    return (
+      <Animated.View entering={FadeInUp.delay(Math.min(index * 60, 300)).duration(320)}>
+        <Pressable
+          style={styles.row}
+          onPress={match ? () => router.push(`/chat/${match.id}`) : undefined}
+          disabled={!match}
+        >
+          <View style={styles.avatarRing}>
+            <Image source={{ uri: item.photo }} style={styles.avatar} />
+          </View>
+          <Text style={[styles.name, rtl && styles.rtlText]}>{item.name}</Text>
+          <Button
+            label={t('privacy.unblock')}
+            variant="secondary"
+            onPress={() => unblockUser(item.id)}
+            style={styles.unblockButton}
+          />
+        </Pressable>
+      </Animated.View>
+    );
+  };
 
   return (
     <ScreenContainer scroll={false}>

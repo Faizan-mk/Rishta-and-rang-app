@@ -639,9 +639,14 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Blocking is per person, not per thread: the block trigger in
-  // supabase/24_matching.sql clears the pair's likes and match server-side, so
-  // this only has to keep the local list in step.
-  const blockProfile = (profile: ProfileRef) => {
+  // supabase/22_block_hardening.sql clears the pair's likes server-side, and
+  // `messages_insert` refuses anything either of them tries to send from here
+  // on (both keyed off `blocked_users`, not off the match row) — so this only
+  // has to keep the local list in step. The match row itself is left alone
+  // (supabase/35_block_keeps_thread.sql): blocking someone from a stranger's
+  // profile has no thread to keep, but blocking from an open chat does, and
+  // the two share this function.
+  const blockProfile = (profile: ProfileRef, options: { keepMatches?: boolean } = {}) => {
     if (!user) return;
     const blocked: BlockedProfile = {
       id: profile.id,
@@ -652,19 +657,27 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
     // Keyed by person, so blocking someone met a second way updates the
     // existing entry instead of listing them twice.
     setBlockedProfiles((prev) => [blocked, ...prev.filter((b) => b.id !== blocked.id)]);
-    setMatches((prev) => prev.filter((m) => m.sourceProfileId !== profile.id));
+    if (!options.keepMatches) {
+      setMatches((prev) => prev.filter((m) => m.sourceProfileId !== profile.id));
+    }
     matchesService.blockUser(user.id, blocked).catch(() => {
       setBlockedProfiles((prev) => prev.filter((b) => b.id !== blocked.id));
     });
   };
 
+  // Blocking from an open chat keeps the thread and its history — Matches
+  // hides it (getMatchForProfile/getMatch still find it by id, which is what
+  // lets Blocked Users reopen it), and unblocking is enough on its own to let
+  // messages flow again, since that is what messages_insert actually gates.
   const blockMatch = (matchId: string) => {
     const match = matches.find((m) => m.id === matchId);
     // Every match row names both people now, so there is always someone to
     // block — no counterpart means no such thread.
     if (!match?.sourceProfileId) return;
-    blockProfile({ id: match.sourceProfileId, name: match.name, photo: match.photo, mode: match.mode });
-    removeMatch(matchId);
+    blockProfile(
+      { id: match.sourceProfileId, name: match.name, photo: match.photo, mode: match.mode },
+      { keepMatches: true }
+    );
   };
 
   const unblockUser = (id: string) => {

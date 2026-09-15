@@ -320,6 +320,7 @@
     "report": "Report Karein",
     "blockConfirmTitle": "{name} ko block karein?",
     "blockConfirmBody": "Woh aapko paigham nahi bhej sakenge ya aapki profile nahi dekh sakenge.",
+    "blockedBannerBody": "Aap ne {name} ko block kar diya hai. Dobara message bhejne ke liye unblock karein.",
     "reportConfirmTitle": "{name} ki report karein?",
     "reportSentTitle": "Report jama ho gayi",
     "reportSentBody": "Shukriya — hamari hifazati team is guftagu ka jaiza legi.",

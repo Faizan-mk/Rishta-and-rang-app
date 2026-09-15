@@ -150,6 +150,21 @@ async function fetchProfileCards(ids: string[]): Promise<Map<string, ProfileCard
   return cards;
 }
 
+/**
+ * Falls back to `match_counterpart_card` for a match whose counterpart did
+ * not come back from the bulk fetch above — `profiles_select` refuses a
+ * blocked (either direction) or hidden profile row outright, but a match
+ * that still exists needs a name and photo for its chat header regardless
+ * (supabase/35_block_keeps_thread.sql: blocking keeps the thread now, it
+ * just stops new messages, so the header can no longer just go blank).
+ */
+async function fetchCounterpartCard(matchId: string): Promise<ProfileCard | undefined> {
+  const { data, error } = await supabase.rpc('match_counterpart_card', { p_match_id: matchId }).maybeSingle();
+  if (error || !data) return undefined;
+  const row = data as { name: string; photo: string };
+  return { name: row.name, photo: row.photo };
+}
+
 async function fetchMatches(profileId: string): Promise<Match[]> {
   // Either column can be us, so the filter is an `or` rather than an `eq`. RLS
   // says the same thing, but stating it in the query keeps the plan on the
@@ -163,6 +178,16 @@ async function fetchMatches(profileId: string): Promise<Match[]> {
 
   const rows = (data ?? []) as unknown as MatchRow[];
   const cards = await fetchProfileCards(rows.map((row) => counterpartOf(row, profileId)));
+
+  const missing = rows.filter((row) => !cards.has(counterpartOf(row, profileId)));
+  if (missing.length > 0) {
+    const fallbacks = await Promise.all(missing.map((row) => fetchCounterpartCard(row.id)));
+    missing.forEach((row, i) => {
+      const card = fallbacks[i];
+      if (card) cards.set(counterpartOf(row, profileId), card);
+    });
+  }
+
   return rows.map((row) => mapMatchRow(row, profileId, cards.get(counterpartOf(row, profileId))));
 }
 

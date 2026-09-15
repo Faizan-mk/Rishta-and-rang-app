@@ -320,6 +320,7 @@
     "report": "Report",
     "blockConfirmTitle": "Block {name}?",
     "blockConfirmBody": "They won't be able to message you or see your profile again.",
+    "blockedBannerBody": "You blocked {name}. Unblock to send messages again.",
     "reportConfirmTitle": "Report {name}?",
     "reportSentTitle": "Report submitted",
     "reportSentBody": "Thanks — our safety team will review this conversation shortly.",
