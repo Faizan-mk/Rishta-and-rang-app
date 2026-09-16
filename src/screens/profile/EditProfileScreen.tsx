@@ -513,8 +513,14 @@ function SelectOrOtherField({
   placeholder?: string;
 }) {
   const { t } = useLanguage();
-  const selectedOption = value && options.includes(value) ? value : value ? OTHER_OPTION : null;
-  const isOther = selectedOption === OTHER_OPTION;
+  // Picking "Other" clears value to '' so the free-text field starts blank —
+  // but an empty value looks identical to "nothing chosen yet". This flag is
+  // what keeps the text field showing after that clear, instead of the field
+  // silently reverting to the closed dropdown state.
+  const [otherSelected, setOtherSelected] = useState(() => Boolean(value) && !options.includes(value));
+  const isKnown = value !== '' && options.includes(value);
+  const isOther = !isKnown && (otherSelected || value !== '');
+  const selectedOption = isKnown ? value : isOther ? OTHER_OPTION : null;
 
   return (
     <>
@@ -522,13 +528,21 @@ function SelectOrOtherField({
         label={label}
         value={selectedOption}
         options={options}
-        onChange={(option) => onChange(option === OTHER_OPTION || option === null ? '' : option)}
+        onChange={(option) => {
+          if (option === OTHER_OPTION) {
+            setOtherSelected(true);
+            onChange('');
+          } else {
+            setOtherSelected(false);
+            onChange(option ?? '');
+          }
+        }}
         placeholder={placeholder}
       />
       {isOther && (
         <TextField
           label={t('editProfile.otherLabel', { label })}
-          value={options.includes(value) ? '' : value}
+          value={value}
           onChangeText={onChange}
           placeholder={t('common.enterAnswer')}
         />
