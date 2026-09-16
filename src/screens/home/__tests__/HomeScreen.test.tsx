@@ -135,6 +135,7 @@ function profile(overrides: Partial<DiscoverProfile> = {}): DiscoverProfile {
     bio: '',
     vibeTags: [],
     photos: ['a.jpg'],
+    intent: 'casual',
     ...overrides,
   };
 }

@@ -172,16 +172,20 @@ export function HomeScreen() {
   );
 
   // Anyone whose thread moved to Rishta is off the Friends deck for good — they
-  // only come round again on the Rishta side.
+  // only come round again on the Rishta side. Casual intent belongs on Friends;
+  // serious/matrimonial intent belongs on Rishta.
   const visibleDatingProfiles = useMemo(
     () =>
       oppositeGenderProfiles(datingProfiles, user?.gender).filter(
-        (p) => !blockedProfileIds.has(p.id) && !rishtaProfileIds.has(p.id)
+        (p) => !blockedProfileIds.has(p.id) && !rishtaProfileIds.has(p.id) && p.intent === 'casual'
       ),
     [datingProfiles, user?.gender, blockedProfileIds, rishtaProfileIds]
   );
   const visibleRishtaProfiles = useMemo(
-    () => oppositeGenderProfiles(rishtaProfiles, user?.gender).filter((p) => !blockedProfileIds.has(p.id)),
+    () =>
+      oppositeGenderProfiles(rishtaProfiles, user?.gender).filter(
+        (p) => !blockedProfileIds.has(p.id) && (p.intent === 'serious' || p.intent === 'matrimonial')
+      ),
     [rishtaProfiles, user?.gender, blockedProfileIds]
   );
 
