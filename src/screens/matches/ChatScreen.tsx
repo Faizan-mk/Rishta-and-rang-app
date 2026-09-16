@@ -385,7 +385,12 @@ export function ChatScreen() {
         </FadeIn>
       )}
 
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      {/* Android's edge-to-edge display (on by default since SDK 54) stopped the
+          window from resizing itself for the keyboard, so `undefined` here left
+          the composer with nothing pushing it up above the keyboard — 'height'
+          is what shrinks this view's own height by the keyboard's, moving the
+          input row (its sibling inside here) back into view. */}
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         {/* Inverted, which is what makes paging possible at all: the newest
             message is index 0 and sits at the bottom, so "load older" is the
             list's own end and the scroll position does not jump when a page

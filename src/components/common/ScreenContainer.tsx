@@ -43,7 +43,12 @@ export function ScreenContainer({
 
   return (
     <SafeAreaView style={[styles.safeArea, transparent && styles.transparent]} edges={edges}>
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      {/* Android's edge-to-edge display (on by default since SDK 54) stopped the
+          window from resizing itself for the keyboard, so `undefined` here left
+          every form on this container with nothing pushing its focused field
+          above the keyboard — 'height' shrinks this view by the keyboard's
+          height instead. */}
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         {content}
       </KeyboardAvoidingView>
     </SafeAreaView>
