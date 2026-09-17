@@ -294,7 +294,10 @@ export const MessageBubble = React.memo(function MessageBubble({
           {/* A voice bubble carries its own time, right beside its duration —
               this row would otherwise say it twice. */}
           {message.kind !== 'voice' && (
-            <Text style={[styles.timestamp, message.fromMe ? styles.timestampMe : styles.timestampThem]}>
+            <Text
+              style={[styles.timestamp, message.fromMe ? styles.timestampMe : styles.timestampThem]}
+              numberOfLines={1}
+            >
               {timeLabel}
             </Text>
           )}
