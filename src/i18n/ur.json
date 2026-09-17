@@ -346,7 +346,10 @@
     "rishtaProfileNeededTitle": "پہلے اپنی رشتہ پروفائل مکمل کریں",
     "rishtaProfileNeededAction": "رشتہ پروفائل مکمل کریں",
     "rishtaProfileNeededBody": "کسی کو رشتہ مرحلے کی درخواست بھیجنے سے پہلے اپنا مذہب، تعلیم، خاندانی پس منظر اور تیاری لکھیں — وہ اسی کی بنیاد پر فیصلہ کریں گے۔",
-    "rishtaRequestFailed": "یہ مکمل نہیں ہو سکا۔ تھوڑی دیر بعد دوبارہ کوشش کریں۔"
+    "rishtaRequestFailed": "یہ مکمل نہیں ہو سکا۔ تھوڑی دیر بعد دوبارہ کوشش کریں۔",
+    "deleteForEveryone": "سب کے لیے ڈیلیٹ کریں",
+    "deleteForMe": "صرف میرے لیے ڈیلیٹ کریں",
+    "deleteConfirmTitle": "پیغام ڈیلیٹ کریں؟"
   },
   "profile": {
     "title": "پروفائل",
@@ -839,7 +842,8 @@
     "olderMessages": "پرانے پیغامات لوڈ نہیں ہو سکے۔",
     "deckRefresh": "پروفائلز ریفریش نہیں ہو سکیں۔",
     "matchesRefresh": "آپ کی میچز ریفریش نہیں ہو سکیں۔",
-    "likeNotSent": "لائیک نہیں بھیجا جا سکا۔"
+    "likeNotSent": "لائیک نہیں بھیجا جا سکا۔",
+    "messageNotDeleted": "یہ پیغام ڈیلیٹ نہیں ہو سکا۔"
   },
   "authErrors": {
     "emailTaken": "یہ ای میل پہلے سے رجسٹرڈ ہے۔ لاگ ان کرکے دیکھیں۔",

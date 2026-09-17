@@ -47,6 +47,10 @@ interface MatchesContextValue {
   sendMessage: (matchId: string, text: string) => void;
   sendVoiceMessage: (matchId: string, uri: string, durationSec: number) => void;
   sendImageMessage: (matchId: string, uri: string) => void;
+  /** "Delete for everyone" — only ever succeeds against a message you sent. */
+  deleteMessage: (matchId: string, message: ChatMessage) => void;
+  /** "Delete for me" — hides it on this side only; the other participant keeps theirs. */
+  hideMessage: (matchId: string, message: ChatMessage) => void;
   markMatchRead: (matchId: string) => void;
   /** Asks to move to rishta. Rejects with the database's reason if it may not. */
   sendRishtaRequest: (matchId: string, requestText: string) => Promise<void>;
@@ -318,6 +322,23 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
         { event: 'DELETE', schema: 'public', table: 'message_reactions' },
         (payload) => dropReaction(rowToReaction(payload.old as Record<string, unknown>))
       )
+      // "Delete for everyone" — chat_messages is `replica identity full` (18),
+      // so the row this member (or the other participant) just removed reaches
+      // every session either of them has open, including ones that were never
+      // the one that pressed delete.
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'chat_messages' },
+        (payload) => dropMessageById(String((payload.old as Record<string, unknown>).id))
+      )
+      // "Delete for me" — `message_hidden` (37) is owner-only RLS, so this only
+      // ever fires for a hide this member made themselves, from whichever
+      // device or session did it.
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'message_hidden' },
+        (payload) => dropMessageById(String((payload.new as Record<string, unknown>).message_id))
+      )
       .subscribe();
 
     return () => {
@@ -502,6 +523,22 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
     }));
   };
 
+  /** Same, but for a realtime payload that names only the message, not its
+   * thread — a DELETE or a hide could in principle land before the chat
+   * screen that owns that match has even been opened. */
+  const dropMessageById = (messageId: string) => {
+    setChatHistory((prev) => {
+      let changed = false;
+      const next: Record<string, ChatMessage[]> = {};
+      for (const [matchId, list] of Object.entries(prev)) {
+        const filtered = list.filter((message) => message.id !== messageId);
+        if (filtered.length !== list.length) changed = true;
+        next[matchId] = filtered;
+      }
+      return changed ? next : prev;
+    });
+  };
+
   // The notification goes out only once the row is in: a push about a message
   // that failed to send would be worse than no push at all. `pushService.notify*`
   // never throws, so it cannot take the send down with it either.
@@ -575,6 +612,30 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
     } else {
       sendMessage(message.matchId, message.text);
     }
+  };
+
+  /** "Delete for everyone" — removes the shared row. `messages_delete`
+   * (26_two_way_messaging.sql) only allows this against a message this member
+   * wrote, so it is a no-op against anyone else's; the picker only ever offers
+   * it on your own messages in the first place. */
+  const deleteMessage = (matchId: string, message: ChatMessage) => {
+    if (!user) return;
+    dropMessage(matchId, message.id);
+    matchesService.deleteMessage(message.id).catch(() => {
+      putMessage(message);
+      showError({ messageKey: 'netErrors.messageNotDeleted', onRetry: () => deleteMessage(matchId, message) });
+    });
+  };
+
+  /** "Delete for me" — hides it on this side only (supabase/37_message_hidden_for_me.sql).
+   * The other participant's copy of the thread is untouched. */
+  const hideMessage = (matchId: string, message: ChatMessage) => {
+    if (!user) return;
+    dropMessage(matchId, message.id);
+    matchesService.hideMessage(user.id, message.id).catch(() => {
+      putMessage(message);
+      showError({ messageKey: 'netErrors.messageNotDeleted', onRetry: () => hideMessage(matchId, message) });
+    });
   };
 
   // Per side: this writes only this member's mark, and the other person's
@@ -774,6 +835,8 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
       sendMessage,
       sendVoiceMessage,
       sendImageMessage,
+      deleteMessage,
+      hideMessage,
       markMatchRead,
       sendRishtaRequest,
       removeMatch,

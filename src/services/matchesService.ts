@@ -443,6 +443,30 @@ async function insertImageMessage(profileId: string, matchId: string, localUri: 
   return insertMessage(profileId, { ...baseMessage(matchId, 'image'), imageUrl });
 }
 
+/** "Delete for everyone" — removes the shared row outright. `messages_delete`
+ * (26_two_way_messaging.sql) only lets this succeed against a message this
+ * member wrote themselves. */
+async function deleteMessage(messageId: string): Promise<void> {
+  const { error } = await supabase.from('chat_messages').delete().eq('id', messageId);
+  if (error) throw new Error(error.message);
+}
+
+/** "Delete for me" — hides the row on this member's side only; the other
+ * participant's copy of the thread is untouched (supabase/37_message_hidden_for_me.sql). */
+async function hideMessage(profileId: string, messageId: string): Promise<void> {
+  const { error } = await supabase
+    .from('message_hidden')
+    .upsert({ message_id: messageId, user_id: profileId }, { onConflict: 'message_id,user_id' });
+  if (error) throw new Error(error.message);
+}
+
+/** Every message this member has ever hidden for themselves, across every thread. */
+async function fetchHiddenMessageIds(profileId: string): Promise<string[]> {
+  const { data, error } = await supabase.from('message_hidden').select('message_id').eq('user_id', profileId);
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((row) => String((row as { message_id: string }).message_id));
+}
+
 async function blockUser(profileId: string, blocked: BlockedProfile): Promise<void> {
   // Unique on (profile_id, blocked_user_id), so re-blocking the same person
   // overwrites instead of stacking duplicates. `source_profile_id` is still
@@ -487,6 +511,9 @@ export const matchesService = {
   insertTextMessage,
   insertVoiceMessage,
   insertImageMessage,
+  deleteMessage,
+  hideMessage,
+  fetchHiddenMessageIds,
   blockUser,
   unblockUser,
 };

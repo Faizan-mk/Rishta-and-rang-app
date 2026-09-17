@@ -24,7 +24,17 @@ function formatMessageTime(iso: string, t: Translate): string {
   return `${hours}:${String(minutes).padStart(2, '0')} ${suffix}`;
 }
 
+// A voice note is never anywhere near an hour long, so anything at or past
+// that is not a duration at all — it is old data from before `stopRecording`
+// read `getStatus().durationMillis` instead of the platform's `currentTime`
+// (which on Android was an epoch timestamp, not an elapsed time). Rather than
+// print that garbled number, this reads as "unknown".
+const MAX_PLAUSIBLE_DURATION_SEC = 3600;
+
 function formatDuration(totalSeconds: number): string {
+  if (!Number.isFinite(totalSeconds) || totalSeconds < 0 || totalSeconds >= MAX_PLAUSIBLE_DURATION_SEC) {
+    return '0:00';
+  }
   const m = Math.floor(totalSeconds / 60);
   const s = Math.floor(totalSeconds % 60);
   return `${m}:${String(s).padStart(2, '0')}`;
@@ -71,11 +81,16 @@ export const MessageBubble = React.memo(function MessageBubble({
   currentUserId,
   theirReadAt,
   onRetry,
+  onDeleteForEveryone,
+  onDeleteForMe,
 }: {
   message: ChatMessage;
   currentUserId?: string;
   theirReadAt?: string;
   onRetry?: (message: ChatMessage) => void;
+  /** Only ever offered on your own messages — the sheet hides it otherwise. */
+  onDeleteForEveryone?: (message: ChatMessage) => void;
+  onDeleteForMe?: (message: ChatMessage) => void;
 }) {
   const { colors } = useTheme();
   const { t, rtl } = useLanguage();
@@ -88,10 +103,19 @@ export const MessageBubble = React.memo(function MessageBubble({
 
   const textColor = message.fromMe ? styles.textMe : styles.textThem;
   const delivery = deliveryOf(message, theirReadAt);
+  const timeLabel = formatMessageTime(message.sentAt, t);
 
   let content: React.ReactNode;
   if (message.kind === 'voice' && message.audioUri) {
-    content = <VoiceBubble uri={message.audioUri} durationSec={message.durationSec ?? 0} fromMe={Boolean(message.fromMe)} colors={colors} />;
+    content = (
+      <VoiceBubble
+        uri={message.audioUri}
+        durationSec={message.durationSec ?? 0}
+        fromMe={Boolean(message.fromMe)}
+        colors={colors}
+        timeLabel={timeLabel}
+      />
+    );
   } else if (message.kind === 'image' && message.imageUri) {
     content = <ImageBubble uri={message.imageUri} styles={styles} colors={colors} />;
   } else if (message.text) {
@@ -152,9 +176,13 @@ export const MessageBubble = React.memo(function MessageBubble({
         )}
 
         <View style={[styles.metaRow, message.fromMe ? styles.metaRowMe : styles.metaRowThem]}>
-          <Text style={[styles.timestamp, message.fromMe ? styles.timestampMe : styles.timestampThem]}>
-            {formatMessageTime(message.sentAt, t)}
-          </Text>
+          {/* A voice bubble carries its own time, right beside its duration —
+              this row would otherwise say it twice. */}
+          {message.kind !== 'voice' && (
+            <Text style={[styles.timestamp, message.fromMe ? styles.timestampMe : styles.timestampThem]}>
+              {timeLabel}
+            </Text>
+          )}
           {delivery === 'sending' && (
             <Ionicons name="time-outline" size={12} color={colors.textTertiary} accessibilityLabel={t('chat.statusSending')} />
           )}
@@ -199,6 +227,22 @@ export const MessageBubble = React.memo(function MessageBubble({
         mine={new Set(reactions.filter((r) => r.userId === currentUserId).map((r) => r.emoji))}
         styles={styles}
         t={t}
+        onDeleteForEveryone={
+          message.fromMe && onDeleteForEveryone
+            ? () => {
+                setPickerOpen(false);
+                onDeleteForEveryone(message);
+              }
+            : undefined
+        }
+        onDeleteForMe={
+          onDeleteForMe
+            ? () => {
+                setPickerOpen(false);
+                onDeleteForMe(message);
+              }
+            : undefined
+        }
       />
     </View>
   );
@@ -211,6 +255,8 @@ function ReactionPicker({
   mine,
   styles,
   t,
+  onDeleteForEveryone,
+  onDeleteForMe,
 }: {
   visible: boolean;
   onClose: () => void;
@@ -218,7 +264,11 @@ function ReactionPicker({
   mine: Set<string>;
   styles: ReturnType<typeof makeStyles>;
   t: Translate;
+  /** Present only when this is one of my own messages. */
+  onDeleteForEveryone?: () => void;
+  onDeleteForMe?: () => void;
 }) {
+  const showDeleteRow = Boolean(onDeleteForEveryone || onDeleteForMe);
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.pickerOverlay} onPress={onClose}>
@@ -235,15 +285,58 @@ function ReactionPicker({
               </Pressable>
             ))}
           </View>
+
+          {showDeleteRow && (
+            <>
+              <View style={styles.pickerDivider} />
+              <Text style={styles.deleteSheetTitle}>{t('chat.deleteConfirmTitle')}</Text>
+              {onDeleteForEveryone && (
+                <>
+                  <Pressable onPress={onDeleteForEveryone} style={styles.deleteOptionRow} accessibilityRole="button">
+                    <Text style={styles.deleteOptionText}>{t('chat.deleteForEveryone')}</Text>
+                  </Pressable>
+                  <View style={styles.deleteOptionDivider} />
+                </>
+              )}
+              {onDeleteForMe && (
+                <>
+                  <Pressable onPress={onDeleteForMe} style={styles.deleteOptionRow} accessibilityRole="button">
+                    <Text style={styles.deleteOptionText}>{t('chat.deleteForMe')}</Text>
+                  </Pressable>
+                  <View style={styles.deleteOptionDivider} />
+                </>
+              )}
+            </>
+          )}
+
+          <Pressable onPress={onClose} style={styles.deleteOptionRow} accessibilityRole="button">
+            <Text style={styles.deleteOptionText}>{t('common.cancel')}</Text>
+          </Pressable>
         </Animated.View>
       </Pressable>
     </Modal>
   );
 }
 
-function VoiceBubble({ uri, durationSec, fromMe, colors }: { uri: string; durationSec: number; fromMe: boolean; colors: Palette }) {
+function VoiceBubble({
+  uri,
+  durationSec,
+  fromMe,
+  colors,
+  timeLabel,
+}: {
+  uri: string;
+  durationSec: number;
+  fromMe: boolean;
+  colors: Palette;
+  timeLabel: string;
+}) {
   const player = useAudioPlayer(uri);
   const status = useAudioPlayerStatus(player);
+  // White-on-gradient for an outgoing bubble, the same muted grey as every
+  // other caption for an incoming one — matching how the plain-text bubbles
+  // already split their own caption colour two paragraphs up.
+  const captionColor = fromMe ? 'rgba(255,255,255,0.85)' : colors.textSecondary;
 
   const togglePlayback = () => {
     if (status.playing) {
@@ -259,23 +352,31 @@ function VoiceBubble({ uri, durationSec, fromMe, colors }: { uri: string; durati
   const remaining = Math.max((status.duration || durationSec) - status.currentTime, 0);
 
   return (
-    <Pressable onPress={togglePlayback} style={voiceStyles.row}>
-      <Ionicons name={status.playing ? 'pause-circle' : 'play-circle'} size={30} color={fromMe ? '#FFFFFF' : colors.teal} />
-      <View style={voiceStyles.waveform}>
-        {Array.from({ length: 18 }).map((_, i) => (
-          <View
-            key={i}
-            style={[
-              voiceStyles.bar,
-              { height: 6 + ((i * 7) % 14), backgroundColor: fromMe ? 'rgba(255,255,255,0.7)' : colors.teal },
-            ]}
-          />
-        ))}
+    <View>
+      <Pressable onPress={togglePlayback} style={voiceStyles.row}>
+        <Ionicons name={status.playing ? 'pause-circle' : 'play-circle'} size={30} color={fromMe ? '#FFFFFF' : colors.teal} />
+        <View style={voiceStyles.waveform}>
+          {Array.from({ length: 18 }).map((_, i) => (
+            <View
+              key={i}
+              style={[
+                voiceStyles.bar,
+                { height: 6 + ((i * 7) % 14), backgroundColor: fromMe ? 'rgba(255,255,255,0.7)' : colors.teal },
+              ]}
+            />
+          ))}
+        </View>
+      </Pressable>
+      {/* Duration on the leading edge, right under the waveform it belongs to;
+          the time this note was sent trails on the far edge, the way every
+          other bubble's caption does. */}
+      <View style={voiceStyles.caption}>
+        <Text style={[voiceStyles.durationText, { color: captionColor }]}>
+          {formatDuration(status.playing ? remaining : durationSec)}
+        </Text>
+        <Text style={[voiceStyles.timeText, { color: captionColor }]}>{timeLabel}</Text>
       </View>
-      <Text style={[voiceStyles.duration, { color: fromMe ? '#FFFFFF' : colors.textSecondary }]}>
-        {formatDuration(status.playing ? remaining : durationSec)}
-      </Text>
-    </Pressable>
+    </View>
   );
 }
 
@@ -313,7 +414,12 @@ const voiceStyles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, minWidth: 160 },
   waveform: { flexDirection: 'row', alignItems: 'center', gap: 2, flex: 1 },
   bar: { width: 3, borderRadius: 2 },
-  duration: { ...typography.caption, fontVariant: ['tabular-nums'] },
+  // Play button's icon is 30dp; the caption lines up under the waveform
+  // rather than the icon, the way a chat bubble's timestamp always trails
+  // the content instead of the avatar.
+  caption: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 4, paddingLeft: 30 + spacing.xs },
+  durationText: { ...typography.caption, fontSize: scaleFont(10), fontVariant: ['tabular-nums'] },
+  timeText: { ...typography.caption, fontSize: scaleFont(10), fontWeight: '600' },
 });
 
 const makeStyles = (colors: Palette) =>
@@ -382,7 +488,16 @@ const makeStyles = (colors: Palette) =>
       paddingVertical: spacing.md,
       alignItems: 'center',
       gap: spacing.sm,
+      minWidth: 240,
     },
+    // The emoji row above stays centred; everything below it is a plain
+    // action-sheet list — a title and a stack of text options, the same shape
+    // as the "Delete message?" dialog this is modelled on, not filled buttons.
+    pickerDivider: { alignSelf: 'stretch', height: StyleSheet.hairlineWidth, backgroundColor: colors.borderSoft },
+    deleteSheetTitle: { ...typography.bodyBold, color: colors.textPrimary, fontWeight: '800' },
+    deleteOptionRow: { alignSelf: 'stretch', alignItems: 'center', paddingVertical: spacing.sm + 2 },
+    deleteOptionDivider: { alignSelf: 'stretch', height: StyleSheet.hairlineWidth, backgroundColor: colors.borderSoft },
+    deleteOptionText: { ...typography.body, color: colors.teal, fontWeight: '700' },
     pickerTitle: { ...typography.caption, color: colors.textSecondary, fontWeight: '700' },
     // Never row-reverse: an emoji row has no reading order to mirror, and the
     // same six always sit in the same places whichever language is on.
