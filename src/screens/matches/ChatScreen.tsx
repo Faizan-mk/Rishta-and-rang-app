@@ -695,7 +695,14 @@ function HeaderMenu({
   };
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    // `statusBarTranslucent` is pinned explicitly (rather than left to the
+    // Android default) because `topOffset` is a `measureInWindow` value taken
+    // against the *activity* window — a fresh native build can pick up a
+    // Material/AndroidX dialog theme that draws this Modal's own window under
+    // the status bar even though the activity doesn't, which is what pushed
+    // the menu up after a production build while a dev client (an older,
+    // already-installed native binary) rendered it correctly.
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent={false}>
       <Pressable
         style={[styles.menuOverlay, { paddingTop: topOffset }]}
         onPress={onClose}
