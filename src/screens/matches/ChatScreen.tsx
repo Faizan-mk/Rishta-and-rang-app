@@ -35,6 +35,7 @@ import { discoveryService } from '../../services/discoveryService';
 import { radius, spacing, typography } from '../../theme';
 import { glow, modeAccent, withAlpha } from '../../theme/glow';
 import { ONLINE_GREEN, type Palette } from '../../theme/palettes';
+import type { ChatMessage } from '../../types/content';
 
 const GRADIENT_START = { x: 0, y: 0 } as const;
 const GRADIENT_END = { x: 1, y: 1 } as const;
@@ -61,6 +62,8 @@ export function ChatScreen() {
     sendMessage: sendToMatch,
     sendVoiceMessage,
     sendImageMessage,
+    deleteMessage,
+    hideMessage,
     markMatchRead,
     sendRishtaRequest,
     respondRishtaRequest,
@@ -144,6 +147,12 @@ export function ChatScreen() {
     setDraft('');
   };
 
+  // The sheet's own three options — Delete for everyone / Delete for me /
+  // Cancel — are the confirmation: picking one of the first two is a deliberate
+  // choice already, not a first step that needs a second dialog asking again.
+  const onDeleteForEveryone = (message: ChatMessage) => deleteMessage(matchId, message);
+  const onDeleteForMe = (message: ChatMessage) => hideMessage(matchId, message);
+
   const pickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
@@ -169,7 +178,12 @@ export function ChatScreen() {
 
   const stopRecording = async () => {
     if (!recording) return;
-    const durationSec = recorder.currentTime;
+    // Not `recorder.currentTime` — on Android that property is the recording's
+    // *start* epoch in milliseconds (expo-audio's AudioModule.kt returns
+    // `recorder.startTime`, not elapsed time), which is where the multi-billion
+    // "duration" garbling the voice bubble's text came from. `getStatus()` is
+    // the one place expo-audio documents an actual elapsed duration.
+    const durationSec = recorder.getStatus().durationMillis / 1000;
     await recorder.stop();
     setRecording(false);
     if (recorder.uri && durationSec >= 1) {
@@ -420,6 +434,8 @@ export function ChatScreen() {
                   currentUserId={user?.id}
                   theirReadAt={match.theirReadAt}
                   onRetry={retryMessage}
+                  onDeleteForEveryone={onDeleteForEveryone}
+                  onDeleteForMe={onDeleteForMe}
                 />
               </Animated.View>
             );

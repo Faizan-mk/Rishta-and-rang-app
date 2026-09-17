@@ -143,7 +143,10 @@ export function EditProfileScreen() {
 
   const stopVoiceRecording = async () => {
     if (!recording) return;
-    const durationSec = recorder.currentTime;
+    // See ChatScreen's stopRecording: `recorder.currentTime` is not elapsed
+    // seconds on Android (expo-audio returns the recording's start epoch in
+    // milliseconds there) — `getStatus().durationMillis` is the real duration.
+    const durationSec = recorder.getStatus().durationMillis / 1000;
     await recorder.stop();
     setRecording(false);
     if (recorder.uri && durationSec >= 1) {

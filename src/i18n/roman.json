@@ -346,7 +346,10 @@
     "rishtaProfileNeededTitle": "Pehle apni Rishta profile mukammal karein",
     "rishtaProfileNeededAction": "Rishta profile mukammal karein",
     "rishtaProfileNeededBody": "Kisi ko Rishta marhale ki darkhwast bhejne se pehle apna mazhab, taleem, khandani pas-manzar aur tayyari likhein — wo isi ki bunyad par faisla karenge.",
-    "rishtaRequestFailed": "Ye mukammal nahi ho saka. Thori dair baad dobara koshish karein."
+    "rishtaRequestFailed": "Ye mukammal nahi ho saka. Thori dair baad dobara koshish karein.",
+    "deleteForEveryone": "Sab ke liye delete karein",
+    "deleteForMe": "Sirf mere liye delete karein",
+    "deleteConfirmTitle": "Message delete karein?"
   },
   "profile": {
     "title": "Profile",
@@ -839,7 +842,8 @@
     "olderMessages": "Purane paighamaat load nahi ho sake.",
     "deckRefresh": "Profiles refresh nahi ho sakin.",
     "matchesRefresh": "Aap ki matches refresh nahi ho sakin.",
-    "likeNotSent": "Like nahi bheja ja saka."
+    "likeNotSent": "Like nahi bheja ja saka.",
+    "messageNotDeleted": "Ye message delete nahi ho saka."
   },
   "authErrors": {
     "emailTaken": "Yeh email pehle se registered hai. Log in karke dekhein.",
