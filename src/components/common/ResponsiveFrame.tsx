@@ -3,7 +3,11 @@ import { Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 
-const MAX_APP_WIDTH = 480;
+// Exported so anything rendered through a `Modal` — which portals straight to
+// `document.body` on web (react-native-web's ModalPortal), outside this
+// frame's own DOM subtree entirely — can still align itself to the frame's
+// edges instead of the full browser viewport's.
+export const MAX_APP_WIDTH = 480;
 // Below this browser width the "phone in a frame" look would waste space —
 // treat it as a real mobile viewport and go edge-to-edge instead.
 const FRAME_BREAKPOINT = 560;
@@ -22,6 +26,20 @@ export function ResponsiveFrame({ children }: { children: React.ReactNode }) {
       <View style={styles.frame}>{children}</View>
     </View>
   );
+}
+
+/**
+ * The width the app's own content actually occupies on screen right now —
+ * `MAX_APP_WIDTH` once the frame has kicked in, or `undefined` when there is
+ * no frame (native, or a browser narrow enough to go edge-to-edge) and
+ * nothing should be capped. A `Modal` escapes the frame's DOM subtree
+ * entirely on web, so anything it renders needs this to align itself back to
+ * the frame's edges instead of the full browser viewport's.
+ */
+export function useFramedContentWidth(): number | undefined {
+  const { width } = useWindowDimensions();
+  if (Platform.OS !== 'web' || width < FRAME_BREAKPOINT) return undefined;
+  return MAX_APP_WIDTH;
 }
 
 const makeStyles = (colors: Palette) =>

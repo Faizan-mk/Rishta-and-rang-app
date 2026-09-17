@@ -1,8 +1,11 @@
 import React from 'react';
 import { fireEvent, screen } from '@testing-library/react-native';
 import { renderWithProviders } from '../../__tests__/testWrappers';
-import { MessageBubble } from '../MessageBubble';
+import { MessageBubble, ReactionPicker, makeStyles } from '../MessageBubble';
 import { useMatches } from '../../../store/MatchesContext';
+import { translate } from '../../../i18n';
+import type { Translate } from '../../../i18n';
+import { lightPalette } from '../../../theme/palettes';
 import type { ChatMessage } from '../../../types/content';
 
 jest.mock('../../../store/MatchesContext', () => ({ useMatches: jest.fn() }));
@@ -118,54 +121,63 @@ describe('MessageBubble', () => {
     expect(toggleReaction).toHaveBeenCalledWith('msg1', '❤️');
   });
 
-  it('offers "delete for everyone" on a long press of my own message', () => {
+  // Opening this sheet is a gesture-handler long-press now (see the comment
+  // on `bubbleGesture` in MessageBubble.tsx), and — like the discovery deck's
+  // swipe gesture (SwipeableCard.test.tsx) — Jest's gesture-handler mock
+  // doesn't actually activate it. The sheet's own contents and wiring are
+  // covered directly below instead, against the exported `ReactionPicker`.
+});
+
+describe('ReactionPicker (delete sheet)', () => {
+  const t: Translate = (path, params) => translate('en', path, params);
+  const styles = makeStyles(lightPalette);
+  const noop = () => undefined;
+
+  it('offers "delete for everyone" only alongside "delete for me"', () => {
     const onDeleteForEveryone = jest.fn();
     const onDeleteForMe = jest.fn();
     renderWithProviders(
-      <MessageBubble
-        message={message({ fromMe: true })}
+      <ReactionPicker
+        visible
+        onClose={noop}
+        onPick={noop}
+        mine={new Set()}
+        styles={styles}
+        t={t}
         onDeleteForEveryone={onDeleteForEveryone}
         onDeleteForMe={onDeleteForMe}
       />
     );
-    fireEvent(screen.getByLabelText('React to this message'), 'longPress');
     fireEvent.press(screen.getByText('Delete for everyone'));
-    expect(onDeleteForEveryone).toHaveBeenCalledWith(expect.objectContaining({ id: 'msg1' }));
-    fireEvent(screen.getByLabelText('React to this message'), 'longPress');
+    expect(onDeleteForEveryone).toHaveBeenCalled();
     fireEvent.press(screen.getByText('Delete for me'));
-    expect(onDeleteForMe).toHaveBeenCalledWith(expect.objectContaining({ id: 'msg1' }));
+    expect(onDeleteForMe).toHaveBeenCalled();
   });
 
-  it('only offers "delete for me" on someone else\'s message', () => {
-    const onDeleteForEveryone = jest.fn();
+  it('omits "delete for everyone" when only "delete for me" is offered', () => {
     const onDeleteForMe = jest.fn();
     renderWithProviders(
-      <MessageBubble
-        message={message({ fromMe: false })}
-        onDeleteForEveryone={onDeleteForEveryone}
-        onDeleteForMe={onDeleteForMe}
-      />
+      <ReactionPicker visible onClose={noop} onPick={noop} mine={new Set()} styles={styles} t={t} onDeleteForMe={onDeleteForMe} />
     );
-    fireEvent(screen.getByLabelText('React to this message'), 'longPress');
     expect(screen.queryByText('Delete for everyone')).toBeNull();
     fireEvent.press(screen.getByText('Delete for me'));
-    expect(onDeleteForMe).toHaveBeenCalledWith(expect.objectContaining({ id: 'msg1' }));
-    expect(onDeleteForEveryone).not.toHaveBeenCalled();
+    expect(onDeleteForMe).toHaveBeenCalled();
   });
 
   it('shows no delete row when no delete handler is given', () => {
-    renderWithProviders(<MessageBubble message={message({ fromMe: true })} />);
-    fireEvent(screen.getByLabelText('React to this message'), 'longPress');
+    renderWithProviders(<ReactionPicker visible onClose={noop} onPick={noop} mine={new Set()} styles={styles} t={t} />);
     expect(screen.queryByText('Delete for everyone')).toBeNull();
     expect(screen.queryByText('Delete for me')).toBeNull();
   });
 
-  it('closes the sheet without deleting on Cancel', () => {
+  it('closes without deleting when the backdrop is tapped', () => {
+    const onClose = jest.fn();
     const onDeleteForMe = jest.fn();
-    renderWithProviders(<MessageBubble message={message()} onDeleteForMe={onDeleteForMe} />);
-    fireEvent(screen.getByLabelText('React to this message'), 'longPress');
-    fireEvent.press(screen.getByText('Cancel'));
+    renderWithProviders(
+      <ReactionPicker visible onClose={onClose} onPick={noop} mine={new Set()} styles={styles} t={t} onDeleteForMe={onDeleteForMe} />
+    );
+    fireEvent.press(screen.getByTestId('reaction-picker-backdrop'));
+    expect(onClose).toHaveBeenCalled();
     expect(onDeleteForMe).not.toHaveBeenCalled();
-    expect(screen.queryByText('Delete for me')).toBeNull();
   });
 });

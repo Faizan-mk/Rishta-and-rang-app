@@ -1,4 +1,4 @@
-import { PHOTO_PREVIEW, VOICE_PREVIEW, previewFor, previewLabel } from '../messagePreview';
+import { PHOTO_PREVIEW, VOICE_PREVIEW, previewFor, previewLabel, reactionPreview } from '../messagePreview';
 import type { ChatMessage } from '../../types/content';
 
 // Previews are markers rather than finished copy, so that a thread written in
@@ -29,7 +29,12 @@ describe('previewFor', () => {
 });
 
 describe('previewLabel', () => {
-  const t = ((key: string) => (key === 'matches.previewPhoto' ? 'Tasveer' : 'Voice note')) as never;
+  const t = ((key: string) => {
+    if (key === 'matches.previewPhoto') return 'Tasveer';
+    if (key === 'matches.previewVoice') return 'Voice note';
+    if (key === 'matches.previewReacted') return 'Reagierte auf eine Nachricht';
+    return key;
+  }) as never;
 
   it('renders a stored marker in the language that is live now', () => {
     expect(previewLabel(PHOTO_PREVIEW, t)).toBe('📷 Tasveer');
@@ -38,5 +43,9 @@ describe('previewLabel', () => {
 
   it('leaves a real message alone', () => {
     expect(previewLabel('salaam', t)).toBe('salaam');
+  });
+
+  it('renders a stored reaction marker with its emoji kept literal', () => {
+    expect(previewLabel(reactionPreview('❤️'), t)).toBe('❤️ Reagierte auf eine Nachricht');
   });
 });

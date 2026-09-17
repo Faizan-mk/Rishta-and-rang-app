@@ -1,0 +1,16 @@
+-- ============================================================================
+-- 38. clear_chat_for_me — "Clear Chat" wipes every message in a thread, on
+-- this member's own side only.
+--
+-- It is the bulk form of `message_hidden` (37): rather than looping one insert
+-- per message from the client, this hides every message currently in the
+-- thread in one round trip. It is `security invoker`, so it runs under the
+-- caller's own RLS — `chat_messages`' `messages_select` (26) is what narrows
+-- the select to a thread they are actually in, and if it isn't theirs the
+-- select returns nothing and nothing gets hidden. The other participant's
+-- copy of the thread, and every message in it, is untouched: they can still
+-- read it, and can still write into it.
+--
+-- Run after 37_message_hidden_for_me.sql. Re-runnable.
+-- ============================================================================
+

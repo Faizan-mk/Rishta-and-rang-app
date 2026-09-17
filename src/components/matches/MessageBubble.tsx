@@ -2,7 +2,16 @@ import React, { useMemo, useState } from 'react';
 import { Image, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeIn, ZoomIn } from 'react-native-reanimated';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, {
+  FadeIn,
+  ZoomIn,
+  interpolate,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import type { ChatMessage, MessageReaction } from '../../types/content';
 import { REACTION_EMOJIS } from '../../types/content';
@@ -14,6 +23,7 @@ import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
 import { useMatches } from '../../store/MatchesContext';
+import { previewFor, previewLabel } from '../../utils/messagePreview';
 
 function formatMessageTime(iso: string, t: Translate): string {
   const date = new Date(iso);
@@ -76,6 +86,13 @@ function deliveryOf(
   return 'sent';
 }
 
+// How far a swipe has to travel before it counts as "reply", and the most it
+// visually drags before rubber-banding stops it — short and light on purpose,
+// since this is a hint gesture sitting inside a vertically-scrolling list,
+// not a decision gesture like the discovery deck's full-screen swipe.
+const REPLY_SWIPE_THRESHOLD = 56;
+const REPLY_SWIPE_MAX = 80;
+
 export const MessageBubble = React.memo(function MessageBubble({
   message,
   currentUserId,
@@ -83,6 +100,9 @@ export const MessageBubble = React.memo(function MessageBubble({
   onRetry,
   onDeleteForEveryone,
   onDeleteForMe,
+  onSwipeReply,
+  replyToMessage,
+  counterpartName,
 }: {
   message: ChatMessage;
   currentUserId?: string;
@@ -91,12 +111,84 @@ export const MessageBubble = React.memo(function MessageBubble({
   /** Only ever offered on your own messages — the sheet hides it otherwise. */
   onDeleteForEveryone?: (message: ChatMessage) => void;
   onDeleteForMe?: (message: ChatMessage) => void;
+  /** Swiping the bubble toward the reading-start edge asks to quote it. */
+  onSwipeReply?: (message: ChatMessage) => void;
+  /** The message this one quotes, already resolved from the thread in memory. */
+  replyToMessage?: ChatMessage;
+  /** Only needed to label a quoted message that wasn't mine. */
+  counterpartName?: string;
 }) {
   const { colors } = useTheme();
   const { t, rtl } = useLanguage();
   const { getReactions, toggleReaction } = useMatches();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [pickerOpen, setPickerOpen] = useState(false);
+
+  // Swiping right replies in a left-to-right thread, left in a right-to-left
+  // one — the same mirroring the bubbles themselves already follow.
+  const swipeSign = rtl ? -1 : 1;
+  const dragX = useSharedValue(0);
+  const triggerReply = () => onSwipeReply?.(message);
+  // 16dp of horizontal movement before the swipe activates, and no more than
+  // 12dp of drift tolerated by the long-press below — a deliberate gap
+  // between the two, rather than sharing one boundary, so ordinary finger
+  // jitter can never land exactly on the line between them.
+  const SWIPE_ACTIVATE_PX = 16;
+  const swipeGesture = useMemo(
+    () =>
+      Gesture.Pan()
+        .enabled(Boolean(onSwipeReply))
+        .activeOffsetX(swipeSign > 0 ? [SWIPE_ACTIVATE_PX, 999] : [-999, -SWIPE_ACTIVATE_PX])
+        .failOffsetY([-12, 12])
+        .onUpdate((e) => {
+          const forward = e.translationX * swipeSign;
+          dragX.value = Math.max(0, Math.min(forward, REPLY_SWIPE_MAX)) * swipeSign;
+        })
+        .onEnd((e) => {
+          const forward = e.translationX * swipeSign;
+          if (forward > REPLY_SWIPE_THRESHOLD) runOnJS(triggerReply)();
+          dragX.value = withSpring(0, { damping: 20, stiffness: 260 });
+        }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [swipeSign, onSwipeReply, message.id]
+  );
+  // A gesture-handler LongPress here, not a plain RN `Pressable`'s
+  // `onLongPress`: the two run on different gesture systems, and nesting a
+  // Pressable inside this bubble's GestureDetector let the pan gesture's own
+  // touch recognizer win the touch on native before the Pressable's JS-side
+  // long-press timer ever got to fire — long-press worked on web (a looser
+  // gesture-arena implementation there) and silently never opened on device.
+  //
+  // `Simultaneous`, not `Race`: Race makes the two compete for the same touch
+  // and leaves it to each platform's own gesture arena to referee who wins —
+  // which is exactly what was inconsistent phone to phone. Simultaneous lets
+  // both recognise independently instead, so nothing has to "win" — a still
+  // finger satisfies the long-press's own timer regardless of what the pan
+  // gesture is doing, and an actual drag satisfies the pan's own distance
+  // threshold regardless of the long-press. `maxDistance` below is what keeps
+  // a real drag from also firing the long-press once it is moving.
+  const openPicker = () => setPickerOpen(true);
+  const longPressGesture = useMemo(
+    () =>
+      Gesture.LongPress()
+        .minDuration(280)
+        .maxDistance(12)
+        .onStart(() => {
+          runOnJS(openPicker)();
+        }),
+    []
+  );
+  const bubbleGesture = useMemo(
+    () => Gesture.Simultaneous(swipeGesture, longPressGesture),
+    [swipeGesture, longPressGesture]
+  );
+  const swipeStyle = useAnimatedStyle(() => ({ transform: [{ translateX: dragX.value }] }));
+  const replyHintStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(dragX.value * swipeSign, [0, REPLY_SWIPE_THRESHOLD], [0, 1], 'clamp'),
+    transform: [
+      { scale: interpolate(dragX.value * swipeSign, [0, REPLY_SWIPE_THRESHOLD], [0.6, 1], 'clamp') },
+    ],
+  }));
 
   const reactions = getReactions(message.id);
   const pills = useMemo(() => groupReactions(reactions, currentUserId), [reactions, currentUserId]);
@@ -137,26 +229,49 @@ export const MessageBubble = React.memo(function MessageBubble({
   return (
     <View style={[styles.row, message.fromMe ? mineSide : theirSide]}>
       <View style={styles.bubbleWrap}>
-        {/* Own messages are a lit gradient, replies a plain surface — the two
-            sides of the thread never need re-reading to tell apart. */}
-        <Pressable
-          onLongPress={() => setPickerOpen(true)}
-          delayLongPress={280}
-          accessibilityLabel={t('reactions.a11yReact')}
+        {/* Revealed from underneath as the bubble drags away from it — sits at
+            the edge the swipe started from, not the edge it moves toward. */}
+        <Animated.View
+          pointerEvents="none"
+          style={[styles.replyHint, rtl ? styles.replyHintRtl : styles.replyHintLtr, replyHintStyle]}
         >
-          {message.fromMe ? (
-            <LinearGradient
-              colors={[colors.teal, colors.sage]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={[styles.bubble, styles.bubbleMe, glow(colors.teal, 0.35, 10, 4)]}
-            >
-              {content}
-            </LinearGradient>
-          ) : (
-            <View style={[styles.bubble, styles.bubbleThem]}>{content}</View>
-          )}
-        </Pressable>
+          <Ionicons name="arrow-undo" size={16} color={colors.teal} />
+        </Animated.View>
+
+        <GestureDetector gesture={bubbleGesture} touchAction="pan-y">
+          <Animated.View style={swipeStyle}>
+            {/* Own messages are a lit gradient, replies a plain surface — the two
+                sides of the thread never need re-reading to tell apart. Long-press
+                is the GestureDetector above (`longPressGesture`), not this View's
+                own touch handling — see the comment on `bubbleGesture`. */}
+            <View accessibilityRole="button" accessibilityLabel={t('reactions.a11yReact')}>
+              {message.fromMe ? (
+                <LinearGradient
+                  colors={[colors.teal, colors.sage]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={[styles.bubble, styles.bubbleMe, glow(colors.teal, 0.35, 10, 4)]}
+                >
+                  {replyToMessage && (
+                    <ReplyQuote message={replyToMessage} fromMe counterpartName={counterpartName} colors={colors} t={t} />
+                  )}
+                  {content}
+                </LinearGradient>
+              ) : (
+                <View style={[styles.bubble, styles.bubbleThem]}>
+                  {replyToMessage && (
+                    <ReplyQuote
+                      message={replyToMessage}
+                      fromMe={false}
+                      counterpartName={counterpartName}
+                      colors={colors}
+                      t={t}
+                    />
+                  )}
+                  {content}
+                </View>
+              )}
+            </View>
 
         {pills.length > 0 && (
           <View style={[styles.reactionRow, message.fromMe ? styles.reactionRowMe : styles.reactionRowThem]}>
@@ -218,6 +333,8 @@ export const MessageBubble = React.memo(function MessageBubble({
             </Pressable>
           )}
         </View>
+          </Animated.View>
+        </GestureDetector>
       </View>
 
       <ReactionPicker
@@ -248,7 +365,11 @@ export const MessageBubble = React.memo(function MessageBubble({
   );
 });
 
-function ReactionPicker({
+// Exported for its own tests: opening it depends on a gesture-handler
+// long-press, which — like the discovery deck's swipe gesture
+// (SwipeableCard.test.tsx) — isn't something Jest's gesture-handler mock
+// actually activates, so the sheet's own contents are tested directly here.
+export function ReactionPicker({
   visible,
   onClose,
   onPick,
@@ -271,7 +392,7 @@ function ReactionPicker({
   const showDeleteRow = Boolean(onDeleteForEveryone || onDeleteForMe);
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={styles.pickerOverlay} onPress={onClose}>
+      <Pressable style={styles.pickerOverlay} onPress={onClose} testID="reaction-picker-backdrop">
         <Animated.View entering={ZoomIn.duration(180)} style={styles.pickerCard}>
           <Text style={styles.pickerTitle}>{t('chat.reactionPickerTitle')}</Text>
           <View style={styles.pickerRow}>
@@ -317,6 +438,61 @@ function ReactionPicker({
     </Modal>
   );
 }
+
+/** The quoted snippet a reply carries at the top of its own bubble — resolved
+ * client-side from a message already held in the open thread, never stored
+ * as its own copy of that text. */
+function ReplyQuote({
+  message,
+  fromMe,
+  counterpartName,
+  colors,
+  t,
+}: {
+  message: ChatMessage;
+  /** Whether the *replying* bubble (not the quoted message) is my own. */
+  fromMe: boolean;
+  counterpartName?: string;
+  colors: Palette;
+  t: Translate;
+}) {
+  const label = message.fromMe ? t('chat.replyYou') : counterpartName;
+  return (
+    <View
+      style={[
+        replyQuoteStyles.wrap,
+        {
+          borderLeftColor: fromMe ? 'rgba(255,255,255,0.65)' : colors.teal,
+          backgroundColor: fromMe ? 'rgba(255,255,255,0.14)' : withAlpha(colors.teal, 0.1),
+        },
+      ]}
+    >
+      {label ? (
+        <Text numberOfLines={1} style={[replyQuoteStyles.name, { color: fromMe ? '#FFFFFF' : colors.teal }]}>
+          {label}
+        </Text>
+      ) : null}
+      <Text
+        numberOfLines={1}
+        style={[replyQuoteStyles.text, { color: fromMe ? 'rgba(255,255,255,0.85)' : colors.textSecondary }]}
+      >
+        {previewLabel(previewFor(message), t)}
+      </Text>
+    </View>
+  );
+}
+
+const replyQuoteStyles = StyleSheet.create({
+  wrap: {
+    borderLeftWidth: 3,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.xs + 2,
+    paddingVertical: spacing.xs,
+    marginBottom: spacing.xs,
+  },
+  name: { ...typography.caption, fontSize: scaleFont(11), fontWeight: '800' },
+  text: { ...typography.caption, fontSize: scaleFont(12) },
+});
 
 function VoiceBubble({
   uri,
@@ -422,12 +598,27 @@ const voiceStyles = StyleSheet.create({
   timeText: { ...typography.caption, fontSize: scaleFont(10), fontWeight: '600' },
 });
 
-const makeStyles = (colors: Palette) =>
+export const makeStyles = (colors: Palette) =>
   StyleSheet.create({
     row: { flexDirection: 'row', marginVertical: 4 },
     rowMe: { justifyContent: 'flex-end' },
     rowThem: { justifyContent: 'flex-start' },
     bubbleWrap: { maxWidth: '78%', alignSelf: 'flex-start' },
+    // Sits just outside the bubble's own edge, so it reads as revealed from
+    // underneath rather than laid over the bubble's content.
+    replyHint: {
+      position: 'absolute',
+      top: '50%',
+      marginTop: -14,
+      width: 28,
+      height: 28,
+      borderRadius: radius.pill,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: withAlpha(colors.teal, 0.15),
+    },
+    replyHintLtr: { left: -34 },
+    replyHintRtl: { right: -34 },
     bubble: { borderRadius: radius.lg, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
     bubbleMe: { borderBottomRightRadius: 5 },
     bubbleThem: {

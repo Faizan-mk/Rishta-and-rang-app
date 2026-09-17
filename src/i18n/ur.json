@@ -307,6 +307,7 @@
     "youAndLikedEachOther": "آپ اور {name} نے ایک دوسرے کو پسند کیا۔",
     "previewPhoto": "تصویر",
     "previewVoice": "وائس پیغام",
+    "previewReacted": "ایک پیغام پر ردعمل دیا",
     "matchedBody": "آپ اور {name} نے ایک دوسرے کو پسند کیا۔"
   },
   "chat": {
@@ -349,7 +350,15 @@
     "rishtaRequestFailed": "یہ مکمل نہیں ہو سکا۔ تھوڑی دیر بعد دوبارہ کوشش کریں۔",
     "deleteForEveryone": "سب کے لیے ڈیلیٹ کریں",
     "deleteForMe": "صرف میرے لیے ڈیلیٹ کریں",
-    "deleteConfirmTitle": "پیغام ڈیلیٹ کریں؟"
+    "deleteConfirmTitle": "پیغام ڈیلیٹ کریں؟",
+    "clearChat": "چیٹ صاف کریں",
+    "voiceCall": "وائس کال",
+    "replyYou": "آپ",
+    "replyingTo": "{name} کو جواب دے رہے ہیں",
+    "videoCall": "ویڈیو کال",
+    "moreOptions": "مزید آپشنز",
+    "clearChatConfirmTitle": "یہ چیٹ صاف کریں؟",
+    "clearChatConfirmBody": "تمام پیغامات صرف آپ کی طرف سے ہٹیں گے — {name} کے پاس اپنے پیغامات رہیں گے، اور چیٹ اس کے بعد بھی کام کرتی رہے گی۔"
   },
   "profile": {
     "title": "پروفائل",
@@ -843,7 +852,8 @@
     "deckRefresh": "پروفائلز ریفریش نہیں ہو سکیں۔",
     "matchesRefresh": "آپ کی میچز ریفریش نہیں ہو سکیں۔",
     "likeNotSent": "لائیک نہیں بھیجا جا سکا۔",
-    "messageNotDeleted": "یہ پیغام ڈیلیٹ نہیں ہو سکا۔"
+    "messageNotDeleted": "یہ پیغام ڈیلیٹ نہیں ہو سکا۔",
+    "chatNotDeleted": "یہ چیٹ صاف نہیں ہو سکی۔"
   },
   "authErrors": {
     "emailTaken": "یہ ای میل پہلے سے رجسٹرڈ ہے۔ لاگ ان کرکے دیکھیں۔",

@@ -29,6 +29,10 @@ jest.mock('../../services/matchesService', () => {
       insertTextMessage: jest.fn(),
       insertVoiceMessage: jest.fn(),
       insertImageMessage: jest.fn(),
+      deleteMessage: jest.fn(),
+      hideMessage: jest.fn(),
+      fetchHiddenMessageIds: jest.fn(),
+      clearChat: jest.fn(),
       blockUser: jest.fn(),
       unblockUser: jest.fn(),
     },
@@ -246,7 +250,9 @@ describe('MatchesProvider.sendMessage', () => {
     });
 
     expect(result.current.getMessages('m1').some((m) => m.id === 'pending-1')).toBe(false);
-    expect(matchesService.insertTextMessage).toHaveBeenCalledWith('u1', 'm1', 'retry me');
+    // Fourth arg is whatever the failed message was itself replying to —
+    // undefined here, since it was not a reply.
+    expect(matchesService.insertTextMessage).toHaveBeenCalledWith('u1', 'm1', 'retry me', undefined);
   });
 
   it('retryMessage is a no-op for a message that did not fail', async () => {
@@ -257,6 +263,48 @@ describe('MatchesProvider.sendMessage', () => {
       result.current.retryMessage(message({ status: 'sent' }));
     });
     expect(matchesService.insertTextMessage).not.toHaveBeenCalled();
+  });
+});
+
+describe('MatchesProvider.clearChat', () => {
+  it('empties the thread on this side only and calls the bulk hide', async () => {
+    mockUseAuth.mockReturnValue({ user: { id: 'u1' } });
+    (matchesService.fetchMatches as jest.Mock).mockResolvedValue([match()]);
+    (matchesService.fetchThreadPreviews as jest.Mock).mockResolvedValue([
+      message({ text: 'hello there', sentAt: '2026-01-02T00:00:00.000Z' }),
+    ]);
+    (matchesService.clearChat as jest.Mock).mockResolvedValue(undefined);
+    const { result } = renderMatches();
+    await waitFor(() => expect(result.current.getMessages('m1')).toHaveLength(1));
+
+    act(() => {
+      result.current.clearChat('m1');
+    });
+
+    expect(result.current.getMessages('m1')).toHaveLength(0);
+    expect(result.current.getMatch('m1')?.lastMessage).toBe('');
+    expect(matchesService.clearChat).toHaveBeenCalledWith('m1');
+  });
+
+  it('restores the thread and shows a toast when the server call fails', async () => {
+    mockUseAuth.mockReturnValue({ user: { id: 'u1' } });
+    (matchesService.fetchMatches as jest.Mock).mockResolvedValue([match()]);
+    (matchesService.fetchThreadPreviews as jest.Mock).mockResolvedValue([
+      message({ text: 'hello there', sentAt: '2026-01-02T00:00:00.000Z' }),
+    ]);
+    (matchesService.clearChat as jest.Mock).mockRejectedValue(new Error('network down'));
+    const { result } = renderMatches();
+    await waitFor(() => expect(result.current.getMessages('m1')).toHaveLength(1));
+
+    await act(async () => {
+      result.current.clearChat('m1');
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    await waitFor(() => expect(result.current.getMessages('m1')).toHaveLength(1));
+    expect(result.current.getMatch('m1')?.lastMessage).toBe('hello there');
+    expect(showError).toHaveBeenCalledWith(expect.objectContaining({ messageKey: 'netErrors.chatNotDeleted' }));
   });
 });
 
@@ -342,6 +390,52 @@ describe('MatchesProvider.markMatchRead', () => {
       result.current.markMatchRead('does-not-exist');
     });
     expect(matchesService.markRead).not.toHaveBeenCalled();
+  });
+});
+
+describe('MatchesProvider.refreshReadReceipt', () => {
+  it("pulls the counterpart's read mark forward when the server has a newer one", async () => {
+    mockUseAuth.mockReturnValue({ user: { id: 'u1' } });
+    (matchesService.fetchMatches as jest.Mock).mockResolvedValue([match()]);
+    const { result } = renderMatches();
+    await waitFor(() => expect(result.current.getMatch('m1')).toBeTruthy());
+    expect(result.current.getMatch('m1')?.theirReadAt).toBeUndefined();
+
+    (matchesService.fetchReads as jest.Mock).mockResolvedValue({
+      mine: {},
+      theirs: { m1: '2026-01-05T00:00:00.000Z' },
+    });
+
+    await act(async () => {
+      await result.current.refreshReadReceipt('m1');
+    });
+
+    expect(result.current.getMatch('m1')?.theirReadAt).toBe('2026-01-05T00:00:00.000Z');
+  });
+
+  it('never moves the read mark backward', async () => {
+    mockUseAuth.mockReturnValue({ user: { id: 'u1' } });
+    (matchesService.fetchMatches as jest.Mock).mockResolvedValue([match()]);
+    const { result } = renderMatches();
+    await waitFor(() => expect(result.current.getMatch('m1')).toBeTruthy());
+
+    (matchesService.fetchReads as jest.Mock).mockResolvedValue({
+      mine: {},
+      theirs: { m1: '2026-01-05T00:00:00.000Z' },
+    });
+    await act(async () => {
+      await result.current.refreshReadReceipt('m1');
+    });
+
+    (matchesService.fetchReads as jest.Mock).mockResolvedValue({
+      mine: {},
+      theirs: { m1: '2026-01-01T00:00:00.000Z' },
+    });
+    await act(async () => {
+      await result.current.refreshReadReceipt('m1');
+    });
+
+    expect(result.current.getMatch('m1')?.theirReadAt).toBe('2026-01-05T00:00:00.000Z');
   });
 });
 
@@ -641,5 +735,55 @@ describe('MatchesProvider realtime channel', () => {
       });
     });
     expect(result.current.getReactions('msg1')).toHaveLength(0);
+  });
+
+  it("surfaces the other participant's reaction on the Matches list, like a new message would", async () => {
+    mockUseAuth.mockReturnValue({ user: { id: 'u1' } });
+    (matchesService.fetchMatches as jest.Mock).mockResolvedValue([match()]);
+    (matchesService.fetchThreadPreviews as jest.Mock).mockResolvedValue([
+      // fromMe, so the thread starts read — otherwise hydration's own unread
+      // calculation would already have this true before the reaction fires.
+      message({ id: 'msg1', text: 'hello there', sentAt: '2026-01-02T00:00:00.000Z', fromMe: true }),
+    ]);
+    const { result } = renderMatches();
+    await waitFor(() => expect(result.current.getMessages('m1')).toHaveLength(1));
+    expect(result.current.getMatch('m1')?.unread).toBe(false);
+    await waitFor(() => expect(channelHandlers['message_reactions:INSERT']).toBeTruthy());
+
+    act(() => {
+      channelHandlers['message_reactions:INSERT']({
+        new: {
+          id: 'r1',
+          message_id: 'msg1',
+          user_id: 'other-user',
+          emoji: '❤️',
+          created_at: '2026-01-10T00:00:00.000Z',
+        },
+      });
+    });
+
+    expect(result.current.getMatch('m1')?.unread).toBe(true);
+    expect(result.current.getMatch('m1')?.lastMessage).toContain('❤️');
+    expect(result.current.getMatch('m1')?.lastMessageAt).toBe('2026-01-10T00:00:00.000Z');
+  });
+
+  it('does not treat my own reaction echoing back as new activity', async () => {
+    mockUseAuth.mockReturnValue({ user: { id: 'u1' } });
+    (matchesService.fetchMatches as jest.Mock).mockResolvedValue([match()]);
+    (matchesService.fetchThreadPreviews as jest.Mock).mockResolvedValue([
+      message({ id: 'msg1', text: 'hello there', sentAt: '2026-01-02T00:00:00.000Z', fromMe: true }),
+    ]);
+    const { result } = renderMatches();
+    await waitFor(() => expect(result.current.getMessages('m1')).toHaveLength(1));
+    await waitFor(() => expect(channelHandlers['message_reactions:INSERT']).toBeTruthy());
+
+    act(() => {
+      channelHandlers['message_reactions:INSERT']({
+        new: { id: 'r1', message_id: 'msg1', user_id: 'u1', emoji: '❤️', created_at: '2026-01-10T00:00:00.000Z' },
+      });
+    });
+
+    expect(result.current.getMatch('m1')?.unread).toBe(false);
+    expect(result.current.getMatch('m1')?.lastMessage).toBe('hello there');
   });
 });

@@ -29,10 +29,31 @@ jest.mock('expo-audio', () => ({
   requestRecordingPermissionsAsync: jest.fn(),
 }));
 // MessageBubble has its own dedicated test; stubbing it here keeps this file
-// focused on ChatScreen's own wiring (send/attach/rishta/block/report).
+// focused on ChatScreen's own wiring (send/attach/rishta/block/report/reply).
+// A pressable "swipe:<text>" stands in for the real swipe gesture, so this
+// file can trigger the reply flow without re-testing the gesture itself.
 jest.mock('../../../components/matches/MessageBubble', () => ({
-  MessageBubble: ({ message }: { message: ChatMessage }) =>
-    require('react').createElement(require('react-native').Text, null, `bubble:${message.text}`),
+  MessageBubble: ({
+    message,
+    onSwipeReply,
+    replyToMessage,
+  }: {
+    message: ChatMessage;
+    onSwipeReply?: (message: ChatMessage) => void;
+    replyToMessage?: ChatMessage;
+  }) => {
+    const { createElement } = require('react');
+    const { Text, Pressable } = require('react-native');
+    return createElement(
+      Pressable,
+      { onPress: () => onSwipeReply?.(message) },
+      createElement(
+        Text,
+        null,
+        `bubble:${message.text}${replyToMessage ? ` replying-to:${replyToMessage.text}` : ''}`
+      )
+    );
+  },
 }));
 
 const mockUseLocalSearchParams = useLocalSearchParams as jest.Mock;
@@ -53,6 +74,7 @@ let sendRishtaRequest: jest.Mock;
 let respondRishtaRequest: jest.Mock;
 let blockMatch: jest.Mock;
 let unblockUser: jest.Mock;
+let clearChat: jest.Mock;
 
 function user(overrides: Partial<UserProfile> = {}): UserProfile {
   return {
@@ -106,11 +128,13 @@ function setupMatches(
     sendVoiceMessage: jest.fn(),
     sendImageMessage,
     markMatchRead,
+    refreshReadReceipt: jest.fn().mockResolvedValue(undefined),
     sendRishtaRequest,
     respondRishtaRequest,
     blockMatch,
     blockedProfiles,
     unblockUser,
+    clearChat,
   });
 }
 
@@ -134,6 +158,7 @@ beforeEach(() => {
   respondRishtaRequest = jest.fn().mockResolvedValue('accepted');
   blockMatch = jest.fn();
   unblockUser = jest.fn();
+  clearChat = jest.fn();
   (discoveryService.fetchActivity as jest.Mock).mockResolvedValue(new Map());
   setupMatches();
 });
@@ -153,6 +178,7 @@ describe('ChatScreen', () => {
       getThreadPaging: () => ({ loading: false, hasMore: false }),
       openThread,
       markMatchRead,
+      refreshReadReceipt: jest.fn().mockResolvedValue(undefined),
       loadOlderMessages: jest.fn(),
       retryMessage: jest.fn(),
       sendMessage,
@@ -180,7 +206,63 @@ describe('ChatScreen', () => {
     renderScreen();
     fireEvent.changeText(screen.getByPlaceholderText('Type a message...'), 'Hi there');
     fireEvent.press(screen.UNSAFE_getByProps({ name: 'send' }));
-    expect(sendMessage).toHaveBeenCalledWith('m1', 'Hi there');
+    // Third arg is the swipe-to-reply target's id — undefined here, since
+    // nothing was swiped to reply to.
+    expect(sendMessage).toHaveBeenCalledWith('m1', 'Hi there', undefined);
+  });
+
+  it('shows a reply bar with the quoted preview after swiping a message, and sends the reply', () => {
+    setupMatches(
+      {},
+      [{ id: 'msg1', matchId: 'm1', fromMe: false, text: 'Hello there', sentAt: '2026-01-01T10:00:00.000Z', kind: 'text' }]
+    );
+    renderScreen();
+
+    // The mocked MessageBubble stands in for the real swipe gesture with a press.
+    fireEvent.press(screen.getByText('bubble:Hello there'));
+    expect(screen.getByText('Hello there')).toBeTruthy(); // the reply bar's own quoted preview
+
+    fireEvent.changeText(screen.getByPlaceholderText('Type a message...'), 'Sure, sounds good');
+    fireEvent.press(screen.UNSAFE_getByProps({ name: 'send' }));
+    expect(sendMessage).toHaveBeenCalledWith('m1', 'Sure, sounds good', 'msg1');
+
+    // The bar is gone once the reply has actually gone out.
+    expect(screen.queryByText('Hello there')).toBeNull();
+  });
+
+  it('clears the reply bar without sending when its close button is pressed', () => {
+    setupMatches(
+      {},
+      [{ id: 'msg1', matchId: 'm1', fromMe: false, text: 'Hello there', sentAt: '2026-01-01T10:00:00.000Z', kind: 'text' }]
+    );
+    renderScreen();
+
+    fireEvent.press(screen.getByText('bubble:Hello there'));
+    expect(screen.getByText('Hello there')).toBeTruthy();
+
+    fireEvent.press(screen.UNSAFE_getByProps({ name: 'close' }));
+    expect(screen.queryByText('Hello there')).toBeNull();
+  });
+
+  it("resolves a message's own replyToMessage from the thread already in memory", () => {
+    setupMatches(
+      {},
+      [
+        { id: 'msg1', matchId: 'm1', fromMe: false, text: 'Original', sentAt: '2026-01-01T10:00:00.000Z', kind: 'text' },
+        {
+          id: 'msg2',
+          matchId: 'm1',
+          fromMe: true,
+          text: 'A reply',
+          sentAt: '2026-01-01T10:01:00.000Z',
+          kind: 'text',
+          replyToId: 'msg1',
+        },
+      ]
+    );
+    renderScreen();
+
+    expect(screen.getByText('bubble:A reply replying-to:Original')).toBeTruthy();
   });
 
   it('shows no send button while the input is empty (mic button shows instead)', () => {
@@ -206,7 +288,7 @@ describe('ChatScreen', () => {
 
     fireEvent.press(screen.UNSAFE_getByProps({ name: 'image-outline' }));
 
-    await waitFor(() => expect(sendImageMessage).toHaveBeenCalledWith('m1', 'photo.jpg'));
+    await waitFor(() => expect(sendImageMessage).toHaveBeenCalledWith('m1', 'photo.jpg', undefined));
   });
 
   it('shows the Move to Rishta bar and sends a request once confirmed', async () => {
@@ -249,11 +331,16 @@ describe('ChatScreen', () => {
     await waitFor(() => expect(respondRishtaRequest).toHaveBeenCalledWith('m1', false));
   });
 
+  // The header's five actions collapsed into one "⋮" overflow menu, so every
+  // one of them is reached by opening it first.
+  const openHeaderMenu = () => fireEvent.press(screen.UNSAFE_getByProps({ name: 'ellipsis-vertical' }));
+
   it('blocks the match after confirming, staying on the thread', async () => {
     confirm.mockResolvedValue(true);
     renderScreen();
 
-    fireEvent.press(screen.UNSAFE_getByProps({ name: 'hand-left-outline' }));
+    openHeaderMenu();
+    fireEvent.press(screen.getByText('Block'));
 
     await waitFor(() => expect(blockMatch).toHaveBeenCalledWith('m1'));
     // Blocking used to also delete the match, so the screen navigated away —
@@ -273,31 +360,72 @@ describe('ChatScreen', () => {
     expect(unblockUser).toHaveBeenCalledWith('p1');
   });
 
+  it('drops "Block" from the menu once already blocked — unblocking lives on the banner instead', () => {
+    setupMatches({}, [], [{ id: 'p1', name: 'Sara', photo: 'a.jpg', blockedAt: '2026-01-01T00:00:00.000Z' }]);
+    renderScreen();
+
+    openHeaderMenu();
+    expect(screen.queryByText('Block')).toBeNull();
+  });
+
   it('does not block when the confirmation is declined', async () => {
     confirm.mockResolvedValue(false);
     renderScreen();
 
-    fireEvent.press(screen.UNSAFE_getByProps({ name: 'hand-left-outline' }));
+    openHeaderMenu();
+    fireEvent.press(screen.getByText('Block'));
 
     await waitFor(() => expect(confirm).toHaveBeenCalled());
     expect(blockMatch).not.toHaveBeenCalled();
   });
 
+  it('clears the chat after confirming', async () => {
+    confirm.mockResolvedValue(true);
+    renderScreen();
+
+    openHeaderMenu();
+    fireEvent.press(screen.getByText('Clear chat'));
+
+    await waitFor(() => expect(clearChat).toHaveBeenCalledWith('m1'));
+  });
+
+  it('does not clear the chat when the confirmation is declined', async () => {
+    confirm.mockResolvedValue(false);
+    renderScreen();
+
+    openHeaderMenu();
+    fireEvent.press(screen.getByText('Clear chat'));
+
+    await waitFor(() => expect(confirm).toHaveBeenCalled());
+    expect(clearChat).not.toHaveBeenCalled();
+  });
+
   it('opens the report dialog', () => {
     renderScreen();
-    fireEvent.press(screen.UNSAFE_getByProps({ name: 'flag-outline' }));
+    openHeaderMenu();
+    fireEvent.press(screen.getByText('Report'));
     expect(screen.getByText('Submit report')).toBeTruthy();
   });
 
   it('navigates to the call screen', () => {
     renderScreen();
-    fireEvent.press(screen.UNSAFE_getByProps({ name: 'call-outline' }));
+    openHeaderMenu();
+    fireEvent.press(screen.getByText('Voice call'));
     expect(push).toHaveBeenCalledWith({ pathname: '/call', params: { name: 'Sara', photo: 'a.jpg' } });
   });
 
   it('navigates to the video call screen', () => {
     renderScreen();
-    fireEvent.press(screen.UNSAFE_getByProps({ name: 'videocam-outline' }));
+    openHeaderMenu();
+    fireEvent.press(screen.getByText('Video call'));
     expect(push).toHaveBeenCalledWith({ pathname: '/call', params: { name: 'Sara', photo: 'a.jpg', video: '1' } });
+  });
+
+  it('closes the menu without acting when the backdrop is tapped', () => {
+    renderScreen();
+    openHeaderMenu();
+    fireEvent.press(screen.getByTestId('chat-header-menu-backdrop'));
+    expect(screen.queryByText('Clear chat')).toBeNull();
+    expect(blockMatch).not.toHaveBeenCalled();
   });
 });
