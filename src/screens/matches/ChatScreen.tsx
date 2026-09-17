@@ -820,7 +820,7 @@ const makeStyles = (colors: Palette) =>
     },
     menuOptionIcon: { width: 16 },
     menuDivider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.borderSoft, marginVertical: spacing.xs },
-    menuOptionText: { fontSize: scaleFont(13.5), fontWeight: '600' },
+    menuOptionText: { fontSize: scaleFont(13.5), fontWeight: '600', color: colors.textPrimary },
     rishtaBannerWrap: { paddingHorizontal: spacing.md, paddingTop: spacing.sm },
     rishtaBanner: { borderRadius: radius.lg, padding: spacing.md, gap: spacing.sm },
     rishtaBannerText: { ...typography.label, color: '#FFFFFF', fontWeight: '800' },
