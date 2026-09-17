@@ -307,6 +307,7 @@
     "youAndLikedEachOther": "Aap aur {name} ne ek doosre ko pasand kiya.",
     "previewPhoto": "Tasveer",
     "previewVoice": "Voice paigham",
+    "previewReacted": "Ek message par react kiya",
     "matchedBody": "Aap aur {name} ne ek doosre ko pasand kiya."
   },
   "chat": {
@@ -349,7 +350,15 @@
     "rishtaRequestFailed": "Ye mukammal nahi ho saka. Thori dair baad dobara koshish karein.",
     "deleteForEveryone": "Sab ke liye delete karein",
     "deleteForMe": "Sirf mere liye delete karein",
-    "deleteConfirmTitle": "Message delete karein?"
+    "deleteConfirmTitle": "Message delete karein?",
+    "clearChat": "Chat clear karein",
+    "voiceCall": "Voice call",
+    "replyYou": "Aap",
+    "replyingTo": "{name} ko jawab de rahe hain",
+    "videoCall": "Video call",
+    "moreOptions": "Mazeed options",
+    "clearChatConfirmTitle": "Ye chat clear karein?",
+    "clearChatConfirmBody": "Sab messages sirf aap ki taraf se hat jayenge — {name} ke paas unke apne messages rahenge, aur chat uske baad bhi kaam karti rahegi."
   },
   "profile": {
     "title": "Profile",
@@ -843,7 +852,8 @@
     "deckRefresh": "Profiles refresh nahi ho sakin.",
     "matchesRefresh": "Aap ki matches refresh nahi ho sakin.",
     "likeNotSent": "Like nahi bheja ja saka.",
-    "messageNotDeleted": "Ye message delete nahi ho saka."
+    "messageNotDeleted": "Ye message delete nahi ho saka.",
+    "chatNotDeleted": "Ye chat clear nahi ho saki."
   },
   "authErrors": {
     "emailTaken": "Yeh email pehle se registered hai. Log in karke dekhein.",

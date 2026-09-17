@@ -18,6 +18,10 @@ import type { ChatMessage } from '../types/content';
  */
 export const PHOTO_PREVIEW = '📷 Photo';
 export const VOICE_PREVIEW = '🎤 Voice message';
+// The emoji itself is data (it varies per reaction) and stays literal; only
+// this trailing marker is what `previewLabel` re-translates at render time —
+// same trick as the photo/voice markers, just with a variable prefix.
+const REACTION_PREVIEW_MARKER = 'Reacted to a message';
 
 export function previewFor(message: ChatMessage): string {
   if (message.kind === 'image') return PHOTO_PREVIEW;
@@ -25,9 +29,18 @@ export function previewFor(message: ChatMessage): string {
   return message.text;
 }
 
+/** The Matches-list preview for someone reacting to a message in the thread. */
+export function reactionPreview(emoji: string): string {
+  return `${emoji} ${REACTION_PREVIEW_MARKER}`;
+}
+
 /** The stored preview, in the language that is live right now. */
 export function previewLabel(stored: string, t: Translate): string {
   if (stored === PHOTO_PREVIEW) return `📷 ${t('matches.previewPhoto')}`;
   if (stored === VOICE_PREVIEW) return `🎤 ${t('matches.previewVoice')}`;
+  if (stored.endsWith(REACTION_PREVIEW_MARKER)) {
+    const emoji = stored.slice(0, stored.length - REACTION_PREVIEW_MARKER.length).trim();
+    return `${emoji} ${t('matches.previewReacted')}`;
+  }
   return stored;
 }

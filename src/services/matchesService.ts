@@ -40,6 +40,7 @@ export interface ChatMessageDoc {
   durationSec: number | null;
   imageUrl: string | null;
   sentAt: string;
+  replyToId: string | null;
 }
 
 interface BlockedDoc {
@@ -54,6 +55,10 @@ const MATCH_SELECT: string =
 
 // Typed as plain string on purpose: supabase-js's select-string parser rejects
 // quoted aliases, so we keep the query untyped and cast rows ourselves.
+// `replyToId:reply_to_id` joins this once supabase/39_message_reply.sql has
+// actually been run against the database — selecting a column that doesn't
+// exist yet fails the query outright, which broke sending entirely until
+// this was reverted back out.
 const MESSAGE_SELECT: string =
   'id, matchId:match_id, senderId:sender_id, text, kind, audioUrl:audio_path, durationSec:duration_sec, imageUrl:image_path, sentAt:sent_at';
 
@@ -111,6 +116,7 @@ export function mapChatMessageDoc(id: string, data: ChatMessageDoc, userId: stri
     audioUri: data.audioUrl ?? undefined,
     durationSec: data.durationSec ?? undefined,
     imageUri: data.imageUrl ?? undefined,
+    replyToId: data.replyToId ?? undefined,
     // This maps a row the server returned, so it is on the server by definition.
     status: 'sent',
   };
@@ -207,6 +213,7 @@ export function rowToMessage(row: Record<string, unknown>, userId: string): Chat
     audioUri: row.audio_path ? String(row.audio_path) : undefined,
     durationSec: typeof row.duration_sec === 'number' ? row.duration_sec : undefined,
     imageUri: row.image_path ? String(row.image_path) : undefined,
+    replyToId: row.reply_to_id ? String(row.reply_to_id) : undefined,
     // Anything that came back from the server is on the server.
     status: 'sent',
   };
@@ -391,6 +398,8 @@ async function insertMessage(profileId: string, data: NewMessage): Promise<ChatM
       audio_path: data.audioUrl,
       duration_sec: data.durationSec,
       image_path: data.imageUrl,
+      // reply_to_id is intentionally left out here until 39_message_reply.sql
+      // has run — see the comment on MESSAGE_SELECT above.
       // `sent_at` is deliberately NOT sent: the column defaults to the
       // database's own `now()`.
       //
@@ -421,26 +430,43 @@ function baseMessage(matchId: string, kind: ChatMessageKind): NewMessage {
     audioUrl: null,
     durationSec: null,
     imageUrl: null,
+    replyToId: null,
   };
 }
 
-async function insertTextMessage(profileId: string, matchId: string, text: string): Promise<ChatMessage> {
-  return insertMessage(profileId, { ...baseMessage(matchId, 'text'), text });
+async function insertTextMessage(
+  profileId: string,
+  matchId: string,
+  text: string,
+  replyToId?: string
+): Promise<ChatMessage> {
+  return insertMessage(profileId, { ...baseMessage(matchId, 'text'), text, replyToId: replyToId ?? null });
 }
 
 async function insertVoiceMessage(
   profileId: string,
   matchId: string,
   localUri: string,
-  durationSec: number
+  durationSec: number,
+  replyToId?: string
 ): Promise<ChatMessage> {
   const audioUrl = await mediaUpload.uploadChatAudio(profileId, matchId, localUri);
-  return insertMessage(profileId, { ...baseMessage(matchId, 'voice'), audioUrl, durationSec });
+  return insertMessage(profileId, {
+    ...baseMessage(matchId, 'voice'),
+    audioUrl,
+    durationSec,
+    replyToId: replyToId ?? null,
+  });
 }
 
-async function insertImageMessage(profileId: string, matchId: string, localUri: string): Promise<ChatMessage> {
+async function insertImageMessage(
+  profileId: string,
+  matchId: string,
+  localUri: string,
+  replyToId?: string
+): Promise<ChatMessage> {
   const imageUrl = await mediaUpload.uploadChatImage(profileId, matchId, localUri);
-  return insertMessage(profileId, { ...baseMessage(matchId, 'image'), imageUrl });
+  return insertMessage(profileId, { ...baseMessage(matchId, 'image'), imageUrl, replyToId: replyToId ?? null });
 }
 
 /** "Delete for everyone" — removes the shared row outright. `messages_delete`
@@ -465,6 +491,15 @@ async function fetchHiddenMessageIds(profileId: string): Promise<string[]> {
   const { data, error } = await supabase.from('message_hidden').select('message_id').eq('user_id', profileId);
   if (error) throw new Error(error.message);
   return (data ?? []).map((row) => String((row as { message_id: string }).message_id));
+}
+
+/** "Clear Chat" — hides every message currently in the thread, on this
+ * member's own side only. The bulk form of `hideMessage`, done server-side in
+ * one round trip (supabase/38_clear_chat_for_me.sql) rather than one request
+ * per message. */
+async function clearChat(matchId: string): Promise<void> {
+  const { error } = await supabase.rpc('clear_chat_for_me', { p_match_id: matchId });
+  if (error) throw new Error(error.message);
 }
 
 async function blockUser(profileId: string, blocked: BlockedProfile): Promise<void> {
@@ -514,6 +549,7 @@ export const matchesService = {
   deleteMessage,
   hideMessage,
   fetchHiddenMessageIds,
+  clearChat,
   blockUser,
   unblockUser,
 };

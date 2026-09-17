@@ -1,10 +1,11 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   AppState,
   FlatList,
   Image,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   StyleSheet,
@@ -16,7 +17,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Animated, { FadeInUp } from 'react-native-reanimated';
+import Animated, { FadeInUp, ZoomIn } from 'react-native-reanimated';
 import * as ImagePicker from 'expo-image-picker';
 import { useAudioRecorder, RecordingPresets, requestRecordingPermissionsAsync } from 'expo-audio';
 import { MessageBubble } from '../../components/matches/MessageBubble';
@@ -24,6 +25,8 @@ import { Badge } from '../../components/common/Badge';
 import { ReportDialog, type ReportSubmission } from '../../components/common/ReportDialog';
 import { reportsService } from '../../services/reportsService';
 import { FadeIn } from '../../components/common/FadeInUp';
+import { useFramedContentWidth } from '../../components/common/ResponsiveFrame';
+import type { Translate } from '../../i18n';
 import { useLanguage } from '../../store/LanguageContext';
 import { useTheme } from '../../store/ThemeContext';
 import { useDialog } from '../../store/DialogContext';
@@ -33,9 +36,11 @@ import { rishtaProfileComplete } from '../../utils/rishtaProfile';
 import { activityLevel, dayLabel, sameDay } from '../../utils/time';
 import { discoveryService } from '../../services/discoveryService';
 import { radius, spacing, typography } from '../../theme';
+import { scaleFont } from '../../theme/responsive';
 import { glow, modeAccent, withAlpha } from '../../theme/glow';
 import { ONLINE_GREEN, type Palette } from '../../theme/palettes';
 import type { ChatMessage } from '../../types/content';
+import { previewFor, previewLabel } from '../../utils/messagePreview';
 
 const GRADIENT_START = { x: 0, y: 0 } as const;
 const GRADIENT_END = { x: 1, y: 1 } as const;
@@ -43,6 +48,10 @@ const GRADIENT_END = { x: 1, y: 1 } as const;
 // Well inside the badge's ten-minute window, so someone who arrives while the
 // chat is open shows as online rather than a few minutes later.
 const ONLINE_POLL_MS = 60 * 1000;
+// Tighter than the online-status poll: a stale read receipt sits right next
+// to the message it belongs to and is the kind of thing someone actively
+// chatting will actually notice within a few seconds, not a few minutes.
+const READ_RECEIPT_POLL_MS = 15 * 1000;
 
 export function ChatScreen() {
   const router = useRouter();
@@ -51,6 +60,11 @@ export function ChatScreen() {
   const { t, rtl } = useLanguage();
   const { confirm, notify } = useDialog();
   const { user } = useAuth();
+  // A Modal (the "⋮" menu below) portals straight to the browser's own body
+  // on web, outside ResponsiveFrame's DOM entirely — this is what the menu
+  // aligns itself back to the frame's right edge with, instead of drifting
+  // out to the real (much wider) browser viewport's.
+  const framedWidth = useFramedContentWidth();
   const { id: matchId } = useLocalSearchParams<{ id: string }>();
   const {
     getMatch,
@@ -64,7 +78,9 @@ export function ChatScreen() {
     sendImageMessage,
     deleteMessage,
     hideMessage,
+    clearChat,
     markMatchRead,
+    refreshReadReceipt,
     sendRishtaRequest,
     respondRishtaRequest,
     blockMatch,
@@ -77,8 +93,28 @@ export function ChatScreen() {
   const thread = getThreadPaging(matchId);
   // The store keeps a thread oldest-first; an inverted list reads newest-first.
   const ordered = useMemo(() => [...messages].reverse(), [messages]);
+  // What a reply's own `replyToId` resolves to — the quoted message itself,
+  // read back out of the same thread already held in memory rather than a
+  // second fetch. Only ever misses on a message older than what is paged in.
+  const messageById = useMemo(() => new Map(messages.map((m) => [m.id, m])), [messages]);
   const [draft, setDraft] = useState('');
   const [reportVisible, setReportVisible] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  // What a swipe-to-reply picked, if anything — cleared once whatever is sent
+  // next (text, voice or photo) actually goes out quoting it.
+  const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
+  // Where the header's bottom edge actually is on screen, measured fresh each
+  // time the menu opens rather than computed from insets + a layout height:
+  // on web the Modal it renders in portals to the browser's own document body
+  // (outside both the SafeAreaView and ResponsiveFrame), so its coordinate
+  // origin is the real browser window's top-left, not the frame's — and the
+  // frame can itself sit offset within that window (it is vertically centred
+  // whenever the window is taller than the frame's own max height).
+  // `measureInWindow` reports a position already relative to that same real
+  // window, so it lines up correctly regardless of that offset, on web or
+  // native alike.
+  const [menuTop, setMenuTop] = useState(0);
+  const headerRef = useRef<View>(null);
   const [recording, setRecording] = useState(false);
   const [inputFocused, setInputFocused] = useState(false);
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
@@ -116,6 +152,23 @@ export function ChatScreen() {
     };
   }, [counterpartId]);
 
+  // The blue tick otherwise only ever moves forward when the realtime
+  // `match_reads` listener actually delivers — this is what catches it back
+  // up if that one event was ever missed, for a screen someone is watching.
+  useEffect(() => {
+    void refreshReadReceipt(matchId);
+    const timer = setInterval(() => void refreshReadReceipt(matchId), READ_RECEIPT_POLL_MS);
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') void refreshReadReceipt(matchId);
+    });
+
+    return () => {
+      clearInterval(timer);
+      subscription.remove();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [matchId]);
+
   useEffect(() => {
     markMatchRead(matchId);
     // The thread is paged in, so opening it is what fetches the newest page.
@@ -124,6 +177,16 @@ export function ChatScreen() {
     openThread(matchId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [matchId]);
+
+  // A message that arrives while this screen is already open is read the
+  // instant it lands — re-marking on every new one is what keeps the Matches
+  // list's unread badge from coming back for a thread the member is actively
+  // looking at right now. Without this it only cleared on the *next* visit,
+  // since the effect above only fires once per mount.
+  useEffect(() => {
+    markMatchRead(matchId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages.length]);
 
   if (!match) return null;
 
@@ -143,8 +206,9 @@ export function ChatScreen() {
   const sendMessage = () => {
     const trimmed = draft.trim();
     if (!trimmed) return;
-    sendToMatch(matchId, trimmed);
+    sendToMatch(matchId, trimmed, replyTo?.id);
     setDraft('');
+    setReplyTo(null);
   };
 
   // The sheet's own three options — Delete for everyone / Delete for me /
@@ -161,7 +225,8 @@ export function ChatScreen() {
     }
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7 });
     if (!result.canceled && result.assets[0]) {
-      sendImageMessage(matchId, result.assets[0].uri);
+      sendImageMessage(matchId, result.assets[0].uri, replyTo?.id);
+      setReplyTo(null);
     }
   };
 
@@ -187,7 +252,8 @@ export function ChatScreen() {
     await recorder.stop();
     setRecording(false);
     if (recorder.uri && durationSec >= 1) {
-      sendVoiceMessage(matchId, recorder.uri, durationSec);
+      sendVoiceMessage(matchId, recorder.uri, durationSec, replyTo?.id);
+      setReplyTo(null);
     }
   };
 
@@ -268,7 +334,25 @@ export function ChatScreen() {
     if (match.sourceProfileId) unblockUser(match.sourceProfileId);
   };
 
+  // Wipes this side of the thread only — the other participant keeps every
+  // one of their own messages, and can still write into it afterwards.
+  const onClearChat = async () => {
+    const confirmed = await confirm({
+      title: t('chat.clearChatConfirmTitle'),
+      message: t('chat.clearChatConfirmBody', { name: match.name }),
+      confirmLabel: t('chat.clearChat'),
+      cancelLabel: t('common.cancel'),
+      destructive: true,
+    });
+    if (confirmed) clearChat(matchId);
+  };
+
   const onReport = () => setReportVisible(true);
+
+  const openMenu = () => {
+    headerRef.current?.measureInWindow((_x, y, _width, height) => setMenuTop(y + height));
+    setMenuOpen(true);
+  };
 
   const onSubmitReport = async (submission: ReportSubmission) => {
     setReportVisible(false);
@@ -293,7 +377,7 @@ export function ChatScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-      <FadeIn style={[styles.header, rtl && styles.headerRtl]}>
+      <FadeIn ref={headerRef} style={[styles.header, rtl && styles.headerRtl]}>
         <Pressable onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name={rtl ? 'chevron-forward' : 'chevron-back'} size={22} color={colors.textPrimary} />
         </Pressable>
@@ -324,19 +408,31 @@ export function ChatScreen() {
             {match.movedToRishta && <Badge label={t('matches.rishtaBadge')} tone="rishta" />}
           </View>
         </View>
-        <Pressable onPress={() => router.push({ pathname: '/call', params: { name: match.name, photo: match.photo } })} style={styles.headerIconButton}>
-          <Ionicons name="call-outline" size={20} color={colors.teal} />
-        </Pressable>
-        <Pressable onPress={() => router.push({ pathname: '/call', params: { name: match.name, photo: match.photo, video: '1' } })} style={styles.headerIconButton}>
-          <Ionicons name="videocam-outline" size={20} color={colors.teal} />
-        </Pressable>
-        <Pressable onPress={onBlock} style={styles.headerIconButton}>
-          <Ionicons name="hand-left-outline" size={20} color={colors.textSecondary} />
-        </Pressable>
-        <Pressable onPress={onReport} style={styles.headerIconButton}>
-          <Ionicons name="flag-outline" size={20} color={colors.textSecondary} />
+        <Pressable
+          onPress={openMenu}
+          style={styles.headerIconButton}
+          accessibilityLabel={t('chat.moreOptions')}
+        >
+          <Ionicons name="ellipsis-vertical" size={20} color={colors.textSecondary} />
         </Pressable>
       </FadeIn>
+
+      <HeaderMenu
+        visible={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        onVoiceCall={() => router.push({ pathname: '/call', params: { name: match.name, photo: match.photo } })}
+        onVideoCall={() =>
+          router.push({ pathname: '/call', params: { name: match.name, photo: match.photo, video: '1' } })
+        }
+        onBlock={isBlocked ? undefined : onBlock}
+        onReport={onReport}
+        onClearChat={onClearChat}
+        topOffset={menuTop}
+        framedWidth={framedWidth}
+        colors={colors}
+        styles={styles}
+        t={t}
+      />
 
       {!isBlocked && !match.movedToRishta && match.rishtaRequestIncoming && (
         <FadeIn delay={80}>
@@ -436,6 +532,9 @@ export function ChatScreen() {
                   onRetry={retryMessage}
                   onDeleteForEveryone={onDeleteForEveryone}
                   onDeleteForMe={onDeleteForMe}
+                  onSwipeReply={setReplyTo}
+                  replyToMessage={item.replyToId ? messageById.get(item.replyToId) : undefined}
+                  counterpartName={match.name}
                 />
               </Animated.View>
             );
@@ -470,7 +569,28 @@ export function ChatScreen() {
             </Pressable>
           </View>
         ) : (
-          <View style={[styles.inputRow, rtl && styles.inputRowRtl]}>
+          <>
+            {replyTo && (
+              <View style={[styles.replyBar, rtl && styles.inputRowRtl]}>
+                <View style={styles.replyBarAccent} />
+                <View style={styles.replyBarText}>
+                  <Text style={styles.replyBarLabel} numberOfLines={1}>
+                    {t('chat.replyingTo', { name: replyTo.fromMe ? t('chat.replyYou') : match.name })}
+                  </Text>
+                  <Text style={styles.replyBarPreview} numberOfLines={1}>
+                    {previewLabel(previewFor(replyTo), t)}
+                  </Text>
+                </View>
+                <Pressable
+                  onPress={() => setReplyTo(null)}
+                  style={styles.replyBarClose}
+                  accessibilityLabel={t('common.cancel')}
+                >
+                  <Ionicons name="close" size={18} color={colors.textSecondary} />
+                </Pressable>
+              </View>
+            )}
+            <View style={[styles.inputRow, rtl && styles.inputRowRtl]}>
             <Pressable onPress={pickImage} style={styles.attachButton} disabled={recording}>
               <Ionicons name="image-outline" size={22} color={recording ? colors.textTertiary : colors.textSecondary} />
             </Pressable>
@@ -517,7 +637,8 @@ export function ChatScreen() {
                 )}
               </Pressable>
             )}
-          </View>
+            </View>
+          </>
         )}
       </KeyboardAvoidingView>
 
@@ -528,6 +649,102 @@ export function ChatScreen() {
         onSubmit={onSubmitReport}
       />
     </SafeAreaView>
+  );
+}
+
+/**
+ * The header's "⋮" overflow menu — a proper anchored dropdown under the
+ * button that opened it, each row a leading icon plus its label like any
+ * native menu, rather than five separate icon buttons competing with the
+ * name and badge for space. Tapping the backdrop dismisses it, so there is
+ * no separate Cancel row to tap past.
+ */
+function HeaderMenu({
+  visible,
+  onClose,
+  onVoiceCall,
+  onVideoCall,
+  onBlock,
+  onReport,
+  onClearChat,
+  topOffset,
+  framedWidth,
+  colors,
+  styles,
+  t,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onVoiceCall: () => void;
+  onVideoCall: () => void;
+  /** Absent once already blocked — the blocked banner is where unblocking lives. */
+  onBlock?: () => void;
+  onReport: () => void;
+  onClearChat: () => void;
+  /** The header's measured on-screen bottom edge — where the menu clears it. */
+  topOffset: number;
+  /** Caps the menu's row to the app frame's width on web; unset elsewhere. */
+  framedWidth?: number;
+  colors: Palette;
+  styles: ReturnType<typeof makeStyles>;
+  t: Translate;
+}) {
+  const run = (action: () => void) => {
+    onClose();
+    action();
+  };
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <Pressable
+        style={[styles.menuOverlay, { paddingTop: topOffset }]}
+        onPress={onClose}
+        testID="chat-header-menu-backdrop"
+      >
+        {/* On web the Modal itself spans the real browser viewport, not the
+            phone-width frame — this caps the row it anchors to back down to
+            the frame's own width, so "flex-end" lands on the frame's right
+            edge instead of the browser window's. */}
+        <View style={[styles.menuFrameBounds, framedWidth ? { maxWidth: framedWidth } : null]}>
+          <Animated.View entering={ZoomIn.duration(140)} style={styles.menuCard}>
+          <Pressable onPress={() => run(onVoiceCall)} style={styles.menuOptionRow}>
+            <Ionicons name="call-outline" size={16} color={colors.teal} style={styles.menuOptionIcon} />
+            <Text style={styles.menuOptionText} numberOfLines={1}>
+              {t('chat.voiceCall')}
+            </Text>
+          </Pressable>
+          <Pressable onPress={() => run(onVideoCall)} style={styles.menuOptionRow}>
+            <Ionicons name="videocam-outline" size={16} color={colors.teal} style={styles.menuOptionIcon} />
+            <Text style={styles.menuOptionText} numberOfLines={1}>
+              {t('chat.videoCall')}
+            </Text>
+          </Pressable>
+          <View style={styles.menuDivider} />
+          {onBlock && (
+            <Pressable onPress={() => run(onBlock)} style={styles.menuOptionRow}>
+              <Ionicons name="hand-left-outline" size={16} color={colors.textSecondary} style={styles.menuOptionIcon} />
+              <Text style={[styles.menuOptionText, { color: colors.textPrimary }]} numberOfLines={1}>
+                {t('chat.block')}
+              </Text>
+            </Pressable>
+          )}
+          <Pressable onPress={() => run(onReport)} style={styles.menuOptionRow}>
+            <Ionicons name="flag-outline" size={16} color={colors.textSecondary} style={styles.menuOptionIcon} />
+            <Text style={[styles.menuOptionText, { color: colors.textPrimary }]} numberOfLines={1}>
+              {t('chat.report')}
+            </Text>
+          </Pressable>
+          <View style={styles.menuDivider} />
+          <Pressable onPress={() => run(onClearChat)} style={styles.menuOptionRow}>
+            <Ionicons name="trash-outline" size={16} color={colors.danger} style={styles.menuOptionIcon} />
+            <Text style={[styles.menuOptionText, { color: colors.danger }]} numberOfLines={1}>
+              {t('chat.clearChat')}
+            </Text>
+          </Pressable>
+          </Animated.View>
+        </View>
+      </Pressable>
+    </Modal>
   );
 }
 
@@ -565,6 +782,45 @@ const makeStyles = (colors: Palette) =>
     // badge are actually competing against. The tap target stays 40dp-ish via
     // the padding; only the space between them comes down.
     headerIconButton: { padding: spacing.xs, marginHorizontal: 2 },
+    // Anchored top-right, under the "⋮" that opened it — a dropdown, not a
+    // centred sheet, so it reads as coming from that one button.
+    menuOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.25)',
+      // Centred, matching ResponsiveFrame's own backdrop — `menuFrameBounds`
+      // below is what actually pins the menu to a right edge, capped to the
+      // frame's width so that edge is the frame's, not the raw viewport's.
+      alignItems: 'center',
+      // paddingTop is set per-render from `menuTop`, the header's freshly
+      // measured on-screen bottom edge (see `openMenu`) — a fixed value here
+      // would clear the header on one device/browser and cut through it on
+      // another.
+    },
+    menuFrameBounds: { width: '100%', alignItems: 'flex-end', paddingRight: spacing.sm },
+    // A fixed width rather than a `minWidth` — the app's display font runs
+    // wide, and letting the card shrink-wrap its widest row let it stretch
+    // most of the way across the screen instead of reading as a small menu.
+    menuCard: {
+      width: 172,
+      backgroundColor: colors.surfaceElevated,
+      borderRadius: radius.md,
+      paddingVertical: spacing.xs,
+      shadowColor: '#000',
+      shadowOpacity: 0.22,
+      shadowRadius: 18,
+      shadowOffset: { width: 0, height: 8 },
+      elevation: 12,
+    },
+    menuOptionRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs + 2,
+      paddingHorizontal: spacing.sm + 2,
+      paddingVertical: spacing.sm,
+    },
+    menuOptionIcon: { width: 16 },
+    menuDivider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.borderSoft, marginVertical: spacing.xs },
+    menuOptionText: { fontSize: scaleFont(13.5), fontWeight: '600' },
     rishtaBannerWrap: { paddingHorizontal: spacing.md, paddingTop: spacing.sm },
     rishtaBanner: { borderRadius: radius.lg, padding: spacing.md, gap: spacing.sm },
     rishtaBannerText: { ...typography.label, color: '#FFFFFF', fontWeight: '800' },
@@ -635,6 +891,21 @@ const makeStyles = (colors: Palette) =>
       backgroundColor: colors.surfaceElevated,
     },
     inputRowRtl: { flexDirection: 'row-reverse' },
+    // Sits directly on top of the input row it belongs to, no border between
+    // them, so the two read as one composer rather than a banner plus a bar.
+    replyBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xs + 2,
+      backgroundColor: colors.surfaceElevated,
+    },
+    replyBarAccent: { width: 3, alignSelf: 'stretch', borderRadius: 2, backgroundColor: colors.teal },
+    replyBarText: { flex: 1, minWidth: 0 },
+    replyBarLabel: { ...typography.caption, fontSize: scaleFont(11), color: colors.teal, fontWeight: '800' },
+    replyBarPreview: { ...typography.caption, color: colors.textSecondary, marginTop: 1 },
+    replyBarClose: { padding: spacing.xs },
     blockedBar: {
       flexDirection: 'row',
       alignItems: 'center',

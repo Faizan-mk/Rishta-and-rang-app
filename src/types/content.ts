@@ -165,6 +165,11 @@ export interface ChatMessage {
   // Set on a failed message so the retry can send exactly what was typed —
   // a voice note or a photo cannot be recovered from the bubble alone.
   localUri?: string;
+  // The message this one is quoting, swiped into from the composer the way
+  // WhatsApp's reply gesture does. Only the id is stored; the quoted preview
+  // is resolved client-side by looking that id up in the same thread already
+  // held in memory, rather than duplicating its text onto every reply.
+  replyToId?: string;
 }
 
 // A single emoji one person put on one message. Reactions are stored apart from
@@ -173,8 +178,9 @@ export interface ChatMessage {
 export interface MessageReaction {
   id: string;
   messageId: string;
-  // Who reacted. Today that is always the signed-in member — this app mirrors
-  // each side of a thread into its own rows and has no cross-user write path.
+  // Who reacted — either participant, not only the signed-in member: a shared
+  // conversation row (supabase/26_two_way_messaging.sql) is what a reaction
+  // hangs off now, so the other person's reaction reaches this side too.
   userId: string;
   emoji: string;
   createdAt: string;

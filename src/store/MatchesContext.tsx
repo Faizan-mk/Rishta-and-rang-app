@@ -8,7 +8,7 @@ import { reactionsService, rowToReaction } from '../services/reactionsService';
 import { AppError } from '../utils/appError';
 import type { BlockedProfile, ChatMessage, Match, MessageReaction } from '../types/content';
 import type { ProfileMode } from '../types/user';
-import { PHOTO_PREVIEW, VOICE_PREVIEW, previewFor } from '../utils/messagePreview';
+import { PHOTO_PREVIEW, VOICE_PREVIEW, previewFor, reactionPreview } from '../utils/messagePreview';
 import { useAuth } from './AuthContext';
 import { useToast } from './ToastContext';
 
@@ -44,14 +44,18 @@ interface MatchesContextValue {
   getReactions: (messageId: string) => MessageReaction[];
   /** Adds the emoji, or takes it back off if this member already used it. */
   toggleReaction: (messageId: string, emoji: string) => void;
-  sendMessage: (matchId: string, text: string) => void;
-  sendVoiceMessage: (matchId: string, uri: string, durationSec: number) => void;
-  sendImageMessage: (matchId: string, uri: string) => void;
+  sendMessage: (matchId: string, text: string, replyToId?: string) => void;
+  sendVoiceMessage: (matchId: string, uri: string, durationSec: number, replyToId?: string) => void;
+  sendImageMessage: (matchId: string, uri: string, replyToId?: string) => void;
   /** "Delete for everyone" — only ever succeeds against a message you sent. */
   deleteMessage: (matchId: string, message: ChatMessage) => void;
   /** "Delete for me" — hides it on this side only; the other participant keeps theirs. */
   hideMessage: (matchId: string, message: ChatMessage) => void;
+  /** "Clear Chat" — hides every message in the thread, on this side only. */
+  clearChat: (matchId: string) => void;
   markMatchRead: (matchId: string) => void;
+  /** Resyncs `theirReadAt` from the server — a poll to back up the realtime listener. */
+  refreshReadReceipt: (matchId: string) => Promise<void>;
   /** Asks to move to rishta. Rejects with the database's reason if it may not. */
   sendRishtaRequest: (matchId: string, requestText: string) => Promise<void>;
   /** Answers the other member's request; accepting moves both sides at once. */
@@ -141,6 +145,11 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
   const inFlightThreads = useRef<Set<string>>(new Set());
   // Makes each optimistic message's placeholder id unique within a millisecond.
   const pendingSeq = useRef(0);
+  // Mirrors `chatHistory` for the realtime effect below, which only runs once
+  // per session (deps: `[user?.id]`) — its closures would otherwise see
+  // whatever `chatHistory` was on that one render forever, which is exactly
+  // the state a live reaction needs current to find which match it belongs to.
+  const chatHistoryRef = useRef<Record<string, ChatMessage[]>>({});
 
   const { showError } = useToast();
 
@@ -234,6 +243,28 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
         if (list.some((existing) => existing.id === reaction.id)) return prev;
         return { ...prev, [reaction.messageId]: [...list, reaction] };
       });
+
+      // The other participant reacting is activity in the thread the same way
+      // their message is — it belongs on the Matches list the same way, not
+      // only visible to someone who happens to already have the chat open.
+      // My own reactions echoing back here are not: I already know I sent them.
+      if (reaction.userId === userId) return;
+      const matchId = Object.keys(chatHistoryRef.current).find((id) =>
+        chatHistoryRef.current[id].some((m) => m.id === reaction.messageId)
+      );
+      if (!matchId) return;
+      setMatches((prev) =>
+        prev.map((match) => {
+          if (match.id !== matchId) return match;
+          // Still worth a badge even if it landed on an older message while
+          // something newer was said meanwhile — just not worth rewriting the
+          // preview line to look older than what is actually last there.
+          if (match.lastMessageAt && reaction.createdAt <= match.lastMessageAt) {
+            return { ...match, unread: true };
+          }
+          return { ...match, lastMessage: reactionPreview(reaction.emoji), lastMessageAt: reaction.createdAt, unread: true };
+        })
+      );
     };
 
     const dropReaction = (reaction: MessageReaction) => {
@@ -275,6 +306,7 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
       if (String(row.user_id) === userId) return;
       const matchId = String(row.match_id);
       const at = String(row.last_read_at);
+      if (__DEV__) console.log('[match_reads] applying read mark', { matchId, at });
       setMatches((prev) =>
         prev.map((match) =>
           match.id === matchId && (!match.theirReadAt || at > match.theirReadAt)
@@ -339,7 +371,13 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
         { event: 'INSERT', schema: 'public', table: 'message_hidden' },
         (payload) => dropMessageById(String((payload.new as Record<string, unknown>).message_id))
       )
-      .subscribe();
+      // Dev-only: prints whether this channel ever actually reaches
+      // SUBSCRIBED, and why not when it doesn't — the one thing none of the
+      // individual `.on()` handlers above can tell you on their own, since a
+      // channel that never connects fires none of them and errors nowhere else.
+      .subscribe((status, err) => {
+        if (__DEV__) console.log(`[chat_messages_${userId}] channel status:`, status, err ?? '');
+      });
 
     return () => {
       cancelled = true;
@@ -355,6 +393,10 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
     cache.write(user.id, CACHE_KEYS.matches, matches);
     cache.write(user.id, CACHE_KEYS.blocked, blockedProfiles);
   }, [user?.id, matches, blockedProfiles]);
+
+  useEffect(() => {
+    chatHistoryRef.current = chatHistory;
+  }, [chatHistory]);
 
   const getMatch = (matchId: string) => matches.find((m) => m.id === matchId);
   const getMessages = (matchId: string) => chatHistory[matchId] ?? NO_MESSAGES;
@@ -542,33 +584,33 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
   // The notification goes out only once the row is in: a push about a message
   // that failed to send would be worse than no push at all. `pushService.notify*`
   // never throws, so it cannot take the send down with it either.
-  const sendMessage = (matchId: string, text: string) => {
+  const sendMessage = (matchId: string, text: string, replyToId?: string) => {
     const trimmed = text.trim();
     if (!trimmed || !user) return;
-    const pending = optimistic(matchId, { text: trimmed, kind: 'text' });
+    const pending = optimistic(matchId, { text: trimmed, kind: 'text', replyToId });
     putMessage(pending);
     pushMessage(matchId, pending, trimmed);
     matchesService
-      .insertTextMessage(user.id, matchId, trimmed)
+      .insertTextMessage(user.id, matchId, trimmed, replyToId)
       .then((message) => {
         settleMessage(matchId, pending.id, message);
         pushService.notifyMessage(matchId, trimmed);
       })
       .catch(() => {
         failMessage(matchId, pending.id);
-        showError({ messageKey: 'netErrors.messageNotSent', onRetry: () => sendMessage(matchId, trimmed) });
+        showError({ messageKey: 'netErrors.messageNotSent', onRetry: () => sendMessage(matchId, trimmed, replyToId) });
       });
   };
 
-  const sendVoiceMessage = (matchId: string, uri: string, durationSec: number) => {
+  const sendVoiceMessage = (matchId: string, uri: string, durationSec: number, replyToId?: string) => {
     if (!user) return;
     // The local file plays straight away, so the bubble is usable while the
     // upload is still running — and `localUri` is what a retry re-sends.
-    const pending = optimistic(matchId, { kind: 'voice', audioUri: uri, durationSec, localUri: uri });
+    const pending = optimistic(matchId, { kind: 'voice', audioUri: uri, durationSec, localUri: uri, replyToId });
     putMessage(pending);
     pushMessage(matchId, pending, VOICE_PREVIEW);
     matchesService
-      .insertVoiceMessage(user.id, matchId, uri, durationSec)
+      .insertVoiceMessage(user.id, matchId, uri, durationSec, replyToId)
       .then((message) => {
         settleMessage(matchId, pending.id, message);
         // No preview text: a voice note has no words to quote, so the function
@@ -579,38 +621,42 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
         failMessage(matchId, pending.id);
         showError({
           messageKey: 'netErrors.messageNotSent',
-          onRetry: () => sendVoiceMessage(matchId, uri, durationSec),
+          onRetry: () => sendVoiceMessage(matchId, uri, durationSec, replyToId),
         });
       });
   };
 
-  const sendImageMessage = (matchId: string, uri: string) => {
+  const sendImageMessage = (matchId: string, uri: string, replyToId?: string) => {
     if (!user) return;
-    const pending = optimistic(matchId, { kind: 'image', imageUri: uri, localUri: uri });
+    const pending = optimistic(matchId, { kind: 'image', imageUri: uri, localUri: uri, replyToId });
     putMessage(pending);
     pushMessage(matchId, pending, PHOTO_PREVIEW);
     matchesService
-      .insertImageMessage(user.id, matchId, uri)
+      .insertImageMessage(user.id, matchId, uri, replyToId)
       .then((message) => {
         settleMessage(matchId, pending.id, message);
         pushService.notifyMessage(matchId);
       })
       .catch(() => {
         failMessage(matchId, pending.id);
-        showError({ messageKey: 'netErrors.messageNotSent', onRetry: () => sendImageMessage(matchId, uri) });
+        showError({
+          messageKey: 'netErrors.messageNotSent',
+          onRetry: () => sendImageMessage(matchId, uri, replyToId),
+        });
       });
   };
 
-  /** Sends a failed message again — the same words, or the same file. */
+  /** Sends a failed message again — the same words, or the same file, still
+   * quoting whatever it quoted the first time. */
   const retryMessage = (message: ChatMessage) => {
     if (message.status !== 'failed') return;
     dropMessage(message.matchId, message.id);
     if (message.kind === 'voice' && message.localUri) {
-      sendVoiceMessage(message.matchId, message.localUri, message.durationSec ?? 0);
+      sendVoiceMessage(message.matchId, message.localUri, message.durationSec ?? 0, message.replyToId);
     } else if (message.kind === 'image' && message.localUri) {
-      sendImageMessage(message.matchId, message.localUri);
+      sendImageMessage(message.matchId, message.localUri, message.replyToId);
     } else {
-      sendMessage(message.matchId, message.text);
+      sendMessage(message.matchId, message.text, message.replyToId);
     }
   };
 
@@ -638,6 +684,25 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+  /** "Clear Chat" — the bulk form of `hideMessage`: every message currently in
+   * the thread disappears from this side only (supabase/38_clear_chat_for_me.sql).
+   * The other participant keeps every one of theirs, and can still write into
+   * the thread afterwards same as before. */
+  const clearChat = (matchId: string) => {
+    if (!user) return;
+    const previousMessages = chatHistory[matchId];
+    const previousMatch = matches.find((m) => m.id === matchId);
+    setChatHistory((prev) => ({ ...prev, [matchId]: [] }));
+    setMatches((prev) => prev.map((m) => (m.id === matchId ? { ...m, lastMessage: '' } : m)));
+    matchesService.clearChat(matchId).catch(() => {
+      if (previousMessages) setChatHistory((prev) => ({ ...prev, [matchId]: previousMessages }));
+      if (previousMatch) {
+        setMatches((prev) => prev.map((m) => (m.id === matchId ? previousMatch : m)));
+      }
+      showError({ messageKey: 'netErrors.chatNotDeleted', onRetry: () => clearChat(matchId) });
+    });
+  };
+
   // Per side: this writes only this member's mark, and the other person's
   // unread is untouched by it (supabase/26_two_way_messaging.sql).
   const markMatchRead = (matchId: string) => {
@@ -645,6 +710,30 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
     if (!match || !match.unread || !user) return;
     setMatches((prev) => prev.map((m) => (m.id === matchId ? { ...m, unread: false } : m)));
     matchesService.markRead(user.id, matchId, new Date().toISOString()).catch(() => undefined);
+  };
+
+  /**
+   * Re-fetches this match's read marks and applies whichever side is newer
+   * than what is already held.
+   *
+   * `theirReadAt` (the blue tick) is otherwise only ever pushed forward by the
+   * `match_reads` realtime listener — a resilience poll alongside it, the same
+   * way the chat header's own "online" dot already polls
+   * (`ChatScreen.tsx`'s `ONLINE_POLL_MS`) rather than trusting Realtime alone
+   * to keep a screen someone is actively looking at truthful.
+   */
+  const refreshReadReceipt = async (matchId: string) => {
+    if (!user) return;
+    try {
+      const reads = await matchesService.fetchReads(user.id);
+      const theirs = reads.theirs[matchId];
+      if (!theirs) return;
+      setMatches((prev) =>
+        prev.map((m) => (m.id === matchId && (!m.theirReadAt || theirs > m.theirReadAt) ? { ...m, theirReadAt: theirs } : m))
+      );
+    } catch {
+      // A background resync, not a user-facing action — nothing to surface.
+    }
   };
 
   // Sends a Move to Rishta request. The request is a state on the shared row
@@ -837,7 +926,9 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
       sendImageMessage,
       deleteMessage,
       hideMessage,
+      clearChat,
       markMatchRead,
+      refreshReadReceipt,
       sendRishtaRequest,
       removeMatch,
       blockMatch,

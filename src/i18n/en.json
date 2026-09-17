@@ -307,6 +307,7 @@
     "youAndLikedEachOther": "You and {name} liked each other.",
     "previewPhoto": "Photo",
     "previewVoice": "Voice message",
+    "previewReacted": "Reacted to a message",
     "matchedBody": "You and {name} liked each other."
   },
   "chat": {
@@ -349,7 +350,15 @@
     "rishtaRequestFailed": "That didn't go through. Try again in a moment.",
     "deleteForEveryone": "Delete for everyone",
     "deleteForMe": "Delete for me",
-    "deleteConfirmTitle": "Delete message?"
+    "deleteConfirmTitle": "Delete message?",
+    "clearChat": "Clear chat",
+    "voiceCall": "Voice call",
+    "replyYou": "You",
+    "replyingTo": "Replying to {name}",
+    "videoCall": "Video call",
+    "moreOptions": "More options",
+    "clearChatConfirmTitle": "Clear this chat?",
+    "clearChatConfirmBody": "Every message is removed from your side only — {name} keeps theirs, and the chat still works afterwards."
   },
   "profile": {
     "title": "Profile",
@@ -843,7 +852,8 @@
     "deckRefresh": "Couldn't refresh profiles.",
     "matchesRefresh": "Couldn't refresh your matches.",
     "likeNotSent": "That like didn't go through.",
-    "messageNotDeleted": "Couldn't delete that message."
+    "messageNotDeleted": "Couldn't delete that message.",
+    "chatNotDeleted": "Couldn't clear that chat."
   },
   "authErrors": {
     "emailTaken": "That email is already registered. Try logging in instead.",
