@@ -55,12 +55,8 @@ const MATCH_SELECT: string =
 
 // Typed as plain string on purpose: supabase-js's select-string parser rejects
 // quoted aliases, so we keep the query untyped and cast rows ourselves.
-// `replyToId:reply_to_id` joins this once supabase/39_message_reply.sql has
-// actually been run against the database — selecting a column that doesn't
-// exist yet fails the query outright, which broke sending entirely until
-// this was reverted back out.
 const MESSAGE_SELECT: string =
-  'id, matchId:match_id, senderId:sender_id, text, kind, audioUrl:audio_path, durationSec:duration_sec, imageUrl:image_path, sentAt:sent_at';
+  'id, matchId:match_id, senderId:sender_id, text, kind, audioUrl:audio_path, durationSec:duration_sec, imageUrl:image_path, sentAt:sent_at, replyToId:reply_to_id';
 
 const BLOCKED_SELECT: string = 'id:blocked_user_id, name, photo, blockedAt:blocked_at';
 
@@ -398,8 +394,7 @@ async function insertMessage(profileId: string, data: NewMessage): Promise<ChatM
       audio_path: data.audioUrl,
       duration_sec: data.durationSec,
       image_path: data.imageUrl,
-      // reply_to_id is intentionally left out here until 39_message_reply.sql
-      // has run — see the comment on MESSAGE_SELECT above.
+      reply_to_id: data.replyToId,
       // `sent_at` is deliberately NOT sent: the column defaults to the
       // database's own `now()`.
       //
