@@ -16,7 +16,7 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInUp, ZoomIn } from 'react-native-reanimated';
 import * as ImagePicker from 'expo-image-picker';
 import { useAudioRecorder, RecordingPresets, requestRecordingPermissionsAsync } from 'expo-audio';
@@ -103,18 +103,28 @@ export function ChatScreen() {
   // What a swipe-to-reply picked, if anything — cleared once whatever is sent
   // next (text, voice or photo) actually goes out quoting it.
   const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
-  // Where the header's bottom edge actually is on screen, measured fresh each
-  // time the menu opens rather than computed from insets + a layout height:
-  // on web the Modal it renders in portals to the browser's own document body
-  // (outside both the SafeAreaView and ResponsiveFrame), so its coordinate
-  // origin is the real browser window's top-left, not the frame's — and the
-  // frame can itself sit offset within that window (it is vertically centred
-  // whenever the window is taller than the frame's own max height).
-  // `measureInWindow` reports a position already relative to that same real
-  // window, so it lines up correctly regardless of that offset, on web or
-  // native alike.
+  // Where the header's bottom edge actually is on screen. On web this is
+  // measured fresh each time the menu opens: the Modal it renders in portals
+  // to the browser's own document body (outside both the SafeAreaView and
+  // ResponsiveFrame), so its coordinate origin is the real browser window's
+  // top-left, not the frame's — and the frame can itself sit offset within
+  // that window (it is vertically centred whenever the window is taller than
+  // the frame's own max height). `measureInWindow` reports a position already
+  // relative to that same real window, so it lines up correctly regardless of
+  // that offset.
+  // On native this is `insets.top + headerHeight` instead of a
+  // `measureInWindow` reading against the *activity* window — that reading's
+  // meaning shifts under Android's edge-to-edge handling (mandatory since
+  // SDK 54, but which of two builds on the same device has actually picked it
+  // up varies with how recently each was rebuilt), so the same code measured
+  // fine on one build and landed the menu under the status bar on another.
+  // `insets.top` plus the header's own intrinsic layout height never depends
+  // on that: it lines up with the Modal's edge-to-edge window regardless of
+  // whether the activity underneath happens to be edge-to-edge itself.
   const [menuTop, setMenuTop] = useState(0);
+  const [headerHeight, setHeaderHeight] = useState(0);
   const headerRef = useRef<View>(null);
+  const insets = useSafeAreaInsets();
   const [recording, setRecording] = useState(false);
   const [inputFocused, setInputFocused] = useState(false);
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
@@ -350,7 +360,11 @@ export function ChatScreen() {
   const onReport = () => setReportVisible(true);
 
   const openMenu = () => {
-    headerRef.current?.measureInWindow((_x, y, _width, height) => setMenuTop(y + height));
+    if (Platform.OS === 'web') {
+      headerRef.current?.measureInWindow((_x, y, _width, height) => setMenuTop(y + height));
+    } else {
+      setMenuTop(insets.top + headerHeight);
+    }
     setMenuOpen(true);
   };
 
@@ -377,7 +391,11 @@ export function ChatScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-      <FadeIn ref={headerRef} style={[styles.header, rtl && styles.headerRtl]}>
+      <FadeIn
+        ref={headerRef}
+        style={[styles.header, rtl && styles.headerRtl]}
+        onLayout={(e) => setHeaderHeight(e.nativeEvent.layout.height)}
+      >
         <Pressable onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name={rtl ? 'chevron-forward' : 'chevron-back'} size={22} color={colors.textPrimary} />
         </Pressable>
@@ -695,14 +713,19 @@ function HeaderMenu({
   };
 
   return (
-    // `statusBarTranslucent` is pinned explicitly (rather than left to the
-    // Android default) because `topOffset` is a `measureInWindow` value taken
-    // against the *activity* window — a fresh native build can pick up a
-    // Material/AndroidX dialog theme that draws this Modal's own window under
-    // the status bar even though the activity doesn't, which is what pushed
-    // the menu up after a production build while a dev client (an older,
-    // already-installed native binary) rendered it correctly.
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent={false}>
+    // `statusBarTranslucent` must be true, matching the rest of the app's
+    // Modals (BottomSheet, ImageCropper): SDK 54 makes edge-to-edge mandatory
+    // on Android, so the activity's window already draws under the status
+    // bar. `topOffset` is a `measureInWindow` value taken in that same
+    // edge-to-edge coordinate space. Leaving this Modal's own window
+    // non-translucent forces the status bar solid for as long as the menu is
+    // open, which shifts the *whole* screen down by the status bar's height —
+    // but `topOffset` was captured before that shift, so the menu renders
+    // that same distance too high relative to the "⋮" that opened it, right
+    // under the status bar, in a production build (where the activity is
+    // truly edge-to-edge) even though it looked fine in Expo Go/an older dev
+    // client that predated the mandatory edge-to-edge switch.
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
       <Pressable
         style={[styles.menuOverlay, { paddingTop: topOffset }]}
         onPress={onClose}

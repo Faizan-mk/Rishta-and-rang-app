@@ -123,7 +123,15 @@ export const DiscoverProfileCard = React.memo(function DiscoverProfileCard({
           </View>
 
           {photosHidden && (
-            <BlurView intensity={45} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFill} pointerEvents="none">
+            // Android's BlurView renders as a flat, un-blurred tint unless
+            // this is set — it defaults to 'none' there, unlike iOS.
+            <BlurView
+              intensity={45}
+              tint={isDark ? 'dark' : 'light'}
+              experimentalBlurMethod="dimezisBlurView"
+              style={StyleSheet.absoluteFill}
+              pointerEvents="none"
+            >
               <View style={styles.blurCenter}>
                 <Ionicons name="lock-closed" size={26} color="#FFFFFF" />
                 <Text style={styles.blurText}>{t('profileDetail.photosHidden')}</Text>
