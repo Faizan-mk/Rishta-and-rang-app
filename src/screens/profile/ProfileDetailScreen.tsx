@@ -162,7 +162,14 @@ export function ProfileDetailScreen() {
           )}
 
           {photosHidden && (
-            <BlurView intensity={50} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFill}>
+            // Android's BlurView renders as a flat, un-blurred tint unless
+            // this is set — it defaults to 'none' there, unlike iOS.
+            <BlurView
+              intensity={50}
+              tint={isDark ? 'dark' : 'light'}
+              experimentalBlurMethod="dimezisBlurView"
+              style={StyleSheet.absoluteFill}
+            >
               <View style={styles.blurOverlay}>
                 <Ionicons name="lock-closed" size={22} color="#FFFFFF" />
                 <Text style={styles.blurText}>{t('profileDetail.photosHidden')}</Text>

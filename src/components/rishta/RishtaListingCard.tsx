@@ -56,7 +56,14 @@ export const RishtaListingCard = React.memo(function RishtaListingCard({ profile
       >
         <Image source={{ uri: profile.photos[0] }} style={styles.photo} />
         {photosHidden ? (
-          <BlurView intensity={35} tint={isDark ? 'dark' : 'light'} style={styles.blurOverlay}>
+          // Android's BlurView renders as a flat, un-blurred tint unless
+          // this is set — it defaults to 'none' there, unlike iOS.
+          <BlurView
+            intensity={35}
+            tint={isDark ? 'dark' : 'light'}
+            experimentalBlurMethod="dimezisBlurView"
+            style={styles.blurOverlay}
+          >
             <Ionicons name="lock-closed" size={16} color="#FFFFFF" />
           </BlurView>
         ) : (

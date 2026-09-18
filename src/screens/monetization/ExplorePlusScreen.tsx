@@ -335,7 +335,15 @@ export function ExplorePlusScreen() {
                 <View style={styles.admirerCard}>
                 <Image source={{ uri: profile.photo }} style={styles.admirerPhoto} />
                 {!isPro && (
-                  <BlurView intensity={40} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFill}>
+                  // Android's BlurView renders as a flat, un-blurred tint
+                  // unless this is set — it defaults to 'none' there, unlike
+                  // iOS where the native blur just works.
+                  <BlurView
+                    intensity={40}
+                    tint={isDark ? 'dark' : 'light'}
+                    experimentalBlurMethod="dimezisBlurView"
+                    style={StyleSheet.absoluteFill}
+                  >
                     <View style={styles.lockOverlay}>
                       <Ionicons name="lock-closed" size={18} color="#FFFFFF" />
                     </View>
