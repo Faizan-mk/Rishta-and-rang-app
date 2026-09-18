@@ -44,6 +44,7 @@ import { ProfileActionsFooter } from '../../components/discover/ProfileActionsFo
 import { ProfileUtilityBar } from '../../components/discover/ProfileUtilityBar';
 import { ReportDialog, type ReportSubmission } from '../../components/common/ReportDialog';
 import { reportsService } from '../../services/reportsService';
+import { profileNotesService } from '../../services/profileNotesService';
 import { prefetchImages } from '../../services/imageCache';
 import type { BrowseProfile, DiscoverProfile, RishtaListingProfile } from '../../types/content';
 import type { ProfileMode, UserProfile } from '../../types/user';
@@ -434,9 +435,14 @@ export function HomeScreen() {
     await notify({ title: t('chat.reportSentTitle'), message: t('chat.reportSentBody') });
   };
 
-  const onSendCompliment = async (_text: string) => {
+  const onSendCompliment = async (text: string) => {
     if (!currentProfile) return;
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    try {
+      await profileNotesService.sendNote(currentProfile.id, text);
+    } catch {
+      await notify({ title: t('report.failedTitle'), message: t('report.failedBody') });
+      return;
+    }
     await notify({ title: t('discover.complimentSentTitle'), message: t('discover.complimentSentBody', { name: currentProfile.name }) });
   };
 

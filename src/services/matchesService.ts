@@ -534,6 +534,7 @@ export const matchesService = {
   markRead,
   fetchBlocked,
   findMatchRow,
+  fetchCounterpartCard,
   ensureMatch,
   requestRishta,
   respondRishta,

@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import { discoveryService } from '../services/discoveryService';
+import { supabase } from '../services/supabase';
 import { cache, CACHE_KEYS } from '../services/cache';
 import type { DiscoverProfile, RishtaListingProfile } from '../types/content';
 import { useAuth } from './AuthContext';
@@ -204,14 +205,15 @@ export function DiscoveryProvider({ children }: { children: React.ReactNode }) {
         if (cancelled || activity.size === 0) return;
         // Returns the very same array when nothing moved, so a quiet refresh —
         // which is most of them — costs no re-render and no cache write.
-        const patch = <T extends { id: string; lastActiveAt?: string }>(list: T[]): T[] => {
+        const patch = <T extends { id: string; lastActiveAt?: string; isOnline?: boolean }>(list: T[]): T[] => {
           let changed = false;
           const next = list.map((profile) => {
-            if (!activity.has(profile.id)) return profile;
-            const lastActiveAt = activity.get(profile.id) ?? undefined;
-            if (lastActiveAt === profile.lastActiveAt) return profile;
+            const entry = activity.get(profile.id);
+            if (!entry) return profile;
+            const lastActiveAt = entry.lastActiveAt ?? undefined;
+            if (lastActiveAt === profile.lastActiveAt && entry.isOnline === profile.isOnline) return profile;
             changed = true;
-            return { ...profile, lastActiveAt };
+            return { ...profile, lastActiveAt, isOnline: entry.isOnline };
           });
           return changed ? next : list;
         };
@@ -229,10 +231,33 @@ export function DiscoveryProvider({ children }: { children: React.ReactNode }) {
       if (state === 'active') void refresh();
     });
 
+    // Live, not just polled: `profiles` is on the realtime publication
+    // (supabase/43_online_presence.sql) precisely so "Active now" does not sit
+    // stale for up to `ACTIVITY_REFRESH_MS` after someone actually leaves.
+    // `postgres_changes` filters only support a single equality match, and the
+    // deck holds up to a hundred ids at once, so this listens unfiltered (RLS
+    // still limits it to profiles this member may see at all) and drops
+    // anything whose id is not currently on screen.
+    const channel = supabase
+      .channel(`profiles_presence_${user.id}`)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles' }, (payload) => {
+        const row = payload.new as { id: string; last_active_at: string | null; is_online: boolean | null };
+        const { dating, rishta } = decks.current;
+        if (!dating.some((p) => p.id === row.id) && !rishta.some((p) => p.id === row.id)) return;
+        const lastActiveAt = row.last_active_at ?? undefined;
+        const isOnline = Boolean(row.is_online);
+        const patchOne = <T extends { id: string; lastActiveAt?: string; isOnline?: boolean }>(list: T[]): T[] =>
+          list.map((profile) => (profile.id === row.id ? { ...profile, lastActiveAt, isOnline } : profile));
+        setDatingProfiles(patchOne);
+        setRishtaProfiles(patchOne);
+      })
+      .subscribe();
+
     return () => {
       cancelled = true;
       clearInterval(timer);
       subscription.remove();
+      supabase.removeChannel(channel);
     };
     // Deliberately not re-run per deck change — that would tear down and rebuild
     // the timer on every page appended. The current deck reaches it through the

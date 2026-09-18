@@ -49,7 +49,16 @@ export function useActivityHeartbeat(): void {
     const timer = setInterval(touch, MIN_INTERVAL_MS);
 
     const subscription = AppState.addEventListener('change', (state) => {
-      if (state === 'active') touch();
+      if (state === 'active') {
+        touch();
+      } else {
+        // Leaving is the other half of "right now" (supabase/43_online_presence.sql):
+        // without this, someone who backgrounds the app keeps reading as online
+        // in whoever's chat header they're in for however long is left of the
+        // last `touch()`'s window, rather than the moment they actually left.
+        lastTouch.current = 0;
+        authService.touchOffline(user.id).catch(() => undefined);
+      }
     });
 
     return () => {

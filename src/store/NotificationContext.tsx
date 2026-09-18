@@ -11,6 +11,7 @@ interface NotificationContextValue {
   unreadCount: number;
   markAllRead: () => void;
   markRead: (id: string) => void;
+  markReadForMatch: (matchId: string) => void;
   addNotification: (type: NotificationItem['type'], title: string, body: string) => void;
 }
 
@@ -86,6 +87,12 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     notificationsService.markRead(user.id, id);
   };
 
+  const markReadForMatch = (matchId: string) => {
+    if (!user) return;
+    setFeed((prev) => prev.map((n) => (n.matchId === matchId && !n.read ? { ...n, read: true } : n)));
+    notificationsService.markReadByMatch(user.id, matchId);
+  };
+
   const addNotification = (type: NotificationItem['type'], title: string, body: string) => {
     if (!user || !prefs[PREF_KEY_BY_TYPE[type]]) return;
     notificationsService.addNotification(user.id, type, title, body).then((item) => {
@@ -96,7 +103,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const unreadCount = useMemo(() => feed.filter((n) => !n.read).length, [feed]);
 
   const value = useMemo(
-    () => ({ prefs, setPref, feed, unreadCount, markAllRead, markRead, addNotification }),
+    () => ({ prefs, setPref, feed, unreadCount, markAllRead, markRead, markReadForMatch, addNotification }),
     [prefs, feed, unreadCount, user?.id]
   );
 

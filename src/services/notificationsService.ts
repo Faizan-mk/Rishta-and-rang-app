@@ -8,6 +8,7 @@ interface NotificationRow {
   body: string;
   created_at: string;
   read: boolean;
+  match_id: string | null;
 }
 
 /** A `notifications` row (snake_case, from PostgreSQL/Realtime) → NotificationItem. */
@@ -19,6 +20,7 @@ export function rowToNotification(row: Record<string, unknown>): NotificationIte
     body: (row.body as string) ?? '',
     createdAt: (row.created_at as string) ?? new Date().toISOString(),
     read: Boolean(row.read),
+    matchId: row.match_id ? String(row.match_id) : undefined,
   };
 }
 
@@ -30,10 +32,11 @@ function mapNotification(row: NotificationRow): NotificationItem {
     body: row.body,
     createdAt: row.created_at,
     read: row.read,
+    matchId: row.match_id ?? undefined,
   };
 }
 
-const NOTIFICATION_SELECT = 'id, type, title, body, created_at, read';
+const NOTIFICATION_SELECT = 'id, type, title, body, created_at, read, match_id';
 
 async function fetchFeed(profileId: string): Promise<NotificationItem[]> {
   const { data, error } = await supabase
@@ -116,4 +119,27 @@ async function markRead(profileId: string, id: string): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
-export const notificationsService = { fetchFeed, fetchPrefs, setPref, addNotification, markAllRead, markRead };
+/**
+ * Reading a thread reads whatever it was ever notified about, too — a
+ * "X sent you a message" row a member already saw in the chat itself should
+ * not still be sitting there unread the next time they open Notifications.
+ */
+async function markReadByMatch(profileId: string, matchId: string): Promise<void> {
+  const { error } = await supabase
+    .from('notifications')
+    .update({ read: true })
+    .eq('profile_id', profileId)
+    .eq('match_id', matchId)
+    .eq('read', false);
+  if (error) throw new Error(error.message);
+}
+
+export const notificationsService = {
+  fetchFeed,
+  fetchPrefs,
+  setPref,
+  addNotification,
+  markAllRead,
+  markRead,
+  markReadByMatch,
+};

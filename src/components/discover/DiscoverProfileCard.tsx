@@ -78,7 +78,7 @@ export const DiscoverProfileCard = React.memo(function DiscoverProfileCard({
     .filter(Boolean)
     .join(' · ');
 
-  const activity = activityLevel(profile.lastActiveAt);
+  const activity = activityLevel(profile.lastActiveAt, profile.isOnline);
 
   // Two or three glanceable facts, so the card says something meaningful before
   // the member scrolls into the detail sections. Each takes its own accent from

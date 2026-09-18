@@ -18,6 +18,9 @@ interface BrowseProfileFields {
   // out. Absent for demo/legacy records — the card then shows city/country only.
   distanceKm?: number;
   lastActiveAt?: string;
+  // Real presence (supabase/43_online_presence.sql) — set the instant the app
+  // leaves the foreground, not inferred from how stale `lastActiveAt` is.
+  isOnline?: boolean;
   // When the member signed up, for the "Just joined" sort.
   joinedAt?: string;
   bureauVerified?: boolean;
@@ -198,6 +201,8 @@ export interface NotificationItem {
   body: string;
   createdAt: string;
   read: boolean;
+  /** Set only for `message` — the thread reading it also marks it read. */
+  matchId?: string;
 }
 
 export interface NotificationPrefs {

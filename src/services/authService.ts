@@ -690,6 +690,20 @@ async function touchLastActive(userId: string): Promise<void> {
   await supabase.from('profiles').update({ last_active_at: new Date().toISOString() }).eq('id', userId);
 }
 
+/**
+ * Clears "around right now" the instant the app leaves the foreground.
+ *
+ * `last_active_at` is left untouched — the "today"/"yesterday" tiers still
+ * need it — this only clears `is_online` (supabase/43_online_presence.sql),
+ * which is the half a chat header's "Online" badge actually reads.
+ */
+async function touchOffline(userId: string): Promise<void> {
+  const { error } = await supabase.rpc('touch_offline');
+  if (!error) return;
+  if (error.code !== 'PGRST202') return;
+  await supabase.from('profiles').update({ is_online: false }).eq('id', userId);
+}
+
 async function logout(): Promise<void> {
   await supabase.auth.signOut();
 }
@@ -967,6 +981,7 @@ async function updatePassword(newPassword: string): Promise<void> {
 export const authService = {
 
   touchLastActive,
+  touchOffline,
   setIntent,
   setReadiness,
   signup,
