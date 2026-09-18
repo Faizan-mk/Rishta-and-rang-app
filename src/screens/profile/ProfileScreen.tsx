@@ -543,7 +543,13 @@ const makeStyles = (colors: Palette) =>
       borderRadius: radius.md,
       paddingVertical: spacing.md,
     },
-    editButtonLabel: { ...typography.bodyBold, color: '#FFFFFF', fontWeight: '800' },
+    // flexShrink lets the label wrap onto a second line instead of being
+    // clipped mid-word — on a narrower phone or with the system font size
+    // turned up, "Edit Profile" alongside the icon can be wider than the
+    // button, and a Text with no flexShrink inside a row overflows its
+    // bounds rather than reflowing, which is what read as only "Edit"
+    // showing.
+    editButtonLabel: { ...typography.bodyBold, color: '#FFFFFF', fontWeight: '800', flexShrink: 1, textAlign: 'center' },
     statsRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.lg },
     statTile: {
       flex: 1,
