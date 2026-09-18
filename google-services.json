@@ -1,26 +1,66 @@
 {
   "project_info": {
-    "project_number": "964298988141",
-    "project_id": "rishta-and-rang-2806f",
-    "storage_bucket": "rishta-and-rang-2806f.firebasestorage.app"
+    "project_number": "420705922309",
+    "firebase_url": "https://rishta-and-rang-default-rtdb.firebaseio.com",
+    "project_id": "rishta-and-rang",
+    "storage_bucket": "rishta-and-rang.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:964298988141:android:02e2ca878fc76d27a97d64",
+        "mobilesdk_app_id": "1:420705922309:android:cbc42bec631c54dcc89b6c",
         "android_client_info": {
           "package_name": "com.rishtaandrang.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "420705922309-3s53ro8gp6kbac74k8rrfenq2vmbf2qf.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
-          "current_key": "AIzaSyAjl-am51Ag1p6gmtx7vvyi117WxUuTwYE"
+          "current_key": "AIzaSyAwcgzOzGaXz0JRw0fC23SZJ_A3UDLsSyc"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "420705922309-3s53ro8gp6kbac74k8rrfenq2vmbf2qf.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:420705922309:android:26534e26382f1ed4c89b6c",
+        "android_client_info": {
+          "package_name": "com.rishtarang.pk"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "420705922309-3s53ro8gp6kbac74k8rrfenq2vmbf2qf.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAwcgzOzGaXz0JRw0fC23SZJ_A3UDLsSyc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "420705922309-3s53ro8gp6kbac74k8rrfenq2vmbf2qf.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
