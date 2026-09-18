@@ -134,13 +134,18 @@ describe('discoveryService.fetchDeckPage', () => {
 });
 
 describe('discoveryService.fetchActivity', () => {
-  it('returns a map of id to last_active_at', async () => {
+  it('returns a map of id to last_active_at and is_online', async () => {
     from.mockReturnValue(
-      chain(ok([{ id: 'p1', last_active_at: '2026-01-10' }, { id: 'p2', last_active_at: null }]))
+      chain(
+        ok([
+          { id: 'p1', last_active_at: '2026-01-10', is_online: true },
+          { id: 'p2', last_active_at: null, is_online: false },
+        ])
+      )
     );
     const activity = await discoveryService.fetchActivity(['p1', 'p2']);
-    expect(activity.get('p1')).toBe('2026-01-10');
-    expect(activity.get('p2')).toBeNull();
+    expect(activity.get('p1')).toEqual({ lastActiveAt: '2026-01-10', isOnline: true });
+    expect(activity.get('p2')).toEqual({ lastActiveAt: null, isOnline: false });
   });
 
   it('short-circuits to an empty map without querying for an empty id list', async () => {

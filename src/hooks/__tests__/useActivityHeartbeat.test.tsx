@@ -4,7 +4,7 @@ import { useActivityHeartbeat } from '../useActivityHeartbeat';
 import { authService } from '../../services/authService';
 import { useAuth } from '../../store/AuthContext';
 
-jest.mock('../../services/authService', () => ({ authService: { touchLastActive: jest.fn() } }));
+jest.mock('../../services/authService', () => ({ authService: { touchLastActive: jest.fn(), touchOffline: jest.fn() } }));
 jest.mock('../../store/AuthContext', () => ({ useAuth: jest.fn() }));
 
 const mockUseAuth = useAuth as jest.Mock;
@@ -16,6 +16,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   jest.useFakeTimers();
   (authService.touchLastActive as jest.Mock).mockResolvedValue(undefined);
+  (authService.touchOffline as jest.Mock).mockResolvedValue(undefined);
   jest.spyOn(AppState, 'addEventListener').mockImplementation((_event, cb) => {
     appStateListener = cb as (state: string) => void;
     return { remove: jest.fn() } as never;
@@ -73,7 +74,7 @@ describe('useActivityHeartbeat', () => {
     expect((authService.touchLastActive as jest.Mock).mock.calls.length).toBeGreaterThanOrEqual(callsBeforeForeground);
   });
 
-  it('ignores a transition to background', () => {
+  it('does not touch "last active" on a transition to background, but does clear presence', () => {
     mockUseAuth.mockReturnValue({ user: { id: 'u1' } });
     renderHook(() => useActivityHeartbeat());
     (authService.touchLastActive as jest.Mock).mockClear();
@@ -82,6 +83,7 @@ describe('useActivityHeartbeat', () => {
       appStateListener?.('background');
     });
     expect(authService.touchLastActive).not.toHaveBeenCalled();
+    expect(authService.touchOffline).toHaveBeenCalledWith('u1');
   });
 
   it('resets the throttle when the member signs out and back in', () => {

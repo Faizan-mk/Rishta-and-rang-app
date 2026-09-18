@@ -16,6 +16,14 @@ jest.mock('../../services/cache', () => ({
 }));
 jest.mock('../AuthContext', () => ({ useAuth: jest.fn() }));
 jest.mock('../ToastContext', () => ({ useToast: jest.fn() }));
+// The deck's presence subscription (supabase/43_online_presence.sql) opens a
+// real channel otherwise — a chainable stub is enough to keep it off the network.
+jest.mock('../../services/supabase', () => ({
+  supabase: {
+    channel: jest.fn(() => ({ on: jest.fn().mockReturnThis(), subscribe: jest.fn().mockReturnThis() })),
+    removeChannel: jest.fn(),
+  },
+}));
 
 const mockUseAuth = useAuth as jest.Mock;
 const mockUseToast = useToast as jest.Mock;

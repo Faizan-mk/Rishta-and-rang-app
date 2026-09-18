@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { mapMatchRow, matchesService, rowToMessage, type ReadMarks } from '../services/matchesService';
+import { mapMatchRow, matchesService, rowToMessage, type MatchRow, type ReadMarks } from '../services/matchesService';
 import { likesService } from '../services/likesService';
 import { pushService } from '../services/pushService';
 import { supabase } from '../services/supabase';
@@ -277,6 +277,19 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
       });
     };
 
+    // A match that formed off the *other* member's like: `likeProfile` only
+    // adds a local entry for the call that made it (the one that completed the
+    // pair), so the person who liked first and is just sitting on the app never
+    // heard about it otherwise — their local list stayed stale until the next
+    // sign-in's fetch, which is what made an already-mutual pair still say "not
+    // matched yet" on a profile screen. RLS narrows the INSERT stream to
+    // matches this member is actually in, same as the UPDATE listener below.
+    const applyNewMatch = (row: MatchRow) => {
+      matchesService.fetchCounterpartCard(row.id).then((card) => {
+        setMatches((prev) => (prev.some((m) => m.id === row.id) ? prev : [mapMatchRow(row, userId, card), ...prev]));
+      });
+    };
+
     // The shared match row changes under us when the other member asks to move
     // to rishta, or answers our own request. Both sides are looking at the same
     // row, so the update is the notification.
@@ -318,6 +331,11 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
 
     const channel = supabase
       .channel(`chat_messages_${userId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'matches' },
+        (payload) => applyNewMatch(payload.new as unknown as MatchRow)
+      )
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'matches' },

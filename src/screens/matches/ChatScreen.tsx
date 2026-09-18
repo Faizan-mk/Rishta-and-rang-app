@@ -31,10 +31,12 @@ import { useLanguage } from '../../store/LanguageContext';
 import { useTheme } from '../../store/ThemeContext';
 import { useDialog } from '../../store/DialogContext';
 import { useMatches } from '../../store/MatchesContext';
+import { useNotifications } from '../../store/NotificationContext';
 import { useAuth } from '../../store/AuthContext';
 import { rishtaProfileComplete } from '../../utils/rishtaProfile';
 import { activityLevel, dayLabel, sameDay } from '../../utils/time';
 import { discoveryService } from '../../services/discoveryService';
+import { supabase } from '../../services/supabase';
 import { radius, spacing, typography } from '../../theme';
 import { scaleFont } from '../../theme/responsive';
 import { glow, modeAccent, withAlpha } from '../../theme/glow';
@@ -60,6 +62,7 @@ export function ChatScreen() {
   const { t, rtl } = useLanguage();
   const { confirm, notify } = useDialog();
   const { user } = useAuth();
+  const { markReadForMatch } = useNotifications();
   // A Modal (the "⋮" menu below) portals straight to the browser's own body
   // on web, outside ResponsiveFrame's DOM entirely — this is what the menu
   // aligns itself back to the frame's right edge with, instead of drifting
@@ -129,12 +132,20 @@ export function ChatScreen() {
   const [inputFocused, setInputFocused] = useState(false);
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
 
-  // The other member's last-seen time, kept current while this screen is open.
-  // The match row carries it from the last matches fetch, which on a chat left
-  // open for ten minutes is exactly as old as the screen — and "online" is the
-  // one badge that has to be true *now* or not shown at all.
+  // The other member's last-seen time and live presence, kept current while
+  // this screen is open. The match row carries a seed `lastActiveAt` from the
+  // last matches fetch, which on a chat left open for a while is exactly as
+  // old as the screen — and "online" is the one badge that has to be true
+  // *now* or not shown at all. `supabase/43_online_presence.sql` puts
+  // `profiles` on the realtime publication for exactly this: the moment the
+  // other side's `is_online` flips (their app leaves the foreground), this
+  // screen hears it directly rather than waiting for its own next poll tick
+  // or for the member to leave and reopen the chat. The poll stays as a
+  // resilience backstop for a channel that never connects or drops silently
+  // (same reasoning as the read-receipt poll below).
   const counterpartId = match?.sourceProfileId;
   const [seenAt, setSeenAt] = useState<string | undefined>(match?.lastActiveAt);
+  const [counterpartOnline, setCounterpartOnline] = useState(false);
 
   useEffect(() => {
     if (!counterpartId) return;
@@ -143,7 +154,11 @@ export function ChatScreen() {
     const refresh = async () => {
       try {
         const activity = await discoveryService.fetchActivity([counterpartId]);
-        if (!cancelled && activity.has(counterpartId)) setSeenAt(activity.get(counterpartId) ?? undefined);
+        const entry = activity.get(counterpartId);
+        if (!cancelled && entry) {
+          setSeenAt(entry.lastActiveAt ?? undefined);
+          setCounterpartOnline(entry.isOnline);
+        }
       } catch {
         // Keep whatever is on screen; a stale dot only ever understates.
       }
@@ -154,8 +169,22 @@ export function ChatScreen() {
     const subscription = AppState.addEventListener('change', (state) => {
       if (state === 'active') void refresh();
     });
+    const channel = supabase
+      .channel(`profile_presence_${counterpartId}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${counterpartId}` },
+        (payload) => {
+          const row = payload.new as { last_active_at: string | null; is_online: boolean | null };
+          if (cancelled) return;
+          setSeenAt(row.last_active_at ?? undefined);
+          setCounterpartOnline(Boolean(row.is_online));
+        }
+      )
+      .subscribe();
 
     return () => {
+      supabase.removeChannel(channel);
       cancelled = true;
       clearInterval(timer);
       subscription.remove();
@@ -181,6 +210,10 @@ export function ChatScreen() {
 
   useEffect(() => {
     markMatchRead(matchId);
+    // The Notifications tab's own "X sent you a message" row for this thread
+    // is exactly as stale as the Matches list's unread badge would have been
+    // without this — read here, it should not still say unread there.
+    markReadForMatch(matchId);
     // The thread is paged in, so opening it is what fetches the newest page.
     // Until then the list holds only the preview the matches list was built
     // from — one line, which is better than an empty screen.
@@ -195,6 +228,7 @@ export function ChatScreen() {
   // since the effect above only fires once per mount.
   useEffect(() => {
     markMatchRead(matchId);
+    markReadForMatch(matchId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages.length]);
 
@@ -211,7 +245,7 @@ export function ChatScreen() {
   // Same rule as the deck's pill, so "online" means one thing across the app —
   // and a member who has hidden their online status has no timestamp at all,
   // which lands here as simply not online.
-  const online = activityLevel(seenAt) === 'online';
+  const online = activityLevel(seenAt, counterpartOnline) === 'online';
 
   const sendMessage = () => {
     const trimmed = draft.trim();

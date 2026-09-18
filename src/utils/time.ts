@@ -54,14 +54,20 @@ export type ActivityLevel = 'online' | 'today' | 'yesterday' | 'week';
  * member who has turned "Show when I'm online" off now has
  * (supabase/34_last_active.sql), so their card simply carries no badge.
  */
-export function activityLevel(isoDate?: string): ActivityLevel | null {
+export function activityLevel(isoDate?: string, isOnline?: boolean): ActivityLevel | null {
   if (!isoDate) return null;
   const ts = new Date(isoDate).getTime();
   if (Number.isNaN(ts)) return null;
 
   // A clock ahead of the server's would otherwise read as "not yet active".
   const elapsed = Date.now() - ts;
-  if (elapsed < ONLINE_WINDOW_MS) return 'online';
+  // Real presence (supabase/43_online_presence.sql), when the caller has it,
+  // is authoritative: a member who left the app a minute ago reads as "today"
+  // immediately rather than staying "online" for the rest of this window.
+  // Callers that don't have it yet (the "Active today" filter, still keyed
+  // only on a timestamp) fall back to the old recency guess.
+  if (isOnline === true) return 'online';
+  if (isOnline === undefined && elapsed < ONLINE_WINDOW_MS) return 'online';
 
   const now = new Date();
   const key = dayKey(isoDate);

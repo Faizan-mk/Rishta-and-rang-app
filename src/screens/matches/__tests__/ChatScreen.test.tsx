@@ -7,6 +7,7 @@ import { ChatScreen } from '../ChatScreen';
 import { useDialog } from '../../../store/DialogContext';
 import { useAuth } from '../../../store/AuthContext';
 import { useMatches } from '../../../store/MatchesContext';
+import { useNotifications } from '../../../store/NotificationContext';
 import { discoveryService } from '../../../services/discoveryService';
 import { reportsService } from '../../../services/reportsService';
 import type { BlockedProfile, ChatMessage, Match } from '../../../types/content';
@@ -17,6 +18,16 @@ jest.mock('react-native-safe-area-context', () => require('react-native-safe-are
 jest.mock('../../../store/DialogContext', () => ({ useDialog: jest.fn() }));
 jest.mock('../../../store/AuthContext', () => ({ useAuth: jest.fn() }));
 jest.mock('../../../store/MatchesContext', () => ({ useMatches: jest.fn() }));
+jest.mock('../../../store/NotificationContext', () => ({ useNotifications: jest.fn() }));
+// The header's presence subscription (supabase/43_online_presence.sql) opens
+// a real channel otherwise — nothing here exercises its live updates, so a
+// chainable stub is enough to keep the effect from touching the network.
+jest.mock('../../../services/supabase', () => ({
+  supabase: {
+    channel: jest.fn(() => ({ on: jest.fn().mockReturnThis(), subscribe: jest.fn().mockReturnThis() })),
+    removeChannel: jest.fn(),
+  },
+}));
 jest.mock('../../../services/discoveryService', () => ({ discoveryService: { fetchActivity: jest.fn() } }));
 jest.mock('../../../services/reportsService', () => ({ reportsService: { submitReport: jest.fn() } }));
 jest.mock('expo-image-picker', () => ({
@@ -61,6 +72,7 @@ const mockUseRouter = useRouter as jest.Mock;
 const mockUseDialog = useDialog as jest.Mock;
 const mockUseAuth = useAuth as jest.Mock;
 const mockUseMatches = useMatches as jest.Mock;
+const mockUseNotifications = useNotifications as jest.Mock;
 
 const push = jest.fn();
 const back = jest.fn();
@@ -160,6 +172,7 @@ beforeEach(() => {
   unblockUser = jest.fn();
   clearChat = jest.fn();
   (discoveryService.fetchActivity as jest.Mock).mockResolvedValue(new Map());
+  mockUseNotifications.mockReturnValue({ markReadForMatch: jest.fn() });
   setupMatches();
 });
 

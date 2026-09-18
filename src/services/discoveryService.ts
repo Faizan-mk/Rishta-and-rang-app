@@ -173,23 +173,29 @@ async function fetchDeckPage(
   };
 }
 
+export interface ActivityEntry {
+  lastActiveAt: string | null;
+  /** Real presence (supabase/43_online_presence.sql) — right now, not inferred. */
+  isOnline: boolean;
+}
+
 /**
- * Just the last-seen times, for profiles already on screen.
+ * Just the last-seen times and live presence, for profiles already on screen.
  *
  * The deck is fetched once and held, so its `lastActiveAt` is as old as the
  * fetch — a member who came online a minute ago still reads as whatever they
  * were when the deck loaded, and the "Active now" badge could never appear on a
- * card that had been sitting there. This is two columns for the ids already
+ * card that had been sitting there. This is three columns for the ids already
  * held, which is cheap enough to run whenever the app is looked at again.
  */
-async function fetchActivity(ids: string[]): Promise<Map<string, string | null>> {
-  const activity = new Map<string, string | null>();
+async function fetchActivity(ids: string[]): Promise<Map<string, ActivityEntry>> {
+  const activity = new Map<string, ActivityEntry>();
   if (ids.length === 0) return activity;
-  const { data, error } = await supabase.from('profiles').select('id, last_active_at').in('id', ids);
+  const { data, error } = await supabase.from('profiles').select('id, last_active_at, is_online').in('id', ids);
   if (error) throw new Error(error.message);
   for (const row of data ?? []) {
-    const profile = row as unknown as { id: string; last_active_at: string | null };
-    activity.set(profile.id, profile.last_active_at);
+    const profile = row as unknown as { id: string; last_active_at: string | null; is_online: boolean | null };
+    activity.set(profile.id, { lastActiveAt: profile.last_active_at, isOnline: Boolean(profile.is_online) });
   }
   return activity;
 }
