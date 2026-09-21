@@ -1,6 +1,7 @@
 import React from 'react';
 import { fireEvent, screen, render } from '@testing-library/react-native';
 import { withProviders } from '../../../components/__tests__/testWrappers';
+import { useRouter } from 'expo-router';
 import { NotificationsScreen } from '../NotificationsScreen';
 import { useNotifications } from '../../../store/NotificationContext';
 import { useAuth } from '../../../store/AuthContext';
@@ -8,13 +9,16 @@ import type { NotificationItem } from '../../../types/content';
 import type { UserProfile } from '../../../types/user';
 
 jest.mock('react-native-safe-area-context', () => require('react-native-safe-area-context/jest/mock').default);
+jest.mock('expo-router', () => ({ useRouter: jest.fn() }));
 jest.mock('../../../store/NotificationContext', () => ({ useNotifications: jest.fn() }));
 jest.mock('../../../store/AuthContext', () => ({ useAuth: jest.fn() }));
 
 const mockUseNotifications = useNotifications as jest.Mock;
 const mockUseAuth = useAuth as jest.Mock;
+const mockUseRouter = useRouter as jest.Mock;
 let markAllRead: jest.Mock;
 let markRead: jest.Mock;
+let push: jest.Mock;
 
 function notification(overrides: Partial<NotificationItem> = {}): NotificationItem {
   return {
@@ -58,8 +62,10 @@ beforeEach(() => {
   jest.clearAllMocks();
   markAllRead = jest.fn();
   markRead = jest.fn();
+  push = jest.fn();
   mockUseNotifications.mockReturnValue({ feed: [], unreadCount: 0, markAllRead, markRead });
   mockUseAuth.mockReturnValue({ user: user() });
+  mockUseRouter.mockReturnValue({ push });
 });
 
 describe('NotificationsScreen', () => {
@@ -98,5 +104,54 @@ describe('NotificationsScreen', () => {
     renderScreen();
     fireEvent.press(screen.getByText('New match!'));
     expect(markRead).toHaveBeenCalledWith('n1');
+  });
+
+  it('does not navigate for a notification with no related profile', () => {
+    mockUseNotifications.mockReturnValue({ feed: [notification()], unreadCount: 1, markAllRead, markRead });
+    renderScreen();
+    fireEvent.press(screen.getByText('New match!'));
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it('opens the thread when a message notification is tapped', () => {
+    mockUseNotifications.mockReturnValue({
+      feed: [
+        notification({
+          id: 'n3',
+          type: 'message',
+          title: 'Sara',
+          body: 'Assalam o alaikum',
+          matchId: 'm1',
+        }),
+      ],
+      unreadCount: 1,
+      markAllRead,
+      markRead,
+    });
+    renderScreen();
+    fireEvent.press(screen.getByText('Sara'));
+    expect(markRead).toHaveBeenCalledWith('n3');
+    expect(push).toHaveBeenCalledWith('/chat/m1');
+  });
+
+  it('opens the liker\'s profile when a like notification is tapped', () => {
+    mockUseNotifications.mockReturnValue({
+      feed: [
+        notification({
+          id: 'n2',
+          type: 'like',
+          title: 'Someone liked you',
+          relatedId: 'p9',
+          relatedKind: 'rishta',
+        }),
+      ],
+      unreadCount: 1,
+      markAllRead,
+      markRead,
+    });
+    renderScreen();
+    fireEvent.press(screen.getByText('Someone liked you'));
+    expect(markRead).toHaveBeenCalledWith('n2');
+    expect(push).toHaveBeenCalledWith({ pathname: '/profile-detail', params: { kind: 'rishta', id: 'p9' } });
   });
 });
