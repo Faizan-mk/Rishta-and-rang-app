@@ -9,6 +9,8 @@ interface NotificationRow {
   created_at: string;
   read: boolean;
   match_id: string | null;
+  related_id: string | null;
+  related_kind: string | null;
 }
 
 /** A `notifications` row (snake_case, from PostgreSQL/Realtime) → NotificationItem. */
@@ -21,6 +23,8 @@ export function rowToNotification(row: Record<string, unknown>): NotificationIte
     createdAt: (row.created_at as string) ?? new Date().toISOString(),
     read: Boolean(row.read),
     matchId: row.match_id ? String(row.match_id) : undefined,
+    relatedId: row.related_id ? String(row.related_id) : undefined,
+    relatedKind: (row.related_kind as NotificationItem['relatedKind']) ?? undefined,
   };
 }
 
@@ -33,10 +37,12 @@ function mapNotification(row: NotificationRow): NotificationItem {
     createdAt: row.created_at,
     read: row.read,
     matchId: row.match_id ?? undefined,
+    relatedId: row.related_id ?? undefined,
+    relatedKind: (row.related_kind as NotificationItem['relatedKind']) ?? undefined,
   };
 }
 
-const NOTIFICATION_SELECT = 'id, type, title, body, created_at, read, match_id';
+const NOTIFICATION_SELECT = 'id, type, title, body, created_at, read, match_id, related_id, related_kind';
 
 async function fetchFeed(profileId: string): Promise<NotificationItem[]> {
   const { data, error } = await supabase

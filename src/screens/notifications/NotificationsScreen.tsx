@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { AccentHeading } from '../../components/common/AccentHeading';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
@@ -21,7 +22,23 @@ export function NotificationsScreen() {
   const { t, rtl } = useLanguage();
   const { feed, unreadCount, markAllRead, markRead } = useNotifications();
   const { user } = useAuth();
+  const router = useRouter();
   const accent = modeAccent(colors, user?.activeMode ?? 'dating');
+
+  // A message (or a Rishta step) happened inside a thread — the thread is
+  // the honest destination for that tap, same as a tapped push
+  // (usePushNavigation). A like or a match is about someone specific instead,
+  // with no thread yet, so that one opens their profile.
+  const onPressNotification = (item: (typeof feed)[number]) => {
+    markRead(item.id);
+    if (item.matchId) {
+      router.push(`/chat/${item.matchId}`);
+      return;
+    }
+    if (item.relatedId) {
+      router.push({ pathname: '/profile-detail', params: { kind: item.relatedKind ?? 'dating', id: item.relatedId } });
+    }
+  };
 
   return (
     <ScreenContainer scroll={false}>
@@ -46,7 +63,7 @@ export function NotificationsScreen() {
         keyExtractor={(item) => item.id}
         renderItem={({ item, index }) => (
           <Animated.View entering={FadeInUp.delay(Math.min(index * 60, 300)).duration(320)}>
-            <NotificationRow item={item} onPress={() => markRead(item.id)} />
+            <NotificationRow item={item} onPress={() => onPressNotification(item)} />
           </Animated.View>
         )}
         ItemSeparatorComponent={() => <View style={styles.separator} />}

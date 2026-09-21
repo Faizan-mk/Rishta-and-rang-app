@@ -203,6 +203,10 @@ export interface NotificationItem {
   read: boolean;
   /** Set only for `message` — the thread reading it also marks it read. */
   matchId?: string;
+  /** Set for `like`/`match` — whose profile this notification is about. */
+  relatedId?: string;
+  /** Which pool `relatedId` opens in on `/profile-detail`. */
+  relatedKind?: 'dating' | 'rishta';
 }
 
 export interface NotificationPrefs {
