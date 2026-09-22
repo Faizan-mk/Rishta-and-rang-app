@@ -1,6 +1,6 @@
 # Rishta & Rang
 
-A South Asian matchmaking app built with Expo (React Native) and Supabase, supporting English, Roman Urdu, and Urdu.
+A  matchmaking app built with Expo (React Native) and Supabase, supporting English, Roman  and Urdu.
 
 ## Tech stack
 
