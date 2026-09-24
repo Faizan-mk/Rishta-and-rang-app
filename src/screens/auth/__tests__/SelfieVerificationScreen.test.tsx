@@ -51,6 +51,7 @@ const DRAFT = {
   bio: '',
   photos: ['a.jpg', 'b.jpg'],
   cnicNumber: '12345-1234567-2',
+  emailTicket: 'tkt',
 };
 
 function renderScreen() {
@@ -125,6 +126,7 @@ describe('SelfieVerificationScreen', () => {
           selfieVerified: true,
           selfieUri: 'file:///selfie.jpg',
           cnicPhotoUri: 'file:///cnic.jpg',
+          emailTicket: 'tkt',
         })
       )
     );

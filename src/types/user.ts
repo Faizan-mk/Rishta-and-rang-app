@@ -104,4 +104,6 @@ export interface OnboardingDraft {
   intent?: Intent;
   photos?: string[];
   cnicPhotoUri?: string;
+  /** Set once the signup email code is verified; spent when the account is created. */
+  emailTicket?: string;
 }

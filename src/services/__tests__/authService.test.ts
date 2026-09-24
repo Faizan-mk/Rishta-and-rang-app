@@ -1,6 +1,5 @@
 import { supabase } from '../supabase';
 import { mediaUpload } from '../mediaUpload';
-import * as Linking from 'expo-linking';
 import { authService, fetchProfileRow } from '../authService';
 import { AppError } from '../../utils/appError';
 import { chain, ok, fail } from './supabaseTestUtils';
@@ -10,17 +9,11 @@ jest.mock('../supabase', () => ({
   supabase: {
     from: jest.fn(),
     auth: {
-      signUp: jest.fn(),
       signInWithPassword: jest.fn(),
       signOut: jest.fn(),
       getUser: jest.fn(),
-      getSession: jest.fn(),
-      setSession: jest.fn(),
-      exchangeCodeForSession: jest.fn(),
-      verifyOtp: jest.fn(),
-      updateUser: jest.fn(),
-      resetPasswordForEmail: jest.fn(),
     },
+    functions: { invoke: jest.fn() },
     rpc: jest.fn(),
   },
 }));
@@ -38,11 +31,15 @@ jest.mock('../mediaUpload', () => ({
   },
 }));
 
-jest.mock('expo-linking', () => ({ createURL: jest.fn(() => 'exp://192.168.1.1:8081/--/reset-password') }));
-
 const from = supabase.from as jest.Mock;
 const rpc = supabase.rpc as jest.Mock;
 const auth = supabase.auth as unknown as Record<string, jest.Mock>;
+const invoke = supabase.functions.invoke as jest.Mock;
+
+/** What supabase-js hands back for a non-2xx function response. */
+function functionError(body: unknown) {
+  return { data: null, error: { name: 'FunctionsHttpError', context: { json: () => Promise.resolve(body) } } };
+}
 
 function fullProfileRows() {
   return {
@@ -126,6 +123,7 @@ function mockProfileTables(rows: ReturnType<typeof fullProfileRows> = fullProfil
 beforeEach(() => {
   from.mockReset();
   rpc.mockReset();
+  invoke.mockReset();
   Object.values(auth).forEach((fn) => fn.mockReset());
   jest.clearAllMocks();
 });
@@ -288,81 +286,88 @@ describe('authService.touchLastActive', () => {
   });
 });
 
-describe('authService.requestPasswordReset', () => {
-  it('sends the reset email to the normalized address with a deep-link redirect', async () => {
-    auth.resetPasswordForEmail.mockResolvedValue({ error: null });
-    await authService.requestPasswordReset('  A@Example.com  ');
-    expect(auth.resetPasswordForEmail).toHaveBeenCalledWith('a@example.com', {
-      redirectTo: 'exp://192.168.1.1:8081/--/reset-password',
+describe('authService.requestOtp', () => {
+  it('asks auth-otp for a code at the normalized address and returns the cooldown', async () => {
+    invoke.mockResolvedValue({ data: { ok: true, resendIn: 60 }, error: null });
+    await expect(authService.requestOtp('  A@Example.com  ', 'reset', 'roman')).resolves.toEqual({ resendIn: 60 });
+    expect(invoke).toHaveBeenCalledWith('auth-otp', {
+      body: { action: 'request', email: 'a@example.com', purpose: 'reset', language: 'roman' },
     });
   });
 
-  it('swallows a 400/422 (does not reveal whether the address is registered)', async () => {
-    auth.resetPasswordForEmail.mockResolvedValue({ error: { status: 400, message: 'no user' } });
-    await expect(authService.requestPasswordReset('a@example.com')).resolves.toBeUndefined();
+  it('maps a cooldown refusal to AppError(otpCooldown) carrying the seconds left', async () => {
+    invoke.mockResolvedValue(functionError({ error: 'cooldown', retryAfter: 42 }));
+    await expect(authService.requestOtp('a@example.com', 'signup', 'en')).rejects.toMatchObject({
+      key: 'authErrors.otpCooldown',
+      params: { seconds: 42 },
+    });
   });
 
-  it('throws on any other error', async () => {
-    auth.resetPasswordForEmail.mockResolvedValue({ error: { status: 500, message: 'server error' } });
-    await expect(authService.requestPasswordReset('a@example.com')).rejects.toMatchObject({
-      message: 'server error',
+  it('maps the hourly cap to AppError(otpRateLimited) in whole minutes', async () => {
+    invoke.mockResolvedValue(functionError({ error: 'rate_limited', retryAfter: 61 }));
+    await expect(authService.requestOtp('a@example.com', 'signup', 'en')).rejects.toMatchObject({
+      key: 'authErrors.otpRateLimited',
+      params: { minutes: 2 },
+    });
+  });
+
+  it('maps a taken signup address to AppError(emailTaken)', async () => {
+    invoke.mockResolvedValue(functionError({ error: 'email_taken' }));
+    await expect(authService.requestOtp('a@example.com', 'signup', 'en')).rejects.toMatchObject({
+      key: 'authErrors.emailTaken',
+    });
+  });
+
+  it('falls back to the generic message when the error body is unreadable', async () => {
+    invoke.mockResolvedValue({ data: null, error: { name: 'FunctionsFetchError', context: {} } });
+    await expect(authService.requestOtp('a@example.com', 'signup', 'en')).rejects.toMatchObject({
+      key: 'common.somethingWentWrong',
     });
   });
 });
 
-describe('authService.updatePassword', () => {
-  it('updates the password on the live session', async () => {
-    auth.updateUser.mockResolvedValue({ error: null });
-    await authService.updatePassword('NewPassword1!');
-    expect(auth.updateUser).toHaveBeenCalledWith({ password: 'NewPassword1!' });
+describe('authService.verifyOtp', () => {
+  it('returns the ticket for a correct code', async () => {
+    invoke.mockResolvedValue({ data: { ok: true, ticket: 'tkt' }, error: null });
+    await expect(authService.verifyOtp('A@example.com', 'signup', ' 123456 ')).resolves.toBe('tkt');
+    expect(invoke).toHaveBeenCalledWith('auth-otp', {
+      body: { action: 'verify', email: 'a@example.com', purpose: 'signup', code: '123456' },
+    });
   });
 
-  it('throws on error', async () => {
-    auth.updateUser.mockResolvedValue({ error: { message: 'weak password' } });
-    await expect(authService.updatePassword('x')).rejects.toThrow('weak password');
+  it('reports how many attempts are left on a wrong code', async () => {
+    invoke.mockResolvedValue(functionError({ error: 'invalid_code', remaining: 3 }));
+    await expect(authService.verifyOtp('a@example.com', 'reset', '000000')).rejects.toMatchObject({
+      key: 'authErrors.otpInvalid',
+      params: { remaining: 3 },
+    });
+  });
+
+  it('maps lockout and expiry to their own errors', async () => {
+    invoke.mockResolvedValueOnce(functionError({ error: 'too_many_attempts' }));
+    await expect(authService.verifyOtp('a@example.com', 'reset', '000000')).rejects.toMatchObject({
+      key: 'authErrors.otpTooManyAttempts',
+    });
+    invoke.mockResolvedValueOnce(functionError({ error: 'code_expired' }));
+    await expect(authService.verifyOtp('a@example.com', 'reset', '000000')).rejects.toMatchObject({
+      key: 'authErrors.otpExpired',
+    });
   });
 });
 
-describe('authService.openPasswordResetLink', () => {
-  it('sets the session from access/refresh tokens in the fragment', async () => {
-    auth.setSession.mockResolvedValue({ error: null });
-    await authService.openPasswordResetLink('https://app/reset-password#access_token=a&refresh_token=b');
-    expect(auth.setSession).toHaveBeenCalledWith({ access_token: 'a', refresh_token: 'b' });
+describe('authService.resetPasswordWithOtp', () => {
+  it('sends the ticket and new password to auth-otp', async () => {
+    invoke.mockResolvedValue({ data: { ok: true }, error: null });
+    await authService.resetPasswordWithOtp(' A@Example.com', 'tkt', 'NewPassword1!');
+    expect(invoke).toHaveBeenCalledWith('auth-otp', {
+      body: { action: 'reset', email: 'a@example.com', ticket: 'tkt', password: 'NewPassword1!' },
+    });
   });
 
-  it('exchanges a PKCE code from the query string', async () => {
-    auth.exchangeCodeForSession.mockResolvedValue({ error: null });
-    await authService.openPasswordResetLink('https://app/reset-password?code=abc123');
-    expect(auth.exchangeCodeForSession).toHaveBeenCalledWith('abc123');
-  });
-
-  it('verifies a recovery token_hash', async () => {
-    auth.verifyOtp.mockResolvedValue({ error: null });
-    await authService.openPasswordResetLink('https://app/reset-password?token_hash=xyz');
-    expect(auth.verifyOtp).toHaveBeenCalledWith({ type: 'recovery', token_hash: 'xyz' });
-  });
-
-  it('throws the server-provided reason for an expired/spent link', async () => {
-    await expect(
-      authService.openPasswordResetLink('https://app/reset-password?error=access_denied&error_description=Link+expired')
-    ).rejects.toThrow('Link expired');
-  });
-
-  it('throws AppError(resetLinkExpired) when no description is given', async () => {
-    await expect(
-      authService.openPasswordResetLink('https://app/reset-password?error=access_denied')
-    ).rejects.toMatchObject({ key: 'authErrors.resetLinkExpired' });
-  });
-
-  it('falls back to checking for an existing session when nothing is on the link', async () => {
-    auth.getSession.mockResolvedValue({ data: { session: { access_token: 'live' } } });
-    await expect(authService.openPasswordResetLink('https://app/reset-password')).resolves.toBeUndefined();
-  });
-
-  it('throws AppError(resetLinkSpent) when there is no session and nothing usable on the link', async () => {
-    auth.getSession.mockResolvedValue({ data: { session: null } });
-    await expect(authService.openPasswordResetLink('https://app/reset-password')).rejects.toMatchObject({
-      key: 'authErrors.resetLinkSpent',
+  it('maps a spent ticket to AppError(otpTicketInvalid)', async () => {
+    invoke.mockResolvedValue(functionError({ error: 'ticket_invalid' }));
+    await expect(authService.resetPasswordWithOtp('a@example.com', 'tkt', 'NewPassword1!')).rejects.toMatchObject({
+      key: 'authErrors.otpTicketInvalid',
     });
   });
 });
@@ -403,23 +408,41 @@ describe('authService.signup', () => {
     intent: 'matrimonial' as const,
     language: 'en' as const,
     cnicNumber: '12345-1234567-8',
+    emailTicket: 'tkt',
   };
 
-  it('creates the account, writes the profile rows and returns the assembled profile', async () => {
-    auth.signUp.mockResolvedValue({ data: { user: { id: 'u1', identities: [{}] }, session: { access_token: 'x' } }, error: null });
-    from.mockImplementation((table: string) => {
-      if (table === 'profiles') return chain(ok(fullProfileRows().profile.data));
-      if (table === 'profile_private') return chain(ok(fullProfileRows().private.data));
-      if (table === 'profile_verification') return chain(ok(fullProfileRows().verification.data));
-      return chain(ok(null));
-    });
+  it('creates the account through auth-otp, signs in, writes the rows and returns the profile', async () => {
+    invoke.mockResolvedValue({ data: { ok: true, userId: 'u1' }, error: null });
+    auth.signInWithPassword.mockResolvedValue({ data: { user: { id: 'u1' } }, error: null });
+    mockProfileTables();
 
     const profile = await authService.signup(baseInput);
+
     expect(profile.id).toBe('u1');
+    expect(invoke).toHaveBeenCalledWith('auth-otp', {
+      body: { action: 'signup', email: 'new@example.com', password: 'Password1!', fullName: 'Ayesha', ticket: 'tkt' },
+    });
+    expect(auth.signInWithPassword).toHaveBeenCalledWith({ email: 'new@example.com', password: 'Password1!' });
+  });
+
+  it('stops at an expired verification without signing in', async () => {
+    invoke.mockResolvedValue(functionError({ error: 'ticket_invalid' }));
+
+    await expect(authService.signup(baseInput)).rejects.toMatchObject({ key: 'authErrors.otpTicketInvalid' });
+    expect(auth.signInWithPassword).not.toHaveBeenCalled();
+  });
+
+  it('refuses to create anything without a verified email when there is no account to resume', async () => {
+    auth.signInWithPassword.mockResolvedValue({ data: {}, error: { message: 'Invalid login credentials' } });
+
+    await expect(authService.signup({ ...baseInput, emailTicket: undefined })).rejects.toMatchObject({
+      key: 'authErrors.emailNotVerified',
+    });
+    expect(invoke).not.toHaveBeenCalled();
   });
 
   it('resumes a half-finished signup when the existing account has no profile yet', async () => {
-    auth.signUp.mockRejectedValue({ code: 'email_exists' });
+    invoke.mockResolvedValue(functionError({ error: 'email_taken' }));
     auth.signInWithPassword.mockResolvedValue({ data: { user: { id: 'u1' } }, error: null });
     // First `profiles` read is the placeholder check inside createAccount, before
     // the upsert has written anything — it must see no row. Every read after that
@@ -440,7 +463,7 @@ describe('authService.signup', () => {
   });
 
   it('throws AppError(emailTaken) and signs back out when the address belongs to a finished account', async () => {
-    auth.signUp.mockRejectedValue({ code: 'email_exists' });
+    invoke.mockResolvedValue(functionError({ error: 'email_taken' }));
     auth.signInWithPassword.mockResolvedValue({ data: { user: { id: 'u1' } }, error: null });
     auth.signOut.mockResolvedValue({ error: null });
     mockProfileTables();
@@ -450,7 +473,7 @@ describe('authService.signup', () => {
   });
 
   it('fails closed (does not log in) when the profile read errors instead of returning no row', async () => {
-    auth.signUp.mockRejectedValue({ code: 'email_exists' });
+    invoke.mockResolvedValue(functionError({ error: 'email_taken' }));
     auth.signInWithPassword.mockResolvedValue({ data: { user: { id: 'u1' } }, error: null });
     auth.signOut.mockResolvedValue({ error: null });
     from.mockImplementation((table: string) =>
@@ -462,14 +485,14 @@ describe('authService.signup', () => {
   });
 
   it('throws AppError(emailTaken) when the retry sign-in also fails', async () => {
-    auth.signUp.mockRejectedValue({ code: 'email_exists' });
+    invoke.mockResolvedValue(functionError({ error: 'email_taken' }));
     auth.signInWithPassword.mockResolvedValue({ data: {}, error: { message: 'wrong password' } });
 
     await expect(authService.signup(baseInput)).rejects.toMatchObject({ key: 'authErrors.emailTaken' });
   });
 
-  it('throws AppError(weakPassword) for a weak-password rejection', async () => {
-    auth.signUp.mockRejectedValue({ code: 'weak_password' });
-    await expect(authService.signup(baseInput)).rejects.toMatchObject({ key: 'authErrors.weakPassword' });
+  it('passes a weak-password rejection through as the password-rules message', async () => {
+    invoke.mockResolvedValue(functionError({ error: 'weak_password' }));
+    await expect(authService.signup(baseInput)).rejects.toMatchObject({ key: 'signup.passwordRequirementsError' });
   });
 });

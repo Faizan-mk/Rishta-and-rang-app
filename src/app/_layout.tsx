@@ -83,11 +83,6 @@ function RootNavigator() {
         >
           <Stack.Screen name="index" options={{ headerShown: false }} />
 
-          {/* Outside both guards on purpose: the reset link signs the visitor in
-              to authorise the password write, so a screen gated on !user would
-              unmount itself the moment the link worked. */}
-          <Stack.Screen name="reset-password" options={{ headerShown: false }} />
-
           {/* Structural gate, not just a redirect: while the two-page intro
               hasn't been marked seen, (auth) isn't mounted at all, so no
               direct link, restored nav state, or stray redirect can land on
