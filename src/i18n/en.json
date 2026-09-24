@@ -40,24 +40,31 @@
   },
   "forgot": {
     "title": "Reset your password",
-    "subtitle": "Enter your email and we'll send you a reset link.",
-    "submit": "Send reset link",
-    "sent": "If an account exists for that email, a reset link is on its way. Check your inbox and spam folder.",
+    "subtitle": "Enter your account's email and we'll send you a 6-digit code.",
+    "submit": "Send code",
     "backToLogin": "Back to log in"
   },
   "reset": {
     "title": "Set a new password",
     "subtitle": "Choose a new password for your account. You will use it the next time you log in.",
-    "verifying": "Checking your reset link…",
     "newPassword": "New password",
     "confirmPassword": "Confirm new password",
     "submit": "Update password",
-    "cancel": "Cancel",
-    "invalidBody": "This reset link is no longer valid. Request a new one and try again.",
-    "requestNew": "Request a new link",
     "failed": "Could not update your password. Try again.",
-    "doneBody": "Your password has been updated. Log in with your new password to continue.",
+    "doneBody": "Your password has been updated and you have been signed out everywhere else. Log in with your new password to continue.",
     "goToLogin": "Go to log in"
+  },
+  "otp": {
+    "verifyEmailTitle": "Verify your email",
+    "enterCodeTitle": "Enter the code",
+    "sentTo": "We sent a 6-digit code to {email}. Enter it below.",
+    "codeLabel": "6-digit code",
+    "verify": "Verify",
+    "resend": "Resend code",
+    "resendIn": "Resend code in {seconds}s",
+    "resent": "A new code is on its way.",
+    "changeEmail": "Change email",
+    "hint": "The code expires in 10 minutes. Check your spam folder if it does not arrive."
   },
   "signup": {
     "title": "Create your account",
@@ -857,20 +864,25 @@
   },
   "authErrors": {
     "emailTaken": "That email is already registered. Try logging in instead.",
-    "weakPassword": "Password is too weak — use at least 6 characters.",
     "invalidEmail": "That email address looks invalid.",
     "signupFailed": "Could not create the account.",
-    "confirmEmailFirst": "Account created — check your email for the confirmation link before you continue.",
     "profileLoadFailed": "Could not load the account that was just created.",
     "profileCreateFailed": "Could not create your profile.",
     "profileReloadFailed": "Could not reload the updated profile.",
     "notSignedIn": "You are not signed in.",
-    "emailNotConfirmed": "Confirm your email first — check your inbox and tap the link.",
+    "emailNotConfirmed": "Your email is not verified yet. Use \"Forgot password?\" to verify it with a code and set your password.",
     "invalidCredentials": "Incorrect email or password.",
     "accountDisabled": "This account has been disabled.",
     "clockSkew": "Could not verify your session — the server clock is out of sync. Try again in a minute.",
-    "resetLinkExpired": "This reset link is no longer valid. Request a new one.",
-    "resetLinkSpent": "This reset link is incomplete or has already been used. Request a new one."
+    "emailNotVerified": "Verify your email with the code before continuing.",
+    "otpInvalid": "That code is not right. {remaining} attempts left.",
+    "otpInvalidNoCount": "That code is not right.",
+    "otpExpired": "This code has expired. Request a new one.",
+    "otpTooManyAttempts": "Too many wrong attempts. Request a new code.",
+    "otpCooldown": "Please wait {seconds}s before requesting another code.",
+    "otpRateLimited": "Too many codes requested. Try again in {minutes} min.",
+    "otpSendFailed": "We could not send the code. Try again in a moment.",
+    "otpTicketInvalid": "Your email verification has expired. Go back to the first step and verify your email again."
   },
   "media": {
     "fileUnavailable": "The selected file is no longer available on this device."

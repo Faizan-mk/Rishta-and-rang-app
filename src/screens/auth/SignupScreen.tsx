@@ -21,6 +21,7 @@ import { isValidEmail, isStrongPassword } from '../../utils/validation';
 import { ageFromDob, isValidDobFormat } from '../../utils/date';
 import { digitsToCnicDisplay, isValidCnicFormat, cnicMatchesGender } from '../../utils/cnic';
 import { authService } from '../../services/authService';
+import { AppError, errorMessage } from '../../utils/appError';
 import { radius, spacing, typography } from '../../theme';
 import { withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
@@ -29,9 +30,9 @@ export function SignupScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { t, rtl } = useLanguage();
+  const { t, rtl, language } = useLanguage();
   const onboardRamp = [colors.teal, colors.sage] as const;
-  const { startDraft } = useOnboarding();
+  const { draft, startDraft } = useOnboarding();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -94,27 +95,58 @@ export function SignupScreen() {
 
     setError(null);
     setChecking(true);
-    // 'resume' means this address is their own signup that died before the
-    // profile rows were written — that one gets waved through, so the flow can
-    // finish the account instead of walling them out of it forever.
-    const status = await authService.inspectEmail(email, password);
-    setChecking(false);
-    if (status === 'taken') {
-      setError(t('signup.emailTaken'));
-      return;
-    }
+    try {
+      // 'resume' means this address is their own signup that died before the
+      // profile rows were written — that one gets waved through, so the flow can
+      // finish the account instead of walling them out of it forever. The
+      // account already exists, so there is no inbox left to prove.
+      const status = await authService.inspectEmail(email, password);
+      if (status === 'taken') {
+        setError(t('signup.emailTaken'));
+        return;
+      }
 
-    startDraft({
-      email: email.trim(),
-      password,
-      fullName: fullName.trim(),
-      dob: dob.trim(),
-      gender,
-      city,
-      bio: bio.trim(),
-      cnicNumber,
-    });
-    router.push('/intent-photos');
+      const normalized = email.trim().toLowerCase();
+      // Back on this form after verifying (to fix a typo in the name, say): the
+      // ticket still covers the same address, so don't make them do it twice.
+      const keptTicket =
+        status === 'free' && draft?.emailTicket && draft.email.trim().toLowerCase() === normalized
+          ? draft.emailTicket
+          : undefined;
+
+      let resendIn: number | null = null;
+      if (status === 'free' && !keptTicket) {
+        try {
+          resendIn = (await authService.requestOtp(normalized, 'signup', language)).resendIn;
+        } catch (e) {
+          // A code went out moments ago and is still valid — go enter it.
+          if (!(e instanceof AppError && e.key === 'authErrors.otpCooldown')) throw e;
+          resendIn = Number(e.params?.seconds ?? 60);
+        }
+      }
+
+      startDraft({
+        email: email.trim(),
+        password,
+        fullName: fullName.trim(),
+        dob: dob.trim(),
+        gender,
+        city,
+        bio: bio.trim(),
+        cnicNumber,
+        emailTicket: keptTicket,
+      });
+
+      if (resendIn !== null) {
+        router.push({ pathname: '/verify-email', params: { resendIn: String(resendIn) } });
+      } else {
+        router.push('/intent-photos');
+      }
+    } catch (e) {
+      setError(errorMessage(e, t));
+    } finally {
+      setChecking(false);
+    }
   };
 
   return (

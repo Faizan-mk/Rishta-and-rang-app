@@ -14,7 +14,7 @@ import { useTheme } from '../../store/ThemeContext';
 import { useDialog } from '../../store/DialogContext';
 import { useOnboarding } from '../../store/onboardingStore';
 import { analyzeIdCardPhoto, CNIC_ASPECT } from '../../utils/idCardImageCheck';
-import { errorMessage } from '../../utils/appError';
+import { AppError, errorMessage } from '../../utils/appError';
 import { radius, spacing, typography } from '../../theme';
 import { scaleFont } from '../../theme/responsive';
 import { glow, withAlpha } from '../../theme/glow';
@@ -28,7 +28,7 @@ export function SelfieVerificationScreen() {
   const onboardRamp = [colors.teal, colors.sage] as const;
   const { signup } = useAuth();
   const { notify } = useDialog();
-  const { draft } = useOnboarding();
+  const { draft, patchDraft } = useOnboarding();
   const [selfieUri, setSelfieUri] = useState<string | null>(null);
   // The shot waiting to be cropped; null while the cropper is closed.
   const [pendingSelfie, setPendingSelfie] = useState<string | null>(null);
@@ -110,9 +110,15 @@ export function SelfieVerificationScreen() {
         selfieUri: selfieUri ?? undefined,
         cnicNumber: draft.cnicNumber,
         cnicPhotoUri: cnicPhotoUri ?? undefined,
+        emailTicket: draft.emailTicket,
       });
       // The root layout swaps to the (tabs) group automatically once `user` is set.
     } catch (e) {
+      // The verification outlived its ticket (the flow sat open too long):
+      // drop it, so going back to step 1 sends a fresh code.
+      if (e instanceof AppError && e.key === 'authErrors.otpTicketInvalid') {
+        patchDraft({ emailTicket: undefined });
+      }
       setError(errorMessage(e, t));
       setSubmitting(false);
     }

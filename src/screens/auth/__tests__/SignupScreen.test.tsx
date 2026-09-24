@@ -6,10 +6,11 @@ import { renderWithProviders } from '../../../components/__tests__/testWrappers'
 import { SignupScreen } from '../SignupScreen';
 import { useOnboarding } from '../../../store/onboardingStore';
 import { authService } from '../../../services/authService';
+import { AppError } from '../../../utils/appError';
 
 jest.mock('expo-router', () => ({ useRouter: jest.fn() }));
 jest.mock('../../../store/onboardingStore', () => ({ useOnboarding: jest.fn() }));
-jest.mock('../../../services/authService', () => ({ authService: { inspectEmail: jest.fn() } }));
+jest.mock('../../../services/authService', () => ({ authService: { inspectEmail: jest.fn(), requestOtp: jest.fn() } }));
 
 const mockUseRouter = useRouter as jest.Mock;
 const mockUseOnboarding = useOnboarding as jest.Mock;
@@ -21,8 +22,9 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockUseRouter.mockReturnValue({ push, back });
   startDraft = jest.fn();
-  mockUseOnboarding.mockReturnValue({ startDraft });
+  mockUseOnboarding.mockReturnValue({ draft: null, startDraft });
   (authService.inspectEmail as jest.Mock).mockResolvedValue('free');
+  (authService.requestOtp as jest.Mock).mockResolvedValue({ resendIn: 60 });
 });
 
 /** [email, password, confirmPassword, fullName, dob, cnic, bio] in render order. */
@@ -113,7 +115,7 @@ describe('SignupScreen validation', () => {
 });
 
 describe('SignupScreen happy path', () => {
-  it('starts the onboarding draft and moves to step 2 for a fresh email', async () => {
+  it('emails a code for a fresh address and moves to the verify step', async () => {
     renderWithProviders(<SignupScreen />);
     fillValidForm();
 
@@ -125,6 +127,40 @@ describe('SignupScreen happy path', () => {
         expect.objectContaining({ email: 'a@example.com', fullName: 'Ayesha Khan', dob: '1998-05-20', city: 'Lahore' })
       )
     );
+    expect(authService.requestOtp).toHaveBeenCalledWith('a@example.com', 'signup', 'en');
+    expect(push).toHaveBeenCalledWith({ pathname: '/verify-email', params: { resendIn: '60' } });
+  });
+
+  it('still goes to the verify step when a code was sent moments ago', async () => {
+    (authService.requestOtp as jest.Mock).mockRejectedValue(new AppError('authErrors.otpCooldown', { seconds: 30 }));
+    renderWithProviders(<SignupScreen />);
+    fillValidForm();
+
+    fireEvent.press(screen.getByText('Continue'));
+
+    await waitFor(() => expect(push).toHaveBeenCalledWith({ pathname: '/verify-email', params: { resendIn: '30' } }));
+  });
+
+  it('shows the error and stays put when the code cannot be sent', async () => {
+    (authService.requestOtp as jest.Mock).mockRejectedValue(new AppError('authErrors.otpSendFailed'));
+    renderWithProviders(<SignupScreen />);
+    fillValidForm();
+
+    fireEvent.press(screen.getByText('Continue'));
+
+    await waitFor(() => expect(screen.getByText(/could not send the code/)).toBeTruthy());
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it('skips the code when the draft already holds a ticket for the same address', async () => {
+    mockUseOnboarding.mockReturnValue({ draft: { email: 'A@example.com', emailTicket: 'tkt' }, startDraft });
+    renderWithProviders(<SignupScreen />);
+    fillValidForm();
+
+    fireEvent.press(screen.getByText('Continue'));
+
+    await waitFor(() => expect(startDraft).toHaveBeenCalledWith(expect.objectContaining({ emailTicket: 'tkt' })));
+    expect(authService.requestOtp).not.toHaveBeenCalled();
     expect(push).toHaveBeenCalledWith('/intent-photos');
   });
 
@@ -148,6 +184,7 @@ describe('SignupScreen happy path', () => {
     fireEvent.press(screen.getByText('Continue'));
 
     await waitFor(() => expect(startDraft).toHaveBeenCalled());
+    expect(authService.requestOtp).not.toHaveBeenCalled();
     expect(push).toHaveBeenCalledWith('/intent-photos');
   });
 });
