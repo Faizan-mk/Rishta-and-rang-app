@@ -6,7 +6,8 @@ import { useLanguage } from '../store/LanguageContext';
 import { vocabularyLabel } from '../i18n/vocabulary';
 import { useTheme } from '../store/ThemeContext';
 import { radius, spacing, typography } from '../theme';
-import { glow, modeAccent } from '../theme/glow';
+import { modeAccent } from '../theme/glow';
+import { cardSurface } from '../theme/surfaces';
 import type { Palette } from '../theme/palettes';
 import type { ProfileMode } from '../types/user';
 
@@ -33,7 +34,7 @@ export function ProfileCard({ photo, name, age, city, kind, onPress, action }: P
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => [styles.card, glow(accent.primary, 0.2, 14, 5), pressed && styles.cardPressed]}
+      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
     >
       {/* The photo's rim carries the mode, so a saved Friends profile and a
           saved Rishta profile are told apart before the badge is read. */}
@@ -63,20 +64,36 @@ export function ProfileCard({ photo, name, age, city, kind, onPress, action }: P
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
     card: {
+      ...cardSurface(colors),
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: colors.surfaceElevated,
-      borderRadius: radius.lg,
-      borderWidth: 1,
-      borderColor: colors.borderSoft,
       padding: spacing.sm,
+      paddingBottom: spacing.sm,
+      paddingRight: spacing.md,
       marginBottom: spacing.md,
     },
     cardPressed: { opacity: 0.85 },
-    photoRim: { width: 68, height: 84, borderRadius: radius.md + 2, padding: 2 },
-    photo: { width: '100%', height: '100%', borderRadius: radius.md, backgroundColor: colors.skeleton },
-    body: { flex: 1, marginLeft: spacing.md, gap: 4 },
-    name: { ...typography.h3, color: colors.textPrimary, fontWeight: '800' },
+    // The portrait in a small Mughal arch; oversized top radii clamp to a crest.
+    photoRim: {
+      width: 70,
+      height: 90,
+      padding: 2,
+      borderTopLeftRadius: 1000,
+      borderTopRightRadius: 1000,
+      borderBottomLeftRadius: radius.sm + 2,
+      borderBottomRightRadius: radius.sm + 2,
+    },
+    photo: {
+      width: '100%',
+      height: '100%',
+      borderTopLeftRadius: 1000,
+      borderTopRightRadius: 1000,
+      borderBottomLeftRadius: radius.sm,
+      borderBottomRightRadius: radius.sm,
+      backgroundColor: colors.skeleton,
+    },
+    body: { flex: 1, marginLeft: spacing.md, gap: 4, alignItems: 'flex-start' },
+    name: { ...typography.h3, color: colors.textPrimary },
     meta: { ...typography.caption, color: colors.textSecondary },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   });

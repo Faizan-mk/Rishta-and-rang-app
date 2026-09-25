@@ -2,7 +2,8 @@ import React, { useMemo } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { Button } from '../Button';
-import { radius, spacing, typography } from '../../theme';
+import { fonts, radius, spacing, typography } from '../../theme';
+import { withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
@@ -40,6 +41,11 @@ export function ConfirmDialog({
       <Pressable style={styles.overlay} onPress={confirmOnly ? undefined : onCancel}>
         <Animated.View entering={FadeInUp.duration(220)} style={styles.card}>
           <Pressable onPress={(e) => e.stopPropagation()}>
+            <View style={styles.flourish}>
+              <View style={styles.flourishLine} />
+              <View style={styles.flourishDiamond} />
+              <View style={styles.flourishLine} />
+            </View>
             <Text style={[styles.title, rtl && styles.rtlText]}>{title}</Text>
             {message ? <Text style={[styles.message, rtl && styles.rtlText]}>{message}</Text> : null}
 
@@ -74,17 +80,21 @@ const makeStyles = (colors: Palette) =>
       width: '100%',
       maxWidth: 380,
       backgroundColor: colors.surfaceElevated,
-      borderRadius: radius.lg,
+      borderRadius: radius.lg + 4,
       borderWidth: 1,
-      borderColor: colors.borderSoft,
+      borderColor: withAlpha(colors.gold, 0.5),
       padding: spacing.lg,
-      shadowColor: '#000',
-      shadowOpacity: 0.3,
-      shadowRadius: 28,
-      shadowOffset: { width: 0, height: 10 },
+      shadowColor: '#2A1720',
+      shadowOpacity: 0.2,
+      shadowRadius: 32,
+      shadowOffset: { width: 0, height: 12 },
       elevation: 16,
     },
-    title: { ...typography.h3, color: colors.textPrimary, marginBottom: spacing.xs, fontWeight: '800' },
+    // Gold flourish above the title: the invitation-card rule.
+    flourish: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
+    flourishLine: { width: 22, height: 1, backgroundColor: colors.gold },
+    flourishDiamond: { width: 6, height: 6, backgroundColor: colors.gold, transform: [{ rotate: '45deg' }] },
+    title: { ...typography.h3, color: colors.textPrimary, marginBottom: spacing.xs },
     message: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg },
     actions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
     // Confirm keeps the position closest to the reading edge in both directions.

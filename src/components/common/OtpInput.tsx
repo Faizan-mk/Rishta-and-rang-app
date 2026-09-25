@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { radius, spacing } from '../../theme';
+import { radius, spacing, typography } from '../../theme';
 import { withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
@@ -99,16 +99,17 @@ const makeStyles = (colors: Palette) =>
       maxWidth: 52,
       aspectRatio: 0.85,
       borderWidth: 1.5,
-      borderColor: colors.borderSoft,
+      borderColor: colors.border,
       borderRadius: radius.md,
-      backgroundColor: colors.surface,
+      backgroundColor: colors.background,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    boxFilled: { borderColor: colors.border },
-    boxActive: { borderColor: colors.teal, backgroundColor: withAlpha(colors.teal, 0.06) },
+    boxFilled: { borderColor: withAlpha(colors.teal, 0.45), backgroundColor: colors.surface },
+    // Focus follows the text field: gold border on a blush wash.
+    boxActive: { borderColor: colors.gold, backgroundColor: colors.tealSoft },
     boxError: { borderColor: colors.danger, backgroundColor: withAlpha(colors.danger, 0.06) },
-    digit: { fontSize: 24, fontWeight: '700', color: colors.textPrimary },
+    digit: { ...typography.h2, fontSize: 26, lineHeight: 32, color: colors.textPrimary },
     // Covers the boxes so a tap anywhere lands in the input. Not opacity 0 —
     // some Android keyboards refuse to open for a fully transparent field.
     hiddenInput: {

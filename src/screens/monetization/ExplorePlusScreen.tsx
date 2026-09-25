@@ -25,7 +25,8 @@ import { usePrivacy } from '../../store/PrivacyContext';
 import { useMatches } from '../../store/MatchesContext';
 import { isoToDisplay } from '../../utils/date';
 import { errorMessage } from '../../utils/appError';
-import { radius, spacing, typography } from '../../theme';
+import { fonts, radius, spacing, typography } from '../../theme';
+import { cardSurface } from '../../theme/surfaces';
 import { glow, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 
@@ -41,7 +42,12 @@ const GRADIENT_START = { x: 0, y: 0 } as const;
 const GRADIENT_END = { x: 1, y: 1 } as const;
 // Explore+ has its own colour identity — gold through ember into rose — so the
 // paid surface never reads as just another mode-tinted screen.
-const PLUS_RAMP = ['#F5C451', '#E8642E', '#D6407A'] as const;
+const PLUS_RAMP = ['#F3D99B', '#D4A857', '#B8893A'] as const;
+// The premium room: deep maroon velvet under champagne gold, fixed in both
+// themes so the gold always has something dark to shine against.
+const VELVET_RAMP = ['#3F0A1F', '#5E0F2E', '#8E1B45'] as const;
+const CHAMPAGNE = '#F3D99B';
+const MAROON_INK = '#3F0A1F';
 
 // Profile boosts included with any paid plan.
 const BOOSTS_PER_SUBSCRIPTION = 5;
@@ -160,15 +166,15 @@ export function ExplorePlusScreen() {
   return (
     <ScreenContainer>
       <LinearGradient
-        colors={PLUS_RAMP}
+        colors={VELVET_RAMP}
         start={GRADIENT_START}
         end={GRADIENT_END}
-        style={[styles.hero, glow(colors.gold, 0.5, 24, 10)]}
+        style={[styles.hero, glow('#8E1B45', 0.35, 24, 10)]}
       >
         <View style={styles.heroGlowA} pointerEvents="none" />
         <View style={styles.heroGlowB} pointerEvents="none" />
         <View style={styles.heroIcon}>
-          <Ionicons name="sparkles" size={26} color="#FFFFFF" />
+          <Ionicons name="sparkles" size={26} color={CHAMPAGNE} />
         </View>
         <Text style={styles.heroTitle}>{t('explorePlus.title')}</Text>
         <Text style={styles.heroSubtitle}>{t('explorePlus.subtitle')}</Text>
@@ -279,6 +285,7 @@ export function ExplorePlusScreen() {
             loading={upgrading}
             gradient={PLUS_RAMP}
             style={styles.upgradeButton}
+            labelStyle={styles.upgradeLabel}
           />
         </Animated.View>
       )}
@@ -316,6 +323,7 @@ export function ExplorePlusScreen() {
             variant="secondary"
             onPress={onManage}
             style={styles.cancelButton}
+            labelStyle={styles.cancelLabel}
           />
         </Animated.View>
       )}
@@ -330,7 +338,7 @@ export function ExplorePlusScreen() {
                 colors={PLUS_RAMP}
                 start={GRADIENT_START}
                 end={GRADIENT_END}
-                style={[styles.admirerRim, glow(colors.gold, 0.3, 12, 5)]}
+                style={[styles.admirerRim, glow(colors.gold, 0.2, 12, 4)]}
               >
                 <View style={styles.admirerCard}>
                 <Image source={{ uri: profile.photo }} style={styles.admirerPhoto} />
@@ -378,6 +386,8 @@ const makeStyles = (colors: Palette) =>
       alignItems: 'center',
       marginBottom: spacing.lg,
       overflow: 'hidden',
+      borderWidth: 1.5,
+      borderColor: CHAMPAGNE,
     },
     // Blown-out highlights inside the hero, so the ramp reads as lit rather
     // than as a flat sweep of three colours.
@@ -388,7 +398,7 @@ const makeStyles = (colors: Palette) =>
       width: 180,
       height: 180,
       borderRadius: 90,
-      backgroundColor: 'rgba(255,255,255,0.16)',
+      backgroundColor: 'rgba(243,217,155,0.14)',
     },
     heroGlowB: {
       position: 'absolute',
@@ -400,29 +410,30 @@ const makeStyles = (colors: Palette) =>
       backgroundColor: 'rgba(255,255,255,0.1)',
     },
     heroIcon: {
-      width: 52,
-      height: 52,
-      borderRadius: 26,
-      backgroundColor: 'rgba(255,255,255,0.22)',
+      width: 60,
+      height: 60,
+      borderRadius: 30,
+      backgroundColor: 'rgba(20,11,16,0.3)',
+      borderWidth: 1.5,
+      borderColor: CHAMPAGNE,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    heroTitle: { ...typography.h1, color: '#FFFFFF', marginTop: spacing.sm, fontWeight: '800' },
+    heroTitle: { ...typography.h1, fontSize: 34, lineHeight: 42, color: CHAMPAGNE, marginTop: spacing.sm },
     heroSubtitle: { ...typography.body, color: 'rgba(255,255,255,0.92)', textAlign: 'center', marginTop: spacing.xs },
     rowRtl: { flexDirection: 'row-reverse' },
     priceCard: {
-      backgroundColor: colors.surfaceElevated,
-      borderRadius: radius.lg,
-      borderWidth: 1,
-      borderColor: colors.borderSoft,
+      ...cardSurface(colors),
+      borderColor: withAlpha(colors.gold, 0.5),
       padding: spacing.lg,
+      paddingBottom: spacing.lg,
       marginBottom: spacing.lg,
     },
     planToggle: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
     planOption: {
       flex: 1,
       borderWidth: 1.5,
-      borderColor: colors.borderSoft,
+      borderColor: colors.border,
       borderRadius: radius.md,
       paddingHorizontal: spacing.xs,
       // Extra top clearance (beyond the bottom padding) for the badge that floats
@@ -438,13 +449,16 @@ const makeStyles = (colors: Palette) =>
     // rendered as a hard, offset rectangle over the label/price text on some
     // Android devices instead of a soft tint, so selection is shown with just a
     // thicker, coloured border now.
+    // A solid (not translucent) champagne fill is safe here — it was the
+    // translucent fill plus a shadow that drew the hard rectangle.
     planOptionSelected: {
       borderWidth: 2,
       borderColor: colors.gold,
+      backgroundColor: colors.goldSoft,
     },
-    planLabel: { ...typography.label, color: colors.textSecondary, fontWeight: '700' },
-    planLabelSelected: { color: colors.gold },
-    planPrice: { ...typography.h3, color: colors.textPrimary, marginTop: 2, fontWeight: '800' },
+    planLabel: { ...typography.label, color: colors.textSecondary },
+    planLabelSelected: { color: colors.teal },
+    planPrice: { ...typography.h3, color: colors.textPrimary, marginTop: 2 },
     saveBadge: {
       position: 'absolute',
       top: -10,
@@ -458,7 +472,7 @@ const makeStyles = (colors: Palette) =>
     // on the Text itself) — at caption size "7 days free" wraps to two lines in
     // the trial column when three plan options share a phone-width row, which is
     // what let this badge grow tall enough to cover the label below it.
-    saveBadgeText: { fontSize: 10, lineHeight: 13, color: '#FFFFFF', fontWeight: '800' },
+    saveBadgeText: { fontSize: 10, lineHeight: 13, color: '#FFFFFF', fontFamily: fonts.bodyBold },
     trialBadge: { backgroundColor: colors.success },
     trialHint: { ...typography.caption, color: colors.textSecondary, textAlign: 'center', marginTop: -spacing.xs, marginBottom: spacing.md },
     featureRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
@@ -466,32 +480,32 @@ const makeStyles = (colors: Palette) =>
       width: 20,
       height: 20,
       borderRadius: 10,
-      backgroundColor: colors.success,
+      backgroundColor: colors.gold,
       alignItems: 'center',
       justifyContent: 'center',
-      ...glow(colors.success, 0.5, 8, 3),
     },
     featureText: { ...typography.body, color: colors.textPrimary, flexShrink: 1 },
     limitCard: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.xs,
-      backgroundColor: withAlpha(colors.teal, 0.12),
+      backgroundColor: colors.tealSoft,
       borderWidth: 1,
-      borderColor: withAlpha(colors.teal, 0.3),
-      borderRadius: radius.md,
+      borderColor: withAlpha(colors.teal, 0.18),
+      borderRadius: radius.pill,
+      paddingHorizontal: spacing.md,
       padding: spacing.sm,
       marginTop: spacing.xs,
       marginBottom: spacing.sm,
     },
-    limitText: { ...typography.caption, color: colors.teal, fontWeight: '800' },
-    upgradeButton: { marginTop: spacing.sm },
+    limitText: { ...typography.caption, color: colors.teal, fontFamily: fonts.bodyBold, flexShrink: 1 },
+    upgradeButton: { marginTop: spacing.sm, borderWidth: 1, borderColor: '#B8893A' },
+    upgradeLabel: { color: MAROON_INK },
     manageCard: {
-      backgroundColor: colors.surfaceElevated,
-      borderRadius: radius.lg,
-      borderWidth: 1,
-      borderColor: colors.borderSoft,
+      ...cardSurface(colors),
+      borderColor: withAlpha(colors.gold, 0.5),
       padding: spacing.lg,
+      paddingBottom: spacing.lg,
       marginBottom: spacing.lg,
     },
     upgradedBanner: {
@@ -500,39 +514,54 @@ const makeStyles = (colors: Palette) =>
       justifyContent: 'center',
       gap: spacing.xs,
       backgroundColor: colors.successSoft,
-      borderRadius: radius.md,
+      borderRadius: radius.pill,
       paddingVertical: spacing.sm,
       marginBottom: spacing.md,
     },
-    upgradedText: { ...typography.label, color: colors.success, fontWeight: '800' },
+    upgradedText: { ...typography.label, color: colors.success, fontFamily: fonts.bodyBold },
     manageRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      paddingVertical: spacing.sm,
+      paddingVertical: spacing.sm + 4,
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: colors.border,
     },
     manageLabel: { ...typography.body, color: colors.textSecondary },
     manageValue: { ...typography.bodyBold, color: colors.textPrimary },
-    cancelButton: { marginTop: spacing.lg },
-    sectionHeading: { marginBottom: spacing.sm },
-    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-    admirerRim: { width: '47%', borderRadius: radius.md + 2, padding: 2 },
-    admirerCard: { aspectRatio: 3 / 4, borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.skeleton },
+    cancelButton: { marginTop: spacing.lg, borderColor: colors.gold, backgroundColor: 'transparent' },
+    cancelLabel: { color: colors.textPrimary },
+    sectionHeading: { marginBottom: spacing.md },
+    grid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: spacing.md, justifyContent: 'space-between' },
+    // Gold-rimmed Mughal arches; oversized top radii clamp to a full crest.
+    admirerRim: {
+      width: '48%',
+      padding: 2,
+      borderTopLeftRadius: 1000,
+      borderTopRightRadius: 1000,
+      borderBottomLeftRadius: radius.md + 2,
+      borderBottomRightRadius: radius.md + 2,
+    },
+    admirerCard: {
+      aspectRatio: 3 / 4,
+      borderTopLeftRadius: 1000,
+      borderTopRightRadius: 1000,
+      borderBottomLeftRadius: radius.md,
+      borderBottomRightRadius: radius.md,
+      overflow: 'hidden',
+      backgroundColor: colors.skeleton,
+    },
     admirerPhoto: { width: '100%', height: '100%' },
     lockOverlay: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-    admirerNameWrap: { position: 'absolute', bottom: spacing.xs, left: spacing.xs },
-    admirerName: { ...typography.caption, color: '#FFFFFF', fontWeight: '800' },
+    admirerNameWrap: { position: 'absolute', bottom: spacing.sm, left: spacing.sm },
+    admirerName: { ...typography.h3, color: '#FFFFFF', textShadowColor: 'rgba(0,0,0,0.5)', textShadowRadius: 6 },
     lockedHint: { ...typography.caption, color: colors.textTertiary, textAlign: 'center', marginTop: spacing.sm, marginBottom: spacing.lg },
     hiddenCard: {
       flexDirection: 'row',
       alignItems: 'flex-start',
       gap: spacing.sm,
-      backgroundColor: colors.surfaceElevated,
-      borderRadius: radius.lg,
-      borderWidth: 1,
-      borderColor: colors.borderSoft,
+      ...cardSurface(colors),
       padding: spacing.md,
+      paddingBottom: spacing.md,
       marginBottom: spacing.lg,
     },
     hiddenText: { ...typography.body, color: colors.textSecondary, flex: 1 },

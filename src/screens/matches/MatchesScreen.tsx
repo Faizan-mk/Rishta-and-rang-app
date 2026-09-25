@@ -18,7 +18,8 @@ import { useTheme } from '../../store/ThemeContext';
 import { useMatches } from '../../store/MatchesContext';
 import type { Match } from '../../types/content';
 import type { ProfileMode } from '../../types/user';
-import { radius, spacing, typography } from '../../theme';
+import { fonts, radius, spacing, typography } from '../../theme';
+import { scaleSpace } from '../../theme/responsive';
 import { glow, modeAccent } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 
@@ -99,11 +100,22 @@ export function MatchesScreen() {
         data={visibleMatches}
         keyExtractor={(item) => item.id}
         renderItem={({ item, index }) => (
-          <Animated.View entering={FadeInUp.delay(Math.min(index * 60, 300)).duration(320)}>
+          <Animated.View
+            entering={FadeInUp.delay(Math.min(index * 60, 300)).duration(320)}
+            style={[
+              styles.cell,
+              index === 0 && styles.cellFirst,
+              index === visibleMatches.length - 1 && styles.cellLast,
+            ]}
+          >
             <MatchRow match={item} onPress={() => router.push(`/chat/${item.id}`)} />
           </Animated.View>
         )}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        ItemSeparatorComponent={() => (
+          <View style={styles.cell}>
+            <View style={[styles.separator, rtl && styles.separatorRtl]} />
+          </View>
+        )}
         showsVerticalScrollIndicator={false}
         onScroll={onScroll}
         scrollEventThrottle={16}
@@ -159,13 +171,50 @@ const makeStyles = (colors: Palette) =>
       paddingVertical: 5,
     },
     unreadDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#FFFFFF' },
-    unreadPillText: { ...typography.caption, color: '#FFFFFF', fontWeight: '800' },
+    unreadPillText: { ...typography.caption, color: '#FFFFFF', fontFamily: fonts.bodyBold },
     toggleWrap: { paddingBottom: spacing.md },
-    // The rows are cards now, so the list is spaced rather than ruled.
-    separator: { height: spacing.sm },
+    // The whole list is one white card: every row is a cell of it, the first
+    // and last carrying its rounded ends, with hairlines inset past the avatar.
+    cell: {
+      backgroundColor: colors.surface,
+      borderLeftWidth: 1,
+      borderRightWidth: 1,
+      borderColor: colors.border,
+      paddingHorizontal: spacing.xs,
+    },
+    cellFirst: {
+      borderTopWidth: 1,
+      borderTopLeftRadius: radius.lg,
+      borderTopRightRadius: radius.lg,
+      paddingTop: spacing.xs,
+    },
+    cellLast: {
+      borderBottomWidth: 1,
+      borderBottomLeftRadius: radius.lg,
+      borderBottomRightRadius: radius.lg,
+      paddingBottom: spacing.xs,
+    },
+    separator: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: colors.border,
+      marginLeft: scaleSpace(56) + spacing.md + spacing.sm,
+      marginRight: spacing.sm,
+    },
+    separatorRtl: { marginLeft: spacing.sm, marginRight: scaleSpace(56) + spacing.md + spacing.sm },
     listContent: { paddingBottom: spacing.xl },
     emptyState: { alignItems: 'center', justifyContent: 'center', paddingTop: spacing.xxl, gap: spacing.md },
-    emptyOrb: { width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center' },
+    // Mughal-arch frame, the shared empty-state shape.
+    emptyOrb: {
+      width: 92,
+      height: 108,
+      borderTopLeftRadius: 1000,
+      borderTopRightRadius: 1000,
+      borderBottomLeftRadius: radius.md,
+      borderBottomRightRadius: radius.md,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingTop: spacing.sm,
+    },
     emptyText: { ...typography.body, color: colors.textSecondary, textAlign: 'center', paddingHorizontal: spacing.xl },
     emptyHint: { ...typography.caption, color: colors.textTertiary, textAlign: 'center', paddingHorizontal: spacing.xl },
     switchButton: {
@@ -173,6 +222,6 @@ const makeStyles = (colors: Palette) =>
       paddingHorizontal: spacing.lg,
       paddingVertical: spacing.sm + 2,
     },
-    switchLabel: { ...typography.label, color: '#FFFFFF', fontWeight: '800' },
+    switchLabel: { ...typography.label, color: '#FFFFFF', fontFamily: fonts.bodyBold },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   });

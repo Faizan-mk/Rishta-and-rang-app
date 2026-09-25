@@ -13,7 +13,8 @@ import { useAuth } from '../../store/AuthContext';
 import { useTheme } from '../../store/ThemeContext';
 import { useDialog } from '../../store/DialogContext';
 import { useMatches } from '../../store/MatchesContext';
-import { radius, spacing, typography } from '../../theme';
+import { fonts, radius, spacing, typography } from '../../theme';
+import { cardSurface } from '../../theme/surfaces';
 import { glow, modeAccent, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 import type { Match } from '../../types/content';
@@ -64,7 +65,7 @@ export function WaliDashboardScreen() {
   const renderMatch = ({ item, index }: { item: Match; index: number }) => (
     <Animated.View entering={FadeInUp.delay(Math.min(index * 60, 300)).duration(320)} style={styles.matchRow}>
       <View style={styles.matchIcon}>
-        <Ionicons name="git-merge" size={14} color="#FFFFFF" />
+        <Ionicons name="git-merge" size={14} color="#F3D99B" />
       </View>
       <Text style={[styles.matchName, rtl && styles.rtlText]}>{item.name}</Text>
     </Animated.View>
@@ -82,39 +83,47 @@ export function WaliDashboardScreen() {
           >
             <View style={styles.heroGlow} pointerEvents="none" />
             <View style={styles.heroIcon}>
-              <Ionicons name="people" size={22} color="#FFFFFF" />
+              <Ionicons name="people" size={20} color="#F3D99B" />
             </View>
             <Text style={[styles.heroTitle, rtl && styles.rtlText]}>{t('wali.title')}</Text>
             <Text style={[styles.heroSubtitle, rtl && styles.rtlText]}>{t('wali.explainer')}</Text>
           </LinearGradient>
 
-          <TextField label={t('wali.name')} value={name} onChangeText={setName} placeholder={t('wali.namePlaceholder')} />
-          <TextField
-            label={t('wali.contact')}
-            value={contact}
-            onChangeText={setContact}
-            placeholder={t('wali.contactPlaceholder')}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-          {error ? (
-            <View style={styles.errorCard}>
-              <Ionicons name="alert-circle" size={16} color={colors.danger} />
-              <Text style={[styles.errorText, rtl && styles.rtlText]}>{error}</Text>
-            </View>
-          ) : null}
-          <Button
-            label={t('wali.sendInvite')}
-            onPress={onInvite}
-            loading={saving}
-            gradient={accent.ramp}
-            style={styles.submit}
-          />
+          <View style={styles.card}>
+            <TextField label={t('wali.name')} value={name} onChangeText={setName} placeholder={t('wali.namePlaceholder')} />
+            <TextField
+              label={t('wali.contact')}
+              value={contact}
+              onChangeText={setContact}
+              placeholder={t('wali.contactPlaceholder')}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+            {error ? (
+              <View style={styles.errorCard}>
+                <Ionicons name="alert-circle" size={16} color={colors.danger} />
+                <Text style={[styles.errorText, rtl && styles.rtlText]}>{error}</Text>
+              </View>
+            ) : null}
+            {/* The design system's wali action: an outlined champagne-gold pill. */}
+            <Button
+              label={t('wali.sendInvite')}
+              onPress={onInvite}
+              loading={saving}
+              variant="secondary"
+              icon={<Ionicons name="paper-plane-outline" size={17} color={colors.textPrimary} />}
+              style={styles.submit}
+              labelStyle={styles.submitLabel}
+            />
+          </View>
         </FadeIn>
       ) : (
         <View style={styles.flex}>
           <FadeIn>
             <View style={styles.waliCard}>
+              <View style={styles.waliSeal}>
+                <Ionicons name="people" size={22} color={colors.gold} />
+              </View>
               <View style={styles.waliRow}>
                 <Text style={[styles.waliLabel, rtl && styles.rtlText]}>{t('wali.name')}</Text>
                 <Text style={styles.waliValue}>{user.waliName}</Text>
@@ -152,8 +161,10 @@ const makeStyles = (colors: Palette) =>
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.md,
       gap: spacing.xs,
-      marginBottom: spacing.lg,
+      marginBottom: spacing.sm,
       overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: withAlpha(colors.gold, 0.5),
     },
     heroGlow: {
       position: 'absolute',
@@ -168,12 +179,15 @@ const makeStyles = (colors: Palette) =>
       width: 40,
       height: 40,
       borderRadius: 20,
-      backgroundColor: 'rgba(255,255,255,0.22)',
+      backgroundColor: 'rgba(20,11,16,0.25)',
+      borderWidth: 1.5,
+      borderColor: '#F3D99B',
       alignItems: 'center',
       justifyContent: 'center',
       marginBottom: spacing.xs,
     },
-    heroTitle: { ...typography.h1, color: '#FFFFFF', fontWeight: '800' },
+    heroTitle: { ...typography.h1, color: '#FFFFFF' },
+    card: { ...cardSurface(colors), marginTop: spacing.md, paddingBottom: spacing.lg },
     heroSubtitle: { ...typography.body, color: 'rgba(255,255,255,0.9)' },
     errorCard: {
       flexDirection: 'row',
@@ -187,25 +201,39 @@ const makeStyles = (colors: Palette) =>
       paddingVertical: spacing.sm,
       marginBottom: spacing.sm,
     },
-    errorText: { ...typography.caption, color: colors.danger, fontWeight: '700', flexShrink: 1 },
-    submit: { marginTop: spacing.sm },
+    errorText: { ...typography.caption, color: colors.danger, fontFamily: fonts.bodyBold, flexShrink: 1 },
+    submit: { marginTop: spacing.sm, borderColor: colors.gold, backgroundColor: 'transparent' },
+    submitLabel: { color: colors.textPrimary },
+    // A family card: gold hairline and a gold seal, like the design system's
+    // family-reference cards.
     waliCard: {
-      backgroundColor: colors.surfaceElevated,
-      borderRadius: radius.lg,
-      borderWidth: 1,
-      borderColor: colors.borderSoft,
-      paddingHorizontal: spacing.md,
+      ...cardSurface(colors),
+      borderColor: withAlpha(colors.gold, 0.6),
+      paddingTop: spacing.lg,
+      paddingBottom: spacing.xs,
       marginBottom: spacing.md,
+    },
+    waliSeal: {
+      alignSelf: 'center',
+      width: 52,
+      height: 52,
+      borderRadius: 26,
+      borderWidth: 1.5,
+      borderColor: colors.gold,
+      backgroundColor: colors.goldSoft,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: spacing.sm,
     },
     waliRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      paddingVertical: spacing.sm,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: colors.border,
+      paddingVertical: spacing.sm + 4,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: colors.border,
     },
     waliLabel: { ...typography.body, color: colors.textSecondary },
-    waliValue: { ...typography.bodyBold, color: colors.textPrimary },
+    waliValue: { ...typography.h3, color: colors.textPrimary, flexShrink: 1, marginLeft: spacing.md },
     removeButton: { marginBottom: spacing.lg },
     sectionHeading: { marginBottom: spacing.sm },
     list: { flex: 1 },
@@ -214,21 +242,23 @@ const makeStyles = (colors: Palette) =>
       alignItems: 'center',
       gap: spacing.sm,
       backgroundColor: colors.surfaceElevated,
-      borderRadius: radius.md,
+      borderRadius: radius.lg,
       borderWidth: 1,
-      borderColor: colors.borderSoft,
-      paddingHorizontal: spacing.sm,
-      paddingVertical: spacing.sm,
+      borderColor: colors.border,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm + 4,
     },
     matchIcon: {
-      width: 28,
-      height: 28,
-      borderRadius: 14,
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      borderWidth: 1.5,
+      borderColor: colors.gold,
       backgroundColor: colors.rishta,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    matchName: { ...typography.body, color: colors.textPrimary, fontWeight: '700' },
+    matchName: { ...typography.h3, color: colors.textPrimary },
     // The rows are cards now, so the list is spaced rather than ruled.
     divider: { height: spacing.sm },
     emptyText: { ...typography.body, color: colors.textSecondary, marginTop: spacing.sm },

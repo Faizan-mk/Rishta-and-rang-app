@@ -26,7 +26,7 @@ export function Chip({ label, selected, onPress, tone = 'neutral' }: ChipProps) 
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const toneColor = tone === 'dating' ? colors.dating : tone === 'rishta' ? colors.rishta : colors.teal;
-  const toneEnd = tone === 'dating' ? colors.gold : tone === 'rishta' ? colors.teal : colors.sage;
+  const toneEnd = tone === 'dating' ? colors.gold : tone === 'rishta' ? colors.plum : colors.dating;
   const scale = useSharedValue(1);
   const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
@@ -49,7 +49,7 @@ export function Chip({ label, selected, onPress, tone = 'neutral' }: ChipProps) 
         </LinearGradient>
       ) : (
         <View
-          style={[styles.chip, styles.chipIdle, { borderColor: withAlpha(toneColor, 0.45), backgroundColor: withAlpha(toneColor, 0.08) }]}
+          style={[styles.chip, styles.chipIdle, { borderColor: withAlpha(toneColor, 0.3), backgroundColor: withAlpha(toneColor, 0.08) }]}
         >
           {body}
         </View>
@@ -76,6 +76,6 @@ const makeStyles = (colors: Palette) =>
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.xs + 3,
     },
-    chipIdle: { borderWidth: 1.5 },
-    label: { ...typography.label, fontWeight: '700', flexShrink: 0 },
+    chipIdle: { borderWidth: 1 },
+    label: { ...typography.label, flexShrink: 0 },
   });

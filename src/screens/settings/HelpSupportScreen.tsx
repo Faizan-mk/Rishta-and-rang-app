@@ -10,8 +10,8 @@ import { useLanguage } from '../../store/LanguageContext';
 import { SUPPORT_EMAIL } from '../../constants/Config';
 import { useTheme } from '../../store/ThemeContext';
 import { useDialog } from '../../store/DialogContext';
-import { radius, spacing, typography } from '../../theme';
-import { withAlpha } from '../../theme/glow';
+import { fonts, radius, spacing, typography } from '../../theme';
+import { cardSurface } from '../../theme/surfaces';
 import type { Palette } from '../../theme/palettes';
 
 const FAQ_KEYS = ['selfie', 'subscription', 'reporting', 'changeDetails', 'deleteAccount', 'safety'];
@@ -27,7 +27,7 @@ export function HelpSupportScreen() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
-  const safeRamp = [colors.teal, colors.sage] as const;
+  const safeRamp = [colors.teal, colors.dating] as const;
 
   const onSend = async () => {
     if (!subject.trim() || !message.trim()) {
@@ -51,7 +51,7 @@ export function HelpSupportScreen() {
           const isOpen = expanded === key;
           return (
             <React.Fragment key={key}>
-              <Pressable onPress={() => setExpanded(isOpen ? null : key)} style={styles.faqRow}>
+              <Pressable onPress={() => setExpanded(isOpen ? null : key)} style={[styles.faqRow, rtl && styles.rowRtl]}>
                 <Text style={[styles.faqQuestion, isOpen && styles.faqQuestionOpen, rtl && styles.rtlText]}>
                   {t(`help.faq.${key}.q`)}
                 </Text>
@@ -75,9 +75,12 @@ export function HelpSupportScreen() {
       </View>
 
       <AccentHeading title={t('help.contactTitle')} gradient={safeRamp} style={styles.sectionHeading} />
-      <Pressable onPress={() => Linking.openURL(`mailto:${SUPPORT_EMAIL}`)} style={styles.emailRow}>
-        <Ionicons name="mail-outline" size={18} color={colors.teal} />
+      <Pressable onPress={() => Linking.openURL(`mailto:${SUPPORT_EMAIL}`)} style={[styles.emailRow, rtl && styles.rowRtl]}>
+        <View style={styles.emailIcon}>
+          <Ionicons name="mail-outline" size={18} color={colors.teal} />
+        </View>
         <Text style={[styles.emailText, rtl && styles.rtlText]}>{t('help.emailUs')}</Text>
+        <Ionicons name={rtl ? 'chevron-back' : 'chevron-forward'} size={16} color={colors.textTertiary} />
       </Pressable>
 
       <View style={styles.formCard}>
@@ -106,50 +109,56 @@ export function HelpSupportScreen() {
 
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
-    firstSectionHeading: { marginBottom: spacing.sm },
-    sectionHeading: { marginBottom: spacing.sm, marginTop: spacing.lg },
-    card: {
-      backgroundColor: colors.surfaceElevated,
-      borderRadius: radius.lg,
-      borderWidth: 1,
-      borderColor: colors.borderSoft,
-      paddingHorizontal: spacing.md,
-    },
+    firstSectionHeading: { marginBottom: spacing.md },
+    sectionHeading: { marginBottom: spacing.md, marginTop: spacing.lg },
+    card: { ...cardSurface(colors), paddingVertical: 0, paddingBottom: 0, paddingHorizontal: spacing.md },
+    rowRtl: { flexDirection: 'row-reverse' },
     faqRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: spacing.md, gap: spacing.sm },
-    faqQuestion: { ...typography.body, color: colors.textPrimary, flex: 1, fontWeight: '600' },
-    faqQuestionOpen: { color: colors.teal, fontWeight: '800' },
+    faqQuestion: { ...typography.bodyBold, color: colors.textPrimary, flex: 1 },
+    faqQuestionOpen: { color: colors.teal, fontFamily: fonts.bodyBold },
     faqChevron: {
-      width: 26,
-      height: 26,
-      borderRadius: 13,
-      backgroundColor: withAlpha(colors.textPrimary, 0.06),
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      backgroundColor: colors.tealSoft,
       alignItems: 'center',
       justifyContent: 'center',
     },
     faqChevronOpen: { backgroundColor: colors.teal },
-    faqAnswerWrap: { paddingBottom: spacing.md },
-    faqAnswer: { ...typography.caption, color: colors.textSecondary },
+    // The open answer sits on a blush panel with a gold rule on its leading edge.
+    faqAnswerWrap: {
+      marginBottom: spacing.md,
+      padding: spacing.md,
+      borderRadius: radius.md,
+      backgroundColor: colors.tealSoft,
+      borderLeftWidth: 3,
+      borderLeftColor: colors.gold,
+    },
+    faqAnswer: { ...typography.body, color: colors.textPrimary },
     divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border },
     emailRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: spacing.sm,
-      backgroundColor: withAlpha(colors.teal, 0.1),
-      borderWidth: 1,
-      borderColor: withAlpha(colors.teal, 0.32),
-      borderRadius: radius.lg,
-      padding: spacing.md,
+      gap: spacing.md,
+      backgroundColor: colors.surface,
+      borderWidth: 1.5,
+      borderColor: colors.gold,
+      borderRadius: radius.pill,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.sm,
+      paddingRight: spacing.md,
       marginBottom: spacing.md,
     },
-    emailText: { ...typography.label, color: colors.teal, fontWeight: '800' },
-    formCard: {
-      backgroundColor: colors.surfaceElevated,
-      borderRadius: radius.lg,
-      borderWidth: 1,
-      borderColor: colors.borderSoft,
-      padding: spacing.md,
-      marginBottom: spacing.lg,
+    emailIcon: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: colors.tealSoft,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
+    emailText: { ...typography.bodyBold, color: colors.textPrimary, flex: 1 },
+    formCard: { ...cardSurface(colors), marginBottom: spacing.lg, paddingBottom: spacing.lg },
     messageInput: { minHeight: 90, textAlignVertical: 'top' },
     errorText: { ...typography.caption, color: colors.danger, marginBottom: spacing.sm },
     sendButton: { marginTop: spacing.sm },

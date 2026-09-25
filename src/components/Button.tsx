@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, ViewStyle } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextStyle, ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { radius, spacing, typography } from '../theme';
@@ -22,6 +22,9 @@ interface ButtonProps {
   // Paints the button with a colour ramp instead of the variant's flat fill.
   // The label and spinner go white, so pass a ramp dark enough to carry them.
   gradient?: Gradient;
+  // For buttons that sit on a photo or a dark sheet, where the variant's own
+  // label colour would disappear.
+  labelStyle?: TextStyle;
 }
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -29,7 +32,7 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const GRADIENT_START = { x: 0, y: 0 } as const;
 const GRADIENT_END = { x: 1, y: 1 } as const;
 
-export function Button({ label, onPress, variant = 'primary', disabled, loading, style, icon, gradient }: ButtonProps) {
+export function Button({ label, onPress, variant = 'primary', disabled, loading, style, icon, gradient, labelStyle }: ButtonProps) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const isDisabled = disabled || loading;
@@ -82,6 +85,7 @@ export function Button({ label, onPress, variant = 'primary', disabled, loading,
               variant === 'danger' && styles.labelDanger,
               gradient && styles.labelOnGradient,
               icon ? { marginLeft: spacing.xs } : null,
+              labelStyle,
             ]}
           >
             {label}
@@ -96,7 +100,7 @@ const makeStyles = (colors: Palette) =>
   StyleSheet.create({
     base: {
       minHeight: Math.max(MIN_TOUCH_TARGET, scaleSpace(52)),
-      borderRadius: radius.md,
+      borderRadius: radius.pill,
       alignItems: 'center',
       justifyContent: 'center',
       flexDirection: 'row',

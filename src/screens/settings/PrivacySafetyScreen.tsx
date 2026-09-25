@@ -13,7 +13,8 @@ import { useDialog } from '../../store/DialogContext';
 import { usePrivacy } from '../../store/PrivacyContext';
 import { useMatches } from '../../store/MatchesContext';
 import { radius, spacing, typography } from '../../theme';
-import { glow, withAlpha } from '../../theme/glow';
+import { cardSurface } from '../../theme/surfaces';
+import { withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 
 export function PrivacySafetyScreen() {
@@ -25,7 +26,7 @@ export function PrivacySafetyScreen() {
   const { confirm, notify } = useDialog();
   const { prefs, setPref } = usePrivacy();
   const { blockedProfiles } = useMatches();
-  const safeRamp = [colors.teal, colors.sage] as const;
+  const safeRamp = [colors.teal, colors.dating] as const;
 
   const onDeleteAccount = async () => {
     const confirmed = await confirm({
@@ -99,15 +100,18 @@ export function PrivacySafetyScreen() {
         </View>
 
         <View style={styles.tipsCard}>
-          <View style={styles.tipsHeader}>
-            <View style={[styles.tipsIcon, glow(colors.success, 0.5, 10, 4)]}>
-              <Ionicons name="shield-checkmark" size={14} color="#FFFFFF" />
+          <View style={[styles.tipsHeader, rtl && styles.rowRtl]}>
+            <View style={styles.tipsIcon}>
+              <Ionicons name="shield-checkmark" size={16} color={colors.success} />
             </View>
             <Text style={[styles.tipsTitle, rtl && styles.rtlText]}>{t('privacy.safetyTipsTitle')}</Text>
           </View>
-          <Text style={[styles.tip, rtl && styles.rtlText]}>• {t('privacy.safetyTip1')}</Text>
-          <Text style={[styles.tip, rtl && styles.rtlText]}>• {t('privacy.safetyTip2')}</Text>
-          <Text style={[styles.tip, rtl && styles.rtlText]}>• {t('privacy.safetyTip3')}</Text>
+          {['privacy.safetyTip1', 'privacy.safetyTip2', 'privacy.safetyTip3'].map((key) => (
+            <View key={key} style={[styles.tipRow, rtl && styles.rowRtl]}>
+              <View style={styles.tipDiamond} />
+              <Text style={[styles.tip, rtl && styles.rtlText]}>{t(key)}</Text>
+            </View>
+          ))}
         </View>
       </FadeIn>
 
@@ -117,7 +121,7 @@ export function PrivacySafetyScreen() {
           gradient={[colors.danger, colors.plum]}
           style={styles.sectionHeading}
         />
-        <View style={styles.card}>
+        <View style={[styles.card, styles.dangerCard]}>
           <SettingsRow icon="trash-outline" label={t('privacy.deleteAccount')} right="chevron" onPress={onDeleteAccount} />
         </View>
       </FadeIn>
@@ -128,33 +132,40 @@ export function PrivacySafetyScreen() {
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
     firstSectionHeading: { marginBottom: spacing.sm },
-    sectionHeading: { marginBottom: spacing.sm, marginTop: spacing.lg },
-    card: {
-      backgroundColor: colors.surfaceElevated,
-      borderRadius: radius.lg,
-      borderWidth: 1,
-      borderColor: colors.borderSoft,
-      paddingHorizontal: spacing.md,
-    },
+    sectionHeading: { marginBottom: spacing.md, marginTop: spacing.lg },
+    card: { ...cardSurface(colors), paddingVertical: 0, paddingBottom: 0, paddingHorizontal: spacing.md },
+    dangerCard: { borderColor: withAlpha(colors.danger, 0.35) },
+    rowRtl: { flexDirection: 'row-reverse' },
     divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border },
     tipsCard: {
       backgroundColor: withAlpha(colors.success, 0.1),
       borderWidth: 1,
       borderColor: withAlpha(colors.success, 0.32),
       borderRadius: radius.lg,
-      padding: spacing.md,
-      marginTop: spacing.lg,
+      padding: spacing.lg,
+      marginTop: spacing.md,
     },
-    tipsHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
+    tipsHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md },
+    // An emerald seal: white disc, emerald rim.
     tipsIcon: {
-      width: 24,
-      height: 24,
-      borderRadius: 12,
-      backgroundColor: colors.success,
+      width: 34,
+      height: 34,
+      borderRadius: 17,
+      backgroundColor: colors.surface,
+      borderWidth: 1.5,
+      borderColor: colors.success,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    tipsTitle: { ...typography.label, color: colors.success, fontWeight: '800' },
-    tip: { ...typography.caption, color: colors.textPrimary, marginBottom: 4 },
+    tipsTitle: { ...typography.h3, color: colors.textPrimary },
+    tipRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, marginBottom: spacing.sm },
+    tipDiamond: {
+      width: 6,
+      height: 6,
+      marginTop: 7,
+      backgroundColor: colors.gold,
+      transform: [{ rotate: '45deg' }],
+    },
+    tip: { ...typography.body, color: colors.textPrimary, flex: 1 },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   });

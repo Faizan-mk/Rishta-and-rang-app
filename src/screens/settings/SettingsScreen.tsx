@@ -13,7 +13,8 @@ import { useAuth } from '../../store/AuthContext';
 import { useTheme, ThemeMode } from '../../store/ThemeContext';
 import { useNotifications } from '../../store/NotificationContext';
 import { useDialog } from '../../store/DialogContext';
-import { radius, spacing, typography } from '../../theme';
+import { fonts, radius, spacing, typography } from '../../theme';
+import { cardSurface } from '../../theme/surfaces';
 import { glow, modeAccent, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 import type { NotificationPrefs } from '../../types/content';
@@ -83,7 +84,7 @@ export function SettingsScreen() {
                     colors={accent.ramp}
                     start={GRADIENT_START}
                     end={GRADIENT_END}
-                    style={[styles.themeOption, glow(accent.primary, 0.5, 14, 6)]}
+                    style={[styles.themeOption, styles.themeOptionSelected, glow(accent.primary, 0.3, 14, 5)]}
                   >
                     <Ionicons name={option.icon} size={20} color="#FFFFFF" />
                     <Text style={[styles.themeLabel, styles.themeLabelSelected]}>{t(option.labelKey)}</Text>
@@ -115,7 +116,7 @@ export function SettingsScreen() {
                     colors={accent.ramp}
                     start={GRADIENT_START}
                     end={GRADIENT_END}
-                    style={[styles.themeOption, glow(accent.primary, 0.5, 14, 6)]}
+                    style={[styles.themeOption, styles.themeOptionSelected, glow(accent.primary, 0.3, 14, 5)]}
                   >
                     <Text style={[styles.themeLabel, styles.themeLabelSelected]}>{t(option.labelKey)}</Text>
                   </LinearGradient>
@@ -174,7 +175,7 @@ export function SettingsScreen() {
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
     heading: { marginBottom: spacing.lg },
-    sectionHeading: { marginBottom: spacing.sm, marginTop: spacing.lg },
+    sectionHeading: { marginBottom: spacing.md, marginTop: spacing.lg },
     themeRow: { flexDirection: 'row', gap: spacing.sm },
     themeSlot: { flex: 1 },
     themeOption: {
@@ -184,20 +185,15 @@ const makeStyles = (colors: Palette) =>
       paddingVertical: spacing.md,
       borderRadius: radius.lg,
     },
+    themeOptionSelected: { borderWidth: 1, borderColor: withAlpha(colors.gold, 0.7) },
     themeOptionIdle: {
-      borderWidth: 1.5,
-      borderColor: colors.borderSoft,
-      backgroundColor: withAlpha(colors.textPrimary, 0.04),
-    },
-    themeLabel: { ...typography.label, color: colors.textSecondary, fontWeight: '700' },
-    themeLabelSelected: { color: '#FFFFFF', fontWeight: '800' },
-    card: {
-      backgroundColor: colors.surfaceElevated,
-      borderRadius: radius.lg,
       borderWidth: 1,
-      borderColor: colors.borderSoft,
-      paddingHorizontal: spacing.md,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
     },
+    themeLabel: { ...typography.label, color: colors.textSecondary },
+    themeLabelSelected: { color: '#FFFFFF', fontFamily: fonts.bodyBold },
+    card: { ...cardSurface(colors), paddingVertical: 0, paddingBottom: 0, paddingHorizontal: spacing.md },
     divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border },
     logout: { marginTop: spacing.xl },
     version: { ...typography.caption, color: colors.textTertiary, textAlign: 'center', marginTop: spacing.md, marginBottom: spacing.lg },

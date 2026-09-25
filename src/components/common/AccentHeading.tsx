@@ -67,7 +67,7 @@ const makeStyles = (colors: Palette) =>
     screenWrap: { gap: spacing.sm },
     screenRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
     screenText: { flex: 1 },
-    screenTitle: { ...typography.h1, color: colors.textPrimary, fontWeight: '800' },
+    screenTitle: { ...typography.h1, color: colors.textPrimary },
     screenSubtitle: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
     rule: { width: 56, height: 4, borderRadius: 2 },
     ruleRtl: { alignSelf: 'flex-end' },
@@ -75,6 +75,6 @@ const makeStyles = (colors: Palette) =>
     sectionRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
     tick: { width: 4, height: 22, borderRadius: radius.pill },
     sectionText: { flex: 1 },
-    sectionTitle: { ...typography.h3, color: colors.textPrimary, fontWeight: '800' },
+    sectionTitle: { ...typography.h3, color: colors.textPrimary },
     sectionSubtitle: { ...typography.caption, color: colors.textSecondary, marginTop: 1 },
   });
