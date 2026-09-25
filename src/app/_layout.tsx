@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { View } from 'react-native';
 import '../utils/webGlobalStyles';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -22,6 +22,7 @@ import { ToastProvider } from '../store/ToastContext';
 import { OnboardingProvider } from '../store/onboardingStore';
 import { OnboardingGateProvider, useOnboardingGate } from '../store/OnboardingGateContext';
 import { ResponsiveFrame } from '../components/common/ResponsiveFrame';
+import { SplashLoader } from '../components/common/SplashLoader';
 import { usePushRegistration } from '../hooks/usePushRegistration';
 import { usePushNavigation } from '../hooks/usePushNavigation';
 import { useActivityHeartbeat } from '../hooks/useActivityHeartbeat';
@@ -62,61 +63,63 @@ function RootNavigator() {
     };
   }, [colors, isDark]);
 
-  if (initializing || seenOnboarding === null) {
-    return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background }}>
-        <ActivityIndicator color={colors.teal} size="large" />
-      </View>
-    );
-  }
+  // The launch loader sits over the app rather than in place of it, so the
+  // navigator is already mounted underneath by the time the loader fades out.
+  const ready = !initializing && seenOnboarding !== null;
+  const [loaderDone, setLoaderDone] = useState(false);
 
   return (
-    <NavigationThemeProvider value={navigationTheme}>
-      <ResponsiveFrame>
-        <Stack
-          screenOptions={{
-            headerTintColor: colors.teal,
-            headerStyle: { backgroundColor: colors.surface },
-            headerTitleStyle: { color: colors.textPrimary },
-            contentStyle: { backgroundColor: colors.background },
-          }}
-        >
-          <Stack.Screen name="index" options={{ headerShown: false }} />
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      {ready && (
+        <NavigationThemeProvider value={navigationTheme}>
+          <ResponsiveFrame>
+            <Stack
+              screenOptions={{
+                headerTintColor: colors.teal,
+                headerStyle: { backgroundColor: colors.surface },
+                headerTitleStyle: { color: colors.textPrimary },
+                contentStyle: { backgroundColor: colors.background },
+              }}
+            >
+              <Stack.Screen name="index" options={{ headerShown: false }} />
 
-          {/* Structural gate, not just a redirect: while the two-page intro
-              hasn't been marked seen, (auth) isn't mounted at all, so no
-              direct link, restored nav state, or stray redirect can land on
-              welcome/login/signup ahead of it. */}
-          <Stack.Protected guard={!user && !seenOnboarding}>
-            <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-          </Stack.Protected>
+              {/* Structural gate, not just a redirect: while the two-page intro
+                  hasn't been marked seen, (auth) isn't mounted at all, so no
+                  direct link, restored nav state, or stray redirect can land on
+                  welcome/login/signup ahead of it. */}
+              <Stack.Protected guard={!user && !seenOnboarding}>
+                <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+              </Stack.Protected>
 
-          <Stack.Protected guard={!user && seenOnboarding}>
-            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-          </Stack.Protected>
+              <Stack.Protected guard={!user && seenOnboarding}>
+                <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+              </Stack.Protected>
 
-          <Stack.Protected guard={!!user}>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="chat/[id]" options={{ headerShown: false }} />
-            <Stack.Screen name="call" options={{ headerShown: false }} />
-            <Stack.Screen name="profile-detail" options={{ headerShown: false }} />
-            <Stack.Screen name="edit-profile" options={{ title: t('editProfile.title') }} />
-            <Stack.Screen name="rishta-profile" options={{ title: t('rishtaProfile.title') }} />
-            <Stack.Screen name="settings" options={{ title: t('settings.title') }} />
-            <Stack.Screen name="notifications" options={{ title: t('notificationsScreen.title') }} />
-            <Stack.Screen name="explore-plus" options={{ title: t('explorePlus.title') }} />
-            <Stack.Screen name="favorites" options={{ title: t('favorites.title') }} />
-            <Stack.Screen name="privacy-safety" options={{ title: t('privacy.title') }} />
-            <Stack.Screen name="blocked-users" options={{ title: t('privacy.blockedUsers') }} />
-            <Stack.Screen name="help-support" options={{ title: t('help.title') }} />
-            <Stack.Screen name="cnic-verification" options={{ title: t('cnic.title') }} />
-            <Stack.Screen name="wali-dashboard" options={{ title: t('wali.title') }} />
-            <Stack.Screen name="legal" options={{ title: t('legal.title') }} />
-          </Stack.Protected>
-        </Stack>
-      </ResponsiveFrame>
+              <Stack.Protected guard={!!user}>
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                <Stack.Screen name="chat/[id]" options={{ headerShown: false }} />
+                <Stack.Screen name="call" options={{ headerShown: false }} />
+                <Stack.Screen name="profile-detail" options={{ headerShown: false }} />
+                <Stack.Screen name="edit-profile" options={{ title: t('editProfile.title') }} />
+                <Stack.Screen name="rishta-profile" options={{ title: t('rishtaProfile.title') }} />
+                <Stack.Screen name="settings" options={{ title: t('settings.title') }} />
+                <Stack.Screen name="notifications" options={{ title: t('notificationsScreen.title') }} />
+                <Stack.Screen name="explore-plus" options={{ title: t('explorePlus.title') }} />
+                <Stack.Screen name="favorites" options={{ title: t('favorites.title') }} />
+                <Stack.Screen name="privacy-safety" options={{ title: t('privacy.title') }} />
+                <Stack.Screen name="blocked-users" options={{ title: t('privacy.blockedUsers') }} />
+                <Stack.Screen name="help-support" options={{ title: t('help.title') }} />
+                <Stack.Screen name="cnic-verification" options={{ title: t('cnic.title') }} />
+                <Stack.Screen name="wali-dashboard" options={{ title: t('wali.title') }} />
+                <Stack.Screen name="legal" options={{ title: t('legal.title') }} />
+              </Stack.Protected>
+            </Stack>
+          </ResponsiveFrame>
+        </NavigationThemeProvider>
+      )}
+      {!loaderDone && <SplashLoader ready={ready} onFinish={() => setLoaderDone(true)} />}
       <StatusBar style={isDark ? 'light' : 'dark'} />
-    </NavigationThemeProvider>
+    </View>
   );
 }
 
