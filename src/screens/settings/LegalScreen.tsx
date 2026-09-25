@@ -8,7 +8,8 @@ import { useLanguage } from '../../store/LanguageContext';
 import { useTheme } from '../../store/ThemeContext';
 import { useDialog } from '../../store/DialogContext';
 import { LEGAL_URLS, SUPPORT_EMAIL } from '../../constants/Config';
-import { radius, spacing, typography } from '../../theme';
+import { fonts, radius, spacing, typography } from '../../theme';
+import { cardSurface } from '../../theme/surfaces';
 import { withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 
@@ -64,13 +65,16 @@ export function LegalScreen() {
   return (
     <ScreenContainer>
       <FadeIn>
-        <Text style={[styles.updated, rtl && styles.rtlText]}>{t('legal.lastUpdated')}</Text>
+        <View style={[styles.updatedPill, rtl && styles.updatedPillRtl]}>
+          <Ionicons name="calendar-outline" size={13} color={colors.gold} />
+          <Text style={styles.updated}>{t('legal.lastUpdated')}</Text>
+        </View>
       </FadeIn>
 
       <FadeIn delay={60}>
         <AccentHeading title={t('legal.privacyPolicyTitle')} gradient={legalRamp} style={styles.sectionHeading} />
         <View style={styles.card}>
-          <Text style={[styles.intro, rtl && styles.rtlText]}>{t('legal.privacyIntro')}</Text>
+          <Text style={[styles.intro, rtl && styles.rtlText, rtl && styles.introRtl]}>{t('legal.privacyIntro')}</Text>
           {PRIVACY_SECTIONS.map((id) => (
             <Clause key={id} id={`legal.privacy.${id}`} styles={styles} rtl={rtl} t={t} />
           ))}
@@ -87,7 +91,7 @@ export function LegalScreen() {
       <FadeIn delay={120}>
         <AccentHeading title={t('legal.termsTitle')} gradient={legalRamp} style={styles.sectionHeading} />
         <View style={styles.card}>
-          <Text style={[styles.intro, rtl && styles.rtlText]}>{t('legal.termsIntro')}</Text>
+          <Text style={[styles.intro, rtl && styles.rtlText, rtl && styles.introRtl]}>{t('legal.termsIntro')}</Text>
           {TERMS_SECTIONS.map((id) => (
             <Clause key={id} id={`legal.terms.${id}`} styles={styles} rtl={rtl} t={t} />
           ))}
@@ -154,34 +158,62 @@ function OpenOnlineRow({
 
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
-    updated: { ...typography.caption, color: colors.textTertiary, fontWeight: '600' },
-    sectionHeading: { marginBottom: spacing.sm, marginTop: spacing.lg },
-    card: {
-      backgroundColor: colors.surfaceElevated,
-      borderRadius: radius.lg,
+    updatedPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      alignSelf: 'flex-start',
+      gap: 6,
+      borderRadius: radius.pill,
       borderWidth: 1,
-      borderColor: colors.borderSoft,
-      padding: spacing.md,
-      gap: spacing.md,
+      borderColor: withAlpha(colors.gold, 0.6),
+      backgroundColor: colors.surface,
+      paddingHorizontal: spacing.sm + 4,
+      paddingVertical: 5,
     },
-    intro: { ...typography.body, color: colors.textPrimary, lineHeight: 22 },
-    clause: { gap: spacing.xs },
-    clauseTitle: { ...typography.bodyBold, color: colors.textPrimary, fontWeight: '800' },
-    body: { ...typography.body, color: colors.textSecondary, lineHeight: 22 },
+    updatedPillRtl: { alignSelf: 'flex-end', flexDirection: 'row-reverse' },
+    updated: { ...typography.caption, color: colors.textSecondary, fontFamily: fonts.bodySemiBold },
+    sectionHeading: { marginBottom: spacing.md, marginTop: spacing.lg },
+    // A calm reading page: generous padding, clauses ruled apart by hairlines.
+    card: { ...cardSurface(colors), paddingBottom: spacing.lg, gap: spacing.md },
+    // The intro opens the document, set off by a gold rule on its leading edge.
+    intro: {
+      ...typography.body,
+      color: colors.textPrimary,
+      lineHeight: 24,
+      paddingLeft: spacing.md,
+      borderLeftWidth: 3,
+      borderLeftColor: colors.gold,
+    },
+    introRtl: {
+      paddingLeft: 0,
+      borderLeftWidth: 0,
+      paddingRight: spacing.md,
+      borderRightWidth: 3,
+      borderRightColor: colors.gold,
+    },
+    clause: {
+      gap: spacing.xs,
+      paddingTop: spacing.md,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: colors.border,
+    },
+    clauseTitle: { ...typography.h3, color: colors.textPrimary },
+    body: { ...typography.body, color: colors.textSecondary, lineHeight: 24 },
     linkRow: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
       gap: spacing.xs,
-      marginTop: spacing.sm,
-      paddingVertical: spacing.sm + 2,
-      borderRadius: radius.md,
-      borderWidth: 1,
-      borderColor: withAlpha(colors.teal, 0.3),
-      backgroundColor: withAlpha(colors.teal, 0.08),
+      marginTop: spacing.md,
+      paddingVertical: spacing.sm + 4,
+      paddingHorizontal: spacing.md,
+      borderRadius: radius.pill,
+      borderWidth: 1.5,
+      borderColor: colors.gold,
+      backgroundColor: colors.surface,
     },
     linkRowRtl: { flexDirection: 'row-reverse' },
-    linkLabel: { ...typography.label, color: colors.teal, fontWeight: '800' },
+    linkLabel: { ...typography.label, color: colors.textPrimary, flexShrink: 1 },
     contact: {
       ...typography.caption,
       color: colors.textTertiary,

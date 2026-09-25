@@ -131,7 +131,7 @@ export function OtpVerification({ email, purpose, initialCooldown = 60, onVerifi
           onPress={() => verify()}
           loading={verifying}
           disabled={code.length !== CODE_LENGTH}
-          gradient={[colors.teal, colors.sage]}
+          gradient={[colors.teal, colors.dating]}
           style={styles.submit}
         />
       )}
@@ -151,7 +151,7 @@ export function OtpVerification({ email, purpose, initialCooldown = 60, onVerifi
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
     subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg },
-    label: { ...typography.label, color: colors.textPrimary, marginBottom: spacing.xs, fontWeight: '700' },
+    label: { ...typography.label, color: colors.textPrimary, marginBottom: spacing.xs, letterSpacing: 0.3 },
     hint: { ...typography.caption, color: colors.textTertiary, marginTop: -spacing.xs, marginBottom: spacing.md },
     submit: { marginTop: spacing.sm },
     noticeCard: {

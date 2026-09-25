@@ -19,20 +19,28 @@ import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { Button } from '../../components/Button';
 import { FloatingHearts } from '../../components/common/FloatingHearts';
 import { spacing, typography } from '../../theme';
-import { glow } from '../../theme/glow';
-import { scaleSpace } from '../../theme/responsive';
+import { glow, withAlpha } from '../../theme/glow';
+import { scaleFont, scaleSpace } from '../../theme/responsive';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
 import { useOnboardingGate } from '../../store/OnboardingGateContext';
 
-const COUPLE_IMAGE = require('../../../assets/images/welcome-couple.png');
+const COUPLE_IMAGE = require('../../../assets/images/welcome-wedding.png');
 const FRIENDS_IMAGE = require('../../../assets/images/onboarding-friends.png');
-const BRAND_RAMP = ['#123234', '#1D4E52', '#3C7A5C'] as const;
-const CARD_RADIUS = 28;
+const BRAND_RAMP = ['#5E0F2E', '#8E1B45', '#F2715E'] as const;
+// The intro always sits on a dark rosewood page or a dark photo, so it uses
+// fixed brand colours rather than the theme's.
+const ROSEWOOD_PAGE = ['#3F0A1F', '#5E0F2E', '#8E1B45'] as const;
+const GOLD = '#E9C27A';
+const CARD_RADIUS = 24;
+// Mughal-arch crest: RN clamps an oversized radius to half the side, so this
+// turns the top edge into a full semicircular arch on any card width.
+const ARCH_RADIUS = 1000;
+const FRAME_PAD = 6;
 // Full-bleed page's own scrim: strong enough at top for the title, easing
 // off over the illustration, deepening again toward the footer.
-const PHOTO_SCRIM = ['rgba(20,8,10,0.55)', 'rgba(20,8,10,0.05)', 'rgba(20,8,10,0.55)'] as const;
+const PHOTO_SCRIM = ['rgba(20,11,16,0.7)', 'rgba(20,11,16,0.05)', 'rgba(20,11,16,0.8)'] as const;
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -50,7 +58,7 @@ function buildPages(colors: Palette): OnboardingPage[] {
     {
       layout: 'card',
       badgeIcon: 'heart',
-      ramp: [colors.teal, colors.plum] as const,
+      ramp: ROSEWOOD_PAGE,
       titleKey: 'onboarding.page1.title',
       subtitleKey: 'onboarding.page1.subtitle',
       chips: [],
@@ -209,11 +217,15 @@ function CardPage({ page, active, index, total, width, height, colors, styles, t
         <Animated.Text entering={active ? FadeInDown.delay(120).duration(500) : undefined} style={styles.title}>
           {t(page.titleKey)}
         </Animated.Text>
+        <Animated.Text
+          entering={active ? FadeInDown.delay(180).duration(500) : undefined}
+          style={[styles.subtitle, styles.cardSubtitle]}
+        >
+          {t(page.subtitleKey)}
+        </Animated.Text>
 
-        {/* The couple art's own baked-in gradient gives the top of the photo
-            a plain zone, so the title above visually bleeds into the image
-            instead of stopping short. */}
-        <Animated.View entering={active ? FadeInDown.delay(220).duration(550) : undefined} style={styles.card}>
+        {/* The portrait sits in a gold-framed Mughal arch, like a keepsake. */}
+        <Animated.View entering={active ? FadeInDown.delay(260).duration(550) : undefined} style={styles.card}>
           <View style={styles.cardClip}>
             <Image source={COUPLE_IMAGE} style={styles.cardImage} resizeMode="cover" />
             <LinearGradient
@@ -227,8 +239,8 @@ function CardPage({ page, active, index, total, width, height, colors, styles, t
             <Ionicons name={page.badgeIcon} size={22} color="#FFFFFF" />
           </View>
           <View style={[styles.badge, styles.badgeRight]}>
-            <LinearGradient colors={[colors.gold, '#F3D19B']} style={StyleSheet.absoluteFill} />
-            <Ionicons name="shield-checkmark" size={20} color="#123234" />
+            <LinearGradient colors={[GOLD, '#F3D99B']} style={StyleSheet.absoluteFill} />
+            <Ionicons name="shield-checkmark" size={20} color="#5E0F2E" />
           </View>
         </Animated.View>
       </SafeAreaView>
@@ -259,7 +271,7 @@ function PhotoPage({ page, active, index, total, width, height, colors, styles, 
         <Animated.View entering={active ? FadeInUp.delay(280).duration(500) : undefined} style={styles.chipRow}>
           {page.chips.map((chip) => (
             <View key={chip.labelKey} style={styles.chip}>
-              <Ionicons name={chip.icon} size={15} color="#FFFFFF" />
+              <Ionicons name={chip.icon} size={15} color={GOLD} />
               <Text style={styles.chipText}>{t(chip.labelKey)}</Text>
             </View>
           ))}
@@ -284,7 +296,7 @@ function PageEyebrow({
 }) {
   return (
     <Animated.View entering={active ? FadeInDown.delay(60).duration(450) : undefined} style={styles.eyebrow}>
-      <Ionicons name={icon} size={13} color="#FFFFFF" />
+      <Ionicons name={icon} size={13} color={GOLD} />
       <Text style={styles.eyebrowText}>
         {index + 1} / {total}
       </Text>
@@ -294,7 +306,7 @@ function PageEyebrow({
 
 const makeStyles = (colors: Palette, compact: boolean, rtl: boolean) =>
   StyleSheet.create({
-    root: { flex: 1, backgroundColor: colors.plum },
+    root: { flex: 1, backgroundColor: ROSEWOOD_PAGE[0] },
     page: { flex: 1, overflow: 'hidden' },
     // Two soft highlights so the backdrop has depth behind the card, echoing
     // the same treatment on the welcome screen.
@@ -305,7 +317,7 @@ const makeStyles = (colors: Palette, compact: boolean, rtl: boolean) =>
       width: 240,
       height: 240,
       borderRadius: 120,
-      backgroundColor: 'rgba(255,255,255,0.14)',
+      backgroundColor: withAlpha(GOLD, 0.16),
     },
     glowB: {
       position: 'absolute',
@@ -314,13 +326,15 @@ const makeStyles = (colors: Palette, compact: boolean, rtl: boolean) =>
       width: 280,
       height: 280,
       borderRadius: 140,
-      backgroundColor: 'rgba(0,0,0,0.12)',
+      backgroundColor: 'rgba(242,113,94,0.14)',
     },
     pageSafe: {
       flex: 1,
       alignItems: 'center',
       paddingHorizontal: spacing.lg,
       paddingTop: compact ? scaleSpace(48) : scaleSpace(60),
+      // Clears the floating footer (dots + button) that overlays every page.
+      paddingBottom: compact ? scaleSpace(112) : scaleSpace(136),
     },
     // Page 2's own safe area: eyebrow/title/subtitle pinned near the top
     // (where the photo's baked gradient is plain), chips pinned near the
@@ -340,23 +354,23 @@ const makeStyles = (colors: Palette, compact: boolean, rtl: boolean) =>
       paddingHorizontal: spacing.sm,
       paddingVertical: scaleSpace(5),
       borderRadius: 999,
-      backgroundColor: 'rgba(255,255,255,0.16)',
+      backgroundColor: withAlpha(GOLD, 0.12),
       borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.3)',
+      borderColor: withAlpha(GOLD, 0.5),
       marginBottom: spacing.sm,
     },
     eyebrowText: {
       ...typography.label,
-      color: '#FFFFFF',
-      fontWeight: '700',
-      letterSpacing: 0.5,
+      color: GOLD,
+      letterSpacing: 1,
     },
     title: {
       ...typography.h1,
+      fontSize: scaleFont(compact ? 26 : 30),
+      lineHeight: scaleFont(compact ? 32 : 38),
       color: '#FFFFFF',
       textAlign: 'center',
-      fontWeight: '800',
-      marginBottom: compact ? spacing.sm : spacing.md,
+      marginBottom: spacing.sm,
       textShadowColor: 'rgba(0,0,0,0.3)',
       textShadowOffset: { width: 0, height: 2 },
       textShadowRadius: 10,
@@ -366,14 +380,25 @@ const makeStyles = (colors: Palette, compact: boolean, rtl: boolean) =>
     // overflow: visible so the badges and shadow aren't cut off; the photo
     // and its scrim are clipped by the nested cardClip instead.
     card: {
-      width: '100%',
+      width: '88%',
       flex: 1,
-      maxHeight: compact ? 340 : 420,
-      marginBottom: compact ? spacing.xl : spacing.xl + spacing.sm,
+      maxHeight: compact ? 360 : 440,
+      marginTop: compact ? spacing.sm : spacing.md,
+      marginBottom: spacing.lg,
+      padding: FRAME_PAD,
+      borderWidth: 1.5,
+      borderColor: withAlpha(GOLD, 0.8),
+      borderTopLeftRadius: ARCH_RADIUS,
+      borderTopRightRadius: ARCH_RADIUS,
+      borderBottomLeftRadius: CARD_RADIUS + FRAME_PAD,
+      borderBottomRightRadius: CARD_RADIUS + FRAME_PAD,
     },
     cardClip: {
       flex: 1,
-      borderRadius: CARD_RADIUS,
+      borderTopLeftRadius: ARCH_RADIUS,
+      borderTopRightRadius: ARCH_RADIUS,
+      borderBottomLeftRadius: CARD_RADIUS,
+      borderBottomRightRadius: CARD_RADIUS,
       overflow: 'hidden',
       ...glow('#000000', 0.3, 20, 10),
     },
@@ -390,19 +415,19 @@ const makeStyles = (colors: Palette, compact: boolean, rtl: boolean) =>
       alignItems: 'center',
       justifyContent: 'center',
       overflow: 'hidden',
-      borderWidth: 3,
-      borderColor: '#FFFFFF',
+      borderWidth: 2,
+      borderColor: GOLD,
       ...glow('#000000', 0.25, 12, 6),
     },
-    badgeLeft: { left: 24 },
-    badgeRight: { right: 24 },
+    badgeLeft: { left: 8 },
+    badgeRight: { right: 8 },
     subtitle: {
       ...typography.body,
-      color: 'rgba(255,255,255,0.92)',
+      color: 'rgba(255,255,255,0.88)',
       textAlign: 'center',
-      lineHeight: 22,
       paddingHorizontal: spacing.sm,
     },
+    cardSubtitle: { paddingHorizontal: spacing.md },
     // Page 2's feature chips, standing in for page 1's floating badges — a
     // horizontal row instead of circles overlapping a card, so the two
     // pages don't share a silhouette even though both use small icon marks.
@@ -418,14 +443,13 @@ const makeStyles = (colors: Palette, compact: boolean, rtl: boolean) =>
       paddingHorizontal: spacing.md,
       paddingVertical: scaleSpace(9),
       borderRadius: 999,
-      backgroundColor: 'rgba(255,255,255,0.16)',
+      backgroundColor: 'rgba(20,11,16,0.45)',
       borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.3)',
+      borderColor: withAlpha(GOLD, 0.5),
     },
     chipText: {
       ...typography.label,
       color: '#FFFFFF',
-      fontWeight: '700',
     },
     topOverlay: {
       position: 'absolute',
@@ -442,7 +466,9 @@ const makeStyles = (colors: Palette, compact: boolean, rtl: boolean) =>
       borderRadius: 18,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: 'rgba(0,0,0,0.28)',
+      backgroundColor: 'rgba(20,11,16,0.45)',
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.2)',
     },
     bottomOverlay: {
       position: 'absolute',
@@ -465,10 +491,10 @@ const makeStyles = (colors: Palette, compact: boolean, rtl: boolean) =>
       width: scaleSpace(8),
       height: scaleSpace(8),
       borderRadius: scaleSpace(4),
-      backgroundColor: 'rgba(255,255,255,0.4)',
+      backgroundColor: 'rgba(255,255,255,0.35)',
     },
     dotActive: {
-      width: scaleSpace(22),
-      backgroundColor: '#FFFFFF',
+      width: scaleSpace(24),
+      backgroundColor: GOLD,
     },
   });

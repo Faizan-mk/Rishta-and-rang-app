@@ -12,7 +12,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { Badge } from '../common/Badge';
-import { radius, spacing, typography } from '../../theme';
+import { fonts, radius, spacing, typography } from '../../theme';
 import { scaleFont } from '../../theme/responsive';
 import { glow, modeAccent, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
@@ -74,10 +74,10 @@ export function MatchScoreCard({ name, score, bureauVerified, mode, onPress }: M
       onPressOut={() => {
         scale.value = withSpring(1, { damping: 12, stiffness: 200 });
       }}
-      style={[styles.card, glow(accent.primary, 0.3, 18, 8), animatedStyle]}
+      style={[styles.card, glow(accent.primary, 0.12, 24, 4), animatedStyle]}
     >
       <LinearGradient
-        colors={[withAlpha(accent.primary, 0.18), withAlpha(accent.secondary, 0.12), 'transparent']}
+        colors={[withAlpha(accent.primary, 0.1), withAlpha(accent.secondary, 0.06), 'transparent']}
         start={GRADIENT_START}
         end={GRADIENT_END}
         style={StyleSheet.absoluteFill}
@@ -90,7 +90,7 @@ export function MatchScoreCard({ name, score, bureauVerified, mode, onPress }: M
           colors={accent.ramp}
           start={GRADIENT_START}
           end={GRADIENT_END}
-          style={[styles.scoreBlock, glow(accent.primary, 0.55, 14, 6)]}
+          style={[styles.scoreBlock, glow(accent.primary, 0.35, 14, 6)]}
         >
           <Text style={styles.scoreValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
             {clamped}
@@ -141,7 +141,7 @@ const makeStyles = (colors: Palette) =>
       backgroundColor: colors.surfaceElevated,
       borderRadius: radius.lg,
       borderWidth: 1,
-      borderColor: colors.border,
+      borderColor: withAlpha(colors.gold, 0.45),
       padding: spacing.md,
       marginHorizontal: spacing.md,
       marginTop: spacing.md,
@@ -157,22 +157,25 @@ const makeStyles = (colors: Palette) =>
     },
     rowRtl: { flexDirection: 'row-reverse' },
     topRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+    // A round seal with a gold rim holding the score.
     scoreBlock: {
       flexDirection: 'row',
-      alignItems: 'flex-start',
+      alignItems: 'center',
       justifyContent: 'center',
-      minWidth: 74,
-      borderRadius: radius.md,
-      paddingHorizontal: spacing.sm,
-      paddingVertical: spacing.sm,
+      width: 74,
+      height: 74,
+      borderRadius: radius.pill,
+      borderWidth: 2,
+      borderColor: colors.gold,
+      paddingHorizontal: spacing.xs,
     },
-    scoreValue: { color: '#FFFFFF', fontSize: scaleFont(32), fontWeight: '900', lineHeight: scaleFont(36) },
-    scoreUnit: { color: '#FFFFFF', fontSize: scaleFont(13), fontWeight: '800', marginTop: 5 },
+    scoreValue: { color: '#FFFFFF', fontSize: scaleFont(28), fontFamily: fonts.display, lineHeight: scaleFont(34) },
+    scoreUnit: { color: '#FFFFFF', fontSize: scaleFont(12), fontFamily: fonts.bodyBold, marginTop: 2 },
     textBlock: { flex: 1, gap: 2 },
     title: { ...typography.h3, color: colors.textPrimary },
     subtitle: { ...typography.caption, color: colors.textSecondary },
-    track: { height: 8, borderRadius: 4, backgroundColor: colors.border, overflow: 'hidden' },
-    trackFill: { height: 8, borderRadius: 4, overflow: 'hidden' },
+    track: { height: 6, borderRadius: 3, backgroundColor: colors.border, overflow: 'hidden' },
+    trackFill: { height: 6, borderRadius: 3, overflow: 'hidden' },
     footerRow: {
       flexDirection: 'row',
       flexWrap: 'wrap',
@@ -184,6 +187,6 @@ const makeStyles = (colors: Palette) =>
     // than sliding to the start of an otherwise empty row.
     footerRowSolo: { justifyContent: 'flex-end' },
     ctaRow: { flexDirection: 'row', alignItems: 'center', gap: 2, flexShrink: 1 },
-    cta: { ...typography.caption, fontWeight: '800', flexShrink: 1 },
+    cta: { ...typography.label, flexShrink: 1 },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   });

@@ -12,7 +12,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import type { ProfileMode } from '../../types/user';
 import { radius, spacing, typography } from '../../theme';
-import { glow, modeAccent, withAlpha } from '../../theme/glow';
+import { glow, modeAccent } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 
@@ -73,6 +73,7 @@ export function ModeToggle({ mode, onChange, datingLabel, rishtaLabel, datingCou
       <ToggleOption
         active={mode === 'dating'}
         icon="sparkles"
+        activeIconColor="#FFFFFF"
         label={datingLabel}
         count={datingCount}
         onPress={() => onChange('dating')}
@@ -81,7 +82,8 @@ export function ModeToggle({ mode, onChange, datingLabel, rishtaLabel, datingCou
       />
       <ToggleOption
         active={mode === 'rishta'}
-        icon="heart-circle"
+        icon="moon"
+        activeIconColor={RISHTA_CRESCENT}
         label={rishtaLabel}
         count={rishtaCount}
         onPress={() => onChange('rishta')}
@@ -95,6 +97,7 @@ export function ModeToggle({ mode, onChange, datingLabel, rishtaLabel, datingCou
 function ToggleOption({
   active,
   icon,
+  activeIconColor,
   label,
   count,
   onPress,
@@ -103,6 +106,7 @@ function ToggleOption({
 }: {
   active: boolean;
   icon: keyof typeof Ionicons.glyphMap;
+  activeIconColor: string;
   label: string;
   count?: number;
   onPress: () => void;
@@ -120,7 +124,7 @@ function ToggleOption({
   return (
     <Pressable onPress={onPress} style={styles.option}>
       <Animated.View style={[styles.optionInner, style]}>
-        <Ionicons name={icon} size={15} color={active ? colors.textInverse : colors.textTertiary} />
+        <Ionicons name={icon} size={15} color={active ? activeIconColor : colors.textTertiary} />
         <Text style={[styles.label, active && styles.labelActive]}>{label}</Text>
         {Boolean(count) && <Text style={[styles.count, active && styles.labelActive]}>{count}</Text>}
       </Animated.View>
@@ -130,17 +134,26 @@ function ToggleOption({
 
 const GRADIENT_START = { x: 0, y: 0 } as const;
 const GRADIENT_END = { x: 1, y: 1 } as const;
+// The design system's "understated gold crescent" on the Rishta side: a pale
+// champagne that still reads on the rosewood thumb.
+const RISHTA_CRESCENT = '#F3D99B';
 
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
     track: {
       flexDirection: 'row',
-      backgroundColor: withAlpha(colors.textPrimary, 0.06),
+      // A floating pill (Level 2 in the design system) the thumb slides in.
+      backgroundColor: colors.surface,
       borderRadius: radius.pill,
       borderWidth: 1,
-      borderColor: colors.borderSoft,
+      borderColor: colors.border,
       padding: 4,
       position: 'relative',
+      shadowColor: '#8E1B45',
+      shadowOpacity: 0.12,
+      shadowRadius: 16,
+      shadowOffset: { width: 0, height: 8 },
+      elevation: 4,
     },
     thumb: {
       position: 'absolute',

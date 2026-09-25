@@ -86,12 +86,17 @@ export function CallScreen() {
       {showCamera ? (
         <CameraView style={StyleSheet.absoluteFill} facing={facing} />
       ) : (
-        <LinearGradient
-          colors={[colors.tealDark, colors.plum, colors.background]}
-          start={{ x: 0.1, y: 0 }}
-          end={{ x: 0.9, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
+        <>
+          {/* Their photo, blurred, under an aubergine-to-rosewood wash. Fixed
+              colours: the call is always a dark room, whatever the theme. */}
+          {photo ? <Image source={{ uri: photo }} style={StyleSheet.absoluteFill} blurRadius={28} /> : null}
+          <LinearGradient
+            colors={CALL_WASH}
+            start={{ x: 0.1, y: 0 }}
+            end={{ x: 0.9, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
+        </>
       )}
 
       <SafeAreaView style={styles.flex} edges={['top', 'bottom']}>
@@ -99,7 +104,12 @@ export function CallScreen() {
           <View style={styles.permissionWrap}>
             <Ionicons name="videocam-off-outline" size={40} color="rgba(255,255,255,0.8)" />
             <Text style={styles.permissionText}>{t('call.cameraPermission')}</Text>
-            <Button label={t('call.grantAccess')} onPress={requestPermission} style={styles.permissionButton} />
+            <Button
+              label={t('call.grantAccess')}
+              onPress={requestPermission}
+              gradient={['#8E1B45', '#F2715E']}
+              style={styles.permissionButton}
+            />
           </View>
         ) : (
           <>
@@ -172,7 +182,7 @@ function CallControl({
       }}
       style={[
         controlStyles.button,
-        { backgroundColor: active ? colors.teal : 'rgba(255,255,255,0.14)' },
+        active ? controlStyles.buttonActive : controlStyles.buttonIdle,
         animatedStyle,
       ]}
     >
@@ -201,8 +211,15 @@ function EndCallButton({ onPress, style }: { onPress: () => void; style: ViewSty
   );
 }
 
+const GOLD = '#E9C27A';
+const CALL_WASH = ['rgba(20,11,16,0.92)', 'rgba(94,15,46,0.82)', 'rgba(20,11,16,0.95)'] as const;
+
+// Glass discs on the dark call room; a toggled control turns rosewood with a
+// gold rim.
 const controlStyles = StyleSheet.create({
-  button: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
+  button: { width: 60, height: 60, borderRadius: 30, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
+  buttonIdle: { backgroundColor: 'rgba(255,255,255,0.12)', borderColor: 'rgba(255,255,255,0.22)' },
+  buttonActive: { backgroundColor: '#8E1B45', borderColor: GOLD },
   endIcon: { transform: [{ rotate: '135deg' }] },
 });
 
@@ -211,27 +228,36 @@ const makeStyles = (colors: Palette) =>
     flex: { flex: 1 },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     topBar: { alignItems: 'center', paddingTop: spacing.lg },
-    status: { ...typography.label, color: 'rgba(255,255,255,0.8)', letterSpacing: 1.6, fontWeight: '800' },
+    status: { ...typography.label, color: GOLD, letterSpacing: 1.6 },
     statusOnCamera: { color: '#FFFFFF', textShadowColor: 'rgba(0,0,0,0.5)', textShadowRadius: 4 },
     avatarWrap: { marginTop: spacing.lg, alignItems: 'center', justifyContent: 'center' },
+    // The avatar and its ringing halo are both Mughal arches; the oversized
+    // top radius is clamped to half the width, giving a full crest.
     ring: {
       position: 'absolute',
-      width: 172,
-      height: 172,
-      borderRadius: 86,
-      borderWidth: 2,
-      borderColor: '#FFFFFF',
-      ...glow('#FFFFFF', 0.5, 20, 0),
+      width: 184,
+      height: 220,
+      borderTopLeftRadius: 1000,
+      borderTopRightRadius: 1000,
+      borderBottomLeftRadius: radius.lg + 12,
+      borderBottomRightRadius: radius.lg + 12,
+      borderWidth: 1.5,
+      borderColor: GOLD,
+      ...glow(GOLD, 0.5, 20, 0),
     },
     avatar: {
-      width: 140,
-      height: 140,
-      borderRadius: 70,
-      borderWidth: 4,
-      borderColor: 'rgba(255,255,255,0.65)',
-      ...glow(colors.teal, 0.6, 24, 10),
+      width: 150,
+      height: 186,
+      borderTopLeftRadius: 1000,
+      borderTopRightRadius: 1000,
+      borderBottomLeftRadius: radius.lg,
+      borderBottomRightRadius: radius.lg,
+      borderWidth: 2,
+      borderColor: GOLD,
+      backgroundColor: 'rgba(255,255,255,0.08)',
+      ...glow('#8E1B45', 0.6, 24, 10),
     },
-    name: { ...typography.h1, color: '#FFFFFF', marginTop: spacing.lg, fontWeight: '800' },
+    name: { ...typography.h1, color: '#FFFFFF', marginTop: spacing.lg },
     hint: { ...typography.body, color: 'rgba(255,255,255,0.75)', marginTop: spacing.xs },
     hintOnCamera: { color: 'rgba(255,255,255,0.85)', textShadowColor: 'rgba(0,0,0,0.5)', textShadowRadius: 4 },
     remoteTile: {
@@ -240,10 +266,13 @@ const makeStyles = (colors: Palette) =>
       right: spacing.md,
       width: 96,
       height: 128,
-      borderRadius: radius.md,
+      borderTopLeftRadius: 1000,
+      borderTopRightRadius: 1000,
+      borderBottomLeftRadius: radius.md,
+      borderBottomRightRadius: radius.md,
       overflow: 'hidden',
-      borderWidth: 2,
-      borderColor: 'rgba(255,255,255,0.7)',
+      borderWidth: 1.5,
+      borderColor: GOLD,
       ...glow('#000000', 0.5, 14, 8),
     },
     remoteTileRtl: { right: undefined, left: spacing.md },
@@ -259,7 +288,7 @@ const makeStyles = (colors: Palette) =>
       alignSelf: 'center',
       ...glow(colors.danger, 0.7, 20, 10),
     },
-    endLabel: { ...typography.caption, color: 'rgba(255,255,255,0.7)', textAlign: 'center', marginTop: spacing.sm, marginBottom: spacing.lg },
+    endLabel: { ...typography.label, color: 'rgba(255,255,255,0.75)', textAlign: 'center', marginTop: spacing.sm, marginBottom: spacing.lg },
     permissionWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xl, gap: spacing.md },
     permissionText: { ...typography.body, color: 'rgba(255,255,255,0.85)', textAlign: 'center' },
     permissionButton: { marginTop: spacing.sm, alignSelf: 'stretch' },

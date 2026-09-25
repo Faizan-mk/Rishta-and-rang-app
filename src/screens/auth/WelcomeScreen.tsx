@@ -8,24 +8,27 @@ import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { Pressable } from 'react-native';
 import { Button } from '../../components/Button';
 import { FloatingHearts } from '../../components/common/FloatingHearts';
-import { spacing, typography, radius } from '../../theme';
+import { fonts, spacing, typography, radius } from '../../theme';
 import { glow, withAlpha } from '../../theme/glow';
-import { scaleSpace } from '../../theme/responsive';
+import { scaleFont, scaleSpace } from '../../theme/responsive';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
 import { useOnboardingGate } from '../../store/OnboardingGateContext';
 
-// The brand's own ramp — deep teal into gold, the two colours the logo is
-// built from. It is the app's front door, so it does not follow a deck mode.
-const BRAND_RAMP = ['#123234', '#1D4E52', '#3C7A5C'] as const;
-// A soft top-to-bottom scrim over the hero art, just enough to keep the
-// title readable without flattening the illustration underneath it.
-const SCRIM_RAMP = ['rgba(11,7,13,0.55)', 'rgba(11,7,13,0.05)', 'rgba(11,7,13,0.05)'] as const;
-const HERO_IMAGE = require('../../../assets/images/welcome-couple.png');
-// Matches the illustration's own baked-in gradient floor, so any letterboxed
-// edge blends straight into the photo instead of showing a seam.
-const PLUM_DEEP = '#1C0D21';
+// The signature Rosewood-to-Coral ramp. It is the app's front door, so it does
+// not follow a deck mode.
+const BRAND_RAMP = ['#5E0F2E', '#8E1B45', '#F2715E'] as const;
+// Champagne gold, fixed rather than themed: this screen always sits on a dark
+// photo, so it wants the bright gold in both themes.
+const GOLD = '#E9C27A';
+// Darkens the top of the photo for the title and the bottom for the sheet,
+// leaving the couple in the middle untouched.
+const SCRIM_RAMP = ['rgba(20,11,16,0.7)', 'rgba(20,11,16,0)', 'rgba(20,11,16,0)', 'rgba(20,11,16,0.85)'] as const;
+const SCRIM_STOPS = [0, 0.3, 0.5, 1] as const;
+const HERO_IMAGE = require('../../../assets/images/welcome-wedding.png');
+// Aubergine black: shows only if the photo is still loading.
+const PLUM_DEEP = '#140B10';
 
 const LANGUAGES = [
   { key: 'en', labelKey: 'language.english' },
@@ -35,7 +38,7 @@ const LANGUAGES = [
 
 export function WelcomeScreen() {
   const router = useRouter();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const { language, setLanguage, t, rtl } = useLanguage();
   const { resetOnboardingSeen } = useOnboardingGate();
   // On native this equals the screen; on web it's the raw browser window,
@@ -64,11 +67,17 @@ export function WelcomeScreen() {
           sized off the measured container (see `handleLayout`) rather than
           the window, so it stays correct inside the web "phone frame". */}
       <Image source={HERO_IMAGE} style={[StyleSheet.absoluteFill, { width, height }]} resizeMode="cover" />
-      <LinearGradient colors={SCRIM_RAMP} style={StyleSheet.absoluteFill} pointerEvents="none" />
+      <LinearGradient colors={SCRIM_RAMP} locations={SCRIM_STOPS} style={StyleSheet.absoluteFill} pointerEvents="none" />
       <FloatingHearts colors={[colors.gold, '#FFFFFF', colors.rishta]} />
 
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
         <View style={styles.brand}>
+          {/* Thin gold flourish, the invitation-card rule above the name. */}
+          <Animated.View entering={FadeInDown.delay(120).duration(500)} style={styles.flourish}>
+            <View style={styles.flourishLine} />
+            <View style={styles.flourishDiamond} />
+            <View style={styles.flourishLine} />
+          </Animated.View>
           <Animated.Text entering={FadeInDown.delay(200).duration(500)} style={styles.brandTitle}>
             {t('appName')}
           </Animated.Text>
@@ -85,8 +94,8 @@ export function WelcomeScreen() {
             instead of being covered by a solid panel. */}
         <Animated.View entering={FadeInUp.delay(420).duration(500)} style={styles.card}>
           <BlurView
-            intensity={55}
-            tint={isDark ? 'dark' : 'light'}
+            intensity={40}
+            tint="dark"
             style={StyleSheet.absoluteFill}
             pointerEvents="none"
           />
@@ -105,10 +114,10 @@ export function WelcomeScreen() {
                   >
                     {selected && (
                       <LinearGradient
-                        colors={[colors.teal, colors.sage]}
+                        colors={['#8E1B45', '#F2715E']}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
-                        style={[styles.langOption, glow(colors.teal, 0.4, 10, 4)]}
+                        style={[styles.langOption, glow('#8E1B45', 0.4, 10, 4)]}
                         pointerEvents="none"
                       />
                     )}
@@ -126,6 +135,8 @@ export function WelcomeScreen() {
                 label={t('login.createAccount')}
                 variant="ghost"
                 onPress={() => router.push('/signup')}
+                style={styles.outlineButton}
+                labelStyle={styles.outlineLabel}
               />
             </View>
 
@@ -167,20 +178,35 @@ const makeStyles = (colors: Palette, compact: boolean, tiny: boolean) =>
       alignItems: 'center',
       justifyContent: 'flex-start',
     },
+    flourish: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      marginTop: tiny ? scaleSpace(6) : compact ? scaleSpace(12) : spacing.lg,
+    },
+    flourishLine: { width: scaleSpace(36), height: 1, backgroundColor: GOLD },
+    flourishDiamond: {
+      width: scaleSpace(7),
+      height: scaleSpace(7),
+      backgroundColor: GOLD,
+      transform: [{ rotate: '45deg' }],
+    },
     brandTitle: {
       ...typography.h1,
+      fontSize: scaleFont(tiny ? 30 : 36),
+      lineHeight: scaleFont(tiny ? 38 : 44),
       color: '#FFFFFF',
       textAlign: 'center',
-      marginTop: tiny ? scaleSpace(6) : compact ? scaleSpace(12) : spacing.lg,
-      fontWeight: '800',
-      letterSpacing: 0.5,
+      marginTop: tiny ? scaleSpace(6) : spacing.sm,
       textShadowColor: 'rgba(0,0,0,0.45)',
       textShadowOffset: { width: 0, height: 2 },
       textShadowRadius: 10,
     },
     tagline: {
       ...typography.body,
-      color: 'rgba(255,255,255,0.9)',
+      fontFamily: fonts.displayItalic,
+      fontSize: scaleFont(17),
+      color: GOLD,
       textAlign: 'center',
       marginTop: tiny ? scaleSpace(4) : spacing.sm,
       paddingHorizontal: spacing.lg,
@@ -191,10 +217,10 @@ const makeStyles = (colors: Palette, compact: boolean, tiny: boolean) =>
     // Glass card: rounded + clipped so the blur and tint respect the corner
     // radius, with a hairline border to catch the light like real glass.
     card: {
-      borderRadius: radius.lg,
+      borderRadius: scaleSpace(32),
       overflow: 'hidden',
       borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.28)',
+      borderColor: withAlpha(GOLD, 0.35),
       shadowColor: '#000',
       shadowOpacity: 0.3,
       shadowRadius: 24,
@@ -203,7 +229,7 @@ const makeStyles = (colors: Palette, compact: boolean, tiny: boolean) =>
     },
     cardTint: {
       ...StyleSheet.absoluteFillObject,
-      backgroundColor: withAlpha(colors.surfaceElevated, 0.34),
+      backgroundColor: 'rgba(20,11,16,0.35)',
     },
     cardContent: {
       padding: tiny ? scaleSpace(12) : compact ? scaleSpace(16) : spacing.lg,
@@ -212,9 +238,9 @@ const makeStyles = (colors: Palette, compact: boolean, tiny: boolean) =>
       flexDirection: 'row',
       padding: scaleSpace(4),
       borderRadius: radius.pill,
-      backgroundColor: 'rgba(255,255,255,0.14)',
+      backgroundColor: 'rgba(255,255,255,0.08)',
       borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.22)',
+      borderColor: 'rgba(255,255,255,0.16)',
       marginBottom: tiny ? spacing.sm : compact ? spacing.md : spacing.lg,
     },
     langSlot: {
@@ -237,19 +263,21 @@ const makeStyles = (colors: Palette, compact: boolean, tiny: boolean) =>
     },
     langLabel: {
       ...typography.label,
-      color: 'rgba(28,13,33,0.75)',
-      fontWeight: '700',
+      color: 'rgba(255,255,255,0.75)',
       textAlign: 'center',
       textAlignVertical: 'center',
     },
     langLabelSelected: {
       color: '#FFFFFF',
-      fontWeight: '800',
+      fontFamily: fonts.bodyBold,
       textShadowColor: 'rgba(0,0,0,0.35)',
       textShadowOffset: { width: 0, height: 1 },
       textShadowRadius: 4,
     },
     actions: { gap: spacing.sm },
+    // Secondary action per the design system: an outlined champagne-gold pill.
+    outlineButton: { borderWidth: 1.5, borderColor: GOLD, backgroundColor: 'rgba(255,255,255,0.1)' },
+    outlineLabel: { color: '#FFFFFF', fontFamily: fonts.bodyBold },
     devReset: {
       alignSelf: 'center',
       marginTop: spacing.sm,
@@ -258,7 +286,7 @@ const makeStyles = (colors: Palette, compact: boolean, tiny: boolean) =>
     },
     devResetText: {
       ...typography.label,
-      color: 'rgba(28,13,33,0.5)',
+      color: 'rgba(255,255,255,0.55)',
       textDecorationLine: 'underline',
     },
     rtlText: { writingDirection: 'rtl' },

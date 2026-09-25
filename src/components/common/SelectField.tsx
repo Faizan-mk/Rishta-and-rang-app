@@ -3,7 +3,6 @@ import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-na
 import { Ionicons } from '@expo/vector-icons';
 import { BottomSheet } from './BottomSheet';
 import { radius, spacing, typography } from '../../theme';
-import { withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
@@ -158,13 +157,13 @@ const makeStyles = (colors: Palette) =>
     // The chevron, the search icon and the tick all move to the edge the
     // language starts at, so none of them lands mid-sentence in Urdu.
     rowRtl: { flexDirection: 'row-reverse' },
-    label: { ...typography.label, color: colors.textPrimary, marginBottom: spacing.xs, fontWeight: '700' },
+    label: { ...typography.label, color: colors.textPrimary, marginBottom: spacing.xs, letterSpacing: 0.3 },
     field: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      borderWidth: 1.5,
-      borderColor: colors.borderSoft,
+      borderWidth: 1,
+      borderColor: colors.border,
       borderRadius: radius.md,
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm + 2,
@@ -174,15 +173,15 @@ const makeStyles = (colors: Palette) =>
       width: 26,
       height: 26,
       borderRadius: radius.sm,
-      backgroundColor: withAlpha(colors.teal, 0.12),
+      backgroundColor: colors.tealSoft,
       alignItems: 'center',
       justifyContent: 'center',
     },
     fieldError: { borderColor: colors.danger },
     customWrap: { marginTop: spacing.sm },
     customInput: {
-      borderWidth: 1.5,
-      borderColor: colors.borderSoft,
+      borderWidth: 1,
+      borderColor: colors.border,
       borderRadius: radius.md,
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm + 4,
@@ -211,7 +210,7 @@ const makeStyles = (colors: Palette) =>
       backgroundColor: colors.surface,
       outlineWidth: 0,
     },
-    searchRowFocused: { borderColor: colors.teal, backgroundColor: colors.surface },
+    searchRowFocused: { borderColor: colors.gold, backgroundColor: colors.surface },
     searchInput: {
       flex: 1,
       paddingVertical: spacing.sm,
@@ -238,7 +237,7 @@ const makeStyles = (colors: Palette) =>
       borderBottomColor: colors.borderSoft,
     },
     optionText: { ...typography.body, color: colors.textPrimary },
-    optionTextSelected: { color: colors.teal, fontWeight: '800' },
+    optionTextSelected: { color: colors.teal, fontFamily: typography.bodyBold.fontFamily },
     emptyText: { ...typography.body, color: colors.textSecondary, textAlign: 'center', paddingVertical: spacing.lg },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   });

@@ -32,7 +32,8 @@ import { useNotifications } from '../../store/NotificationContext';
 import { ageFromDob } from '../../utils/date';
 import { profileCompletion } from '../../utils/profileCompletion';
 import { FEATURE_BUREAU } from '../../config/features';
-import { radius, spacing, typography } from '../../theme';
+import { fonts, radius, spacing, typography } from '../../theme';
+import { cardSurface } from '../../theme/surfaces';
 import { glow, modeAccent, withAlpha, type Gradient } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 
@@ -395,9 +396,11 @@ function StatTile({
 }) {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
-    <View style={[styles.statTile, { backgroundColor: withAlpha(tint, 0.1), borderColor: withAlpha(tint, 0.28) }]}>
-      <Ionicons name={icon} size={16} color={tint} />
-      <Text style={[styles.statValue, { color: tint }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+    <View style={styles.statTile}>
+      <View style={[styles.statIcon, { backgroundColor: withAlpha(tint, 0.12) }]}>
+        <Ionicons name={icon} size={15} color={tint} />
+      </View>
+      <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
         {value}
       </Text>
       <Text style={styles.statLabel} numberOfLines={1}>
@@ -413,7 +416,7 @@ function ProfileRow({ label, value, rtl, last }: { label: string; value: string;
     <View
       style={[
         detailStyles.row,
-        !last && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.borderSoft },
+        !last && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
         rtl && { flexDirection: 'row-reverse' },
       ]}
     >
@@ -459,27 +462,29 @@ function QuickLinkRow({
 
 // Gold ring for paying members — the one place the palette's premium colour
 // outranks the member's own mode colour.
-const PREMIUM_RING: Gradient = ['#F5C451', '#E0913A', '#C97C2E'];
+const PREMIUM_RING: Gradient = ['#F3D99B', '#D4A857', '#B8893A'];
 
 const detailStyles = StyleSheet.create({
-  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.sm },
+  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.sm + 4 },
   label: { ...typography.body },
   value: { ...typography.bodyBold, flexShrink: 1, textAlign: 'right', marginLeft: spacing.md },
   rtlText: { textAlign: 'right', writingDirection: 'rtl' },
 });
 
 const quickStyles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm + 2, gap: spacing.sm },
-  iconTile: { width: 34, height: 34, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
-  label: { ...typography.body, flex: 1, fontWeight: '600' },
+  row: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm + 6, gap: spacing.md },
+  iconTile: { width: 36, height: 36, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
+  label: { ...typography.bodyBold, flex: 1 },
   rtlText: { textAlign: 'right', writingDirection: 'rtl' },
 });
 
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
     banner: {
-      height: 104,
+      height: 120,
       borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: withAlpha(colors.gold, 0.5),
       marginTop: spacing.sm,
       alignItems: 'flex-end',
       padding: spacing.sm,
@@ -507,18 +512,38 @@ const makeStyles = (colors: Palette) =>
     },
     bannerActions: { flexDirection: 'row', gap: spacing.xs },
     noBorder: { borderWidth: 0 },
-    headerCard: { alignItems: 'center', marginTop: -46, paddingHorizontal: spacing.md },
+    headerCard: { alignItems: 'center', marginTop: -64, paddingHorizontal: spacing.md },
     avatarWrap: { position: 'relative' },
-    avatarRing: { width: 92, height: 92, borderRadius: 46, padding: 4 },
-    avatar: { width: '100%', height: '100%', borderRadius: 42, backgroundColor: colors.skeleton },
+    // The member's own portrait in a Mughal arch; the oversized top radius is
+    // clamped to half the width, giving a full crest.
+    avatarRing: {
+      width: 100,
+      height: 122,
+      padding: 3,
+      borderTopLeftRadius: 1000,
+      borderTopRightRadius: 1000,
+      borderBottomLeftRadius: radius.md + 3,
+      borderBottomRightRadius: radius.md + 3,
+    },
+    avatar: {
+      width: '100%',
+      height: '100%',
+      borderTopLeftRadius: 1000,
+      borderTopRightRadius: 1000,
+      borderBottomLeftRadius: radius.md,
+      borderBottomRightRadius: radius.md,
+      backgroundColor: colors.skeleton,
+      borderWidth: 2,
+      borderColor: colors.surface,
+    },
     avatarPlaceholder: { backgroundColor: colors.teal, alignItems: 'center', justifyContent: 'center' },
     // A camera, not a tick, and in neutral ink rather than success green: this
     // only says a photo was added. A green check beside a face reads as
     // "identity confirmed", which nothing in the app has actually done.
     photoDot: {
       position: 'absolute',
-      bottom: 2,
-      right: 2,
+      bottom: -4,
+      right: -4,
       width: 22,
       height: 22,
       borderRadius: 11,
@@ -529,10 +554,16 @@ const makeStyles = (colors: Palette) =>
       justifyContent: 'center',
     },
     nameRow: { marginTop: spacing.sm },
-    name: { ...typography.h2, color: colors.textPrimary, fontWeight: '800' },
+    name: { ...typography.h1, fontSize: 26, lineHeight: 32, color: colors.textPrimary, textAlign: 'center' },
     rowRtl: { flexDirection: 'row-reverse' },
     metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 },
-    meta: { ...typography.caption, fontWeight: '800', letterSpacing: 0.6, textTransform: 'uppercase' },
+    meta: {
+      ...typography.caption,
+      fontFamily: fonts.bodyBold,
+      color: colors.textSecondary,
+      letterSpacing: 0.8,
+      textTransform: 'uppercase',
+    },
     badgeRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: spacing.xs, marginTop: spacing.sm },
     editButton: { alignSelf: 'stretch', marginTop: spacing.md },
     editButtonFill: {
@@ -540,7 +571,7 @@ const makeStyles = (colors: Palette) =>
       alignItems: 'center',
       justifyContent: 'center',
       gap: spacing.xs,
-      borderRadius: radius.md,
+      borderRadius: radius.pill,
       paddingVertical: spacing.md,
     },
     // flexShrink lets the label wrap onto a second line instead of being
@@ -549,26 +580,26 @@ const makeStyles = (colors: Palette) =>
     // button, and a Text with no flexShrink inside a row overflows its
     // bounds rather than reflowing, which is what read as only "Edit"
     // showing.
-    editButtonLabel: { ...typography.bodyBold, color: '#FFFFFF', fontWeight: '800', flexShrink: 1, textAlign: 'center' },
+    editButtonLabel: { ...typography.bodyBold, color: '#FFFFFF', flexShrink: 1, textAlign: 'center' },
     statsRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.lg },
     statTile: {
+      ...cardSurface(colors),
       flex: 1,
       alignItems: 'center',
-      gap: 2,
-      borderRadius: radius.md,
-      borderWidth: 1,
+      gap: 4,
       paddingVertical: spacing.md,
+      paddingBottom: spacing.md,
       paddingHorizontal: spacing.xs,
     },
-    statValue: { ...typography.h3, fontWeight: '800' },
+    statIcon: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
+    statValue: { ...typography.h2, color: colors.textPrimary },
     statLabel: { ...typography.caption, color: colors.textSecondary },
     section: { marginTop: spacing.lg },
     sectionHeading: { marginBottom: spacing.sm },
     optionCard: {
-      backgroundColor: colors.surfaceElevated,
-      borderRadius: radius.lg,
-      borderWidth: 1,
-      borderColor: colors.borderSoft,
+      ...cardSurface(colors),
+      padding: 0,
+      paddingBottom: 0,
       overflow: 'hidden',
     },
     optionRow: {
@@ -578,33 +609,25 @@ const makeStyles = (colors: Palette) =>
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.md,
     },
-    optionRowBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.borderSoft },
+    optionRowBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
     optionText: { flex: 1 },
-    optionTitle: { ...typography.body, color: colors.textPrimary, fontWeight: '700' },
+    optionTitle: { ...typography.bodyBold, color: colors.textPrimary },
     optionDesc: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
     radioOn: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
-    radioOff: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: colors.border },
+    radioOff: { width: 22, height: 22, borderRadius: 11, borderWidth: 1.5, borderColor: colors.border },
     body: { ...typography.body, color: colors.textPrimary },
-    bioCard: {
-      backgroundColor: colors.surfaceElevated,
-      borderRadius: radius.lg,
-      borderWidth: 1,
-      borderColor: colors.borderSoft,
-      padding: spacing.md,
-    },
+    bioCard: { ...cardSurface(colors), paddingBottom: spacing.lg },
     chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
     detailCard: {
-      backgroundColor: colors.surfaceElevated,
-      borderRadius: radius.lg,
-      borderWidth: 1,
-      borderColor: colors.borderSoft,
+      ...cardSurface(colors),
+      padding: 0,
+      paddingBottom: 0,
       paddingHorizontal: spacing.md,
     },
     quickLinks: {
-      backgroundColor: colors.surfaceElevated,
-      borderRadius: radius.lg,
-      borderWidth: 1,
-      borderColor: colors.borderSoft,
+      ...cardSurface(colors),
+      padding: 0,
+      paddingBottom: 0,
       paddingHorizontal: spacing.md,
     },
     rowDivider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border },

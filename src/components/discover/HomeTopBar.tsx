@@ -10,7 +10,7 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
-import { radius, spacing, typography } from '../../theme';
+import { fonts, radius, spacing, typography } from '../../theme';
 import { scaleFont } from '../../theme/responsive';
 import { glow, modeAccent, withAlpha, type Gradient } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
@@ -103,7 +103,7 @@ export function HomeTopBar({
       <BoostChip active={boostActive} label={t('boost.title')} onPress={onBoost} colors={colors} styles={styles} />
 
       <Pressable onPress={onNotifications} hitSlop={8} style={styles.bellButton}>
-        <Ionicons name="notifications-outline" size={22} color={colors.textPrimary} />
+        <Ionicons name="notifications-outline" size={20} color={colors.textPrimary} />
         {notificationCount > 0 && (
           <NotificationBadge count={notificationCount} tint={accent.primary} gradient={accent.duo} styles={styles} />
         )}
@@ -208,7 +208,7 @@ function NotificationBadge({
 const GRADIENT_START = { x: 0, y: 0 } as const;
 const GRADIENT_END = { x: 1, y: 1 } as const;
 // Reads as "lit" against either theme, so it isn't a palette token.
-const BOOST_GRADIENT = ['#F5A623', '#E8642E'] as const;
+const BOOST_GRADIENT = ['#D4A857', '#F2715E'] as const;
 
 const makeStyles = (colors: Palette, accentColor: string) =>
   StyleSheet.create({
@@ -230,9 +230,14 @@ const makeStyles = (colors: Palette, accentColor: string) =>
       borderRadius: radius.pill,
       borderWidth: 1.5,
       borderColor: colors.gold,
-      backgroundColor: colors.goldSoft,
+      backgroundColor: colors.surface,
       paddingHorizontal: spacing.sm + 2,
-      paddingVertical: 6,
+      paddingVertical: 7,
+      shadowColor: '#2A1720',
+      shadowOpacity: 0.06,
+      shadowRadius: 12,
+      shadowOffset: { width: 0, height: 4 },
+      elevation: 2,
     },
     // Solid beneath the gradient: iOS derives a shadow from the layer's own
     // background, so a bare transparent wrapper would cast nothing.
@@ -245,19 +250,39 @@ const makeStyles = (colors: Palette, accentColor: string) =>
       paddingHorizontal: spacing.sm + 2,
       paddingVertical: 7.5,
     },
-    boostLabel: { ...typography.caption, color: colors.gold, fontWeight: '800' },
+    boostLabel: { ...typography.caption, color: colors.textPrimary, fontFamily: fonts.bodyBold },
     boostLabelActive: { color: '#FFFFFF' },
-    bellButton: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },
+    // White floating disc, the same button shape as the screen back buttons.
+    bellButton: {
+      width: 40,
+      height: 40,
+      borderRadius: radius.pill,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      shadowColor: '#2A1720',
+      shadowOpacity: 0.06,
+      shadowRadius: 12,
+      shadowOffset: { width: 0, height: 4 },
+      elevation: 2,
+    },
     chip: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 6,
       borderRadius: radius.pill,
       borderWidth: 1,
-      borderColor: colors.borderSoft,
-      backgroundColor: withAlpha(colors.textPrimary, 0.05),
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
+      shadowColor: '#2A1720',
+      shadowOpacity: 0.06,
+      shadowRadius: 12,
+      shadowOffset: { width: 0, height: 4 },
+      elevation: 2,
       // Hover/press just flips to chipActive's colors below — the web-only
       // transition is what makes that flip read as a fade instead of a snap.
       ...(Platform.OS === 'web'
@@ -268,8 +293,8 @@ const makeStyles = (colors: Palette, accentColor: string) =>
           } as object)
         : null),
     },
-    chipActive: { backgroundColor: withAlpha(accentColor, 0.12), borderColor: accentColor },
-    chipLabel: { ...typography.label, color: colors.textSecondary, fontWeight: '700' },
+    chipActive: { backgroundColor: withAlpha(accentColor, 0.1), borderColor: accentColor },
+    chipLabel: { ...typography.label, color: colors.textSecondary },
     chipLabelActive: { color: accentColor },
     countPill: {
       minWidth: 18,
@@ -280,19 +305,19 @@ const makeStyles = (colors: Palette, accentColor: string) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
-    countPillText: { color: '#FFFFFF', fontSize: scaleFont(10), fontWeight: '800' },
+    countPillText: { color: '#FFFFFF', fontSize: scaleFont(10), fontFamily: fonts.bodyBold },
     badge: {
       position: 'absolute',
-      top: 2,
-      right: 0,
+      top: -2,
+      right: -2,
       minWidth: 17,
       height: 17,
       borderRadius: 9,
       overflow: 'hidden',
       backgroundColor: colors.dating,
       borderWidth: 1.5,
-      borderColor: colors.background,
+      borderColor: colors.surface,
     },
     badgeFill: { flex: 1, minWidth: 14, paddingHorizontal: 3, alignItems: 'center', justifyContent: 'center' },
-    badgeText: { color: '#FFFFFF', fontSize: scaleFont(9), fontWeight: '800' },
+    badgeText: { color: '#FFFFFF', fontSize: scaleFont(9), fontFamily: fonts.bodyBold },
   });

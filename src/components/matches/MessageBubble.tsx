@@ -16,7 +16,7 @@ import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import type { ChatMessage, MessageReaction } from '../../types/content';
 import { REACTION_EMOJIS } from '../../types/content';
 import type { Translate } from '../../i18n';
-import { radius, spacing, typography } from '../../theme';
+import { fonts, radius, spacing, typography } from '../../theme';
 import { scaleFont } from '../../theme/responsive';
 import { glow, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
@@ -247,7 +247,7 @@ export const MessageBubble = React.memo(function MessageBubble({
             <View accessibilityRole="button" accessibilityLabel={t('reactions.a11yReact')}>
               {message.fromMe ? (
                 <LinearGradient
-                  colors={[colors.teal, colors.sage]}
+                  colors={[colors.teal, colors.dating]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={[styles.bubble, styles.bubbleMe, glow(colors.teal, 0.35, 10, 4)]}
@@ -493,7 +493,7 @@ const replyQuoteStyles = StyleSheet.create({
     paddingVertical: spacing.xs,
     marginBottom: spacing.xs,
   },
-  name: { ...typography.caption, fontSize: scaleFont(11), fontWeight: '800' },
+  name: { ...typography.caption, fontSize: scaleFont(11), fontFamily: fonts.bodyBold },
   text: { ...typography.caption, fontSize: scaleFont(12) },
 });
 
@@ -598,7 +598,7 @@ const voiceStyles = StyleSheet.create({
   // the content instead of the avatar.
   caption: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 4, paddingLeft: 30 + spacing.xs },
   durationText: { ...typography.caption, fontSize: scaleFont(10), fontVariant: ['tabular-nums'] },
-  timeText: { ...typography.caption, fontSize: scaleFont(10), fontWeight: '600' },
+  timeText: { ...typography.caption, fontSize: scaleFont(10), fontFamily: fonts.bodySemiBold },
 });
 
 export const makeStyles = (colors: Palette) =>
@@ -627,7 +627,7 @@ export const makeStyles = (colors: Palette) =>
     bubbleThem: {
       backgroundColor: colors.surfaceElevated,
       borderWidth: 1,
-      borderColor: colors.borderSoft,
+      borderColor: colors.border,
       borderBottomLeftRadius: 5,
     },
     text: { ...typography.body },
@@ -658,17 +658,17 @@ export const makeStyles = (colors: Palette) =>
       paddingVertical: 2,
       borderRadius: radius.pill,
       borderWidth: 1,
-      borderColor: colors.borderSoft,
+      borderColor: colors.border,
       backgroundColor: colors.surfaceElevated,
     },
     pillMine: { borderColor: withAlpha(colors.teal, 0.55), backgroundColor: withAlpha(colors.teal, 0.14) },
     pillEmoji: { fontSize: scaleFont(13) },
-    pillCount: { ...typography.caption, fontSize: scaleFont(11), color: colors.textSecondary, fontWeight: '700' },
+    pillCount: { ...typography.caption, fontSize: scaleFont(11), color: colors.textSecondary, fontFamily: fonts.bodyBold },
     pillCountMine: { color: colors.teal },
 
     pickerOverlay: {
       flex: 1,
-      backgroundColor: 'rgba(0,0,0,0.45)',
+      backgroundColor: colors.overlay,
       alignItems: 'center',
       justifyContent: 'center',
       padding: spacing.lg,
@@ -677,7 +677,7 @@ export const makeStyles = (colors: Palette) =>
       backgroundColor: colors.surfaceElevated,
       borderRadius: radius.lg,
       borderWidth: 1,
-      borderColor: colors.borderSoft,
+      borderColor: withAlpha(colors.gold, 0.45),
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.md,
       alignItems: 'center',
@@ -688,11 +688,11 @@ export const makeStyles = (colors: Palette) =>
     // action-sheet list — a title and a stack of text options, the same shape
     // as the "Delete message?" dialog this is modelled on, not filled buttons.
     pickerDivider: { alignSelf: 'stretch', height: StyleSheet.hairlineWidth, backgroundColor: colors.borderSoft },
-    deleteSheetTitle: { ...typography.bodyBold, color: colors.textPrimary, fontWeight: '800' },
+    deleteSheetTitle: { ...typography.bodyBold, color: colors.textPrimary, fontFamily: fonts.bodyBold },
     deleteOptionRow: { alignSelf: 'stretch', alignItems: 'center', paddingVertical: spacing.sm + 2 },
     deleteOptionDivider: { alignSelf: 'stretch', height: StyleSheet.hairlineWidth, backgroundColor: colors.borderSoft },
-    deleteOptionText: { ...typography.body, color: colors.teal, fontWeight: '700' },
-    pickerTitle: { ...typography.caption, color: colors.textSecondary, fontWeight: '700' },
+    deleteOptionText: { ...typography.body, color: colors.teal, fontFamily: fonts.bodyBold },
+    pickerTitle: { ...typography.caption, color: colors.textSecondary, fontFamily: fonts.bodyBold },
     // Never row-reverse: an emoji row has no reading order to mirror, and the
     // same six always sit in the same places whichever language is on.
     pickerRow: { flexDirection: 'row', gap: spacing.xs },
@@ -702,12 +702,14 @@ export const makeStyles = (colors: Palette) =>
       borderRadius: radius.pill,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: withAlpha(colors.textPrimary, 0.05),
+      backgroundColor: colors.background,
+      borderWidth: 1,
+      borderColor: colors.border,
     },
-    pickerButtonMine: { backgroundColor: withAlpha(colors.teal, 0.18) },
+    pickerButtonMine: { backgroundColor: colors.tealSoft, borderColor: colors.teal },
     pickerEmoji: { fontSize: scaleFont(24) },
 
-    timestamp: { ...typography.caption, fontSize: scaleFont(10), fontWeight: '600' },
+    timestamp: { ...typography.caption, fontSize: scaleFont(10), fontFamily: fonts.bodySemiBold },
     timestampMe: { color: colors.textTertiary, textAlign: 'right' },
     timestampThem: { color: colors.textTertiary, textAlign: 'left' },
     // The time and the delivery glyph read as one line, trailing the bubble on
@@ -724,5 +726,5 @@ export const makeStyles = (colors: Palette) =>
       borderRadius: radius.pill,
       backgroundColor: withAlpha(colors.danger, 0.12),
     },
-    retryLabel: { ...typography.caption, fontSize: scaleFont(10), color: colors.danger, fontWeight: '800' },
+    retryLabel: { ...typography.caption, fontSize: scaleFont(10), color: colors.danger, fontFamily: fonts.bodyBold },
   });

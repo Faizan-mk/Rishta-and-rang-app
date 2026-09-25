@@ -8,9 +8,9 @@ import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useTheme } from '../store/ThemeContext';
 import { useAuth } from '../store/AuthContext';
 import { useTabBarAnimatedStyle, TAB_BAR_BASE_HEIGHT } from '../store/TabBarVisibilityContext';
-import { radius, typography } from '../theme';
+import { fonts, radius, typography } from '../theme';
 import { scaleFont } from '../theme/responsive';
-import { glow, modeAccent, withAlpha, type Gradient } from '../theme/glow';
+import { glow, modeAccent, type Gradient } from '../theme/glow';
 import type { Palette } from '../theme/palettes';
 
 // Keyed by the file names under src/app/(tabs).
@@ -36,8 +36,6 @@ export function CollapsibleTabBar({ state, descriptors, navigation }: BottomTabB
 
   return (
     <Animated.View style={[styles.container, animatedStyle]} pointerEvents="box-none">
-      {/* A hairline of accent along the top edge instead of a grey rule. */}
-      <LinearGradient colors={accent.ramp} start={GRADIENT_START} end={GRADIENT_END} style={styles.topRule} />
       <View style={styles.row}>
         {state.routes.map((route, index) => {
           const { options } = descriptors[route.key];
@@ -120,7 +118,7 @@ function TabItem({
             colors={accent}
             start={GRADIENT_START}
             end={GRADIENT_END}
-            style={[styles.pod, glow(accentColor, 0.6, 14, 7)]}
+            style={[styles.pod, glow(accentColor, 0.4, 12, 6)]}
           >
             <Ionicons name={icon} size={22} color="#FFFFFF" />
           </LinearGradient>
@@ -130,7 +128,7 @@ function TabItem({
           </View>
         )}
         {badge !== undefined && (
-          <View style={[styles.badge, glow(colors.danger, 0.7, 8, 4)]}>
+          <View style={styles.badge}>
             <Text style={styles.badgeText}>{typeof badge === 'number' && badge > 9 ? '9+' : String(badge)}</Text>
           </View>
         )}
@@ -154,32 +152,41 @@ const makeStyles = (colors: Palette, bottomInset: number) =>
       bottom: 0,
       backgroundColor: colors.surfaceElevated,
       paddingBottom: bottomInset + (Platform.OS === 'web' ? 12 : 0),
-      shadowColor: '#000',
-      shadowOpacity: 0.14,
-      shadowRadius: 16,
-      shadowOffset: { width: 0, height: -4 },
+      // A dock with rounded shoulders and a henna hairline, lifted by a soft
+      // warm shadow rather than a grey one.
+      borderTopLeftRadius: radius.lg,
+      borderTopRightRadius: radius.lg,
+      borderWidth: 1,
+      borderBottomWidth: 0,
+      borderColor: colors.border,
+      shadowColor: '#2A1720',
+      shadowOpacity: 0.1,
+      shadowRadius: 20,
+      shadowOffset: { width: 0, height: -6 },
       elevation: 16,
     },
-    topRule: { height: 2, opacity: 0.85 },
     row: { flexDirection: 'row', height: TAB_BAR_BASE_HEIGHT + (Platform.OS === 'web' ? 8 : 0), paddingTop: 6 },
     item: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 2 },
+    // The focused pod wears a gold ring.
     pod: {
-      width: 44,
-      height: 32,
+      width: 48,
+      height: 34,
       borderRadius: radius.pill,
+      borderWidth: 1.5,
+      borderColor: colors.gold,
       alignItems: 'center',
       justifyContent: 'center',
     },
     podIdle: {
-      width: 44,
-      height: 32,
+      width: 48,
+      height: 34,
       borderRadius: radius.pill,
-      backgroundColor: withAlpha(colors.textPrimary, 0.04),
+      backgroundColor: colors.background,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    label: { ...typography.caption, fontSize: scaleFont(10), fontWeight: '600' },
-    labelFocused: { fontWeight: '800' },
+    label: { ...typography.caption, fontSize: scaleFont(10), fontFamily: fonts.bodySemiBold },
+    labelFocused: { fontFamily: fonts.bodyBold },
     badge: {
       position: 'absolute',
       top: -3,
@@ -194,5 +201,5 @@ const makeStyles = (colors: Palette, bottomInset: number) =>
       borderWidth: 1.5,
       borderColor: colors.surfaceElevated,
     },
-    badgeText: { fontSize: scaleFont(9), fontWeight: '800', color: '#FFFFFF' },
+    badgeText: { fontSize: scaleFont(9), fontFamily: fonts.bodyBold, color: '#FFFFFF' },
   });

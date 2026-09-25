@@ -9,6 +9,7 @@ import { PasswordRequirements } from '../../components/common/PasswordRequiremen
 import { OtpVerification } from '../../components/auth/OtpVerification';
 import { Button } from '../../components/Button';
 import { Header } from '../../components/Header';
+import { ArchBadge } from '../../components/common/ArchBadge';
 import { useLanguage } from '../../store/LanguageContext';
 import { useTheme } from '../../store/ThemeContext';
 import { isStrongPassword, isValidEmail } from '../../utils/validation';
@@ -16,6 +17,7 @@ import { AppError, errorMessage } from '../../utils/appError';
 import { authService } from '../../services/authService';
 import { radius, spacing, typography } from '../../theme';
 import { withAlpha } from '../../theme/glow';
+import { cardSurface } from '../../theme/surfaces';
 import type { Palette } from '../../theme/palettes';
 
 // The whole reset happens on this one screen: email → the 6-digit code from
@@ -113,9 +115,10 @@ export function ForgotPasswordScreen() {
       {phase === 'email' && (
         <>
           <Animated.View entering={FadeInDown.duration(420)}>
+            <ArchBadge icon="mail-open-outline" style={styles.badge} />
             <Text style={[styles.subtitle, rtl && styles.rtlText]}>{t('forgot.subtitle')}</Text>
           </Animated.View>
-          <Animated.View entering={FadeInUp.delay(120).duration(420)}>
+          <Animated.View entering={FadeInUp.delay(120).duration(420)} style={styles.formCard}>
             <TextField
               label={t('login.email')}
               placeholder={t('login.emailPlaceholder')}
@@ -131,16 +134,23 @@ export function ForgotPasswordScreen() {
               label={t('forgot.submit')}
               onPress={onSendCode}
               loading={loading}
-              gradient={[colors.teal, colors.sage]}
+              gradient={[colors.teal, colors.dating]}
               style={styles.submit}
             />
-            <Button label={t('forgot.backToLogin')} variant="ghost" onPress={() => router.back()} />
+            <Button
+              label={t('forgot.backToLogin')}
+              variant="ghost"
+              onPress={() => router.back()}
+              labelStyle={styles.linkLabel}
+            />
           </Animated.View>
         </>
       )}
 
       {phase === 'code' && (
         <Animated.View entering={FadeInUp.duration(420)}>
+          <ArchBadge icon="keypad-outline" style={styles.badge} />
+          <View style={styles.formCard}>
           <OtpVerification
             email={email.trim().toLowerCase()}
             purpose="reset"
@@ -151,15 +161,17 @@ export function ForgotPasswordScreen() {
             }}
             onChangeEmail={() => setPhase('email')}
           />
+          </View>
         </Animated.View>
       )}
 
       {phase === 'password' && (
         <>
           <Animated.View entering={FadeInDown.duration(420)}>
+            <ArchBadge icon="lock-closed-outline" style={styles.badge} />
             <Text style={[styles.subtitle, rtl && styles.rtlText]}>{t('reset.subtitle')}</Text>
           </Animated.View>
-          <Animated.View entering={FadeInUp.delay(120).duration(420)}>
+          <Animated.View entering={FadeInUp.delay(120).duration(420)} style={styles.formCard}>
             <TextField
               label={t('reset.newPassword')}
               value={password}
@@ -181,7 +193,7 @@ export function ForgotPasswordScreen() {
               <Text
                 style={[
                   styles.passwordMatch,
-                  { color: confirmPassword === password ? colors.teal : colors.danger },
+                  { color: confirmPassword === password ? colors.success : colors.danger },
                   rtl && styles.rtlText,
                 ]}
               >
@@ -193,7 +205,7 @@ export function ForgotPasswordScreen() {
               label={t('reset.submit')}
               onPress={onSubmitPassword}
               loading={loading}
-              gradient={[colors.teal, colors.sage]}
+              gradient={[colors.teal, colors.dating]}
               style={styles.submit}
             />
           </Animated.View>
@@ -202,6 +214,7 @@ export function ForgotPasswordScreen() {
 
       {phase === 'done' && (
         <Animated.View entering={FadeInDown.duration(420)}>
+          <ArchBadge icon="checkmark-done" tone="success" style={styles.badge} />
           <View style={[styles.noticeCard, styles.sentCard]}>
             <Ionicons name="checkmark-circle" size={16} color={colors.success} />
             <Text style={[styles.sentText, rtl && styles.rtlText]}>{t('reset.doneBody')}</Text>
@@ -209,7 +222,7 @@ export function ForgotPasswordScreen() {
           <Button
             label={t('reset.goToLogin')}
             onPress={() => router.replace('/login')}
-            gradient={[colors.teal, colors.sage]}
+            gradient={[colors.teal, colors.dating]}
             style={styles.submit}
           />
         </Animated.View>
@@ -220,8 +233,11 @@ export function ForgotPasswordScreen() {
 
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
-    subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg },
+    badge: { marginBottom: spacing.md },
+    subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg, textAlign: 'center' },
+    formCard: cardSurface(colors),
     submit: { marginTop: spacing.sm },
+    linkLabel: { ...typography.label, color: colors.teal },
     passwordMatch: { ...typography.caption, marginTop: -spacing.sm, marginBottom: spacing.md },
     noticeCard: {
       flexDirection: 'row',

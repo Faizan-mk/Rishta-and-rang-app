@@ -13,8 +13,8 @@ import Animated, {
 import { SmartImage } from '../common/SmartImage';
 import type { BrowseProfile } from '../../types/content';
 import type { ProfileMode } from '../../types/user';
-import { radius, spacing, typography } from '../../theme';
-import { scaleFont } from '../../theme/responsive';
+import { fonts, radius, spacing, typography } from '../../theme';
+import { scaleFont, scaleSpace } from '../../theme/responsive';
 import { glow, modeAccent, withAlpha } from '../../theme/glow';
 import { ONLINE_GREEN, type Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
@@ -45,9 +45,9 @@ interface DiscoverProfileCardProps {
   onPressPhoto?: (uri: string) => void;
 }
 
-// The deck card: a photo inside a lit gradient frame, with the member's details
-// on a panel that tucks under it, so the facts sit on the app's own surface
-// instead of being burned into the photo.
+// The deck card ("matrimonial dossier"): a photo under a softened Mughal arch
+// in a gold hairline frame, with the member's details on a panel that tucks
+// under it, so the facts sit on the app's own surface instead of the photo.
 export const DiscoverProfileCard = React.memo(function DiscoverProfileCard({
   profile,
   liked,
@@ -89,18 +89,11 @@ export const DiscoverProfileCard = React.memo(function DiscoverProfileCard({
   if (profile.sect) facts.push({ icon: 'people-circle-outline', label: profile.sect });
   if (profile.occupation) facts.push({ icon: 'briefcase-outline', label: profile.occupation });
 
-  const factTints = [colors.teal, colors.plum, colors.gold, colors.sage];
-
   return (
     <View style={styles.shell}>
-      {/* The gradient sits one layer out from the photo and shows as a lit rim,
-          with a matching coloured shadow throwing the same hue onto the page. */}
-      <LinearGradient
-        colors={accent.ramp}
-        start={GRADIENT_START}
-        end={GRADIENT_END}
-        style={[styles.frameGlow, glow(accent.primary, 0.5, 22, 10)]}
-      >
+      {/* Gold hairline frame one layer out from the photo, with the deck's
+          own colour thrown softly onto the page beneath it. */}
+      <View style={[styles.frameGlow, glow(accent.primary, 0.22, 24, 8)]}>
         <View style={styles.photoFrame}>
           {/* Sized with percentages only, so it renders without waiting on an
               onLayout measurement (which can lag, or never fire, on some platforms). */}
@@ -108,7 +101,7 @@ export const DiscoverProfileCard = React.memo(function DiscoverProfileCard({
 
           {/* Colour wash over the photo's foot, tying it to the panel below. */}
           <LinearGradient
-            colors={['transparent', withAlpha(accent.primary, 0.28), withAlpha(accent.secondary, 0.42)]}
+            colors={['transparent', 'rgba(20,11,16,0.15)', withAlpha(accent.primary, 0.45)]}
             style={styles.photoScrim}
             pointerEvents="none"
           />
@@ -148,7 +141,7 @@ export const DiscoverProfileCard = React.memo(function DiscoverProfileCard({
           )}
 
           {activity && (
-            <View style={[styles.activePill, glow(ACTIVE_GREEN, 0.55, 10, 4)]} pointerEvents="none">
+            <View style={styles.activePill} pointerEvents="none">
               {/* The pulsing dot belongs to "now". Keeping it on a week-old
                   badge is what made every card look live. */}
               {activity === 'online' ? <LiveDot /> : <View style={styles.activeDotStill} />}
@@ -162,10 +155,15 @@ export const DiscoverProfileCard = React.memo(function DiscoverProfileCard({
             </View>
           )}
         </View>
-      </LinearGradient>
+      </View>
 
-      <View style={[styles.identityPanel, glow(accent.primary, 0.22, 16, 6)]}>
-        <LinearGradient colors={accent.ramp} start={GRADIENT_START} end={GRADIENT_END} style={styles.accentBar} />
+      <View style={styles.identityPanel}>
+        {/* Gold flourish: the invitation-card rule above the name. */}
+        <View style={styles.flourish}>
+          <View style={styles.flourishLine} />
+          <View style={styles.flourishDiamond} />
+          <View style={styles.flourishLine} />
+        </View>
 
         <View style={[styles.nameRow, rtl && styles.rowRtl]}>
           <Text style={[styles.name, rtl && styles.rtlText]} numberOfLines={1}>
@@ -180,8 +178,8 @@ export const DiscoverProfileCard = React.memo(function DiscoverProfileCard({
 
         {locationLine.length > 0 && (
           <View style={[styles.metaRow, rtl && styles.rowRtl]}>
-            <Ionicons name="location" size={12} color={accent.primary} />
-            <Text style={[styles.meta, { color: accent.primary }, rtl && styles.rtlText]} numberOfLines={1}>
+            <Ionicons name="location" size={12} color={colors.gold} />
+            <Text style={[styles.meta, rtl && styles.rtlText]} numberOfLines={1}>
               {locationLine}
             </Text>
           </View>
@@ -189,20 +187,20 @@ export const DiscoverProfileCard = React.memo(function DiscoverProfileCard({
 
         {facts.length > 0 && (
           <View style={[styles.factRow, rtl && styles.rowRtl]}>
-            {facts.map((fact, index) => {
-              const tint = factTints[index % factTints.length];
-              return (
-                <View
-                  key={fact.label}
-                  style={[styles.fact, { backgroundColor: withAlpha(tint, 0.12), borderColor: withAlpha(tint, 0.35) }]}
-                >
-                  <Ionicons name={fact.icon} size={13} color={tint} />
-                  <Text style={[styles.factText, { color: tint }]} numberOfLines={1}>
-                    {fact.label}
-                  </Text>
-                </View>
-              );
-            })}
+            {facts.map((fact) => (
+              <View
+                key={fact.label}
+                style={[
+                  styles.fact,
+                  { backgroundColor: withAlpha(accent.primary, 0.08), borderColor: withAlpha(accent.primary, 0.22) },
+                ]}
+              >
+                <Ionicons name={fact.icon} size={13} color={colors.gold} />
+                <Text style={[styles.factText, { color: accent.primary }]} numberOfLines={1}>
+                  {fact.label}
+                </Text>
+              </View>
+            ))}
           </View>
         )}
       </View>
@@ -232,18 +230,31 @@ const dotStyles = StyleSheet.create({
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: ACTIVE_GREEN },
 });
 
-const GRADIENT_START = { x: 0, y: 0 } as const;
-const GRADIENT_END = { x: 1, y: 1 } as const;
+// Softened vaulted crest, per the design system (120px on a phone frame).
+const ARCH_RADIUS = scaleSpace(120);
 
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
     shell: { paddingHorizontal: spacing.md },
-    // Padding is the rim: the gradient shows through around the inset photo.
-    frameGlow: { borderRadius: radius.lg + 3, padding: 3 },
+    // Padding is the mat between the gold hairline and the photo.
+    frameGlow: {
+      padding: 4,
+      borderWidth: 1.5,
+      borderColor: withAlpha(colors.gold, 0.8),
+      backgroundColor: colors.surface,
+      borderTopLeftRadius: ARCH_RADIUS + 5,
+      borderTopRightRadius: ARCH_RADIUS + 5,
+      borderBottomLeftRadius: radius.lg + 5,
+      borderBottomRightRadius: radius.lg + 5,
+    },
+    // The design system's arch inset: a softened vaulted crest over the photo.
     photoFrame: {
       width: '100%',
       aspectRatio: 4 / 5,
-      borderRadius: radius.lg,
+      borderTopLeftRadius: ARCH_RADIUS,
+      borderTopRightRadius: ARCH_RADIUS,
+      borderBottomLeftRadius: radius.lg,
+      borderBottomRightRadius: radius.lg,
       overflow: 'hidden',
       backgroundColor: colors.skeleton,
     },
@@ -254,34 +265,41 @@ const makeStyles = (colors: Palette) =>
     tapZoneCenter: { flex: 1, height: '100%' },
     blurCenter: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.sm, paddingHorizontal: spacing.xl },
     blurText: { ...typography.body, color: '#FFFFFF', textAlign: 'center' },
+    // At the photo's foot, clear of the identity panel that tucks over it and
+    // one row above the activity pill: the arch clips the top corners, and the
+    // top centre is where the face usually is.
     photoDots: {
       position: 'absolute',
-      top: spacing.sm,
-      left: spacing.sm,
-      right: spacing.sm,
+      bottom: spacing.lg + spacing.xl + spacing.xs,
+      alignSelf: 'center',
       flexDirection: 'row',
-      gap: 4,
+      gap: 5,
     },
-    photoDot: { flex: 1, height: 3, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.35)' },
-    photoDotActive: { backgroundColor: 'rgba(255,255,255,0.95)' },
+    photoDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.45)' },
+    photoDotActive: { width: 18, backgroundColor: colors.gold },
+    // Top centre, inside the arch's crest.
+    // Bottom-left, on the photo's darkened foot and away from the face: a
+    // small dark-glass pill rather than a white slab over the portrait.
     activePill: {
       position: 'absolute',
-      top: spacing.md,
+      bottom: spacing.lg + spacing.xs,
       left: spacing.md,
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 6,
-      backgroundColor: colors.surface,
+      gap: 5,
+      backgroundColor: 'rgba(20,11,16,0.55)',
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.18)',
       borderRadius: radius.pill,
-      paddingHorizontal: spacing.sm + 4,
-      paddingVertical: 6,
+      paddingHorizontal: spacing.sm + 2,
+      paddingVertical: 4,
     },
-    activeText: { color: colors.textPrimary, fontSize: scaleFont(12), fontWeight: '700' },
+    activeText: { color: '#FFFFFF', fontSize: scaleFont(11), fontFamily: fonts.bodyBold },
     // Same dot, not pulsing: they were here, they are not here now.
     activeDotStill: { width: 8, height: 8, borderRadius: 4, backgroundColor: ACTIVE_GREEN, opacity: 0.55 },
     likedBadge: {
       position: 'absolute',
-      top: spacing.md,
+      bottom: spacing.lg + spacing.xs,
       right: spacing.md,
       width: 30,
       height: 30,
@@ -301,17 +319,29 @@ const makeStyles = (colors: Palette) =>
       paddingHorizontal: spacing.md,
       paddingTop: spacing.sm + 2,
       paddingBottom: spacing.md,
+      shadowColor: '#2A1720',
+      shadowOpacity: 0.08,
+      shadowRadius: 20,
+      shadowOffset: { width: 0, height: 8 },
+      elevation: 3,
     },
-    accentBar: {
-      width: 52,
-      height: 5,
-      borderRadius: 3,
+    flourish: {
+      flexDirection: 'row',
+      alignItems: 'center',
       alignSelf: 'center',
+      gap: spacing.sm,
       marginBottom: spacing.sm,
+    },
+    flourishLine: { width: scaleSpace(24), height: 1, backgroundColor: colors.gold },
+    flourishDiamond: {
+      width: scaleSpace(6),
+      height: scaleSpace(6),
+      backgroundColor: colors.gold,
+      transform: [{ rotate: '45deg' }],
     },
     rowRtl: { flexDirection: 'row-reverse' },
     nameRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-    name: { ...typography.h2, color: colors.textPrimary, flexShrink: 1 },
+    name: { ...typography.h1, fontSize: scaleFont(26), lineHeight: scaleFont(32), color: colors.textPrimary, flexShrink: 1 },
     // Says "has a photo", not "verified". A tick in the app's accent beside a
     // name is read as a verified account everywhere else on the internet, and
     // this flag only means a selfie was uploaded at signup.
@@ -326,7 +356,8 @@ const makeStyles = (colors: Palette) =>
     metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 },
     meta: {
       fontSize: scaleFont(11),
-      fontWeight: '800',
+      fontFamily: fonts.bodyBold,
+      color: colors.textSecondary,
       letterSpacing: 0.8,
       textTransform: 'uppercase',
       flexShrink: 1,
@@ -342,6 +373,6 @@ const makeStyles = (colors: Palette) =>
       paddingHorizontal: spacing.sm + 2,
       paddingVertical: 5,
     },
-    factText: { ...typography.caption, fontWeight: '700', flexShrink: 1 },
+    factText: { ...typography.label, flexShrink: 1 },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   });

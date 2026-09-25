@@ -17,6 +17,7 @@ import { useLanguage } from '../../store/LanguageContext';
 import { useAuth } from '../../store/AuthContext';
 import { useTheme } from '../../store/ThemeContext';
 import { radius, spacing, typography } from '../../theme';
+import { cardSurface } from '../../theme/surfaces';
 import { glow, modeAccent, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 
@@ -65,24 +66,26 @@ export function RishtaProfileScreen() {
         >
           <View style={styles.heroGlow} pointerEvents="none" />
           <View style={styles.heroIcon}>
-            <Ionicons name="heart-circle" size={22} color="#FFFFFF" />
+            <Ionicons name="moon" size={20} color="#F3D99B" />
           </View>
           <Text style={[styles.heroTitle, rtl && styles.rtlText]}>{t('rishtaProfile.title')}</Text>
         </LinearGradient>
 
-        <SelectField label={t('profile.religion')} value={religion} options={RELIGION_OPTIONS} onChange={setReligion} placeholder={t('rishtaProfile.religionPlaceholder')} />
-        <SelectField label={t('profile.sect')} value={sect} options={SECT_OPTIONS} onChange={setSect} placeholder={t('rishtaProfile.sectPlaceholder')} />
-        <TextField
-          label={t('profile.familyBackground')}
-          value={familyBackground}
-          onChangeText={setFamilyBackground}
-          placeholder={t('rishtaProfile.familyPlaceholder')}
-          multiline
-        />
-        <TextField label={t('profile.education')} value={education} onChangeText={setEducation} placeholder={t('rishtaProfile.educationPlaceholder')} />
+        <View style={styles.card}>
+          <SelectField label={t('profile.religion')} value={religion} options={RELIGION_OPTIONS} onChange={setReligion} placeholder={t('rishtaProfile.religionPlaceholder')} />
+          <SelectField label={t('profile.sect')} value={sect} options={SECT_OPTIONS} onChange={setSect} placeholder={t('rishtaProfile.sectPlaceholder')} />
+          <TextField
+            label={t('profile.familyBackground')}
+            value={familyBackground}
+            onChangeText={setFamilyBackground}
+            placeholder={t('rishtaProfile.familyPlaceholder')}
+            multiline
+          />
+          <TextField label={t('profile.education')} value={education} onChangeText={setEducation} placeholder={t('rishtaProfile.educationPlaceholder')} />
+        </View>
       </FadeIn>
 
-      <FadeIn delay={100}>
+      <FadeIn delay={100} style={styles.card}>
         <AccentHeading title={t('rishtaProfile.readinessLabel')} gradient={accent.duo} style={styles.heading} />
         <View style={styles.chipRow}>
           {READINESS_OPTIONS.map((option) => (
@@ -129,8 +132,10 @@ const makeStyles = (colors: Palette) =>
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.md,
       gap: spacing.sm,
-      marginBottom: spacing.lg,
+      marginBottom: spacing.sm,
       overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: withAlpha(colors.gold, 0.5),
     },
     heroGlow: {
       position: 'absolute',
@@ -145,22 +150,25 @@ const makeStyles = (colors: Palette) =>
       width: 40,
       height: 40,
       borderRadius: 20,
-      backgroundColor: 'rgba(255,255,255,0.22)',
+      backgroundColor: 'rgba(20,11,16,0.25)',
+      borderWidth: 1.5,
+      borderColor: '#F3D99B',
       alignItems: 'center',
       justifyContent: 'center',
     },
-    heroTitle: { ...typography.h1, color: '#FFFFFF', fontWeight: '800' },
-    heading: { marginBottom: spacing.sm },
+    heroTitle: { ...typography.h1, color: '#FFFFFF' },
+    card: { ...cardSurface(colors), marginTop: spacing.md, paddingBottom: spacing.md },
+    heading: { marginBottom: spacing.md },
     chipRow: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.md },
     lockedSection: {
-      marginTop: spacing.md,
-      marginBottom: spacing.lg,
-      borderRadius: radius.lg,
+      marginTop: spacing.sm,
+      marginBottom: spacing.sm,
+      borderRadius: radius.md,
       borderWidth: 1,
-      borderColor: colors.borderSoft,
-      backgroundColor: withAlpha(colors.textPrimary, 0.03),
+      borderColor: colors.border,
+      backgroundColor: colors.background,
       padding: spacing.md,
     },
-    submit: { marginTop: spacing.md },
+    submit: { marginTop: spacing.lg },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   });

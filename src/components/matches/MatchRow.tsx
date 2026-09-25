@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { Match } from '../../types/content';
 import { Badge } from '../common/Badge';
-import { radius, spacing, typography } from '../../theme';
+import { fonts, radius, spacing, typography } from '../../theme';
 import { scaleFont, scaleSpace } from '../../theme/responsive';
 // `glow` still lights the unread dot — a 10pt circle, where the halo is the
 // point. It is the card-sized one that had to go.
@@ -24,9 +24,9 @@ const GRADIENT_END = { x: 1, y: 1 } as const;
 const AVATAR = scaleSpace(56);
 const RING_PADDING = 2;
 
-// A thread card rather than a flat list line: the avatar sits in a gradient ring
-// in the thread's own mode colour, and an unread thread lifts on a glowing dot
-// so the list can be read at a glance.
+// One line of the conversation card: the avatar sits in a gradient ring in the
+// thread's own mode colour, and an unread thread is tinted and lifts on a
+// glowing dot so the list can be read at a glance.
 export const MatchRow = React.memo(function MatchRow({ match, onPress }: { match: Match; onPress: () => void }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -45,7 +45,7 @@ export const MatchRow = React.memo(function MatchRow({ match, onPress }: { match
         // to carry a coloured `glow`, whose `elevation` Android draws as a wide
         // shadow well outside the 14pt corner — which read as a second card
         // sitting behind the first rather than as a highlight.
-        match.unread && [styles.rowUnread, { borderColor: withAlpha(accent.primary, 0.45) }],
+        match.unread && { backgroundColor: withAlpha(accent.primary, 0.06) },
       ]}
     >
       <LinearGradient colors={accent.ramp} start={GRADIENT_START} end={GRADIENT_END} style={styles.avatarRing}>
@@ -76,7 +76,7 @@ export const MatchRow = React.memo(function MatchRow({ match, onPress }: { match
       </View>
 
       <View style={styles.metaWrap}>
-        <Text style={styles.time} numberOfLines={1}>
+        <Text style={[styles.time, match.unread && { color: accent.primary }]} numberOfLines={1}>
           {timeAgo(match.lastMessageAt, t)}
         </Text>
         {match.unread ? (
@@ -101,22 +101,17 @@ export const MatchRow = React.memo(function MatchRow({ match, onPress }: { match
 
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
+    // Sits inside the list's shared white card, so it carries no border of its
+    // own; the radius only shows when an unread tint fills it.
     row: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: spacing.sm,
-      backgroundColor: colors.surfaceElevated,
+      gap: spacing.md,
       borderRadius: radius.md,
-      borderWidth: 1,
-      borderColor: colors.borderSoft,
       paddingHorizontal: spacing.sm,
-      paddingVertical: spacing.sm,
+      paddingVertical: spacing.md,
     },
     rowRtl: { flexDirection: 'row-reverse' },
-    // Unread threads sit on a faintly tinted card so they separate from read
-    // ones without needing a second colour language. The border colour is set
-    // per row, from the thread's own accent.
-    rowUnread: { backgroundColor: withAlpha(colors.textPrimary, 0.04) },
     avatarRing: { width: AVATAR, height: AVATAR, borderRadius: AVATAR / 2, padding: RING_PADDING },
     avatar: {
       width: '100%',
@@ -129,14 +124,14 @@ const makeStyles = (colors: Palette) =>
     textWrap: { flex: 1, minWidth: 0 },
     nameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
     name: { ...typography.bodyBold, color: colors.textPrimary, flexShrink: 1 },
-    nameUnread: { fontWeight: '800' },
+    nameUnread: { fontFamily: fonts.bodyExtraBold },
     // Keeps its own width where there is room, and is the first thing to give
     // where there is not — the name matters more than the label.
     badgeWrap: { flexShrink: 1 },
     message: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
     // Never squeezed: a timestamp that wraps or ellipsises tells you nothing.
     metaWrap: { alignItems: 'flex-end', gap: spacing.xs, flexShrink: 0 },
-    time: { fontSize: scaleFont(11), color: colors.textTertiary, fontWeight: '600' },
+    time: { fontSize: scaleFont(11), color: colors.textTertiary, fontFamily: fonts.bodySemiBold },
     unreadDot: { width: 10, height: 10, borderRadius: 5 },
     chevron: { marginRight: -2 },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },

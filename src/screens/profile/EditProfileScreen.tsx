@@ -24,7 +24,8 @@ import { useDialog } from '../../store/DialogContext';
 import { usePrivacy } from '../../store/PrivacyContext';
 import { errorMessage } from '../../utils/appError';
 import type { UserProfile } from '../../types/user';
-import { radius, spacing, typography } from '../../theme';
+import { fonts, radius, spacing, typography } from '../../theme';
+import { cardSurface } from '../../theme/surfaces';
 import { glow, modeAccent, withAlpha } from '../../theme/glow';
 import { scaleFont } from '../../theme/responsive';
 import type { Palette } from '../../theme/palettes';
@@ -285,6 +286,7 @@ export function EditProfileScreen() {
           <Text style={[styles.heroTitle, rtl && styles.rtlText]}>{t('editProfile.title')}</Text>
         </LinearGradient>
 
+        <View style={styles.card}>
         <AccentHeading title={t('photos.title')} gradient={accent.duo} style={styles.heading} />
         {prefs.blurPhotos && (
           <View style={styles.blurNotice}>
@@ -330,7 +332,7 @@ export function EditProfileScreen() {
                     </Pressable>
                   )}
                   <Pressable onPress={() => removePhoto(uri)} style={styles.removeBadge} hitSlop={6}>
-                    <Text style={styles.removeText}>×</Text>
+                    <Ionicons name="close" size={12} color="#FFFFFF" />
                   </Pressable>
                 </View>
               </LinearGradient>
@@ -338,14 +340,17 @@ export function EditProfileScreen() {
           ))}
           {photos.length < MAX_PHOTOS && (
             <Pressable onPress={addPhoto} style={styles.addSlot}>
-              <Ionicons name="add" size={26} color={accent.primary} />
+              <View style={styles.addDisc}>
+                <Ionicons name="add" size={24} color={accent.primary} />
+              </View>
             </Pressable>
           )}
         </View>
         <Text style={[styles.hint, rtl && styles.rtlText]}>{t('photos.primaryHint')}</Text>
+        </View>
       </FadeIn>
 
-      <FadeIn delay={60}>
+      <FadeIn delay={60} style={styles.card}>
         <AccentHeading
           title={t('editProfile.introMediaTitle')}
           subtitle={t('editProfile.introMediaHint')}
@@ -385,8 +390,8 @@ export function EditProfileScreen() {
                 </View>
               )}
             </Pressable>
-            <Pressable onPress={removeVideoIntro} style={styles.removeBadge} hitSlop={6}>
-              <Text style={styles.removeText}>×</Text>
+            <Pressable onPress={removeVideoIntro} style={[styles.removeBadge, styles.removeBadgeVideo]} hitSlop={6}>
+              <Ionicons name="close" size={12} color="#FFFFFF" />
             </Pressable>
           </View>
         ) : (
@@ -397,7 +402,7 @@ export function EditProfileScreen() {
         )}
       </FadeIn>
 
-      <FadeIn delay={80}>
+      <FadeIn delay={80} style={styles.card}>
         <TextField
           label={t('editProfile.bio')}
           placeholder={t('editProfile.bioPlaceholder')}
@@ -411,7 +416,7 @@ export function EditProfileScreen() {
         <SelectField label={t('editProfile.city')} value={city} options={PAKISTAN_CITIES} onChange={setCity} placeholder={t('editProfile.city')} allowCustom />
       </FadeIn>
 
-      <FadeIn delay={140}>
+      <FadeIn delay={140} style={styles.card}>
         <AccentHeading title={t('profile.vibeTags')} gradient={accent.duo} style={styles.heading} />
         <View style={styles.chipRow}>
           {vibeTags.map((tag) => (
@@ -432,7 +437,7 @@ export function EditProfileScreen() {
         </View>
       </FadeIn>
 
-      <FadeIn delay={180}>
+      <FadeIn delay={180} style={styles.card}>
         <AccentHeading title={t('discover.aboutMeTitle')} gradient={accent.duo} style={styles.sectionHeading} />
         <TextField
           label={t('editProfile.height')}
@@ -456,7 +461,7 @@ export function EditProfileScreen() {
         <TextField label={t('editProfile.occupation')} value={details.occupation} onChangeText={(v) => setField('occupation', v)} />
       </FadeIn>
 
-      <FadeIn delay={220}>
+      <FadeIn delay={220} style={styles.card}>
         <AccentHeading title={t('discover.faithTitle')} gradient={accent.duo} style={styles.sectionHeading} />
         <BooleanRow label={t('attributes.practisingYes')} value={details.practising} onChange={(v) => setField('practising', v)} rtl={rtl} />
         <TextField label={t('editProfile.prayerHabits')} value={details.prayerHabits} onChangeText={(v) => setField('prayerHabits', v)} />
@@ -466,14 +471,14 @@ export function EditProfileScreen() {
         <TextField label={t('editProfile.religiousDress')} value={details.religiousDress} onChangeText={(v) => setField('religiousDress', v)} />
       </FadeIn>
 
-      <FadeIn delay={260}>
+      <FadeIn delay={260} style={styles.card}>
         <AccentHeading title={t('discover.futurePlansTitle')} gradient={accent.duo} style={styles.sectionHeading} />
         <BooleanRow label={t('discover.openToRelocate')} value={details.openToRelocate} onChange={(v) => setField('openToRelocate', v)} rtl={rtl} />
         <TextField label={t('editProfile.preferredCountry')} value={details.preferredCountry} onChangeText={(v) => setField('preferredCountry', v)} />
         <TextField label={t('discover.careerPlansTitle')} value={details.careerPlans} onChangeText={(v) => setField('careerPlans', v)} />
       </FadeIn>
 
-      <FadeIn delay={300}>
+      <FadeIn delay={300} style={styles.card}>
         <AccentHeading title={t('discover.educationCareerTitle')} gradient={accent.duo} style={styles.sectionHeading} />
         <SelectOrOtherField label={t('editProfile.educationLevel')} value={details.educationLevel} options={EDUCATION_LEVEL_OPTIONS} onChange={(v) => setField('educationLevel', v)} placeholder={t('editProfile.educationLevelPlaceholder')} />
         <SelectOrOtherField label={t('editProfile.degree')} value={details.degree} options={DEGREE_OPTIONS} onChange={(v) => setField('degree', v)} placeholder={t('editProfile.degreePlaceholder')} />
@@ -481,7 +486,7 @@ export function EditProfileScreen() {
         <SelectOrOtherField label={t('editProfile.industry')} value={details.industry} options={INDUSTRY_OPTIONS} onChange={(v) => setField('industry', v)} />
       </FadeIn>
 
-      <FadeIn delay={340}>
+      <FadeIn delay={340} style={styles.card}>
         <AccentHeading title={t('discover.languagesBackgroundTitle')} gradient={accent.duo} style={styles.sectionHeading} />
         <SelectOrOtherField
           label={t('editProfile.languages')}
@@ -581,7 +586,7 @@ function BooleanRow({
       <Pressable onPress={() => onChange(!value)} hitSlop={6}>
         {value ? (
           <LinearGradient
-            colors={[colors.teal, colors.sage]}
+            colors={[colors.teal, colors.dating]}
             start={GRADIENT_START}
             end={GRADIENT_END}
             style={[styles.toggleTrack, glow(colors.teal, 0.6, 10, 4)]}
@@ -607,8 +612,10 @@ const makeStyles = (colors: Palette) =>
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.md,
       gap: spacing.sm,
-      marginBottom: spacing.lg,
+      marginBottom: spacing.md,
       overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: withAlpha(colors.gold, 0.5),
     },
     // A blown-out highlight inside the hero, so the ramp reads as lit rather
     // than as a flat two-colour sweep.
@@ -629,22 +636,52 @@ const makeStyles = (colors: Palette) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
-    heroTitle: { ...typography.h1, color: '#FFFFFF', fontWeight: '800' },
-    heading: { marginBottom: spacing.sm },
-    sectionHeading: { marginTop: spacing.lg, marginBottom: spacing.sm },
+    heroTitle: { ...typography.h1, color: '#FFFFFF' },
+    // Every group of fields sits on its own biodata card.
+    card: { ...cardSurface(colors), marginTop: spacing.md, paddingBottom: spacing.md },
+    heading: { marginBottom: spacing.md },
+    sectionHeading: { marginBottom: spacing.sm },
     fieldLabel: { ...typography.body, color: colors.textPrimary, marginTop: spacing.sm, marginBottom: spacing.xs },
     blurNotice: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.sm },
     blurNoticeText: { ...typography.caption, color: colors.teal, flexShrink: 1 },
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.md },
-    slotRim: { width: 86, height: 106, borderRadius: radius.md + 2, padding: 2 },
-    slot: { flex: 1, borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.skeleton },
+    // Photos sit in Mughal arches; the oversized top radius is clamped to half
+    // the width, giving a full crest.
+    slotRim: {
+      width: 86,
+      height: 110,
+      padding: 2,
+      borderTopLeftRadius: 1000,
+      borderTopRightRadius: 1000,
+      borderBottomLeftRadius: radius.sm + 2,
+      borderBottomRightRadius: radius.sm + 2,
+    },
+    slot: {
+      flex: 1,
+      borderTopLeftRadius: 1000,
+      borderTopRightRadius: 1000,
+      borderBottomLeftRadius: radius.sm,
+      borderBottomRightRadius: radius.sm,
+      overflow: 'hidden',
+      backgroundColor: colors.skeleton,
+    },
     addSlot: {
       width: 86,
-      height: 106,
-      borderRadius: radius.md + 2,
+      height: 110,
+      borderTopLeftRadius: 1000,
+      borderTopRightRadius: 1000,
+      borderBottomLeftRadius: radius.sm + 2,
+      borderBottomRightRadius: radius.sm + 2,
       borderWidth: 1.5,
-      borderColor: colors.border,
-      borderStyle: 'dashed',
+      borderColor: withAlpha(colors.gold, 0.7),
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.tealSoft,
+    },
+    addDisc: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: colors.surface,
@@ -657,10 +694,10 @@ const makeStyles = (colors: Palette) =>
       right: 4,
       flexDirection: 'row',
       gap: 3,
-      // Sits on the photo, so it needs its own dark chip rather than a theme
+      // Sits on the photo, so it needs its own solid chip rather than a theme
       // colour — `textInverse` on `overlay` was black-on-black in dark mode.
-      backgroundColor: colors.teal,
-      borderRadius: radius.sm,
+      backgroundColor: colors.gold,
+      borderRadius: radius.pill,
       paddingVertical: 3,
       alignItems: 'center',
       justifyContent: 'center',
@@ -672,25 +709,26 @@ const makeStyles = (colors: Palette) =>
       right: 4,
       flexDirection: 'row',
       gap: 3,
-      backgroundColor: 'rgba(10,10,12,0.6)',
-      borderRadius: radius.sm,
+      backgroundColor: 'rgba(20,11,16,0.6)',
+      borderRadius: radius.pill,
       paddingVertical: 3,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    primaryBadgeText: { color: '#FFFFFF', fontSize: scaleFont(9), fontWeight: '700' },
+    primaryBadgeText: { color: '#FFFFFF', fontSize: scaleFont(9), fontFamily: fonts.bodyBold },
+    // Below the arch's crest, which would clip the top corner.
     removeBadge: {
       position: 'absolute',
-      top: 4,
+      top: '30%',
       right: 4,
-      width: 20,
-      height: 20,
-      borderRadius: 10,
-      backgroundColor: colors.overlay,
+      width: 22,
+      height: 22,
+      borderRadius: 11,
+      backgroundColor: 'rgba(20,11,16,0.6)',
       alignItems: 'center',
       justifyContent: 'center',
     },
-    removeText: { color: '#FFFFFF', fontSize: scaleFont(14), lineHeight: scaleFont(16) },
+    removeBadgeVideo: { top: spacing.sm, right: spacing.sm },
     hint: { ...typography.caption, color: colors.textTertiary, marginTop: -spacing.xs, marginBottom: spacing.md },
     mediaButton: {
       flexDirection: 'row',
@@ -698,33 +736,32 @@ const makeStyles = (colors: Palette) =>
       justifyContent: 'center',
       gap: spacing.xs,
       borderWidth: 1.5,
-      borderColor: withAlpha(colors.teal, 0.4),
-      borderStyle: 'dashed',
-      borderRadius: radius.lg,
+      borderColor: withAlpha(colors.gold, 0.7),
+      borderRadius: radius.pill,
       paddingVertical: spacing.md,
-      backgroundColor: withAlpha(colors.teal, 0.07),
+      backgroundColor: colors.tealSoft,
     },
-    mediaButtonActive: { borderColor: colors.danger, borderStyle: 'solid' },
+    mediaButtonActive: { borderColor: colors.danger },
     mediaButtonText: { ...typography.bodyBold, color: colors.teal },
     voiceCard: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.sm,
-      backgroundColor: withAlpha(colors.teal, 0.07),
+      backgroundColor: colors.tealSoft,
       borderWidth: 1,
-      borderColor: withAlpha(colors.teal, 0.3),
-      borderRadius: radius.lg,
+      borderColor: withAlpha(colors.gold, 0.5),
+      borderRadius: radius.pill,
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
       marginBottom: spacing.sm,
     },
     voicePlayButton: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-    voiceDuration: { ...typography.caption, color: colors.textSecondary, fontWeight: '600', flex: 1 },
+    voiceDuration: { ...typography.label, color: colors.textSecondary, flex: 1 },
     removeInlineButton: { padding: spacing.xs },
-    videoPreviewWrap: { width: '100%', aspectRatio: 16 / 9, borderRadius: radius.lg, overflow: 'hidden', backgroundColor: colors.skeleton, marginTop: spacing.sm },
+    videoPreviewWrap: { width: '100%', aspectRatio: 16 / 9, borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.skeleton, marginTop: spacing.sm },
     videoPreviewInner: { flex: 1 },
     videoPreview: { width: '100%', height: '100%' },
-    videoPlayOverlay: { alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(10,10,12,0.25)' },
+    videoPlayOverlay: { alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(20,11,16,0.25)' },
     bioInput: { minHeight: 90, textAlignVertical: 'top' },
     chipRow: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.xs },
     tagInputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm },
@@ -735,7 +772,7 @@ const makeStyles = (colors: Palette) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      paddingVertical: spacing.sm,
+      paddingVertical: spacing.sm + 2,
     },
     booleanLabel: { ...typography.body, color: colors.textPrimary, flex: 1 },
     toggleTrack: {

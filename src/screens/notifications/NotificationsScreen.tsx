@@ -12,7 +12,7 @@ import { useLanguage } from '../../store/LanguageContext';
 import { useTheme } from '../../store/ThemeContext';
 import { useNotifications } from '../../store/NotificationContext';
 import { useAuth } from '../../store/AuthContext';
-import { radius, spacing, typography } from '../../theme';
+import { fonts, radius, spacing, typography } from '../../theme';
 import { glow, modeAccent, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 
@@ -62,11 +62,18 @@ export function NotificationsScreen() {
         data={feed}
         keyExtractor={(item) => item.id}
         renderItem={({ item, index }) => (
-          <Animated.View entering={FadeInUp.delay(Math.min(index * 60, 300)).duration(320)}>
+          <Animated.View
+            entering={FadeInUp.delay(Math.min(index * 60, 300)).duration(320)}
+            style={[styles.cell, index === 0 && styles.cellFirst, index === feed.length - 1 && styles.cellLast]}
+          >
             <NotificationRow item={item} onPress={() => onPressNotification(item)} />
           </Animated.View>
         )}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        ItemSeparatorComponent={() => (
+          <View style={styles.cell}>
+            <View style={[styles.separator, rtl && styles.separatorRtl]} />
+          </View>
+        )}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
@@ -96,16 +103,53 @@ const makeStyles = (colors: Palette) =>
       gap: 4,
       borderRadius: radius.pill,
       borderWidth: 1,
-      borderColor: withAlpha(colors.teal, 0.35),
-      backgroundColor: withAlpha(colors.teal, 0.1),
+      borderColor: withAlpha(colors.gold, 0.6),
+      backgroundColor: colors.surface,
       paddingHorizontal: spacing.sm + 2,
       paddingVertical: 6,
     },
-    markAllRead: { ...typography.caption, color: colors.teal, fontWeight: '800' },
-    // The rows are cards now, so the list is spaced rather than ruled.
-    separator: { height: spacing.xs },
+    markAllRead: { ...typography.caption, color: colors.teal, fontFamily: fonts.bodyBold },
+    // One white card for the whole feed: each row is a cell of it, the first
+    // and last carrying its rounded ends, hairlines inset past the icon.
+    cell: {
+      backgroundColor: colors.surface,
+      borderLeftWidth: 1,
+      borderRightWidth: 1,
+      borderColor: colors.border,
+      paddingHorizontal: spacing.xs,
+    },
+    cellFirst: {
+      borderTopWidth: 1,
+      borderTopLeftRadius: radius.lg,
+      borderTopRightRadius: radius.lg,
+      paddingTop: spacing.xs,
+    },
+    cellLast: {
+      borderBottomWidth: 1,
+      borderBottomLeftRadius: radius.lg,
+      borderBottomRightRadius: radius.lg,
+      paddingBottom: spacing.xs,
+    },
+    separator: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: colors.border,
+      marginLeft: 40 + spacing.md + spacing.sm,
+      marginRight: spacing.sm,
+    },
+    separatorRtl: { marginLeft: spacing.sm, marginRight: 40 + spacing.md + spacing.sm },
     listContent: { paddingBottom: spacing.xl },
-    emptyOrb: { width: 78, height: 78, borderRadius: 39, alignItems: 'center', justifyContent: 'center' },
+    // Mughal-arch frame, the shared empty-state shape.
+    emptyOrb: {
+      width: 92,
+      height: 108,
+      borderTopLeftRadius: 1000,
+      borderTopRightRadius: 1000,
+      borderBottomLeftRadius: radius.md,
+      borderBottomRightRadius: radius.md,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingTop: spacing.sm,
+    },
     emptyState: { alignItems: 'center', justifyContent: 'center', paddingTop: spacing.xxl, gap: spacing.md },
     emptyText: { ...typography.body, color: colors.textSecondary, textAlign: 'center' },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },

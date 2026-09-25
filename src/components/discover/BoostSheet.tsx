@@ -3,7 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { BottomSheet } from '../common/BottomSheet';
-import { radius, spacing, typography } from '../../theme';
+import { fonts, radius, spacing, typography } from '../../theme';
 import { glow, withAlpha } from '../../theme/glow';
 import { scaleFont } from '../../theme/responsive';
 import type { Palette } from '../../theme/palettes';
@@ -140,6 +140,8 @@ const makeStyles = (colors: Palette) =>
     clockRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.lg },
     clockTile: {
       backgroundColor: colors.teal,
+      borderWidth: 1.5,
+      borderColor: colors.gold,
       borderRadius: radius.md,
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
@@ -147,9 +149,9 @@ const makeStyles = (colors: Palette) =>
       alignItems: 'center',
       ...glow(colors.teal, 0.5, 14, 6),
     },
-    clockText: { color: '#FFFFFF', fontSize: scaleFont(26), fontWeight: '800', letterSpacing: 1 },
+    clockText: { color: '#FFFFFF', fontSize: scaleFont(26), fontFamily: fonts.display, letterSpacing: 1 },
     clockSeparator: { ...typography.h2, color: colors.textPrimary },
-    walletLine: { ...typography.body, color: colors.textPrimary, textAlign: 'center', marginTop: spacing.lg, fontWeight: '600' },
+    walletLine: { ...typography.body, color: colors.textPrimary, textAlign: 'center', marginTop: spacing.lg, fontFamily: fonts.bodySemiBold },
     footer: { paddingHorizontal: spacing.lg, gap: spacing.sm },
     primaryButton: {
       flexDirection: 'row',
@@ -157,16 +159,18 @@ const makeStyles = (colors: Palette) =>
       justifyContent: 'center',
       gap: spacing.sm,
       backgroundColor: colors.teal,
+      borderWidth: 1,
+      borderColor: withAlpha(colors.gold, 0.7),
       borderRadius: radius.pill,
       paddingVertical: spacing.md,
       minHeight: 52,
       ...glow(colors.teal, 0.5, 16, 7),
     },
-    primaryLabel: { ...typography.h3, color: '#FFFFFF', fontWeight: '800' },
+    primaryLabel: { ...typography.bodyBold, color: '#FFFFFF', fontFamily: fonts.bodyBold },
     secondaryButton: {
       backgroundColor: 'transparent',
       borderWidth: 1.5,
-      borderColor: colors.borderSoft,
+      borderColor: colors.gold,
       minHeight: 48,
       shadowOpacity: 0,
       elevation: 0,
@@ -182,10 +186,14 @@ const makeIllustrationStyles = (colors: Palette) =>
       position: 'absolute',
       width: 78,
       height: 104,
-      borderRadius: radius.md,
-      borderWidth: 2,
-      borderColor: colors.borderSoft,
-      backgroundColor: withAlpha(colors.teal, 0.08),
+      // Two tilted Mughal-arch cards behind the rocket.
+      borderTopLeftRadius: 1000,
+      borderTopRightRadius: 1000,
+      borderBottomLeftRadius: radius.sm,
+      borderBottomRightRadius: radius.sm,
+      borderWidth: 1.5,
+      borderColor: withAlpha(colors.gold, 0.6),
+      backgroundColor: colors.tealSoft,
       alignItems: 'center',
       justifyContent: 'center',
     },

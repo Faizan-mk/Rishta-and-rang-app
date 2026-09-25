@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { View } from 'react-native';
 import '../utils/webGlobalStyles';
 import { Stack } from 'expo-router';
+import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -23,6 +24,7 @@ import { OnboardingProvider } from '../store/onboardingStore';
 import { OnboardingGateProvider, useOnboardingGate } from '../store/OnboardingGateContext';
 import { ResponsiveFrame } from '../components/common/ResponsiveFrame';
 import { SplashLoader } from '../components/common/SplashLoader';
+import { fontAssets, fonts } from '../theme/fonts';
 import { usePushRegistration } from '../hooks/usePushRegistration';
 import { usePushNavigation } from '../hooks/usePushNavigation';
 import { useActivityHeartbeat } from '../hooks/useActivityHeartbeat';
@@ -65,7 +67,10 @@ function RootNavigator() {
 
   // The launch loader sits over the app rather than in place of it, so the
   // navigator is already mounted underneath by the time the loader fades out.
-  const ready = !initializing && seenOnboarding !== null;
+  // A font that fails to load falls back to the system face rather than
+  // holding the app on the loader forever.
+  const [fontsLoaded, fontError] = useFonts(fontAssets);
+  const ready = !initializing && seenOnboarding !== null && (fontsLoaded || !!fontError);
   const [loaderDone, setLoaderDone] = useState(false);
 
   return (
@@ -77,7 +82,7 @@ function RootNavigator() {
               screenOptions={{
                 headerTintColor: colors.teal,
                 headerStyle: { backgroundColor: colors.surface },
-                headerTitleStyle: { color: colors.textPrimary },
+                headerTitleStyle: { color: colors.textPrimary, fontFamily: fonts.display },
                 contentStyle: { backgroundColor: colors.background },
               }}
             >
