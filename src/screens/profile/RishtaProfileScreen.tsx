@@ -105,7 +105,7 @@ export function RishtaProfileScreen() {
             gradient={[colors.textTertiary, colors.border]}
             style={styles.heading}
           />
-          <View style={styles.chipRow}>
+          <View style={styles.lockedChipRow}>
             <Badge label={t('profile.prayerHabits')} tone="locked" />
             <Badge label={t('profile.incomeRange')} tone="locked" />
             <Badge label={t('profile.livingAbroadStatus')} tone="locked" />
@@ -160,6 +160,12 @@ const makeStyles = (colors: Palette) =>
     card: { ...cardSurface(colors), marginTop: spacing.md, paddingBottom: spacing.md },
     heading: { marginBottom: spacing.md },
     chipRow: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.md },
+    // The upcoming-field Badges carry no margin of their own, so the three pills
+    // were laid out edge to edge with nothing between them and read as one
+    // merged block. The spacing lives on this row rather than on Badge, because
+    // Badge is also used inline in the chat header, where a margin would shove
+    // that layout around.
+    lockedChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
     lockedSection: {
       marginTop: spacing.sm,
       marginBottom: spacing.sm,
