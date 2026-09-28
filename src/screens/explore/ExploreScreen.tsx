@@ -22,6 +22,7 @@ import { TAB_BAR_BASE_HEIGHT, useHideTabBarOnScroll } from '../../store/TabBarVi
 import { Button } from '../../components/Button';
 import { AccentHeading } from '../../components/common/AccentHeading';
 import { AuroraBackground } from '../../components/common/AuroraBackground';
+import { EmptyOrb } from '../../components/common/EmptyOrb';
 import { SmartImage } from '../../components/common/SmartImage';
 import { BrowseFiltersSheet } from '../../components/discover/BrowseSheets';
 import {
@@ -53,7 +54,7 @@ type ExploreProfile = (DiscoverProfile | RishtaListingProfile) & { kind: 'dating
 
 const TABS: { key: ExploreTab; labelKey: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { key: 'forYou', labelKey: 'explore.forYou', icon: 'sparkles' },
-  // Events tab hidden behind FEATURE_EVENTS flag for V1 — out of V1 roadmap scope.
+  // Events tab hidden behind FEATURE_EVENTS flag for V1 â€” out of V1 roadmap scope.
   // When enabled, real event data must come from the backend, not mockEvents.
   ...(FEATURE_EVENTS ? ([{ key: 'events', labelKey: 'explore.events', icon: 'calendar' }] as const) : []),
   { key: 'history', labelKey: 'explore.myHistory', icon: 'time' },
@@ -113,7 +114,7 @@ export function ExploreScreen() {
     try {
       setLikes(await likesService.fetchLikesReceived(user.id));
     } catch {
-      // Offline — leave whatever is already on screen.
+      // Offline â€” leave whatever is already on screen.
     } finally {
       setLoadingLikes(false);
     }
@@ -179,7 +180,7 @@ export function ExploreScreen() {
         message: t('explore.shareEventMessage', { title: event.title, city: event.city, date: event.dateLabel }),
       });
     } catch {
-      // Dismissed — nothing to do.
+      // Dismissed â€” nothing to do.
     }
   };
 
@@ -433,14 +434,7 @@ export function ExploreScreen() {
           <View style={styles.section}>
             {history.length === 0 ? (
               <View style={styles.emptyState}>
-                <LinearGradient
-                  colors={accent.ramp}
-                  start={GRADIENT_START}
-                  end={GRADIENT_END}
-                  style={[styles.emptyOrb, glow(accent.primary, 0.5, 22, 10)]}
-                >
-                  <Ionicons name="time" size={30} color="#FFFFFF" />
-                </LinearGradient>
+                  <EmptyOrb ramp={accent.ramp} icon="time" />
                 <Text style={[styles.emptyText, rtl && styles.rtlText]}>{t('explore.historyEmpty')}</Text>
               </View>
             ) : (
@@ -734,7 +728,7 @@ const makeStyles = (colors: Palette) =>
     },
     gridPhoto: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
     tileScrim: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '55%' },
-    // See DiscoverProfileCard.photoRing — a photo marker, not a verified tick.
+    // See DiscoverProfileCard.photoRing â€” a photo marker, not a verified tick.
     gridHasPhoto: {
       position: 'absolute',
       bottom: spacing.sm + 2,
@@ -839,20 +833,8 @@ const makeStyles = (colors: Palette) =>
     eventModalBody: { padding: spacing.md, gap: spacing.sm },
     eventModalDescription: { ...typography.body, color: colors.textSecondary },
     eventModalCloseButton: { marginTop: spacing.xs },
-    emptyState: { alignItems: 'center', justifyContent: 'center', gap: spacing.md, paddingVertical: spacing.xxl },
-    // Mughal-arch frame, same empty-state shape as Home.
-    emptyOrb: {
-      width: 88,
-      height: 104,
-      borderTopLeftRadius: 1000,
-      borderTopRightRadius: 1000,
-      borderBottomLeftRadius: radius.md,
-      borderBottomRightRadius: radius.md,
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingTop: spacing.sm,
-    },
-    emptyText: { ...typography.body, color: colors.textSecondary, textAlign: 'center' },
+      emptyState: { alignItems: 'center', justifyContent: 'center', gap: spacing.md, paddingVertical: spacing.xxl },
+      emptyText: { ...typography.body, color: colors.textSecondary, textAlign: 'center' },
     historyRow: {
       flexDirection: 'row',
       alignItems: 'center',

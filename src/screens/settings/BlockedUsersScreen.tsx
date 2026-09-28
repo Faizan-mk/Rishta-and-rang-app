@@ -1,17 +1,15 @@
 import React, { useMemo } from 'react';
 import { FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { AccentHeading } from '../../components/common/AccentHeading';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { EmptyOrb } from '../../components/common/EmptyOrb';
 import { Button } from '../../components/Button';
 import { useLanguage } from '../../store/LanguageContext';
 import { useTheme } from '../../store/ThemeContext';
 import { useMatches, BlockedProfile } from '../../store/MatchesContext';
 import { radius, spacing, typography } from '../../theme';
-import { glow } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 
 export function BlockedUsersScreen() {
@@ -25,7 +23,7 @@ export function BlockedUsersScreen() {
 
   const renderItem = ({ item, index }: { item: BlockedProfile; index: number }) => {
     // Blocking keeps the thread now (supabase/35_block_keeps_thread.sql), so
-    // there is somewhere to go back to — unless this block predates that, or
+    // there is somewhere to go back to ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â unless this block predates that, or
     // the thread was unmatched separately, in which case there is nothing to
     // open and the row is just the unblock action.
     const match = getMatchForProfile(item.id);
@@ -75,14 +73,7 @@ export function BlockedUsersScreen() {
         )}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <LinearGradient
-              colors={safeRamp}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={[styles.emptyOrb, glow(colors.teal, 0.5, 22, 10)]}
-            >
-              <Ionicons name="shield-checkmark" size={30} color="#FFFFFF" />
-            </LinearGradient>
+              <EmptyOrb ramp={safeRamp} icon="shield-checkmark" />
             <Text style={[styles.emptyText, rtl && styles.rtlText]}>{t('privacy.blockedUsersEmpty')}</Text>
           </View>
         }
@@ -134,17 +125,6 @@ const makeStyles = (colors: Palette) =>
     },
     dividerRtl: { marginLeft: spacing.sm, marginRight: 48 + spacing.md + spacing.sm },
     // Mughal-arch frame, the shared empty-state shape.
-    emptyOrb: {
-      width: 92,
-      height: 108,
-      borderTopLeftRadius: 1000,
-      borderTopRightRadius: 1000,
-      borderBottomLeftRadius: radius.md,
-      borderBottomRightRadius: radius.md,
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingTop: spacing.sm,
-    },
     emptyState: { alignItems: 'center', justifyContent: 'center', paddingTop: spacing.xxl, gap: spacing.md },
     emptyText: { ...typography.body, color: colors.textSecondary, textAlign: 'center', paddingHorizontal: spacing.xl },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },
