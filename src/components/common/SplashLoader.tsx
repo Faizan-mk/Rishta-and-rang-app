@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Image, Platform, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Image, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   Easing,
@@ -17,7 +17,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
-import { withAlpha } from '../../theme/glow';
+import { fonts } from '../../theme/fonts';
+import { modeAccent, withAlpha } from '../../theme/glow';
 
 const HEART = require('../../../assets/splash-icon.png');
 
@@ -51,7 +52,10 @@ const EXIT_MS = 550;
 const GLOW_RINGS = 18;
 const GLOW_ALPHA = 0.014;
 
-const TITLE_FONT = Platform.select({ ios: 'Georgia', android: 'serif', default: 'Georgia, serif' });
+// The wordmark is set in the same family as every heading in the app, rather
+// than a system serif. The italic is already cut into the family, so it is
+// asked for by name instead of by style, which would slant it a second time.
+const TITLE_FONT = fonts.displayItalic;
 
 function mixHex(a: string, b: string, t: number): string {
   const pa = parseInt(a.slice(1), 16);
@@ -120,7 +124,21 @@ function JoinedGhost({ join }: { join: SharedValue<number> }) {
   );
 }
 
-function TitleLetter({ char, index, total, start }: { char: string; index: number; total: number; start: SharedValue<number> }) {
+function TitleLetter({
+  char,
+  index,
+  total,
+  start,
+  from,
+  to,
+}: {
+  char: string;
+  index: number;
+  total: number;
+  start: SharedValue<number>;
+  from: string;
+  to: string;
+}) {
   const appear = useSharedValue(0);
 
   useAnimatedReaction(
@@ -138,7 +156,7 @@ function TitleLetter({ char, index, total, start }: { char: string; index: numbe
   }));
 
   return (
-    <Animated.Text style={[styles.titleLetter, { color: mixHex(ORANGE, PINK, total > 1 ? index / (total - 1) : 0) }, style]}>
+    <Animated.Text style={[styles.titleLetter, { color: mixHex(from, to, total > 1 ? index / (total - 1) : 0) }, style]}>
       {char}
     </Animated.Text>
   );
@@ -194,6 +212,11 @@ export function SplashLoader({ ready, onFinish }: SplashLoaderProps) {
   const { t } = useLanguage();
   const reduceMotion = useReducedMotion();
   const { width, height } = useWindowDimensions();
+
+  // The wordmark and the rule beneath it take the app's own Rishta ramp, so
+  // they sit in the same palette as every heading in the app and follow the
+  // light and dark themes instead of staying fixed.
+  const accent = modeAccent(colors, 'rishta');
 
   const join = useSharedValue(reduceMotion ? 1 : 0);
   const ripple = useSharedValue(0);
@@ -319,7 +342,15 @@ export function SplashLoader({ ready, onFinish }: SplashLoaderProps) {
       <Animated.View style={[styles.textBlock, contentStyle]}>
         <View style={[styles.titleRow, !latin && styles.titleRowRtl]}>
           {pieces.map((piece, i) => (
-            <TitleLetter key={`${piece}-${i}`} char={piece} index={i} total={pieces.length} start={titleStart} />
+            <TitleLetter
+              key={`${piece}-${i}`}
+              char={piece}
+              index={i}
+              total={pieces.length}
+              start={titleStart}
+              from={accent.primary}
+              to={accent.secondary}
+            />
           ))}
         </View>
 
@@ -330,7 +361,7 @@ export function SplashLoader({ ready, onFinish }: SplashLoaderProps) {
           </View>
           <View style={[styles.track, { backgroundColor: colors.border }]}>
             <Animated.View style={[styles.bar, barStyle]}>
-              <LinearGradient colors={[ORANGE, PINK]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.barGradient} />
+              <LinearGradient colors={accent.duo} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.barGradient} />
             </Animated.View>
           </View>
         </Animated.View>
@@ -362,7 +393,7 @@ const styles = StyleSheet.create({
   textBlock: { alignItems: 'center' },
   titleRow: { flexDirection: 'row' },
   titleRowRtl: { flexDirection: 'row-reverse', gap: 10 },
-  titleLetter: { fontSize: 38, fontStyle: 'italic', fontFamily: TITLE_FONT, minWidth: 6 },
+  titleLetter: { fontSize: 38, fontFamily: TITLE_FONT, minWidth: 6 },
   counterBlock: { alignItems: 'center', marginTop: 22 },
   counterRow: { flexDirection: 'row', alignItems: 'flex-start' },
   counter: { fontSize: 44, fontWeight: '200', fontVariant: ['tabular-nums'], lineHeight: 50 },

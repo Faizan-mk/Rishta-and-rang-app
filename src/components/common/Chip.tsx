@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { radius, spacing, typography } from '../../theme';
 import { glow, withAlpha } from '../../theme/glow';
@@ -12,6 +13,10 @@ interface ChipProps {
   selected?: boolean;
   onPress?: () => void;
   tone?: 'neutral' | 'dating' | 'rishta';
+  // Optional leading mark, for chips whose words alone don't carry the meaning
+  // — "Safe chat" beside a shield reads faster than the label on its own. It
+  // takes the same colour as the label, so it stays correct in both states.
+  icon?: keyof typeof Ionicons.glyphMap;
 }
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -22,7 +27,7 @@ const GRADIENT_END = { x: 1, y: 1 } as const;
 // A selected chip fills with its tone's own ramp and throws that colour as a
 // shadow, so a row of chips shows what's on at a glance rather than relying on
 // a border-versus-fill difference.
-export function Chip({ label, selected, onPress, tone = 'neutral' }: ChipProps) {
+export function Chip({ label, selected, onPress, tone = 'neutral', icon }: ChipProps) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const toneColor = tone === 'dating' ? colors.dating : tone === 'rishta' ? colors.rishta : colors.teal;
@@ -30,7 +35,12 @@ export function Chip({ label, selected, onPress, tone = 'neutral' }: ChipProps) 
   const scale = useSharedValue(1);
   const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
-  const body = <Text style={[styles.label, { color: selected ? '#FFFFFF' : toneColor }]}>{label}</Text>;
+  const body = (
+    <>
+      {icon ? <Ionicons name={icon} size={14} color={selected ? '#FFFFFF' : toneColor} style={styles.icon} /> : null}
+      <Text style={[styles.label, { color: selected ? '#FFFFFF' : toneColor }]}>{label}</Text>
+    </>
+  );
 
   return (
     <AnimatedPressable
@@ -77,5 +87,6 @@ const makeStyles = (colors: Palette) =>
       paddingVertical: spacing.xs + 3,
     },
     chipIdle: { borderWidth: 1 },
+    icon: { marginRight: spacing.xs + 2 },
     label: { ...typography.label, flexShrink: 0 },
   });
