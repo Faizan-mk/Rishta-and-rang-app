@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
+  Extrapolation,
   FadeIn,
   ZoomIn,
   interpolate,
@@ -11,6 +12,7 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
+  type SharedValue,
 } from 'react-native-reanimated';
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import type { ChatMessage, MessageReaction } from '../../types/content';
@@ -527,6 +529,27 @@ const replyQuoteStyles = StyleSheet.create({
   text: { ...typography.caption, fontSize: scaleFont(12) },
 });
 
+const BAR_COUNT = 18;
+
+// Faint enough to read clearly as "not yet played" against a bubble of either
+// colour, close enough that the filled run still looks like one waveform.
+const UNPLAYED = 0.3;
+
+// One bar of the waveform. The note's playhead is carried by the bars
+// themselves: those it has passed are drawn solid, the rest stay faint, and the
+// band right at the playhead is a short gradient rather than a hard switch, so
+// the fill reads as moving instead of blinking bar by bar.
+function WaveBar({ index, color, progress }: { index: number; color: string; progress: SharedValue<number> }) {
+  // Judged by the bar's middle, so it lights up as the playhead reaches it
+  // rather than as its leading edge arrives.
+  const centre = (index + 0.5) / BAR_COUNT;
+  const style = useAnimatedStyle(() => ({
+    opacity: interpolate(progress.value, [centre - 0.07, centre + 0.07], [UNPLAYED, 1], Extrapolation.CLAMP),
+  }));
+
+  return <Animated.View style={[voiceStyles.bar, { backgroundColor: color, height: 6 + ((index * 7) % 14) }, style]} />;
+}
+
 function VoiceBubble({
   uri,
   durationSec,
@@ -549,6 +572,17 @@ function VoiceBubble({
   // other caption for an incoming one — matching how the plain-text bubbles
   // already split their own caption colour two paragraphs up.
   const captionColor = fromMe ? 'rgba(255,255,255,0.85)' : colors.textSecondary;
+
+  // How far through the note the playhead is, as a plain 0-1 number. Kept on
+  // the UI thread and pushed into a shared value below, because the bars read
+  // it from an animated style and should not re-run a worklet per bar on every
+  // status tick.
+  const total = status.duration || durationSec;
+  const ratio = total > 0 ? Math.min(1, Math.max(0, status.currentTime / total)) : 0;
+  const progress = useSharedValue(0);
+  useEffect(() => {
+    progress.value = ratio;
+  }, [ratio]);
 
   const togglePlayback = () => {
     if (status.playing) {
@@ -601,14 +635,8 @@ function VoiceBubble({
           style={loading ? { opacity: 0.4 } : undefined}
         />
         <View style={voiceStyles.waveform}>
-          {Array.from({ length: 18 }).map((_, i) => (
-            <View
-              key={i}
-              style={[
-                voiceStyles.bar,
-                { height: 6 + ((i * 7) % 14), backgroundColor: fromMe ? 'rgba(255,255,255,0.7)' : colors.teal },
-              ]}
-            />
+          {Array.from({ length: BAR_COUNT }).map((_, i) => (
+            <WaveBar key={i} index={i} color={fromMe ? 'rgba(255,255,255,0.95)' : colors.teal} progress={progress} />
           ))}
         </View>
       </View>
