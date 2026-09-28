@@ -41,8 +41,13 @@ export function ModeToggle({ mode, onChange, datingLabel, rishtaLabel, datingCou
   useEffect(() => {
     // A snappier spring so the thumb lands with the tap rather than drifting
     // in afterwards — mode switches feel immediate instead of laggy.
+    // `width.value` is read here, inside the effect, rather than in the
+    // dependency list below: building a dep array happens during render, and
+    // Reanimated 4's strict mode rejects a shared-value read there. The effect
+    // only needs to re-run for `mode` anyway — a track resize is already
+    // repositioned synchronously by `onTrackLayout`.
     thumbX.value = withSpring(mode === 'dating' ? 0 : width.value / 2, { damping: 20, stiffness: 340 });
-  }, [mode, width.value]);
+  }, [mode, thumbX, width]);
 
   useEffect(() => {
     halo.value = withRepeat(withTiming(1, { duration: 1700, easing: Easing.inOut(Easing.quad) }), -1, true);

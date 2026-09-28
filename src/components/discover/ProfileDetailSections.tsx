@@ -505,14 +505,11 @@ const makeIntroStyles = (colors: Palette) =>
 
 const makeMidPhotoStyles = (colors: Palette) =>
   StyleSheet.create({
-    // Same softened Mughal arch as the deck card's photo.
+    // Same rounded rectangle as the deck card's photo.
     wrap: {
       width: '100%',
       aspectRatio: 4 / 5,
-      borderTopLeftRadius: 120,
-      borderTopRightRadius: 120,
-      borderBottomLeftRadius: radius.lg,
-      borderBottomRightRadius: radius.lg,
+      borderRadius: radius.lg,
       borderWidth: 1.5,
       borderColor: withAlpha(colors.gold, 0.8),
       overflow: 'hidden',

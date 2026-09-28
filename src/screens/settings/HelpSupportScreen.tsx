@@ -44,7 +44,13 @@ export function HelpSupportScreen() {
   };
 
   return (
-    <ScreenContainer>
+    // The stack already draws a "Help & Support" header above this screen
+    // (app/_layout.tsx), so the container must not claim the top inset again —
+    // that double padding is what held the page's own heading most of the way
+    // down the phone. Only the bottom edge is ours. Same fix as
+    // Notifications, Settings, Favorites, Edit Profile, Explore+ and
+    // Privacy & Safety.
+    <ScreenContainer edges={['bottom']}>
       <AccentHeading title={t('help.faqTitle')} gradient={safeRamp} style={styles.firstSectionHeading} />
       <View style={styles.card}>
         {FAQ_KEYS.map((key, index) => {

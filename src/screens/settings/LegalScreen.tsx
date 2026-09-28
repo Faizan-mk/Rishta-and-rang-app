@@ -63,7 +63,13 @@ export function LegalScreen() {
   };
 
   return (
-    <ScreenContainer>
+    // The stack already draws a "Legal" header above this screen
+    // (app/_layout.tsx), so the container must not claim the top inset again —
+    // that double padding is what held the "last updated" pill and the Privacy
+    // Policy heading most of the way down the phone. Only the bottom edge is
+    // ours. Same fix as Notifications, Settings, Favorites, Edit Profile,
+    // Explore+ and Privacy & Safety.
+    <ScreenContainer edges={['bottom']}>
       <FadeIn>
         <View style={[styles.updatedPill, rtl && styles.updatedPillRtl]}>
           <Ionicons name="calendar-outline" size={13} color={colors.gold} />

@@ -73,23 +73,17 @@ const makeStyles = (colors: Palette) =>
       marginBottom: spacing.md,
     },
     cardPressed: { opacity: 0.85 },
-    // The portrait in a small Mughal arch; oversized top radii clamp to a crest.
+    // The portrait in a plain rounded rectangle.
     photoRim: {
       width: 70,
       height: 90,
       padding: 2,
-      borderTopLeftRadius: 1000,
-      borderTopRightRadius: 1000,
-      borderBottomLeftRadius: radius.sm + 2,
-      borderBottomRightRadius: radius.sm + 2,
+      borderRadius: radius.sm + 2,
     },
     photo: {
       width: '100%',
       height: '100%',
-      borderTopLeftRadius: 1000,
-      borderTopRightRadius: 1000,
-      borderBottomLeftRadius: radius.sm,
-      borderBottomRightRadius: radius.sm,
+      borderRadius: radius.sm,
       backgroundColor: colors.skeleton,
     },
     body: { flex: 1, marginLeft: spacing.md, gap: 4, alignItems: 'flex-start' },

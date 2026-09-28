@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Image, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -20,6 +20,7 @@ import { fonts, radius, spacing, typography } from '../../theme';
 import { scaleFont } from '../../theme/responsive';
 import { glow, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
 import { useMatches } from '../../store/MatchesContext';
@@ -178,9 +179,37 @@ export const MessageBubble = React.memo(function MessageBubble({
         }),
     []
   );
+  // The voice note's play/pause and the photo's full-screen open are gestures of
+  // *this* composition, not of a `GestureDetector` nested inside it. Nesting
+  // does not escape the problem described on `bubbleGesture`: the outer handler
+  // still enters the touch arena first and claims the touch, so a child
+  // handler — RNGH's or a plain `Pressable`'s — never gets to see it and the
+  // tap is silently dead on device. Side by side, all three recognise
+  // independently and there is no contest to lose.
+  //
+  // The child publishes its own handler through `mediaTapRef` rather than the
+  // parent reaching into it, so the player and preview state stay where they
+  // belong — inside the bubble that owns them.
+  const mediaTapRef = useRef<(() => void) | null>(null);
+  const isMedia =
+    (message.kind === 'voice' && Boolean(message.audioUri)) ||
+    (message.kind === 'image' && Boolean(message.imageUri));
+  const fireMediaTap = useCallback(() => {
+    mediaTapRef.current?.();
+  }, []);
+  const mediaTapGesture = useMemo(
+    () =>
+      Gesture.Tap()
+        .enabled(isMedia)
+        .maxDistance(12)
+        .onEnd((_event, success) => {
+          if (success) runOnJS(fireMediaTap)();
+        }),
+    [isMedia, fireMediaTap]
+  );
   const bubbleGesture = useMemo(
-    () => Gesture.Simultaneous(swipeGesture, longPressGesture),
-    [swipeGesture, longPressGesture]
+    () => Gesture.Simultaneous(swipeGesture, longPressGesture, mediaTapGesture),
+    [swipeGesture, longPressGesture, mediaTapGesture]
   );
   const swipeStyle = useAnimatedStyle(() => ({ transform: [{ translateX: dragX.value }] }));
   const replyHintStyle = useAnimatedStyle(() => ({
@@ -206,10 +235,11 @@ export const MessageBubble = React.memo(function MessageBubble({
         fromMe={Boolean(message.fromMe)}
         colors={colors}
         timeLabel={timeLabel}
+        tapRef={mediaTapRef}
       />
     );
   } else if (message.kind === 'image' && message.imageUri) {
-    content = <ImageBubble uri={message.imageUri} styles={styles} colors={colors} />;
+    content = <ImageBubble uri={message.imageUri} styles={styles} colors={colors} tapRef={mediaTapRef} />;
   } else if (message.text) {
     content = <Text style={[styles.text, textColor, rtl && styles.rtlText]}>{message.text}</Text>;
   } else {
@@ -503,15 +533,18 @@ function VoiceBubble({
   fromMe,
   colors,
   timeLabel,
+  tapRef,
 }: {
   uri: string;
   durationSec: number;
   fromMe: boolean;
   colors: Palette;
   timeLabel: string;
+  tapRef: React.MutableRefObject<(() => void) | null>;
 }) {
   const player = useAudioPlayer(uri);
   const status = useAudioPlayerStatus(player);
+  const { t } = useLanguage();
   // White-on-gradient for an outgoing bubble, the same muted grey as every
   // other caption for an incoming one — matching how the plain-text bubbles
   // already split their own caption colour two paragraphs up.
@@ -528,12 +561,45 @@ function VoiceBubble({
     }
   };
 
+  // Published on every render, deliberately without a dependency list: the
+  // parent's tap gesture outlives any single status snapshot, so it has to
+  // reach the *current* `togglePlayback` rather than the one that existed when
+  // the gesture was first built. A stale closure here would mean a second tap
+  // still seeing `playing: false`, and pressing play on an already-playing note
+  // would restart it from the top instead of pausing.
+  useEffect(() => {
+    tapRef.current = togglePlayback;
+  });
+
+  useEffect(
+    () => () => {
+      tapRef.current = null;
+    },
+    [tapRef]
+  );
+
   const remaining = Math.max((status.duration || durationSec) - status.currentTime, 0);
+
+  // A remote note takes a moment to come down on mobile data, and until it
+  // does the bubble used to look exactly like a dead tap. Saying so keeps
+  // "still fetching" distinguishable from "broken" — expo-audio 1.1 exposes no
+  // error field on the player at all, so claiming a hard failure here would be
+  // a guess; a load in progress is the one thing we can actually observe.
+  const loading = !status.isLoaded && !status.playing;
 
   return (
     <View>
-      <Pressable onPress={togglePlayback} style={voiceStyles.row}>
-        <Ionicons name={status.playing ? 'pause-circle' : 'play-circle'} size={30} color={fromMe ? '#FFFFFF' : colors.teal} />
+      <View
+        style={voiceStyles.row}
+        accessibilityRole="button"
+        accessibilityLabel={status.playing ? t('chat.voiceNote') : t('chat.playVoiceNote')}
+      >
+        <Ionicons
+          name={status.playing ? 'pause-circle' : 'play-circle'}
+          size={30}
+          color={fromMe ? '#FFFFFF' : colors.teal}
+          style={loading ? { opacity: 0.4 } : undefined}
+        />
         <View style={voiceStyles.waveform}>
           {Array.from({ length: 18 }).map((_, i) => (
             <View
@@ -545,13 +611,13 @@ function VoiceBubble({
             />
           ))}
         </View>
-      </Pressable>
+      </View>
       {/* Duration on the leading edge, right under the waveform it belongs to;
           the time this note was sent trails on the far edge, the way every
           other bubble's caption does. */}
       <View style={voiceStyles.caption}>
         <Text style={[voiceStyles.durationText, { color: captionColor }]}>
-          {formatDuration(status.playing ? remaining : durationSec)}
+          {loading ? t('chat.voiceLoading') : formatDuration(status.playing ? remaining : durationSec)}
         </Text>
         <Text style={[voiceStyles.timeText, { color: captionColor }]}>{timeLabel}</Text>
       </View>
@@ -559,29 +625,83 @@ function VoiceBubble({
   );
 }
 
-function ImageBubble({ uri, styles, colors }: { uri: string; styles: ReturnType<typeof makeStyles>; colors: Palette }) {
+function ImageBubble({
+  uri,
+  styles,
+  colors,
+  tapRef,
+}: {
+  uri: string;
+  styles: ReturnType<typeof makeStyles>;
+  colors: Palette;
+  tapRef: React.MutableRefObject<(() => void) | null>;
+}) {
   const { t } = useLanguage();
+  const insets = useSafeAreaInsets();
   const [previewVisible, setPreviewVisible] = useState(false);
   const [failed, setFailed] = useState(false);
 
-  if (failed) {
-    return (
-      <View style={[styles.image, styles.imageFallback]}>
-        <Ionicons name="image-outline" size={28} color={colors.textTertiary} />
-        <Text style={[typography.caption, { color: colors.textTertiary }]}>{t('chat.photoUnavailable')}</Text>
-      </View>
-    );
-  }
+  // Same reason as the voice note's: the open handler rides on the parent's
+  // tap gesture instead of a nested `Pressable` the outer handler would
+  // swallow. The fallback tile is covered too — a photo that failed to load is
+  // still worth opening, to see whether it is the app or the network at fault.
+  useEffect(() => {
+    tapRef.current = () => setPreviewVisible(true);
+  });
+
+  const closePreview = () => setPreviewVisible(false);
+
+  useEffect(
+    () => () => {
+      tapRef.current = null;
+    },
+    [tapRef]
+  );
 
   return (
     <>
-      <Pressable onPress={() => setPreviewVisible(true)}>
-        <Image source={{ uri }} style={styles.image} onError={() => setFailed(true)} />
-      </Pressable>
-      <Modal visible={previewVisible} transparent animationType="fade" onRequestClose={() => setPreviewVisible(false)}>
+      <View accessibilityRole="button" accessibilityLabel={t('chat.openPhoto')}>
+        {failed ? (
+          <View style={[styles.image, styles.imageFallback]}>
+            <Ionicons name="image-outline" size={28} color={colors.textTertiary} />
+            <Text style={[typography.caption, { color: colors.textTertiary }]}>{t('chat.photoUnavailable')}</Text>
+          </View>
+        ) : (
+          <Image source={{ uri }} style={styles.image} onError={() => setFailed(true)} />
+        )}
+      </View>
+      {/* `statusBarTranslucent` matches every other Modal in the app
+          (BottomSheet, ImageCropper, the chat header menu): SDK 54 makes
+          edge-to-edge mandatory on Android, so a non-translucent window here
+          would force the status bar solid and shove the whole preview down. */}
+      <Modal
+        visible={previewVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={closePreview}
+        statusBarTranslucent
+      >
         <Animated.View entering={FadeIn.duration(140)} style={styles.previewFill}>
-          <Pressable style={styles.previewOverlay} onPress={() => setPreviewVisible(false)}>
+          <Pressable style={styles.previewOverlay} onPress={closePreview}>
+            {/* `contain` over the whole screen, not a band across 80% of it:
+               letterboxed as the photo's own shape needs, but with the frame
+               reaching both edges of the phone the way a viewer expects. */}
             <Image source={{ uri }} style={styles.previewImage} resizeMode="contain" />
+          </Pressable>
+          {/* A visible way out. Tapping the backdrop works, but nothing on the
+              screen says so, and on a photo that fills the frame there is no
+              backdrop left to find. Deliberately small and low-contrast — it
+              should be the quiet way out, not a control competing with the
+              picture, and it clears the status bar and the notch rather than
+              sitting under them. */}
+          <Pressable
+            onPress={closePreview}
+            hitSlop={8}
+            style={[styles.previewClose, { top: insets.top + spacing.xs, right: insets.right + spacing.sm }]}
+            accessibilityRole="button"
+            accessibilityLabel={t('common.close')}
+          >
+            <Ionicons name="close" size={16} color="#FFFFFF" />
           </Pressable>
         </Animated.View>
       </Modal>
@@ -642,8 +762,17 @@ export const makeStyles = (colors: Palette) =>
       gap: spacing.xs,
     },
     previewFill: { flex: 1 },
-    previewOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.9)', alignItems: 'center', justifyContent: 'center' },
-    previewImage: { width: '100%', height: '80%' },
+    previewOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.94)', alignItems: 'center', justifyContent: 'center' },
+    previewImage: { width: '100%', height: '100%' },
+    previewClose: {
+      position: 'absolute',
+      width: 30,
+      height: 30,
+      borderRadius: 15,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: 'rgba(255,255,255,0.14)',
+    },
 
     // Reactions hang off the bottom edge of the bubble they belong to, on the
     // same side as the bubble, so a long thread still reads as two columns.

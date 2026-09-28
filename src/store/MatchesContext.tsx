@@ -46,7 +46,13 @@ interface MatchesContextValue {
   toggleReaction: (messageId: string, emoji: string) => void;
   sendMessage: (matchId: string, text: string, replyToId?: string) => void;
   sendVoiceMessage: (matchId: string, uri: string, durationSec: number, replyToId?: string) => void;
-  sendImageMessage: (matchId: string, uri: string, replyToId?: string) => void;
+  sendImageMessage: (
+    matchId: string,
+    uri: string,
+    replyToId?: string,
+    /** The asset's real content type, so storage is not told a PNG is a JPEG. */
+    mimeType?: string | null
+  ) => void;
   /** "Delete for everyone" — only ever succeeds against a message you sent. */
   deleteMessage: (matchId: string, message: ChatMessage) => void;
   /** "Delete for me" — hides it on this side only; the other participant keeps theirs. */
@@ -644,13 +650,13 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
       });
   };
 
-  const sendImageMessage = (matchId: string, uri: string, replyToId?: string) => {
+  const sendImageMessage = (matchId: string, uri: string, replyToId?: string, mimeType?: string | null) => {
     if (!user) return;
     const pending = optimistic(matchId, { kind: 'image', imageUri: uri, localUri: uri, replyToId });
     putMessage(pending);
     pushMessage(matchId, pending, PHOTO_PREVIEW);
     matchesService
-      .insertImageMessage(user.id, matchId, uri, replyToId)
+      .insertImageMessage(user.id, matchId, uri, replyToId, mimeType)
       .then((message) => {
         settleMessage(matchId, pending.id, message);
         pushService.notifyMessage(matchId);
@@ -659,7 +665,7 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
         failMessage(matchId, pending.id);
         showError({
           messageKey: 'netErrors.messageNotSent',
-          onRetry: () => sendImageMessage(matchId, uri, replyToId),
+          onRetry: () => sendImageMessage(matchId, uri, replyToId, mimeType),
         });
       });
   };

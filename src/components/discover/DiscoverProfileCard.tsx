@@ -45,9 +45,9 @@ interface DiscoverProfileCardProps {
   onPressPhoto?: (uri: string) => void;
 }
 
-// The deck card ("matrimonial dossier"): a photo under a softened Mughal arch
-// in a gold hairline frame, with the member's details on a panel that tucks
-// under it, so the facts sit on the app's own surface instead of the photo.
+// The deck card ("matrimonial dossier"): a photo in a gold hairline frame, with
+// the member's details on a panel that tucks under it, so the facts sit on the
+// app's own surface instead of the photo.
 export const DiscoverProfileCard = React.memo(function DiscoverProfileCard({
   profile,
   liked,
@@ -230,9 +230,9 @@ const dotStyles = StyleSheet.create({
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: ACTIVE_GREEN },
 });
 
-// Softened vaulted crest, per the design system (120px on a phone frame).
-const ARCH_RADIUS = scaleSpace(120);
-
+// Every photo frame in the app is a plain rounded rectangle. The old design
+// system framed photos in a Mughal arch, but the domed top cropped portraits
+// badly and the silhouette read as a mirror rather than a photograph.
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
     shell: { paddingHorizontal: spacing.md },
@@ -242,19 +242,12 @@ const makeStyles = (colors: Palette) =>
       borderWidth: 1.5,
       borderColor: withAlpha(colors.gold, 0.8),
       backgroundColor: colors.surface,
-      borderTopLeftRadius: ARCH_RADIUS + 5,
-      borderTopRightRadius: ARCH_RADIUS + 5,
-      borderBottomLeftRadius: radius.lg + 5,
-      borderBottomRightRadius: radius.lg + 5,
+      borderRadius: radius.lg + 5,
     },
-    // The design system's arch inset: a softened vaulted crest over the photo.
     photoFrame: {
       width: '100%',
       aspectRatio: 4 / 5,
-      borderTopLeftRadius: ARCH_RADIUS,
-      borderTopRightRadius: ARCH_RADIUS,
-      borderBottomLeftRadius: radius.lg,
-      borderBottomRightRadius: radius.lg,
+      borderRadius: radius.lg,
       overflow: 'hidden',
       backgroundColor: colors.skeleton,
     },
@@ -265,9 +258,7 @@ const makeStyles = (colors: Palette) =>
     tapZoneCenter: { flex: 1, height: '100%' },
     blurCenter: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.sm, paddingHorizontal: spacing.xl },
     blurText: { ...typography.body, color: '#FFFFFF', textAlign: 'center' },
-    // At the photo's foot, clear of the identity panel that tucks over it and
-    // one row above the activity pill: the arch clips the top corners, and the
-    // top centre is where the face usually is.
+    // At the photo's foot, clear of the identity panel that tucks over it.
     photoDots: {
       position: 'absolute',
       bottom: spacing.lg + spacing.xl + spacing.xs,
@@ -277,7 +268,6 @@ const makeStyles = (colors: Palette) =>
     },
     photoDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.45)' },
     photoDotActive: { width: 18, backgroundColor: colors.gold },
-    // Top centre, inside the arch's crest.
     // Bottom-left, on the photo's darkened foot and away from the face: a
     // small dark-glass pill rather than a white slab over the portrait.
     activePill: {

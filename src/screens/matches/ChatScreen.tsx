@@ -19,7 +19,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInUp, ZoomIn } from 'react-native-reanimated';
 import * as ImagePicker from 'expo-image-picker';
-import { useAudioRecorder, RecordingPresets, requestRecordingPermissionsAsync } from 'expo-audio';
+import { useAudioRecorder, RecordingPresets, requestRecordingPermissionsAsync, setAudioModeAsync } from 'expo-audio';
 import { MessageBubble } from '../../components/matches/MessageBubble';
 import { Badge } from '../../components/common/Badge';
 import { ReportDialog, type ReportSubmission } from '../../components/common/ReportDialog';
@@ -131,6 +131,22 @@ export function ChatScreen() {
   const [recording, setRecording] = useState(false);
   const [inputFocused, setInputFocused] = useState(false);
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+
+  // expo-audio ships `playsInSilentMode: false` as its iOS default, and with
+  // that AVAudioSession lands on `.ambient` — a category the ring switch
+  // mutes. Since almost everyone keeps a phone on silent, a voice note would
+  // tap, report itself as playing, and stay inaudible. Asking for `.playback`
+  // once on mount is what makes the sound actually come out of the speaker.
+  // `interruptionMode` is left at its `.mixWithOthers` default so this does not
+  // steal audio focus from music the user is already listening to, and
+  // `allowsRecording` is deliberately untouched so the recorder's permission
+  // gate behaves exactly as it did before.
+  useEffect(() => {
+    setAudioModeAsync({ playsInSilentMode: true, interruptionMode: 'mixWithOthers' }).catch(() => {
+      // Nothing useful to do if the session refuses: on Android this call is a
+      // no-op, and a failed session leaves playback on the platform default.
+    });
+  }, []);
 
   // The other member's last-seen time and live presence, kept current while
   // this screen is open. The match row carries a seed `lastActiveAt` from the
@@ -269,7 +285,11 @@ export function ChatScreen() {
     }
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7 });
     if (!result.canceled && result.assets[0]) {
-      sendImageMessage(matchId, result.assets[0].uri, replyTo?.id);
+      // `mimeType` is the asset's own content type. It travels with the send so
+      // storage is told what the bytes actually are — without it a PNG (or a
+      // content:// URI carrying no extension) was stored and served as
+      // `image/jpeg`, which Android's decoder refuses to render.
+      sendImageMessage(matchId, result.assets[0].uri, replyTo?.id, result.assets[0].mimeType);
       setReplyTo(null);
     }
   };

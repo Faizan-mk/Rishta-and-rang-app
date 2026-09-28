@@ -9,6 +9,7 @@ import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { NotificationRow } from '../../components/dashboard/NotificationRow';
 import { FadeIn } from '../../components/common/FadeInUp';
 import { useLanguage } from '../../store/LanguageContext';
+import { useDialog } from '../../store/DialogContext';
 import { useTheme } from '../../store/ThemeContext';
 import { useNotifications } from '../../store/NotificationContext';
 import { useAuth } from '../../store/AuthContext';
@@ -20,9 +21,10 @@ export function NotificationsScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
-  const { feed, unreadCount, markAllRead, markRead } = useNotifications();
+  const { feed, unreadCount, markAllRead, markRead, clearAll } = useNotifications();
   const { user } = useAuth();
   const router = useRouter();
+  const { confirm, notify } = useDialog();
   const accent = modeAccent(colors, user?.activeMode ?? 'dating');
 
   // A message (or a Rishta step) happened inside a thread — the thread is
@@ -40,8 +42,36 @@ export function NotificationsScreen() {
     }
   };
 
+  // "Mark all read" and "Clear all" are not the same gesture and must not sit
+  // in the same corner fighting for the tap: one only tidies the badges, the
+  // other destroys the rows for good, on every device, with no undo. So the
+  // destructive one is confirmed, and it only appears once there is something
+  // in the feed to destroy.
+  const onClearAll = async () => {
+    const confirmed = await confirm({
+      title: t('notificationsScreen.clearAllTitle'),
+      message: t('notificationsScreen.clearAllBody'),
+      confirmLabel: t('notificationsScreen.clearAll'),
+      cancelLabel: t('common.cancel'),
+      destructive: true,
+    });
+    if (!confirmed) return;
+    try {
+      await clearAll();
+    } catch {
+      notify({
+        title: t('notificationsScreen.clearAll'),
+        message: t('notificationsScreen.clearAllFailed'),
+      });
+    }
+  };
+
   return (
-    <ScreenContainer scroll={false}>
+    // The stack already draws a "Notifications" header above this screen, so
+    // the container must not claim the top inset again — that double padding
+    // pushed the page's own heading most of the way down the phone, away from
+    // the header it is meant to sit under. Only the bottom edge is ours.
+    <ScreenContainer scroll={false} edges={['bottom']}>
       <FadeIn style={styles.header}>
         <AccentHeading
           size="screen"
@@ -76,6 +106,17 @@ export function NotificationsScreen() {
         )}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
+        // Under the feed rather than in the heading, where "Mark all read"
+        // already sits: this is a last-resort tidy-up for a long list, not a
+        // control you reach for while scrolling.
+        ListFooterComponent={
+          feed.length > 0 ? (
+            <Pressable onPress={onClearAll} style={styles.clearAll} accessibilityRole="button">
+              <Ionicons name="trash-outline" size={14} color={colors.danger} />
+              <Text style={styles.clearAllText}>{t('notificationsScreen.clearAll')}</Text>
+            </Pressable>
+          ) : null
+        }
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <LinearGradient
@@ -109,6 +150,15 @@ const makeStyles = (colors: Palette) =>
       paddingVertical: 6,
     },
     markAllRead: { ...typography.caption, color: colors.teal, fontFamily: fonts.bodyBold },
+    clearAll: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      marginTop: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    clearAllText: { ...typography.caption, color: colors.danger, fontFamily: fonts.bodyBold },
     // One white card for the whole feed: each row is a cell of it, the first
     // and last carrying its rounded ends, hairlines inset past the icon.
     cell: {
