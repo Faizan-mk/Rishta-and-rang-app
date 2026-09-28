@@ -58,13 +58,14 @@ export function ConfirmDialog({
 
             <View style={[styles.actions, rtl && styles.actionsRtl]}>
               {!confirmOnly && (
-                <Button label={cancelLabel ?? t('common.cancel')} variant="secondary" onPress={onCancel} style={styles.actionButton} />
+                <Button label={cancelLabel ?? t('common.cancel')} variant="secondary" onPress={onCancel} style={styles.cancelButton} />
               )}
               <Button
                 label={confirmLabel ?? t('common.done')}
                 variant={destructive ? 'danger' : 'primary'}
                 onPress={onConfirm}
                 style={styles.actionButton}
+                labelStyle={styles.actionLabel}
               />
             </View>
           </Pressable>
@@ -114,8 +115,17 @@ const makeStyles = (colors: Palette) =>
     actions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
     // Confirm keeps the position closest to the reading edge in both directions.
     actionsRtl: { flexDirection: 'row-reverse' },
-    // The Button's own 24px side padding is generous for a full-width action
-    // but squeezes two of them onto one row; the text needs the room more.
-    actionButton: { flex: 1, paddingHorizontal: spacing.sm },
+    // Cancel sizes to its own short label instead of claiming half the row.
+    // Splitting the actions 50/50 left "Complete Rishta profile" — 23 chars in
+    // English, 30 in the Roman Urdu label — about 144pt of text width and not
+    // enough, so it wrapped and stretched the pill instead of sitting on one
+    // line. Handing the width to the long side is what actually fixes it.
+    cancelButton: { flexGrow: 0, flexShrink: 0, paddingHorizontal: spacing.md },
+    actionButton: { flex: 1, minWidth: 0, paddingHorizontal: spacing.sm },
+    // Dialog actions are set a step below the body so a long confirm label fits
+    // on one line even in the longest translation. If one ever does run over,
+    // it wraps to a second line here rather than being clipped, since the label
+    // grows the button instead of being cut off.
+    actionLabel: { fontSize: scaleFont(13), lineHeight: scaleFont(18), textAlign: 'center' },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   });
