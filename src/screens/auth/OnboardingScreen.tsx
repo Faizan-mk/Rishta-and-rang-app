@@ -208,7 +208,7 @@ function OnboardingPageView({ page, active, width, height, styles, t, rtl }: Pag
 
       <SafeAreaView style={styles.pageSafe} edges={['top', 'bottom']}>
         <Animated.View entering={active ? FadeInDown.delay(60).duration(450) : undefined} style={styles.head}>
-          <AccentHeading title={t(page.titleKey)} gradient={accent.duo} size="screen" />
+          <AccentHeading title={t(page.titleKey)} gradient={accent.duo} size="screen" centered style={styles.headTitle} />
           <Text style={[styles.subtitle, rtl && styles.rtlText]}>{t(page.subtitleKey)}</Text>
         </Animated.View>
 
@@ -274,7 +274,14 @@ const makeStyles = (colors: Palette, compact: boolean, rtl: boolean) =>
     // opens with the same heading every other screen does. The subtitle is a
     // separate line rather than AccentHeading's `subtitle` slot because that
     // one is caption-sized, and this copy is two lines of running text.
-    head: { alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md },
+    head: { width: '100%', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md },
+    // The heading has to be told to fill the row it sits in. Left to measure
+    // itself inside this centred column it laid "Serious rishtas, made simple"
+    // out on one line at its natural width, which on a 360pt phone ran past
+    // both edges of the screen — and because the page clips its overflow, both
+    // ends of the title were sheared off. Stretched, it wraps onto two lines
+    // and the whole title stays on screen.
+    headTitle: { alignSelf: 'stretch' },
     subtitle: {
       ...typography.body,
       color: colors.textSecondary,
@@ -286,7 +293,12 @@ const makeStyles = (colors: Palette, compact: boolean, rtl: boolean) =>
       flex: 1,
       width: '100%',
       maxWidth: scaleSpace(360),
-      minHeight: scaleSpace(170),
+      // A floor, not a target: on a short phone the page gives the photo
+      // whatever is left after the heading, the chips and the footer bar, and
+      // this only stops it collapsing to nothing on the very smallest screens.
+      // Set too high it pushed the last chip row down under the footer, which
+      // is what made the second page feel like it ran off the bottom.
+      minHeight: compact ? scaleSpace(120) : scaleSpace(170),
       borderRadius: radius.lg,
       overflow: 'hidden',
       backgroundColor: colors.skeleton,
