@@ -1,7 +1,6 @@
 import React, { useMemo } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,6 +10,7 @@ import { MatchRow } from '../../components/matches/MatchRow';
 import { ModeToggle } from '../../components/profile/ModeToggle';
 import { AccentHeading } from '../../components/common/AccentHeading';
 import { AuroraBackground } from '../../components/common/AuroraBackground';
+import { EmptyOrb } from '../../components/common/EmptyOrb';
 import { FadeIn } from '../../components/common/FadeInUp';
 import { useAuth } from '../../store/AuthContext';
 import { useLanguage } from '../../store/LanguageContext';
@@ -48,7 +48,7 @@ export function MatchesScreen() {
   const mode: ProfileMode = user?.activeMode ?? 'dating';
   const accent = modeAccent(colors, mode);
   // Blocking keeps the thread (supabase/35_block_keeps_thread.sql) and keeps
-  // it right here too, rather than stepping it out of the list — the chat
+  // it right here too, rather than stepping it out of the list Ã¢â‚¬â€ the chat
   // itself is what shows the blocked state and the way to undo it.
   const friendsMatches = useMemo(() => matches.filter((m) => threadMode(m) === 'dating'), [matches]);
   const rishtaMatches = useMemo(() => matches.filter((m) => threadMode(m) === 'rishta'), [matches]);
@@ -122,14 +122,7 @@ export function MatchesScreen() {
         contentContainerStyle={[styles.listContent, { paddingBottom: TAB_BAR_BASE_HEIGHT + insets.bottom + spacing.lg }]}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <LinearGradient
-              colors={accent.ramp}
-              start={GRADIENT_START}
-              end={GRADIENT_END}
-              style={[styles.emptyOrb, glow(accent.primary, 0.5, 22, 10)]}
-            >
-              <Ionicons name="chatbubbles" size={32} color="#FFFFFF" />
-            </LinearGradient>
+              <EmptyOrb ramp={accent.ramp} icon="chatbubbles" />
             <Text style={[styles.emptyText, rtl && styles.rtlText]}>
               {t(mode === 'dating' ? 'matches.emptyFriends' : 'matches.emptyRishta')}
             </Text>
@@ -203,18 +196,6 @@ const makeStyles = (colors: Palette) =>
     separatorRtl: { marginLeft: spacing.sm, marginRight: scaleSpace(56) + spacing.md + spacing.sm },
     listContent: { paddingBottom: spacing.xl },
     emptyState: { alignItems: 'center', justifyContent: 'center', paddingTop: spacing.xxl, gap: spacing.md },
-    // Mughal-arch frame, the shared empty-state shape.
-    emptyOrb: {
-      width: 92,
-      height: 108,
-      borderTopLeftRadius: 1000,
-      borderTopRightRadius: 1000,
-      borderBottomLeftRadius: radius.md,
-      borderBottomRightRadius: radius.md,
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingTop: spacing.sm,
-    },
     emptyText: { ...typography.body, color: colors.textSecondary, textAlign: 'center', paddingHorizontal: spacing.xl },
     emptyHint: { ...typography.caption, color: colors.textTertiary, textAlign: 'center', paddingHorizontal: spacing.xl },
     switchButton: {

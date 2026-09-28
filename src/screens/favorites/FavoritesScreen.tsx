@@ -2,17 +2,17 @@ import React, { useMemo } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { AccentHeading } from '../../components/common/AccentHeading';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { EmptyOrb } from '../../components/common/EmptyOrb';
 import { ProfileCard } from '../../components/ProfileCard';
 import { useFavorites, FavoriteProfile } from '../../store/FavoritesContext';
 import { useLanguage } from '../../store/LanguageContext';
 import { useTheme } from '../../store/ThemeContext';
 import { useAuth } from '../../store/AuthContext';
 import { radius, spacing, typography } from '../../theme';
-import { glow, modeAccent, withAlpha } from '../../theme/glow';
+import { modeAccent, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 
 export function FavoritesScreen() {
@@ -44,7 +44,7 @@ export function FavoritesScreen() {
 
   return (
     // The stack already draws a "Favorites" header above this screen
-    // (app/_layout.tsx), so the container must not claim the top inset again —
+    // (app/_layout.tsx), so the container must not claim the top inset again ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â
     // that double padding is what pushed the page's own heading most of the way
     // down the phone, away from the header it sits under. Only the bottom edge
     // is ours. Same fix as Notifications and Settings.
@@ -64,14 +64,7 @@ export function FavoritesScreen() {
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <LinearGradient
-              colors={accent.ramp}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={[styles.emptyOrb, glow(accent.primary, 0.5, 22, 10)]}
-            >
-              <Ionicons name="heart" size={30} color="#FFFFFF" />
-            </LinearGradient>
+              <EmptyOrb ramp={accent.ramp} icon="heart" />
             <Text style={[styles.emptyText, rtl && styles.rtlText]}>{t('favorites.empty')}</Text>
           </View>
         }
@@ -93,20 +86,8 @@ const makeStyles = (colors: Palette) =>
       borderWidth: 1,
       borderColor: withAlpha(colors.dating, 0.3),
     },
-    listContent: { paddingBottom: spacing.xl },
-    // Mughal-arch frame, the shared empty-state shape.
-    emptyOrb: {
-      width: 92,
-      height: 108,
-      borderTopLeftRadius: 1000,
-      borderTopRightRadius: 1000,
-      borderBottomLeftRadius: radius.md,
-      borderBottomRightRadius: radius.md,
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingTop: spacing.sm,
-    },
-    emptyState: { alignItems: 'center', justifyContent: 'center', paddingTop: spacing.xxl, gap: spacing.md },
+      listContent: { paddingBottom: spacing.xl },
+      emptyState: { alignItems: 'center', justifyContent: 'center', paddingTop: spacing.xxl, gap: spacing.md },
     emptyText: { ...typography.body, color: colors.textSecondary, textAlign: 'center', paddingHorizontal: spacing.xl },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   });
