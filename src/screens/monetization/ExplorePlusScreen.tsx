@@ -164,7 +164,13 @@ export function ExplorePlusScreen() {
   };
 
   return (
-    <ScreenContainer>
+    // The stack already draws an "Explore+" header above this screen
+    // (app/_layout.tsx), so the container must not claim the top inset again —
+    // that double padding is what held the hero box most of the way down the
+    // phone. Only the bottom edge is ours; `ScreenContainer`'s own
+    // `spacing.lg` content padding stays as the gap under the header. Same fix
+    // as Notifications, Settings, Favorites and Edit Profile.
+    <ScreenContainer edges={['bottom']}>
       <LinearGradient
         colors={VELVET_RAMP}
         start={GRADIENT_START}
@@ -532,21 +538,15 @@ const makeStyles = (colors: Palette) =>
     cancelLabel: { color: colors.textPrimary },
     sectionHeading: { marginBottom: spacing.md },
     grid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: spacing.md, justifyContent: 'space-between' },
-    // Gold-rimmed Mughal arches; oversized top radii clamp to a full crest.
+    // Gold-rimmed rounded rectangles.
     admirerRim: {
       width: '48%',
       padding: 2,
-      borderTopLeftRadius: 1000,
-      borderTopRightRadius: 1000,
-      borderBottomLeftRadius: radius.md + 2,
-      borderBottomRightRadius: radius.md + 2,
+      borderRadius: radius.md + 2,
     },
     admirerCard: {
       aspectRatio: 3 / 4,
-      borderTopLeftRadius: 1000,
-      borderTopRightRadius: 1000,
-      borderBottomLeftRadius: radius.md,
-      borderBottomRightRadius: radius.md,
+      borderRadius: radius.md,
       overflow: 'hidden',
       backgroundColor: colors.skeleton,
     },

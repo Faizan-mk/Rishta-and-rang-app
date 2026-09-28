@@ -51,7 +51,12 @@ export function PrivacySafetyScreen() {
   };
 
   return (
-    <ScreenContainer>
+    // The stack already draws a "Privacy & Safety" header above this screen
+    // (app/_layout.tsx), so the container must not claim the top inset again —
+    // that double padding is what held the page's own heading most of the way
+    // down the phone. Only the bottom edge is ours. Same fix as
+    // Notifications, Settings, Favorites, Edit Profile and Explore+.
+    <ScreenContainer edges={['bottom']}>
       <FadeIn>
         <AccentHeading
           title={t('privacy.visibilitySection')}

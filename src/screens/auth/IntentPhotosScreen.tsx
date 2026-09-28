@@ -232,15 +232,11 @@ const makeStyles = (colors: Palette) =>
     radioOn: { backgroundColor: colors.teal, borderColor: colors.teal },
     photosCard: { ...cardSurface(colors), marginTop: spacing.md, paddingBottom: spacing.lg },
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, justifyContent: 'space-between' },
-    // Each photo sits in a Mughal-arch frame; the oversized top radius is
-    // clamped to half the width, giving a full arched crest.
+    // Each photo sits in a plain rounded rectangle.
     slot: {
       width: '48%',
       aspectRatio: 3 / 4,
-      borderTopLeftRadius: 1000,
-      borderTopRightRadius: 1000,
-      borderBottomLeftRadius: radius.md,
-      borderBottomRightRadius: radius.md,
+      borderRadius: radius.md,
       overflow: 'hidden',
       backgroundColor: colors.skeleton,
     },

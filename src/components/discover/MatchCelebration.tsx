@@ -125,26 +125,19 @@ const makeStyles = (colors: Palette) =>
     flourishDiamond: { width: 6, height: 6, backgroundColor: GOLD, transform: [{ rotate: '45deg' }] },
     title: { ...typography.h1, fontSize: 34, lineHeight: 42, color: GOLD, marginTop: spacing.sm, textAlign: 'center' },
     subtitle: { ...typography.body, color: 'rgba(255,255,255,0.92)', marginTop: spacing.xs, textAlign: 'center' },
-    // Their portrait in a gold-framed Mughal arch; oversized top radii clamp to
-    // a full crest.
+    // Their portrait in a gold-framed rectangle.
     photoFrame: {
       marginTop: spacing.lg,
       padding: 4,
       borderWidth: 1.5,
       borderColor: GOLD,
-      borderTopLeftRadius: 1000,
-      borderTopRightRadius: 1000,
-      borderBottomLeftRadius: radius.md + 4,
-      borderBottomRightRadius: radius.md + 4,
+      borderRadius: radius.md + 4,
       ...glow('#000000', 0.3, 14, 10),
     },
     photo: {
       width: 110,
       height: 138,
-      borderTopLeftRadius: 1000,
-      borderTopRightRadius: 1000,
-      borderBottomLeftRadius: radius.md,
-      borderBottomRightRadius: radius.md,
+      borderRadius: radius.md,
       backgroundColor: 'rgba(255,255,255,0.1)',
     },
     // A white pill with maroon ink on the velvet card.

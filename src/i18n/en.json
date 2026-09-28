@@ -6,6 +6,7 @@
     "continue": "Continue",
     "save": "Save changes",
     "cancel": "Cancel",
+    "close": "Close",
     "skip": "Skip for now",
     "done": "Done",
     "loading": "Please wait...",
@@ -338,6 +339,10 @@
     "online": "Online",
     "recording": "Recording...",
     "photoUnavailable": "Photo unavailable",
+    "voiceNote": "Voice note",
+    "voiceLoading": "Loading…",
+    "playVoiceNote": "Play voice note",
+    "openPhoto": "Open photo",
     "today": "Today",
     "yesterday": "Yesterday",
     "dateShort": "{day} {month}",
@@ -808,6 +813,10 @@
   "notificationsScreen": {
     "title": "Notifications",
     "markAllRead": "Mark all read",
+    "clearAll": "Clear all",
+    "clearAllTitle": "Clear all notifications?",
+    "clearAllBody": "This deletes all your notifications. It can't be undone.",
+    "clearAllFailed": "We couldn't clear your notifications. Check your connection and try again.",
     "empty": "You're all caught up."
   },
   "boost": {

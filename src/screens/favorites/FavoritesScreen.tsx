@@ -43,7 +43,12 @@ export function FavoritesScreen() {
   );
 
   return (
-    <ScreenContainer scroll={false}>
+    // The stack already draws a "Favorites" header above this screen
+    // (app/_layout.tsx), so the container must not claim the top inset again —
+    // that double padding is what pushed the page's own heading most of the way
+    // down the phone, away from the header it sits under. Only the bottom edge
+    // is ours. Same fix as Notifications and Settings.
+    <ScreenContainer scroll={false} edges={['bottom']}>
       <AccentHeading
         size="screen"
         title={t('profile.favorites')}

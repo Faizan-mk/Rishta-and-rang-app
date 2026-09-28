@@ -33,6 +33,7 @@ import { ageFromDob } from '../../utils/date';
 import { profileCompletion } from '../../utils/profileCompletion';
 import { FEATURE_BUREAU } from '../../config/features';
 import { fonts, radius, spacing, typography } from '../../theme';
+import { scaleFont } from '../../theme/responsive';
 import { cardSurface } from '../../theme/surfaces';
 import { glow, modeAccent, withAlpha, type Gradient } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
@@ -403,7 +404,7 @@ function StatTile({
       <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
         {value}
       </Text>
-      <Text style={styles.statLabel} numberOfLines={1}>
+      <Text style={styles.statLabel} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
         {label}
       </Text>
     </View>
@@ -514,24 +515,19 @@ const makeStyles = (colors: Palette) =>
     noBorder: { borderWidth: 0 },
     headerCard: { alignItems: 'center', marginTop: -64, paddingHorizontal: spacing.md },
     avatarWrap: { position: 'relative' },
-    // The member's own portrait in a Mughal arch; the oversized top radius is
-    // clamped to half the width, giving a full crest.
+    // The menu screen is the one place a portrait stays round: a circular avatar
+    // is the convention everywhere else, and the camera dot already hangs off
+    // its lower-right corner. Half of each box, so it is a true circle.
     avatarRing: {
       width: 100,
-      height: 122,
+      height: 100,
       padding: 3,
-      borderTopLeftRadius: 1000,
-      borderTopRightRadius: 1000,
-      borderBottomLeftRadius: radius.md + 3,
-      borderBottomRightRadius: radius.md + 3,
+      borderRadius: 50,
     },
     avatar: {
       width: '100%',
       height: '100%',
-      borderTopLeftRadius: 1000,
-      borderTopRightRadius: 1000,
-      borderBottomLeftRadius: radius.md,
-      borderBottomRightRadius: radius.md,
+      borderRadius: 47,
       backgroundColor: colors.skeleton,
       borderWidth: 2,
       borderColor: colors.surface,
@@ -592,8 +588,12 @@ const makeStyles = (colors: Palette) =>
       paddingHorizontal: spacing.xs,
     },
     statIcon: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
-    statValue: { ...typography.h2, color: colors.textPrimary },
-    statLabel: { ...typography.caption, color: colors.textSecondary },
+    // Each tile is a third of the screen wide, and the labels are full phrases
+    // ("Add your photos", "Member since") in every language. The type tokens
+    // here sit a step below h2/caption so the whole label fits on a phone
+    // instead of truncating; StatTile also shrinks it further if it must.
+    statValue: { ...typography.h2, fontSize: scaleFont(18), lineHeight: scaleFont(23), color: colors.textPrimary },
+    statLabel: { ...typography.caption, fontSize: scaleFont(11), lineHeight: scaleFont(15), color: colors.textSecondary },
     section: { marginTop: spacing.lg },
     sectionHeading: { marginBottom: spacing.sm },
     optionCard: {

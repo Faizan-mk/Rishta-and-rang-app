@@ -34,9 +34,6 @@ const BRAND_RAMP = ['#5E0F2E', '#8E1B45', '#F2715E'] as const;
 const ROSEWOOD_PAGE = ['#3F0A1F', '#5E0F2E', '#8E1B45'] as const;
 const GOLD = '#E9C27A';
 const CARD_RADIUS = 24;
-// Mughal-arch crest: RN clamps an oversized radius to half the side, so this
-// turns the top edge into a full semicircular arch on any card width.
-const ARCH_RADIUS = 1000;
 const FRAME_PAD = 6;
 // Full-bleed page's own scrim: strong enough at top for the title, easing
 // off over the illustration, deepening again toward the footer.
@@ -224,7 +221,7 @@ function CardPage({ page, active, index, total, width, height, colors, styles, t
           {t(page.subtitleKey)}
         </Animated.Text>
 
-        {/* The portrait sits in a gold-framed Mughal arch, like a keepsake. */}
+        {/* The portrait sits in a gold-framed rectangle, like a keepsake. */}
         <Animated.View entering={active ? FadeInDown.delay(260).duration(550) : undefined} style={styles.card}>
           <View style={styles.cardClip}>
             <Image source={COUPLE_IMAGE} style={styles.cardImage} resizeMode="cover" />
@@ -388,17 +385,11 @@ const makeStyles = (colors: Palette, compact: boolean, rtl: boolean) =>
       padding: FRAME_PAD,
       borderWidth: 1.5,
       borderColor: withAlpha(GOLD, 0.8),
-      borderTopLeftRadius: ARCH_RADIUS,
-      borderTopRightRadius: ARCH_RADIUS,
-      borderBottomLeftRadius: CARD_RADIUS + FRAME_PAD,
-      borderBottomRightRadius: CARD_RADIUS + FRAME_PAD,
+      borderRadius: CARD_RADIUS + FRAME_PAD,
     },
     cardClip: {
       flex: 1,
-      borderTopLeftRadius: ARCH_RADIUS,
-      borderTopRightRadius: ARCH_RADIUS,
-      borderBottomLeftRadius: CARD_RADIUS,
-      borderBottomRightRadius: CARD_RADIUS,
+      borderRadius: CARD_RADIUS,
       overflow: 'hidden',
       ...glow('#000000', 0.3, 20, 10),
     },

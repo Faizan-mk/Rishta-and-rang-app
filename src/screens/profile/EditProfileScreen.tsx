@@ -271,7 +271,12 @@ export function EditProfileScreen() {
   };
 
   return (
-    <ScreenContainer style={styles.screenContent}>
+    // The stack already draws an "Edit Profile" header above this screen
+    // (app/_layout.tsx), so the container must not claim the top inset again —
+    // that double padding is what pushed the hero box most of the way down the
+    // phone, away from the header it belongs under. Only the bottom edge is
+    // ours. Same fix as Notifications, Settings and Favorites.
+    <ScreenContainer style={styles.screenContent} edges={['bottom']}>
       <FadeIn>
         <LinearGradient
           colors={accent.ramp}
@@ -606,7 +611,10 @@ function BooleanRow({
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
     // Separate the form from the native navigation header on compact phones.
-    screenContent: { paddingTop: spacing.xl },
+    // A gap under the native header, not a second one on top of a safe-area
+    // inset the header already accounts for. `xl` here is what held the hero
+    // box so far down the screen.
+    screenContent: { paddingTop: spacing.md },
     hero: {
       borderRadius: radius.lg,
       paddingHorizontal: spacing.md,
@@ -645,33 +653,24 @@ const makeStyles = (colors: Palette) =>
     blurNotice: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.sm },
     blurNoticeText: { ...typography.caption, color: colors.teal, flexShrink: 1 },
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.md },
-    // Photos sit in Mughal arches; the oversized top radius is clamped to half
-    // the width, giving a full crest.
+    // Photos sit in plain rounded rectangles. The "add photo" tile shares the
+    // slot's shape so the grid does not read as two different layouts.
     slotRim: {
       width: 86,
       height: 110,
       padding: 2,
-      borderTopLeftRadius: 1000,
-      borderTopRightRadius: 1000,
-      borderBottomLeftRadius: radius.sm + 2,
-      borderBottomRightRadius: radius.sm + 2,
+      borderRadius: radius.sm + 2,
     },
     slot: {
       flex: 1,
-      borderTopLeftRadius: 1000,
-      borderTopRightRadius: 1000,
-      borderBottomLeftRadius: radius.sm,
-      borderBottomRightRadius: radius.sm,
+      borderRadius: radius.sm,
       overflow: 'hidden',
       backgroundColor: colors.skeleton,
     },
     addSlot: {
       width: 86,
       height: 110,
-      borderTopLeftRadius: 1000,
-      borderTopRightRadius: 1000,
-      borderBottomLeftRadius: radius.sm + 2,
-      borderBottomRightRadius: radius.sm + 2,
+      borderRadius: radius.sm + 2,
       borderWidth: 1.5,
       borderColor: withAlpha(colors.gold, 0.7),
       alignItems: 'center',
@@ -716,7 +715,6 @@ const makeStyles = (colors: Palette) =>
       justifyContent: 'center',
     },
     primaryBadgeText: { color: '#FFFFFF', fontSize: scaleFont(9), fontFamily: fonts.bodyBold },
-    // Below the arch's crest, which would clip the top corner.
     removeBadge: {
       position: 'absolute',
       top: '30%',

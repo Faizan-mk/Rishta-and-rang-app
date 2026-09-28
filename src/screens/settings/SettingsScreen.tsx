@@ -67,7 +67,11 @@ export function SettingsScreen() {
   };
 
   return (
-    <ScreenContainer>
+    // The stack already draws a "Settings" header above this screen, so the
+    // container must not claim the top inset again — that double padding
+    // pushed the page's own heading down the phone, away from the header it is
+    // meant to sit under. Only the bottom edge is ours.
+    <ScreenContainer edges={['bottom']}>
       <FadeIn>
         <AccentHeading size="screen" title={t('settings.title')} gradient={accent.ramp} style={styles.heading} />
       </FadeIn>

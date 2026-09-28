@@ -6,6 +6,7 @@
     "continue": "Jari Rakhein",
     "save": "Tabdeeliyan Save Karein",
     "cancel": "Cancel Karein",
+    "close": "Band Karein",
     "skip": "Abhi Nahi",
     "done": "Ho Gaya",
     "loading": "Zara intezar karein...",
@@ -338,6 +339,10 @@
     "online": "Online",
     "recording": "Recording ho rahi hai...",
     "photoUnavailable": "Tasveer dastyaab nahi",
+    "voiceNote": "Voice note",
+    "voiceLoading": "Load ho raha hai…",
+    "playVoiceNote": "Voice note chalaein",
+    "openPhoto": "Tasveer kholein",
     "today": "Aaj",
     "yesterday": "Kal",
     "dateShort": "{day} {month}",
@@ -808,6 +813,10 @@
   "notificationsScreen": {
     "title": "Ittelaat",
     "markAllRead": "Sab ko Parha Hua Nishan Zad Karein",
+    "clearAll": "Sab saaf karein",
+    "clearAllTitle": "Sab ittelaat saaf karein?",
+    "clearAllBody": "Is se aap ki sab ittelaat delete ho jayengi. Ye wapas nahi ho sakta.",
+    "clearAllFailed": "Hum aap ki ittelaat saaf nahi kar sake. Apna connection dekh kar dobara koshish karein.",
     "empty": "Aapke pass koi nayi ittela nahi."
   },
   "boost": {

@@ -1,8 +1,9 @@
 import React, { useMemo } from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { Button } from '../Button';
-import { fonts, radius, spacing, typography } from '../../theme';
+import { radius, spacing, typography } from '../../theme';
+import { scaleFont } from '../../theme/responsive';
 import { withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
@@ -46,8 +47,14 @@ export function ConfirmDialog({
               <View style={styles.flourishDiamond} />
               <View style={styles.flourishLine} />
             </View>
-            <Text style={[styles.title, rtl && styles.rtlText]}>{title}</Text>
-            {message ? <Text style={[styles.message, rtl && styles.rtlText]}>{message}</Text> : null}
+            {/* The title and message scroll; the actions never do. A dialog's
+                whole job is to be answered, and a long message on a short
+                phone was pushing Cancel off the bottom of the screen — the one
+                control you need was the one you could not reach. */}
+            <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent} bounces={false}>
+              <Text style={[styles.title, rtl && styles.rtlText]}>{title}</Text>
+              {message ? <Text style={[styles.message, rtl && styles.rtlText]}>{message}</Text> : null}
+            </ScrollView>
 
             <View style={[styles.actions, rtl && styles.actionsRtl]}>
               {!confirmOnly && (
@@ -78,12 +85,15 @@ const makeStyles = (colors: Palette) =>
     },
     card: {
       width: '100%',
-      maxWidth: 380,
+      maxWidth: 360,
+      // Bounded by the viewport, so a long message scrolls inside the card
+      // rather than pushing the card itself off-screen.
+      maxHeight: '100%',
       backgroundColor: colors.surfaceElevated,
       borderRadius: radius.lg + 4,
       borderWidth: 1,
       borderColor: withAlpha(colors.gold, 0.5),
-      padding: spacing.lg,
+      padding: spacing.md,
       shadowColor: '#2A1720',
       shadowOpacity: 0.2,
       shadowRadius: 32,
@@ -91,14 +101,21 @@ const makeStyles = (colors: Palette) =>
       elevation: 16,
     },
     // Gold flourish above the title: the invitation-card rule.
-    flourish: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
+    flourish: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs },
     flourishLine: { width: 22, height: 1, backgroundColor: colors.gold },
     flourishDiamond: { width: 6, height: 6, backgroundColor: colors.gold, transform: [{ rotate: '45deg' }] },
-    title: { ...typography.h3, color: colors.textPrimary, marginBottom: spacing.xs },
-    message: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg },
+    // Both are capped rather than left to ride `typography`'s device scale: a
+    // dialog that grows with the phone grows straight off the screen, which is
+    // the opposite of what a larger phone should do.
+    body: { flexGrow: 0 },
+    bodyContent: { paddingBottom: spacing.xs },
+    title: { ...typography.h3, fontSize: scaleFont(17), lineHeight: scaleFont(22), color: colors.textPrimary, marginBottom: spacing.xs },
+    message: { ...typography.body, fontSize: scaleFont(14), lineHeight: scaleFont(19), color: colors.textSecondary },
     actions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
     // Confirm keeps the position closest to the reading edge in both directions.
     actionsRtl: { flexDirection: 'row-reverse' },
-    actionButton: { flex: 1 },
+    // The Button's own 24px side padding is generous for a full-width action
+    // but squeezes two of them onto one row; the text needs the room more.
+    actionButton: { flex: 1, paddingHorizontal: spacing.sm },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   });

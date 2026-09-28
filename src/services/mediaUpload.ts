@@ -7,15 +7,56 @@ export function isLocalUri(uri: string): boolean {
   return !/^https?:\/\//i.test(uri);
 }
 
-function contentTypeFor(uri: string): string {
+// The extension a content type implies, for the handful of formats this app
+// actually stores. Used to name the object so the URL a member's browser or
+// phone later fetches is self-describing.
+const EXTENSION_FOR_MIME: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/jpg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+  'image/heic': 'heic',
+  'image/heif': 'heif',
+  'video/mp4': 'mp4',
+  'video/quicktime': 'mov',
+  'audio/m4a': 'm4a',
+  'audio/mp4': 'm4a',
+  'audio/mpeg': 'mp3',
+  'audio/aac': 'aac',
+  'audio/wav': 'wav',
+  'audio/x-wav': 'wav',
+};
+
+/**
+ * What to tell storage this file is.
+ *
+ * A caller that already knows — `expo-image-picker` hands back the asset's
+ * real `mimeType` — gets that honoured verbatim. Only when nobody knows do we
+ * fall back to sniffing the extension, and the last-resort `image/jpeg` is a
+ * guess that has cost this app real bugs: a picker that returned a PNG (or a
+ * content:// URI with no extension at all) was being uploaded byte-for-byte
+ * as PNG while Supabase stored and served it as `image/jpeg`. Browsers sniff
+ * past that, but Fresco on Android trusts the declared type, fails to decode,
+ * and the photo rendered as nothing. Declaring what the file actually is is
+ * the whole fix.
+ */
+function contentTypeFor(uri: string, mimeType?: string | null): string {
+  if (mimeType) return mimeType;
   if (/\.(mp4|mov|m4v)$/i.test(uri)) return 'video/mp4';
   if (/\.(m4a|aac|mp3|wav)$/i.test(uri)) return 'audio/m4a';
+  if (/\.png$/i.test(uri)) return 'image/png';
+  if (/\.webp$/i.test(uri)) return 'image/webp';
+  if (/\.(heic|heif)$/i.test(uri)) return 'image/heic';
   return 'image/jpeg';
 }
 
-function fileName(uri: string): string {
-  const extension = uri.match(/\.([a-z0-9]+)(?:\?|$)/i)?.[1] ?? 'jpg';
-  return `${Date.now()}-${Math.random().toString(36).slice(2)}.${extension}`;
+function fileName(uri: string, mimeType?: string | null): string {
+  // Prefer an extension the URI actually carries; a `content://` URI from
+  // Android's picker has none, so fall back to the one the content type
+  // implies rather than blindly stamping `.jpg` on every file.
+  const fromUri = uri.match(/\.([a-z0-9]+)(?:\?|$)/i)?.[1];
+  const fromMime = mimeType ? EXTENSION_FOR_MIME[mimeType.toLowerCase()] : undefined;
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}.${fromUri ?? fromMime ?? 'jpg'}`;
 }
 
 /**
@@ -41,16 +82,21 @@ async function readLocalFile(localUri: string): Promise<Uint8Array | Blob> {
   return file.bytes();
 }
 
-async function upload(localUri: string, bucket: string, path: string): Promise<void> {
+async function upload(localUri: string, bucket: string, path: string, mimeType?: string | null): Promise<void> {
   const body = await readLocalFile(localUri);
-  const contentType = (body instanceof Blob && body.type) || contentTypeFor(localUri);
+  const contentType = (body instanceof Blob && body.type) || contentTypeFor(localUri, mimeType);
   const { error } = await supabase.storage.from(bucket).upload(path, body, { contentType, upsert: true });
   if (error) throw new Error(error.message);
 }
 
-async function uploadPublic(userId: string, localUri: string, folder: string): Promise<string> {
-  const path = `${userId}/${folder}/${fileName(localUri)}`;
-  await upload(localUri, PUBLIC_BUCKET, path);
+async function uploadPublic(
+  userId: string,
+  localUri: string,
+  folder: string,
+  mimeType?: string | null
+): Promise<string> {
+  const path = `${userId}/${folder}/${fileName(localUri, mimeType)}`;
+  await upload(localUri, PUBLIC_BUCKET, path, mimeType);
   return publicMediaUrl(path);
 }
 
@@ -95,10 +141,10 @@ export const mediaUpload = {
   uploadVoiceIntro: (userId: string, uri: string) => uploadPublic(userId, uri, 'voice'),
   uploadCnicPhoto: (userId: string, uri: string) => uploadVerification(userId, uri, 'cnic'),
   uploadSelfiePhoto: (userId: string, uri: string) => uploadVerification(userId, uri, 'selfie'),
-  uploadChatImage: (userId: string, matchId: string, uri: string) =>
-    uploadPublic(userId, uri, `chat/${matchId}`),
-  uploadChatAudio: (userId: string, matchId: string, uri: string) =>
-    uploadPublic(userId, uri, `chat/${matchId}`),
+  uploadChatImage: (userId: string, matchId: string, uri: string, mimeType?: string | null) =>
+    uploadPublic(userId, uri, `chat/${matchId}`, mimeType),
+  uploadChatAudio: (userId: string, matchId: string, uri: string, mimeType?: string | null) =>
+    uploadPublic(userId, uri, `chat/${matchId}`, mimeType),
   publicUrl: publicMediaUrl,
   verificationUrl,
   removeFiles: async (urls: string[]) => {

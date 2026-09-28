@@ -231,16 +231,13 @@ const makeStyles = (colors: Palette) =>
     status: { ...typography.label, color: GOLD, letterSpacing: 1.6 },
     statusOnCamera: { color: '#FFFFFF', textShadowColor: 'rgba(0,0,0,0.5)', textShadowRadius: 4 },
     avatarWrap: { marginTop: spacing.lg, alignItems: 'center', justifyContent: 'center' },
-    // The avatar and its ringing halo are both Mughal arches; the oversized
-    // top radius is clamped to half the width, giving a full crest.
+    // The avatar and its ringing halo share one rounded-rectangle silhouette,
+    // so the halo reads as a frame around the photo rather than a stray arch.
     ring: {
       position: 'absolute',
       width: 184,
       height: 220,
-      borderTopLeftRadius: 1000,
-      borderTopRightRadius: 1000,
-      borderBottomLeftRadius: radius.lg + 12,
-      borderBottomRightRadius: radius.lg + 12,
+      borderRadius: radius.lg + 12,
       borderWidth: 1.5,
       borderColor: GOLD,
       ...glow(GOLD, 0.5, 20, 0),
@@ -248,10 +245,7 @@ const makeStyles = (colors: Palette) =>
     avatar: {
       width: 150,
       height: 186,
-      borderTopLeftRadius: 1000,
-      borderTopRightRadius: 1000,
-      borderBottomLeftRadius: radius.lg,
-      borderBottomRightRadius: radius.lg,
+      borderRadius: radius.lg,
       borderWidth: 2,
       borderColor: GOLD,
       backgroundColor: 'rgba(255,255,255,0.08)',
@@ -266,10 +260,7 @@ const makeStyles = (colors: Palette) =>
       right: spacing.md,
       width: 96,
       height: 128,
-      borderTopLeftRadius: 1000,
-      borderTopRightRadius: 1000,
-      borderBottomLeftRadius: radius.md,
-      borderBottomRightRadius: radius.md,
+      borderRadius: radius.md,
       overflow: 'hidden',
       borderWidth: 1.5,
       borderColor: GOLD,

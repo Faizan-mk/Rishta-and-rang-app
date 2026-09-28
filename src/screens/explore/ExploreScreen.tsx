@@ -538,7 +538,7 @@ export function ExploreScreen() {
   );
 }
 
-// One tile shape for every face on this screen: a Mughal arch in a gold
+// One tile shape for every face on this screen: a rounded rectangle in a gold
 // hairline frame, and a scrim that carries the caption without a grey bar over
 // the face.
 function PhotoTile({
@@ -718,23 +718,16 @@ const makeStyles = (colors: Palette) =>
     sectionEmpty: { ...typography.caption, color: colors.textSecondary },
     grid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: spacing.md, justifyContent: 'space-between' },
     gridSlot: { width: '48%' },
-    // Oversized top radii are clamped to half the width: a full arched crest.
     tileRim: {
       padding: 3,
       borderWidth: 1.5,
       borderColor: withAlpha(colors.gold, 0.8),
       backgroundColor: colors.surface,
-      borderTopLeftRadius: 1000,
-      borderTopRightRadius: 1000,
-      borderBottomLeftRadius: radius.md + 3,
-      borderBottomRightRadius: radius.md + 3,
+      borderRadius: radius.md + 3,
     },
     tileInner: {
       aspectRatio: 3 / 4,
-      borderTopLeftRadius: 1000,
-      borderTopRightRadius: 1000,
-      borderBottomLeftRadius: radius.md,
-      borderBottomRightRadius: radius.md,
+      borderRadius: radius.md,
       overflow: 'hidden',
       justifyContent: 'flex-end',
       backgroundColor: colors.skeleton,
@@ -742,7 +735,6 @@ const makeStyles = (colors: Palette) =>
     gridPhoto: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
     tileScrim: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '55%' },
     // See DiscoverProfileCard.photoRing — a photo marker, not a verified tick.
-    // Bottom corner: the arch clips the top ones.
     gridHasPhoto: {
       position: 'absolute',
       bottom: spacing.sm + 2,
