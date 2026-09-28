@@ -23,9 +23,16 @@ const BRAND_RAMP = ['#5E0F2E', '#8E1B45', '#F2715E'] as const;
 // photo, so it wants the bright gold in both themes.
 const GOLD = '#E9C27A';
 // Darkens the top of the photo for the title and the bottom for the sheet,
-// leaving the couple in the middle untouched.
-const SCRIM_RAMP = ['rgba(20,11,16,0.7)', 'rgba(20,11,16,0)', 'rgba(20,11,16,0)', 'rgba(20,11,16,0.85)'] as const;
-const SCRIM_STOPS = [0, 0.3, 0.5, 1] as const;
+// leaving the couple untouched. Measured on this asset, the couple's heads
+// sit in the 10-20% band: a 10x20 luminance grid puts the brightest cells in
+// the whole upper image (183 and 199) at the centre column across 10-20%,
+// while the rows either side of it fall away. `cover` shows the image's full
+// height — it only crops the sides — so those rows land on the same rows of
+// the screen. The top scrim therefore hands over at 0.2, which is above the
+// faces: the title in the first ~16% stays legible and the couple keeps its
+// light.
+const SCRIM_RAMP = ['rgba(20,11,16,0.78)', 'rgba(20,11,16,0)', 'rgba(20,11,16,0)', 'rgba(20,11,16,0.85)'] as const;
+const SCRIM_STOPS = [0, 0.2, 0.5, 1] as const;
 const HERO_IMAGE = require('../../../assets/images/welcome-wedding.png');
 // Aubergine black: shows only if the photo is still loading.
 const PLUM_DEEP = '#140B10';
@@ -170,6 +177,13 @@ const makeStyles = (colors: Palette, compact: boolean, tiny: boolean) =>
       flex: 1,
       justifyContent: 'space-between',
       padding: spacing.lg,
+      // Held tight to the status bar, and the title's leading and gaps are
+      // trimmed, so the block's bottom edge finishes around 16% of the height
+      // instead of 22%. That narrows the overlap with the couple's heads but
+      // does not remove it — clearing it entirely needs the photo anchored to
+      // the bottom of the screen instead of full-bleed. Side/bottom padding
+      // stays as spacing.lg.
+      paddingTop: scaleSpace(8),
       paddingBottom: compact ? spacing.lg : spacing.xl,
     },
     brand: {
@@ -182,7 +196,7 @@ const makeStyles = (colors: Palette, compact: boolean, tiny: boolean) =>
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.sm,
-      marginTop: tiny ? scaleSpace(6) : compact ? scaleSpace(12) : spacing.lg,
+      marginTop: tiny ? scaleSpace(2) : compact ? scaleSpace(4) : scaleSpace(8),
     },
     flourishLine: { width: scaleSpace(36), height: 1, backgroundColor: GOLD },
     flourishDiamond: {
@@ -194,10 +208,12 @@ const makeStyles = (colors: Palette, compact: boolean, tiny: boolean) =>
     brandTitle: {
       ...typography.h1,
       fontSize: scaleFont(tiny ? 30 : 36),
-      lineHeight: scaleFont(tiny ? 38 : 44),
+      // Tightened from 44: the extra leading was only pushing the tagline
+      // down over the couple, so the block's bottom edge sits higher.
+      lineHeight: scaleFont(tiny ? 34 : 40),
       color: '#FFFFFF',
       textAlign: 'center',
-      marginTop: tiny ? scaleSpace(6) : spacing.sm,
+      marginTop: scaleSpace(2),
       textShadowColor: 'rgba(0,0,0,0.45)',
       textShadowOffset: { width: 0, height: 2 },
       textShadowRadius: 10,
@@ -208,7 +224,7 @@ const makeStyles = (colors: Palette, compact: boolean, tiny: boolean) =>
       fontSize: scaleFont(17),
       color: GOLD,
       textAlign: 'center',
-      marginTop: tiny ? scaleSpace(4) : spacing.sm,
+      marginTop: scaleSpace(2),
       paddingHorizontal: spacing.lg,
       textShadowColor: 'rgba(0,0,0,0.45)',
       textShadowOffset: { width: 0, height: 1 },
