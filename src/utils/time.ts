@@ -31,8 +31,12 @@ export function isActiveToday(isoDate?: string): boolean {
   return level === 'online' || level === 'today';
 }
 
-/** Seen within this long counts as "right now" rather than "today". */
-const ONLINE_WINDOW_MS = 10 * 60 * 1000;
+/**
+ * Seen within this long counts as "right now" rather than "today". Kept a bit
+ * over twice the heartbeat (src/hooks/useActivityHeartbeat.ts) so one missed
+ * beat does not drop a member who is still in the app.
+ */
+const ONLINE_WINDOW_MS = 5 * 60 * 1000;
 
 export type ActivityLevel = 'online' | 'today' | 'yesterday' | 'week';
 
@@ -66,8 +70,13 @@ export function activityLevel(isoDate?: string, isOnline?: boolean): ActivityLev
   // immediately rather than staying "online" for the rest of this window.
   // Callers that don't have it yet (the "Active today" filter, still keyed
   // only on a timestamp) fall back to the old recency guess.
-  if (isOnline === true) return 'online';
-  if (isOnline === undefined && elapsed < ONLINE_WINDOW_MS) return 'online';
+  //
+  // `is_online = true` is only trusted while the heartbeat behind it is fresh.
+  // The flag is cleared by a request sent as the app leaves the foreground, and
+  // that request never lands when the app is killed, crashes, loses network or
+  // is suspended by the OS first — which left those members reading "online"
+  // indefinitely. A live app re-stamps well inside this window.
+  if (elapsed < ONLINE_WINDOW_MS && isOnline !== false) return 'online';
 
   const now = new Date();
   const key = dayKey(isoDate);
