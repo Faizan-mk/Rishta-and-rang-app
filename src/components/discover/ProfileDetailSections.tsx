@@ -112,6 +112,19 @@ interface AttributeChipData {
   label: string;
 }
 
+// Two fields can resolve to the same label — religion and sect both "Other",
+// or degree and industry both "Other" — and two identical chips side by side
+// say nothing the first did not. The label is also the chip's key, so a repeat
+// is a React duplicate-key error as well as a visual one.
+function uniqueChips(chips: AttributeChipData[]): AttributeChipData[] {
+  const seen = new Set<string>();
+  return chips.filter((chip) => {
+    if (seen.has(chip.label)) return false;
+    seen.add(chip.label);
+    return true;
+  });
+}
+
 function AttributeChip({ icon, label }: AttributeChipData) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeChipStyles(colors), [colors]);
@@ -233,7 +246,7 @@ export function AboutMeSection({ profile }: { profile: BrowseProfile }) {
   return (
     <Section title={t('discover.aboutMeTitle')}>
       <View style={styles.chipRow}>
-        {chips.map((chip) => (
+        {uniqueChips(chips).map((chip) => (
           <AttributeChip key={chip.label} {...chip} />
         ))}
       </View>
@@ -265,7 +278,7 @@ export function FaithSection({ profile }: { profile: BrowseProfile }) {
   return (
     <Section title={t('discover.faithTitle')}>
       <View style={styles.chipRow}>
-        {chips.map((chip) => (
+        {uniqueChips(chips).map((chip) => (
           <AttributeChip key={chip.label} {...chip} />
         ))}
       </View>
@@ -287,7 +300,7 @@ export function FuturePlansSection({ profile }: { profile: BrowseProfile }) {
   return (
     <Section title={t('discover.futurePlansTitle')}>
       <View style={styles.chipRow}>
-        {chips.map((chip) => (
+        {uniqueChips(chips).map((chip) => (
           <AttributeChip key={chip.label} {...chip} />
         ))}
       </View>
@@ -307,7 +320,7 @@ export function InterestsSection({ profile }: { profile: BrowseProfile }) {
   return (
     <Section title={t('discover.interestsTitle')}>
       <View style={styles.chipRow}>
-        {interests.map((label) => (
+        {[...new Set(interests)].map((label) => (
           <AttributeChip key={label} icon="sparkles-outline" label={label} />
         ))}
       </View>
@@ -325,7 +338,7 @@ export function PersonalitySection({ profile }: { profile: BrowseProfile }) {
   return (
     <Section title={t('discover.personalityTitle')}>
       <View style={styles.chipRow}>
-        {traits.map((label) => (
+        {[...new Set(traits)].map((label) => (
           <AttributeChip key={label} icon="happy-outline" label={label} />
         ))}
       </View>
@@ -348,7 +361,7 @@ export function EducationCareerSection({ profile }: { profile: BrowseProfile }) 
   return (
     <Section title={t('discover.educationCareerTitle')}>
       <View style={styles.chipRow}>
-        {chips.map((chip) => (
+        {uniqueChips(chips).map((chip) => (
           <AttributeChip key={chip.label} {...chip} />
         ))}
       </View>
@@ -369,8 +382,8 @@ export function LanguagesBackgroundSection({ profile }: { profile: BrowseProfile
   return (
     <Section title={t('discover.languagesBackgroundTitle')}>
       <View style={styles.chipRow}>
-        {chips.map((chip, i) => (
-          <AttributeChip key={`${chip.label}-${i}`} {...chip} />
+        {uniqueChips(chips).map((chip) => (
+          <AttributeChip key={chip.label} {...chip} />
         ))}
       </View>
     </Section>
