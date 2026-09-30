@@ -162,12 +162,16 @@ export function ChatScreen() {
   const counterpartId = match?.sourceProfileId;
   const [seenAt, setSeenAt] = useState<string | undefined>(match?.lastActiveAt);
   const [counterpartOnline, setCounterpartOnline] = useState(false);
+  // "Online" also expires with time (src/utils/time.ts), not only with a new
+  // value — a poll returning the same row would otherwise leave the badge up.
+  const [, setPresenceTick] = useState(0);
 
   useEffect(() => {
     if (!counterpartId) return;
     let cancelled = false;
 
     const refresh = async () => {
+      if (!cancelled) setPresenceTick((tick) => tick + 1);
       try {
         const activity = await discoveryService.fetchActivity([counterpartId]);
         const entry = activity.get(counterpartId);
