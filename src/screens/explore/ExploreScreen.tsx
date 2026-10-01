@@ -22,6 +22,7 @@ import { TAB_BAR_BASE_HEIGHT, useHideTabBarOnScroll } from '../../store/TabBarVi
 import { Button } from '../../components/Button';
 import { AccentHeading } from '../../components/common/AccentHeading';
 import { AuroraBackground } from '../../components/common/AuroraBackground';
+import { EmptyOrb } from '../../components/common/EmptyOrb';
 import { SmartImage } from '../../components/common/SmartImage';
 import { BrowseFiltersSheet } from '../../components/discover/BrowseSheets';
 import {
@@ -43,7 +44,7 @@ import { useViewHistory } from '../../store/ViewHistoryContext';
 import { useDialog } from '../../store/DialogContext';
 import { oppositeGenderProfiles } from '../../utils/genderMatch';
 import { timeAgo } from '../../utils/time';
-import { radius, spacing, typography } from '../../theme';
+import { fonts, radius, spacing, typography } from '../../theme';
 import { scaleFont } from '../../theme/responsive';
 import { glow, modeAccent, withAlpha, type ModeAccent } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
@@ -53,7 +54,7 @@ type ExploreProfile = (DiscoverProfile | RishtaListingProfile) & { kind: 'dating
 
 const TABS: { key: ExploreTab; labelKey: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { key: 'forYou', labelKey: 'explore.forYou', icon: 'sparkles' },
-  // Events tab hidden behind FEATURE_EVENTS flag for V1 — out of V1 roadmap scope.
+  // Events tab hidden behind FEATURE_EVENTS flag for V1 â€” out of V1 roadmap scope.
   // When enabled, real event data must come from the backend, not mockEvents.
   ...(FEATURE_EVENTS ? ([{ key: 'events', labelKey: 'explore.events', icon: 'calendar' }] as const) : []),
   { key: 'history', labelKey: 'explore.myHistory', icon: 'time' },
@@ -113,7 +114,7 @@ export function ExploreScreen() {
     try {
       setLikes(await likesService.fetchLikesReceived(user.id));
     } catch {
-      // Offline — leave whatever is already on screen.
+      // Offline â€” leave whatever is already on screen.
     } finally {
       setLoadingLikes(false);
     }
@@ -179,7 +180,7 @@ export function ExploreScreen() {
         message: t('explore.shareEventMessage', { title: event.title, city: event.city, date: event.dateLabel }),
       });
     } catch {
-      // Dismissed — nothing to do.
+      // Dismissed â€” nothing to do.
     }
   };
 
@@ -433,14 +434,7 @@ export function ExploreScreen() {
           <View style={styles.section}>
             {history.length === 0 ? (
               <View style={styles.emptyState}>
-                <LinearGradient
-                  colors={accent.ramp}
-                  start={GRADIENT_START}
-                  end={GRADIENT_END}
-                  style={[styles.emptyOrb, glow(accent.primary, 0.5, 22, 10)]}
-                >
-                  <Ionicons name="time" size={30} color="#FFFFFF" />
-                </LinearGradient>
+                  <EmptyOrb ramp={accent.ramp} icon="time" />
                 <Text style={[styles.emptyText, rtl && styles.rtlText]}>{t('explore.historyEmpty')}</Text>
               </View>
             ) : (
@@ -538,8 +532,9 @@ export function ExploreScreen() {
   );
 }
 
-// One tile shape for every face on this screen: a gradient rim, the photo, and
-// a gradient scrim that carries the caption without a grey bar over the face.
+// One tile shape for every face on this screen: a rounded rectangle in a gold
+// hairline frame, and a scrim that carries the caption without a grey bar over
+// the face.
 function PhotoTile({
   uri,
   name,
@@ -564,16 +559,11 @@ function PhotoTile({
 
   return (
     <Pressable onPress={onPress}>
-      <LinearGradient
-        colors={accent.ramp}
-        start={GRADIENT_START}
-        end={GRADIENT_END}
-        style={[styles.tileRim, glow(accent.primary, 0.28, 12, 5)]}
-      >
+      <View style={[styles.tileRim, glow(accent.primary, 0.14, 12, 4)]}>
         <View style={styles.tileInner}>
           <SmartImage uri={uri} name={name} style={styles.gridPhoto} size={30} />
           <LinearGradient
-            colors={['transparent', 'rgba(10,10,12,0.15)', 'rgba(10,10,12,0.85)']}
+            colors={['transparent', 'rgba(20,11,16,0.15)', 'rgba(20,11,16,0.85)']}
             start={SCRIM_START}
             end={SCRIM_END}
             style={styles.tileScrim}
@@ -593,7 +583,7 @@ function PhotoTile({
             </Text>
           </View>
         </View>
-      </LinearGradient>
+      </View>
     </Pressable>
   );
 }
@@ -656,13 +646,18 @@ const makeStyles = (colors: Palette) =>
       gap: 6,
       borderRadius: radius.pill,
       borderWidth: 1,
-      borderColor: colors.borderSoft,
-      backgroundColor: withAlpha(colors.textPrimary, 0.05),
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
+      shadowColor: '#2A1720',
+      shadowOpacity: 0.06,
+      shadowRadius: 12,
+      shadowOffset: { width: 0, height: 4 },
+      elevation: 2,
     },
     filterChipActive: { backgroundColor: colors.tealSoft, borderColor: colors.teal },
-    filterLabel: { ...typography.label, color: colors.textSecondary, fontWeight: '700' },
+    filterLabel: { ...typography.label, color: colors.textSecondary },
     filterLabelActive: { color: colors.teal },
     countPill: {
       minWidth: 18,
@@ -673,16 +668,22 @@ const makeStyles = (colors: Palette) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
-    countPillText: { color: '#FFFFFF', fontSize: scaleFont(10), fontWeight: '800' },
+    countPillText: { color: '#FFFFFF', fontSize: scaleFont(10), fontFamily: fonts.bodyBold },
+    // Floating pill track, same as the Friends/Rishta toggle on Home.
     tabRow: {
       flexDirection: 'row',
       gap: spacing.xs,
       marginHorizontal: spacing.md,
       padding: 4,
       borderRadius: radius.pill,
-      backgroundColor: withAlpha(colors.textPrimary, 0.05),
+      backgroundColor: colors.surface,
       borderWidth: 1,
-      borderColor: colors.borderSoft,
+      borderColor: colors.border,
+      shadowColor: '#8E1B45',
+      shadowOpacity: 0.1,
+      shadowRadius: 16,
+      shadowOffset: { width: 0, height: 8 },
+      elevation: 4,
     },
     tabItem: { flex: 1 },
     tabPill: {
@@ -703,15 +704,21 @@ const makeStyles = (colors: Palette) =>
       paddingVertical: spacing.sm,
       paddingHorizontal: spacing.xs,
     },
-    tabLabel: { ...typography.label, color: colors.textSecondary, fontWeight: '700', flexShrink: 1 },
-    tabLabelActive: { ...typography.label, color: '#FFFFFF', fontWeight: '800', flexShrink: 1 },
+    tabLabel: { ...typography.label, color: colors.textSecondary, flexShrink: 1 },
+    tabLabelActive: { ...typography.label, color: '#FFFFFF', fontFamily: fonts.bodyBold, flexShrink: 1 },
     content: { paddingHorizontal: spacing.md, paddingTop: spacing.xs },
     section: { marginTop: spacing.lg },
     sectionHeading: { marginBottom: spacing.sm },
     sectionEmpty: { ...typography.caption, color: colors.textSecondary },
-    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-    gridSlot: { width: '47%' },
-    tileRim: { borderRadius: radius.md + 2, padding: 2 },
+    grid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: spacing.md, justifyContent: 'space-between' },
+    gridSlot: { width: '48%' },
+    tileRim: {
+      padding: 3,
+      borderWidth: 1.5,
+      borderColor: withAlpha(colors.gold, 0.8),
+      backgroundColor: colors.surface,
+      borderRadius: radius.md + 3,
+    },
     tileInner: {
       aspectRatio: 3 / 4,
       borderRadius: radius.md,
@@ -721,25 +728,27 @@ const makeStyles = (colors: Palette) =>
     },
     gridPhoto: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
     tileScrim: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '55%' },
-    // See DiscoverProfileCard.photoRing — a photo marker, not a verified tick.
+    // See DiscoverProfileCard.photoRing â€” a photo marker, not a verified tick.
     gridHasPhoto: {
       position: 'absolute',
-      top: spacing.xs,
-      right: spacing.xs,
+      bottom: spacing.sm + 2,
+      right: spacing.sm,
       width: 20,
       height: 20,
       borderRadius: 10,
-      backgroundColor: 'rgba(10,10,12,0.55)',
+      backgroundColor: 'rgba(255,255,255,0.22)',
       alignItems: 'center',
       justifyContent: 'center',
     },
-    gridCaption: { paddingHorizontal: spacing.sm, paddingVertical: spacing.sm },
-    gridName: { ...typography.caption, color: '#FFFFFF', fontWeight: '800' },
+    gridCaption: { paddingHorizontal: spacing.sm, paddingVertical: spacing.sm, paddingRight: spacing.xl },
+    gridName: { ...typography.h3, fontSize: scaleFont(16), lineHeight: scaleFont(20), color: '#FFFFFF' },
     gridMeta: { fontSize: scaleFont(11), color: 'rgba(255,255,255,0.85)', marginTop: 1 },
     lockedCard: {
       width: '100%',
       aspectRatio: 16 / 10,
       borderRadius: radius.lg,
+      borderWidth: 1.5,
+      borderColor: withAlpha(colors.gold, 0.7),
       overflow: 'hidden',
       backgroundColor: colors.skeleton,
     },
@@ -752,8 +761,10 @@ const makeStyles = (colors: Palette) =>
       alignItems: 'center',
       justifyContent: 'center',
       marginBottom: spacing.xs,
+      borderWidth: 2,
+      borderColor: colors.gold,
     },
-    lockedCount: { ...typography.h3, color: colors.textPrimary, textAlign: 'center', fontWeight: '800' },
+    lockedCount: { ...typography.h2, color: colors.textPrimary, textAlign: 'center' },
     lockedHint: { ...typography.caption, color: colors.textSecondary, textAlign: 'center' },
     lockedButton: {
       flexDirection: 'row',
@@ -764,7 +775,7 @@ const makeStyles = (colors: Palette) =>
       paddingVertical: spacing.sm,
       marginTop: spacing.sm,
     },
-    lockedButtonText: { ...typography.label, color: '#FFFFFF', fontWeight: '800' },
+    lockedButtonText: { ...typography.label, color: '#FFFFFF', fontFamily: fonts.bodyBold },
     eventList: { marginTop: spacing.lg, gap: spacing.md },
     eventCard: {
       backgroundColor: colors.surfaceElevated,
@@ -784,7 +795,6 @@ const makeStyles = (colors: Palette) =>
       right: spacing.md,
       bottom: spacing.sm,
       color: '#FFFFFF',
-      fontWeight: '800',
     },
     eventBody: { padding: spacing.md, gap: spacing.sm },
     eventMetaRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.xs },
@@ -796,11 +806,11 @@ const makeStyles = (colors: Palette) =>
       paddingHorizontal: spacing.sm + 2,
       paddingVertical: 5,
     },
-    eventTagText: { ...typography.caption, fontWeight: '700' },
+    eventTagText: { ...typography.label },
     eventActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
     eventActionButton: { flex: 1 },
-    eventCta: { alignItems: 'center', justifyContent: 'center', borderRadius: radius.md, paddingVertical: spacing.md },
-    eventCtaText: { ...typography.bodyBold, color: '#FFFFFF', fontWeight: '800' },
+    eventCta: { alignItems: 'center', justifyContent: 'center', borderRadius: radius.pill, paddingVertical: spacing.md },
+    eventCtaText: { ...typography.bodyBold, color: '#FFFFFF' },
     eventShareButton: {
       width: 48,
       height: 48,
@@ -823,26 +833,30 @@ const makeStyles = (colors: Palette) =>
     eventModalBody: { padding: spacing.md, gap: spacing.sm },
     eventModalDescription: { ...typography.body, color: colors.textSecondary },
     eventModalCloseButton: { marginTop: spacing.xs },
-    emptyState: { alignItems: 'center', justifyContent: 'center', gap: spacing.md, paddingVertical: spacing.xxl },
-    emptyOrb: { width: 76, height: 76, borderRadius: 38, alignItems: 'center', justifyContent: 'center' },
-    emptyText: { ...typography.body, color: colors.textSecondary, textAlign: 'center' },
+      emptyState: { alignItems: 'center', justifyContent: 'center', gap: spacing.md, paddingVertical: spacing.xxl },
+      emptyText: { ...typography.body, color: colors.textSecondary, textAlign: 'center' },
     historyRow: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.sm,
       backgroundColor: colors.surfaceElevated,
-      borderRadius: radius.md,
+      borderRadius: radius.lg,
       borderWidth: 1,
-      borderColor: colors.borderSoft,
-      paddingHorizontal: spacing.sm,
-      paddingVertical: spacing.sm,
+      borderColor: colors.border,
+      paddingHorizontal: spacing.sm + 4,
+      paddingVertical: spacing.sm + 2,
       marginBottom: spacing.sm,
+      shadowColor: '#2A1720',
+      shadowOpacity: 0.06,
+      shadowRadius: 12,
+      shadowOffset: { width: 0, height: 4 },
+      elevation: 2,
     },
     historyAvatarRing: { width: 50, height: 50, borderRadius: 25, padding: 2 },
     historyAvatar: { width: '100%', height: '100%', borderRadius: 23, backgroundColor: colors.skeleton },
     historyTextWrap: { flex: 1 },
-    historyName: { ...typography.body, color: colors.textPrimary, fontWeight: '700' },
+    historyName: { ...typography.h3, color: colors.textPrimary },
     historyMeta: { ...typography.caption, color: colors.textSecondary },
-    clearButton: { marginTop: spacing.md },
+    clearButton: { marginTop: spacing.md, borderWidth: 1.5, borderColor: colors.gold },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   });

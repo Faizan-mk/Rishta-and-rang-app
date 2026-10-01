@@ -7,7 +7,6 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { radius, spacing } from '../../theme';
 import { useTheme } from '../../store/ThemeContext';
@@ -85,19 +84,13 @@ export function BottomSheet({ visible, onClose, children, maxHeight = '88%', hei
           onLayout={onSheetLayout}
           style={[
             styles.sheet,
-            { backgroundColor: colors.surfaceElevated, maxHeight, height, paddingBottom: insets.bottom },
+            // A gold hairline along the lip, so a sheet reads as part of the app
+            // rather than as a bare system tray.
+            { backgroundColor: colors.surfaceElevated, borderColor: colors.gold, maxHeight, height, paddingBottom: insets.bottom },
             sheetStyle,
           ]}
         >
-          {/* A hairline of brand colour along the panel's lip, so a sheet reads
-              as part of the app rather than as a bare system tray. */}
-          <LinearGradient
-            colors={[colors.teal, colors.plum, colors.gold]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.topRule}
-          />
-          {showHandle && <View style={[styles.handle, { backgroundColor: colors.border }]} />}
+          {showHandle && <View style={[styles.handle, { backgroundColor: colors.gold }]} />}
           <View style={styles.childArea}>{children}</View>
         </Animated.View>
       </View>
@@ -108,19 +101,22 @@ export function BottomSheet({ visible, onClose, children, maxHeight = '88%', hei
 const styles = StyleSheet.create({
   root: { flex: 1, justifyContent: 'flex-end' },
   sheet: {
-    borderTopLeftRadius: radius.lg,
-    borderTopRightRadius: radius.lg,
+    borderTopLeftRadius: radius.lg + 8,
+    borderTopRightRadius: radius.lg + 8,
+    borderTopWidth: 1.5,
+    borderLeftWidth: StyleSheet.hairlineWidth,
+    borderRightWidth: StyleSheet.hairlineWidth,
     paddingTop: spacing.sm,
     overflow: 'hidden',
   },
-  topRule: { position: 'absolute', top: 0, left: 0, right: 0, height: 3 },
   handle: {
-    width: 44,
-    height: 5,
-    borderRadius: 3,
+    width: 40,
+    height: 4,
+    borderRadius: 2,
     alignSelf: 'center',
-    marginTop: 2,
+    marginTop: 4,
     marginBottom: spacing.sm,
+    opacity: 0.7,
   },
   // No flexBasis here (i.e. not the `flex: 1` shorthand): with an explicit `height`
   // prop this still grows to fill it, but flexBasis: 0 would make Yoga collapse it

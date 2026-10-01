@@ -24,7 +24,9 @@ export function TextField({ label, error, style, secureTextEntry, ...inputProps 
   return (
     <View style={styles.container}>
       <Text style={[styles.label, rtl && styles.rtlText]}>{label}</Text>
-      <View style={styles.fieldWrap}>
+      {/* The wrap's own border is the focus halo: always 3px, transparent at
+          rest, so focusing never shifts the layout. */}
+      <View style={[styles.fieldWrap, focused && !error && styles.fieldWrapFocused]}>
         <TextInput
           placeholderTextColor={colors.textTertiary}
           secureTextEntry={isSecure && !revealed}
@@ -64,20 +66,30 @@ export function TextField({ label, error, style, secureTextEntry, ...inputProps 
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
     container: { marginBottom: spacing.md },
-    label: { ...typography.label, color: colors.textPrimary, marginBottom: spacing.xs, fontWeight: '700' },
+    label: { ...typography.label, color: colors.textPrimary, marginBottom: spacing.xs, letterSpacing: 0.3 },
     input: {
-      borderWidth: 1.5,
-      borderColor: colors.borderSoft,
+      borderWidth: 1,
+      borderColor: colors.border,
       borderRadius: radius.md,
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm + 4,
       fontSize: typography.body.fontSize,
+      fontFamily: typography.body.fontFamily,
       color: colors.textPrimary,
       backgroundColor: colors.surface,
       outlineWidth: 0,
     },
     inputSecure: { paddingRight: spacing.xxl },
-    fieldWrap: { position: 'relative' },
+    // Negative margin cancels the halo's width so the field lines up with
+    // every other control on the form.
+    fieldWrap: {
+      position: 'relative',
+      borderWidth: 3,
+      borderColor: 'transparent',
+      borderRadius: radius.md + 3,
+      margin: -3,
+    },
+    fieldWrapFocused: { borderColor: colors.tealSoft },
     eyeButton: {
       position: 'absolute',
       right: spacing.sm,
@@ -85,7 +97,7 @@ const makeStyles = (colors: Palette) =>
       bottom: 0,
       justifyContent: 'center',
     },
-    inputFocused: { borderColor: colors.teal },
+    inputFocused: { borderColor: colors.gold },
     inputError: { borderColor: colors.danger },
     error: { ...typography.caption, color: colors.danger, marginTop: spacing.xs },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },

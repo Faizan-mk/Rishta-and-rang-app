@@ -1,8 +1,10 @@
 import React, { useMemo } from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { Button } from '../Button';
 import { radius, spacing, typography } from '../../theme';
+import { scaleFont } from '../../theme/responsive';
+import { withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
@@ -40,18 +42,30 @@ export function ConfirmDialog({
       <Pressable style={styles.overlay} onPress={confirmOnly ? undefined : onCancel}>
         <Animated.View entering={FadeInUp.duration(220)} style={styles.card}>
           <Pressable onPress={(e) => e.stopPropagation()}>
-            <Text style={[styles.title, rtl && styles.rtlText]}>{title}</Text>
-            {message ? <Text style={[styles.message, rtl && styles.rtlText]}>{message}</Text> : null}
+            <View style={styles.flourish}>
+              <View style={styles.flourishLine} />
+              <View style={styles.flourishDiamond} />
+              <View style={styles.flourishLine} />
+            </View>
+            {/* The title and message scroll; the actions never do. A dialog's
+                whole job is to be answered, and a long message on a short
+                phone was pushing Cancel off the bottom of the screen — the one
+                control you need was the one you could not reach. */}
+            <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent} bounces={false}>
+              <Text style={[styles.title, rtl && styles.rtlText]}>{title}</Text>
+              {message ? <Text style={[styles.message, rtl && styles.rtlText]}>{message}</Text> : null}
+            </ScrollView>
 
             <View style={[styles.actions, rtl && styles.actionsRtl]}>
               {!confirmOnly && (
-                <Button label={cancelLabel ?? t('common.cancel')} variant="secondary" onPress={onCancel} style={styles.actionButton} />
+                <Button label={cancelLabel ?? t('common.cancel')} variant="secondary" onPress={onCancel} style={styles.cancelButton} />
               )}
               <Button
                 label={confirmLabel ?? t('common.done')}
                 variant={destructive ? 'danger' : 'primary'}
                 onPress={onConfirm}
                 style={styles.actionButton}
+                labelStyle={styles.actionLabel}
               />
             </View>
           </Pressable>
@@ -72,23 +86,46 @@ const makeStyles = (colors: Palette) =>
     },
     card: {
       width: '100%',
-      maxWidth: 380,
+      maxWidth: 360,
+      // Bounded by the viewport, so a long message scrolls inside the card
+      // rather than pushing the card itself off-screen.
+      maxHeight: '100%',
       backgroundColor: colors.surfaceElevated,
-      borderRadius: radius.lg,
+      borderRadius: radius.lg + 4,
       borderWidth: 1,
-      borderColor: colors.borderSoft,
-      padding: spacing.lg,
-      shadowColor: '#000',
-      shadowOpacity: 0.3,
-      shadowRadius: 28,
-      shadowOffset: { width: 0, height: 10 },
+      borderColor: withAlpha(colors.gold, 0.5),
+      padding: spacing.md,
+      shadowColor: '#2A1720',
+      shadowOpacity: 0.2,
+      shadowRadius: 32,
+      shadowOffset: { width: 0, height: 12 },
       elevation: 16,
     },
-    title: { ...typography.h3, color: colors.textPrimary, marginBottom: spacing.xs, fontWeight: '800' },
-    message: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg },
+    // Gold flourish above the title: the invitation-card rule.
+    flourish: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs },
+    flourishLine: { width: 22, height: 1, backgroundColor: colors.gold },
+    flourishDiamond: { width: 6, height: 6, backgroundColor: colors.gold, transform: [{ rotate: '45deg' }] },
+    // Both are capped rather than left to ride `typography`'s device scale: a
+    // dialog that grows with the phone grows straight off the screen, which is
+    // the opposite of what a larger phone should do.
+    body: { flexGrow: 0 },
+    bodyContent: { paddingBottom: spacing.xs },
+    title: { ...typography.h3, fontSize: scaleFont(17), lineHeight: scaleFont(22), color: colors.textPrimary, marginBottom: spacing.xs },
+    message: { ...typography.body, fontSize: scaleFont(14), lineHeight: scaleFont(19), color: colors.textSecondary },
     actions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
     // Confirm keeps the position closest to the reading edge in both directions.
     actionsRtl: { flexDirection: 'row-reverse' },
-    actionButton: { flex: 1 },
+    // Cancel sizes to its own short label instead of claiming half the row.
+    // Splitting the actions 50/50 left "Complete Rishta profile" — 23 chars in
+    // English, 30 in the Roman Urdu label — about 144pt of text width and not
+    // enough, so it wrapped and stretched the pill instead of sitting on one
+    // line. Handing the width to the long side is what actually fixes it.
+    cancelButton: { flexGrow: 0, flexShrink: 0, paddingHorizontal: spacing.md },
+    actionButton: { flex: 1, minWidth: 0, paddingHorizontal: spacing.sm },
+    // Dialog actions are set a step below the body so a long confirm label fits
+    // on one line even in the longest translation. If one ever does run over,
+    // it wraps to a second line here rather than being clipped, since the label
+    // grows the button instead of being cut off.
+    actionLabel: { fontSize: scaleFont(13), lineHeight: scaleFont(18), textAlign: 'center' },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   });

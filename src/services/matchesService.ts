@@ -458,9 +458,10 @@ async function insertImageMessage(
   profileId: string,
   matchId: string,
   localUri: string,
-  replyToId?: string
+  replyToId?: string,
+  mimeType?: string | null
 ): Promise<ChatMessage> {
-  const imageUrl = await mediaUpload.uploadChatImage(profileId, matchId, localUri);
+  const imageUrl = await mediaUpload.uploadChatImage(profileId, matchId, localUri, mimeType);
   return insertMessage(profileId, { ...baseMessage(matchId, 'image'), imageUrl, replyToId: replyToId ?? null });
 }
 

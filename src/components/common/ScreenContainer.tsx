@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
-import { KeyboardAvoidingView, NativeScrollEvent, NativeSyntheticEvent, Platform, ScrollView, StyleSheet, View, ViewStyle } from 'react-native';
+import { KeyboardAvoidingView, NativeScrollEvent, NativeSyntheticEvent, ScrollView, StyleSheet, View, ViewStyle } from 'react-native';
 import { SafeAreaView, Edge } from 'react-native-safe-area-context';
+import { useKeyboardAvoidingEnabled } from '../../hooks/useKeyboardAvoidingEnabled';
 import { spacing } from '../../theme';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
@@ -26,6 +27,7 @@ export function ScreenContainer({
 }: ScreenContainerProps) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const keyboardAvoidingEnabled = useKeyboardAvoidingEnabled();
 
   const content = scroll ? (
     <ScrollView
@@ -43,12 +45,11 @@ export function ScreenContainer({
 
   return (
     <SafeAreaView style={[styles.safeArea, transparent && styles.transparent]} edges={edges}>
-      {/* Android's edge-to-edge display (on by default since SDK 54) stopped the
-          window from resizing itself for the keyboard, so `undefined` here left
-          every form on this container with nothing pushing its focused field
-          above the keyboard — 'height' shrinks this view by the keyboard's
-          height instead. */}
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      {/* 'padding' on both platforms, and only while the keyboard is up
+          (src/hooks/useKeyboardAvoidingEnabled.ts): Android's keyboard-hide event
+          measures against the window rather than the screen, which left a
+          status-bar-tall blank band at the bottom after it closed. */}
+      <KeyboardAvoidingView style={styles.flex} behavior="padding" enabled={keyboardAvoidingEnabled}>
         {content}
       </KeyboardAvoidingView>
     </SafeAreaView>

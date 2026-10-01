@@ -4,10 +4,10 @@ import { authService } from '../services/authService';
 import { useAuth } from '../store/AuthContext';
 
 // At most one write per this long, and — while the app is open — at least one.
-// The badge's finest step is ten minutes, so this keeps a member who is sitting
-// in the app comfortably inside "Active now" without writing more often than the
-// badge could show.
-const MIN_INTERVAL_MS = 5 * 60 * 1000;
+// The badge's "now" window is five minutes (src/utils/time.ts), so this keeps a
+// member who is sitting in the app inside "Active now", and bounds how long a
+// member whose app died without sending `touchOffline` can still read as online.
+const MIN_INTERVAL_MS = 2 * 60 * 1000;
 
 /**
  * Keeps `last_active_at` meaning what the badge says it means.

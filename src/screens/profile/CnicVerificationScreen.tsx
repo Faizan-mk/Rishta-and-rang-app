@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { Button } from '../../components/Button';
+import { ArchBadge } from '../../components/common/ArchBadge';
 import { TextField } from '../../components/common/TextField';
 import { FadeIn } from '../../components/common/FadeInUp';
 import { ImageCropper } from '../../components/common/ImageCropper';
@@ -13,9 +14,9 @@ import { useTheme } from '../../store/ThemeContext';
 import { useDialog } from '../../store/DialogContext';
 import { digitsToCnicDisplay, isValidCnicFormat, cnicMatchesGender, maskCnic } from '../../utils/cnic';
 import { analyzeIdCardPhoto, CNIC_ASPECT } from '../../utils/idCardImageCheck';
-import { radius, spacing, typography } from '../../theme';
-import { scaleFont } from '../../theme/responsive';
-import { glow, withAlpha } from '../../theme/glow';
+import { fonts, radius, spacing, typography } from '../../theme';
+import { cardSurface } from '../../theme/surfaces';
+import { withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 
 export function CnicVerificationScreen() {
@@ -98,6 +99,7 @@ export function CnicVerificationScreen() {
   return (
     <ScreenContainer>
       <FadeIn>
+        <ArchBadge icon="card-outline" style={styles.badge} />
         <Text style={[styles.title, rtl && styles.rtlText]}>{t('cnic.title')}</Text>
 
         {user.cnicVerified && !editing && (
@@ -116,12 +118,18 @@ export function CnicVerificationScreen() {
               <Text style={styles.value}>{user.cnicNumber ? (revealed ? user.cnicNumber : maskCnic(user.cnicNumber)) : '—'}</Text>
             </View>
 
-            <View style={styles.verifiedRow}>
+            <View style={[styles.verifiedRow, rtl && styles.rowRtl]}>
               <Ionicons name="checkmark-circle" size={20} color={colors.success} />
               <Text style={styles.verifiedText}>{t('cnic.verified')}</Text>
             </View>
 
-            <Button label={t('cnic.update')} variant="secondary" onPress={startEditing} style={styles.updateButton} />
+            <Button
+              label={t('cnic.update')}
+              variant="secondary"
+              onPress={startEditing}
+              style={styles.updateButton}
+              labelStyle={styles.outlineLabel}
+            />
           </>
         )}
 
@@ -143,7 +151,11 @@ export function CnicVerificationScreen() {
               <Image source={{ uri: cnicPhotoUri }} style={styles.preview} />
             ) : (
               <View style={[styles.preview, styles.previewEmpty]}>
-                {checkingPhoto ? <ActivityIndicator color={colors.teal} /> : <Text style={styles.previewPlaceholder}>🪪</Text>}
+                {checkingPhoto ? (
+                  <ActivityIndicator color={colors.teal} />
+                ) : (
+                  <Ionicons name="card-outline" size={52} color={colors.teal} />
+                )}
               </View>
             )}
             {photoError ? <Text style={styles.errorText}>{photoError}</Text> : null}
@@ -153,6 +165,9 @@ export function CnicVerificationScreen() {
               variant="secondary"
               onPress={pickCnicPhoto}
               loading={checkingPhoto}
+              icon={<Ionicons name="scan-outline" size={18} color={colors.textPrimary} />}
+              style={styles.outlineButton}
+              labelStyle={styles.outlineLabel}
             />
 
             <View style={styles.editActions}>
@@ -161,6 +176,7 @@ export function CnicVerificationScreen() {
                 onPress={onSave}
                 loading={saving}
                 disabled={checkingPhoto}
+                gradient={checkingPhoto ? undefined : [colors.teal, colors.dating]}
                 style={styles.editActionButton}
               />
               <Button label={t('common.cancel')} variant="ghost" onPress={() => setEditing(false)} style={styles.editActionButton} />
@@ -188,34 +204,39 @@ export function CnicVerificationScreen() {
 
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
-    title: { ...typography.h1, color: colors.textPrimary, marginBottom: spacing.xs, fontWeight: '800' },
-    subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg },
+    badge: { marginBottom: spacing.md },
+    title: { ...typography.h1, color: colors.textPrimary, marginBottom: spacing.xs, textAlign: 'center' },
+    subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg, textAlign: 'center' },
     preview: {
       width: '100%',
       aspectRatio: 16 / 10,
-      borderRadius: radius.lg,
+      borderRadius: radius.md,
       backgroundColor: colors.skeleton,
       marginBottom: spacing.md,
-      borderWidth: 2,
-      borderColor: withAlpha(colors.teal, 0.35),
+      borderWidth: 1.5,
+      borderColor: withAlpha(colors.gold, 0.7),
     },
-    previewEmpty: { alignItems: 'center', justifyContent: 'center' },
-    previewPlaceholder: { fontSize: scaleFont(40) },
-    card: {
-      backgroundColor: colors.surfaceElevated,
-      borderRadius: radius.lg,
-      borderWidth: 1,
-      borderColor: colors.borderSoft,
-      padding: spacing.md,
-      marginBottom: spacing.md,
-      ...glow(colors.teal, 0.16, 14, 4),
-    },
+    previewEmpty: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.tealSoft },
+    card: { ...cardSurface(colors), paddingBottom: spacing.lg, marginBottom: spacing.md },
     cardHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
     label: { ...typography.label, color: colors.textSecondary, marginBottom: 0 },
     value: { ...typography.h3, color: colors.textPrimary },
-    verifiedRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-    verifiedText: { ...typography.label, color: colors.success, fontWeight: '800' },
-    updateButton: { marginTop: spacing.lg },
+    // Pale-emerald seal pill, the design system's "verified" tone.
+    verifiedRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      alignSelf: 'center',
+      gap: spacing.xs,
+      backgroundColor: colors.successSoft,
+      borderRadius: radius.pill,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    rowRtl: { flexDirection: 'row-reverse' },
+    verifiedText: { ...typography.label, color: colors.success, fontFamily: fonts.bodyBold },
+    updateButton: { marginTop: spacing.lg, borderColor: colors.gold, backgroundColor: 'transparent' },
+    outlineButton: { borderColor: colors.gold, backgroundColor: 'transparent' },
+    outlineLabel: { color: colors.textPrimary },
     editActions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.lg },
     editActionButton: { flex: 1 },
     errorText: { ...typography.caption, color: colors.danger, marginTop: spacing.xs, marginBottom: spacing.sm },
@@ -223,10 +244,10 @@ const makeStyles = (colors: Palette) =>
       flexDirection: 'row',
       alignItems: 'flex-start',
       gap: spacing.sm,
-      backgroundColor: withAlpha(colors.warning, 0.1),
+      backgroundColor: colors.goldSoft,
       borderRadius: radius.lg,
       borderWidth: 1,
-      borderColor: withAlpha(colors.warning, 0.35),
+      borderColor: withAlpha(colors.gold, 0.5),
       padding: spacing.md,
     },
     notVerifiedText: { ...typography.body, color: colors.textSecondary, flex: 1 },

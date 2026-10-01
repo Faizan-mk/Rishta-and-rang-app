@@ -15,6 +15,11 @@ interface AccentHeadingProps {
   // 'screen' is the page title, underscored by a gradient rule; 'section'
   // labels a block inside one, marked by a gradient tick to the side.
   size?: 'screen' | 'section';
+  // Centres the title and its rule instead of starting them at the left edge.
+  // For the intro pages, which are centred top to bottom. Leave it off
+  // everywhere else: the left-aligned rule under the title is what makes the
+  // list screens read as chapters of one book.
+  centered?: boolean;
   // Anything that sits opposite the title — a filter chip, an edit link.
   right?: React.ReactNode;
   style?: ViewStyle;
@@ -23,7 +28,7 @@ interface AccentHeadingProps {
 // One heading treatment shared by every list screen, so Explore, Messages and
 // the profile pages read as chapters of the same book rather than three
 // separately styled screens.
-export function AccentHeading({ title, subtitle, gradient, size = 'section', right, style }: AccentHeadingProps) {
+export function AccentHeading({ title, subtitle, gradient, size = 'section', centered, right, style }: AccentHeadingProps) {
   const { colors } = useTheme();
   const { rtl } = useLanguage();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -33,12 +38,19 @@ export function AccentHeading({ title, subtitle, gradient, size = 'section', rig
       <View style={[styles.screenWrap, style]}>
         <View style={[styles.screenRow, rtl && styles.rowRtl]}>
           <View style={styles.screenText}>
-            <Text style={[styles.screenTitle, rtl && styles.rtlText]}>{title}</Text>
-            {subtitle ? <Text style={[styles.screenSubtitle, rtl && styles.rtlText]}>{subtitle}</Text> : null}
+            <Text style={[styles.screenTitle, rtl && styles.rtlText, centered && styles.centeredText]}>{title}</Text>
+            {subtitle ? (
+              <Text style={[styles.screenSubtitle, rtl && styles.rtlText, centered && styles.centeredText]}>{subtitle}</Text>
+            ) : null}
           </View>
           {right}
         </View>
-        <LinearGradient colors={gradient} start={START} end={END} style={[styles.rule, rtl && styles.ruleRtl]} />
+        <LinearGradient
+          colors={gradient}
+          start={START}
+          end={END}
+          style={[styles.rule, rtl && !centered && styles.ruleRtl, centered && styles.ruleCentered]}
+        />
       </View>
     );
   }
@@ -63,18 +75,20 @@ const makeStyles = (colors: Palette) =>
   StyleSheet.create({
     rowRtl: { flexDirection: 'row-reverse' },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },
+    centeredText: { textAlign: 'center' },
 
     screenWrap: { gap: spacing.sm },
     screenRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
     screenText: { flex: 1 },
-    screenTitle: { ...typography.h1, color: colors.textPrimary, fontWeight: '800' },
+    screenTitle: { ...typography.h1, color: colors.textPrimary },
     screenSubtitle: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
     rule: { width: 56, height: 4, borderRadius: 2 },
     ruleRtl: { alignSelf: 'flex-end' },
+    ruleCentered: { alignSelf: 'center' },
 
     sectionRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
     tick: { width: 4, height: 22, borderRadius: radius.pill },
     sectionText: { flex: 1 },
-    sectionTitle: { ...typography.h3, color: colors.textPrimary, fontWeight: '800' },
+    sectionTitle: { ...typography.h3, color: colors.textPrimary },
     sectionSubtitle: { ...typography.caption, color: colors.textSecondary, marginTop: 1 },
   });

@@ -2,7 +2,6 @@ import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { radius, spacing, typography } from '../theme';
-import { withAlpha } from '../theme/glow';
 import type { Palette } from '../theme/palettes';
 import { useTheme } from '../store/ThemeContext';
 import { useLanguage } from '../store/LanguageContext';
@@ -54,13 +53,18 @@ const makeStyles = (colors: Palette) =>
       height: 38,
       borderRadius: radius.pill,
       borderWidth: 1,
-      borderColor: colors.borderSoft,
+      borderColor: colors.border,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: withAlpha(colors.textPrimary, 0.05),
+      backgroundColor: colors.surface,
+      shadowColor: '#2A1720',
+      shadowOpacity: 0.05,
+      shadowRadius: 8,
+      shadowOffset: { width: 0, height: 2 },
+      elevation: 1,
     },
     titles: { flex: 1, gap: 2 },
-    title: { ...typography.h2, color: colors.textPrimary, fontWeight: '800' },
+    title: { ...typography.h2, color: colors.textPrimary },
     subtitle: { ...typography.caption, color: colors.textSecondary },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   });

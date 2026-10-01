@@ -1,9 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Image, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
+  Extrapolation,
   FadeIn,
   ZoomIn,
   interpolate,
@@ -11,15 +12,17 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
+  type SharedValue,
 } from 'react-native-reanimated';
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import type { ChatMessage, MessageReaction } from '../../types/content';
 import { REACTION_EMOJIS } from '../../types/content';
 import type { Translate } from '../../i18n';
-import { radius, spacing, typography } from '../../theme';
+import { fonts, radius, spacing, typography } from '../../theme';
 import { scaleFont } from '../../theme/responsive';
 import { glow, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
 import { useMatches } from '../../store/MatchesContext';
@@ -178,9 +181,37 @@ export const MessageBubble = React.memo(function MessageBubble({
         }),
     []
   );
+  // The voice note's play/pause and the photo's full-screen open are gestures of
+  // *this* composition, not of a `GestureDetector` nested inside it. Nesting
+  // does not escape the problem described on `bubbleGesture`: the outer handler
+  // still enters the touch arena first and claims the touch, so a child
+  // handler — RNGH's or a plain `Pressable`'s — never gets to see it and the
+  // tap is silently dead on device. Side by side, all three recognise
+  // independently and there is no contest to lose.
+  //
+  // The child publishes its own handler through `mediaTapRef` rather than the
+  // parent reaching into it, so the player and preview state stay where they
+  // belong — inside the bubble that owns them.
+  const mediaTapRef = useRef<(() => void) | null>(null);
+  const isMedia =
+    (message.kind === 'voice' && Boolean(message.audioUri)) ||
+    (message.kind === 'image' && Boolean(message.imageUri));
+  const fireMediaTap = useCallback(() => {
+    mediaTapRef.current?.();
+  }, []);
+  const mediaTapGesture = useMemo(
+    () =>
+      Gesture.Tap()
+        .enabled(isMedia)
+        .maxDistance(12)
+        .onEnd((_event, success) => {
+          if (success) runOnJS(fireMediaTap)();
+        }),
+    [isMedia, fireMediaTap]
+  );
   const bubbleGesture = useMemo(
-    () => Gesture.Simultaneous(swipeGesture, longPressGesture),
-    [swipeGesture, longPressGesture]
+    () => Gesture.Simultaneous(swipeGesture, longPressGesture, mediaTapGesture),
+    [swipeGesture, longPressGesture, mediaTapGesture]
   );
   const swipeStyle = useAnimatedStyle(() => ({ transform: [{ translateX: dragX.value }] }));
   const replyHintStyle = useAnimatedStyle(() => ({
@@ -206,10 +237,11 @@ export const MessageBubble = React.memo(function MessageBubble({
         fromMe={Boolean(message.fromMe)}
         colors={colors}
         timeLabel={timeLabel}
+        tapRef={mediaTapRef}
       />
     );
   } else if (message.kind === 'image' && message.imageUri) {
-    content = <ImageBubble uri={message.imageUri} styles={styles} colors={colors} />;
+    content = <ImageBubble uri={message.imageUri} styles={styles} colors={colors} tapRef={mediaTapRef} />;
   } else if (message.text) {
     content = <Text style={[styles.text, textColor, rtl && styles.rtlText]}>{message.text}</Text>;
   } else {
@@ -247,7 +279,7 @@ export const MessageBubble = React.memo(function MessageBubble({
             <View accessibilityRole="button" accessibilityLabel={t('reactions.a11yReact')}>
               {message.fromMe ? (
                 <LinearGradient
-                  colors={[colors.teal, colors.sage]}
+                  colors={[colors.teal, colors.dating]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={[styles.bubble, styles.bubbleMe, glow(colors.teal, 0.35, 10, 4)]}
@@ -493,9 +525,30 @@ const replyQuoteStyles = StyleSheet.create({
     paddingVertical: spacing.xs,
     marginBottom: spacing.xs,
   },
-  name: { ...typography.caption, fontSize: scaleFont(11), fontWeight: '800' },
+  name: { ...typography.caption, fontSize: scaleFont(11), fontFamily: fonts.bodyBold },
   text: { ...typography.caption, fontSize: scaleFont(12) },
 });
+
+const BAR_COUNT = 18;
+
+// Faint enough to read clearly as "not yet played" against a bubble of either
+// colour, close enough that the filled run still looks like one waveform.
+const UNPLAYED = 0.3;
+
+// One bar of the waveform. The note's playhead is carried by the bars
+// themselves: those it has passed are drawn solid, the rest stay faint, and the
+// band right at the playhead is a short gradient rather than a hard switch, so
+// the fill reads as moving instead of blinking bar by bar.
+function WaveBar({ index, color, progress }: { index: number; color: string; progress: SharedValue<number> }) {
+  // Judged by the bar's middle, so it lights up as the playhead reaches it
+  // rather than as its leading edge arrives.
+  const centre = (index + 0.5) / BAR_COUNT;
+  const style = useAnimatedStyle(() => ({
+    opacity: interpolate(progress.value, [centre - 0.07, centre + 0.07], [UNPLAYED, 1], Extrapolation.CLAMP),
+  }));
+
+  return <Animated.View style={[voiceStyles.bar, { backgroundColor: color, height: 6 + ((index * 7) % 14) }, style]} />;
+}
 
 function VoiceBubble({
   uri,
@@ -503,19 +556,33 @@ function VoiceBubble({
   fromMe,
   colors,
   timeLabel,
+  tapRef,
 }: {
   uri: string;
   durationSec: number;
   fromMe: boolean;
   colors: Palette;
   timeLabel: string;
+  tapRef: React.MutableRefObject<(() => void) | null>;
 }) {
   const player = useAudioPlayer(uri);
   const status = useAudioPlayerStatus(player);
+  const { t } = useLanguage();
   // White-on-gradient for an outgoing bubble, the same muted grey as every
   // other caption for an incoming one — matching how the plain-text bubbles
   // already split their own caption colour two paragraphs up.
   const captionColor = fromMe ? 'rgba(255,255,255,0.85)' : colors.textSecondary;
+
+  // How far through the note the playhead is, as a plain 0-1 number. Kept on
+  // the UI thread and pushed into a shared value below, because the bars read
+  // it from an animated style and should not re-run a worklet per bar on every
+  // status tick.
+  const total = status.duration || durationSec;
+  const ratio = total > 0 ? Math.min(1, Math.max(0, status.currentTime / total)) : 0;
+  const progress = useSharedValue(0);
+  useEffect(() => {
+    progress.value = ratio;
+  }, [ratio]);
 
   const togglePlayback = () => {
     if (status.playing) {
@@ -528,30 +595,57 @@ function VoiceBubble({
     }
   };
 
+  // Published on every render, deliberately without a dependency list: the
+  // parent's tap gesture outlives any single status snapshot, so it has to
+  // reach the *current* `togglePlayback` rather than the one that existed when
+  // the gesture was first built. A stale closure here would mean a second tap
+  // still seeing `playing: false`, and pressing play on an already-playing note
+  // would restart it from the top instead of pausing.
+  useEffect(() => {
+    tapRef.current = togglePlayback;
+  });
+
+  useEffect(
+    () => () => {
+      tapRef.current = null;
+    },
+    [tapRef]
+  );
+
   const remaining = Math.max((status.duration || durationSec) - status.currentTime, 0);
+
+  // A remote note takes a moment to come down on mobile data, and until it
+  // does the bubble used to look exactly like a dead tap. Saying so keeps
+  // "still fetching" distinguishable from "broken" — expo-audio 1.1 exposes no
+  // error field on the player at all, so claiming a hard failure here would be
+  // a guess; a load in progress is the one thing we can actually observe.
+  const loading = !status.isLoaded && !status.playing;
 
   return (
     <View>
-      <Pressable onPress={togglePlayback} style={voiceStyles.row}>
-        <Ionicons name={status.playing ? 'pause-circle' : 'play-circle'} size={30} color={fromMe ? '#FFFFFF' : colors.teal} />
+      <View
+        style={voiceStyles.row}
+        accessibilityRole="button"
+        accessibilityLabel={status.playing ? t('chat.voiceNote') : t('chat.playVoiceNote')}
+      >
+        <Ionicons
+          name={status.playing ? 'pause-circle' : 'play-circle'}
+          size={30}
+          color={fromMe ? '#FFFFFF' : colors.teal}
+          style={loading ? { opacity: 0.4 } : undefined}
+        />
         <View style={voiceStyles.waveform}>
-          {Array.from({ length: 18 }).map((_, i) => (
-            <View
-              key={i}
-              style={[
-                voiceStyles.bar,
-                { height: 6 + ((i * 7) % 14), backgroundColor: fromMe ? 'rgba(255,255,255,0.7)' : colors.teal },
-              ]}
-            />
+          {Array.from({ length: BAR_COUNT }).map((_, i) => (
+            <WaveBar key={i} index={i} color={fromMe ? 'rgba(255,255,255,0.95)' : colors.teal} progress={progress} />
           ))}
         </View>
-      </Pressable>
+      </View>
       {/* Duration on the leading edge, right under the waveform it belongs to;
           the time this note was sent trails on the far edge, the way every
           other bubble's caption does. */}
       <View style={voiceStyles.caption}>
         <Text style={[voiceStyles.durationText, { color: captionColor }]}>
-          {formatDuration(status.playing ? remaining : durationSec)}
+          {loading ? t('chat.voiceLoading') : formatDuration(status.playing ? remaining : durationSec)}
         </Text>
         <Text style={[voiceStyles.timeText, { color: captionColor }]}>{timeLabel}</Text>
       </View>
@@ -559,29 +653,83 @@ function VoiceBubble({
   );
 }
 
-function ImageBubble({ uri, styles, colors }: { uri: string; styles: ReturnType<typeof makeStyles>; colors: Palette }) {
+function ImageBubble({
+  uri,
+  styles,
+  colors,
+  tapRef,
+}: {
+  uri: string;
+  styles: ReturnType<typeof makeStyles>;
+  colors: Palette;
+  tapRef: React.MutableRefObject<(() => void) | null>;
+}) {
   const { t } = useLanguage();
+  const insets = useSafeAreaInsets();
   const [previewVisible, setPreviewVisible] = useState(false);
   const [failed, setFailed] = useState(false);
 
-  if (failed) {
-    return (
-      <View style={[styles.image, styles.imageFallback]}>
-        <Ionicons name="image-outline" size={28} color={colors.textTertiary} />
-        <Text style={[typography.caption, { color: colors.textTertiary }]}>{t('chat.photoUnavailable')}</Text>
-      </View>
-    );
-  }
+  // Same reason as the voice note's: the open handler rides on the parent's
+  // tap gesture instead of a nested `Pressable` the outer handler would
+  // swallow. The fallback tile is covered too — a photo that failed to load is
+  // still worth opening, to see whether it is the app or the network at fault.
+  useEffect(() => {
+    tapRef.current = () => setPreviewVisible(true);
+  });
+
+  const closePreview = () => setPreviewVisible(false);
+
+  useEffect(
+    () => () => {
+      tapRef.current = null;
+    },
+    [tapRef]
+  );
 
   return (
     <>
-      <Pressable onPress={() => setPreviewVisible(true)}>
-        <Image source={{ uri }} style={styles.image} onError={() => setFailed(true)} />
-      </Pressable>
-      <Modal visible={previewVisible} transparent animationType="fade" onRequestClose={() => setPreviewVisible(false)}>
+      <View accessibilityRole="button" accessibilityLabel={t('chat.openPhoto')}>
+        {failed ? (
+          <View style={[styles.image, styles.imageFallback]}>
+            <Ionicons name="image-outline" size={28} color={colors.textTertiary} />
+            <Text style={[typography.caption, { color: colors.textTertiary }]}>{t('chat.photoUnavailable')}</Text>
+          </View>
+        ) : (
+          <Image source={{ uri }} style={styles.image} onError={() => setFailed(true)} />
+        )}
+      </View>
+      {/* `statusBarTranslucent` matches every other Modal in the app
+          (BottomSheet, ImageCropper, the chat header menu): SDK 54 makes
+          edge-to-edge mandatory on Android, so a non-translucent window here
+          would force the status bar solid and shove the whole preview down. */}
+      <Modal
+        visible={previewVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={closePreview}
+        statusBarTranslucent
+      >
         <Animated.View entering={FadeIn.duration(140)} style={styles.previewFill}>
-          <Pressable style={styles.previewOverlay} onPress={() => setPreviewVisible(false)}>
+          <Pressable style={styles.previewOverlay} onPress={closePreview}>
+            {/* `contain` over the whole screen, not a band across 80% of it:
+               letterboxed as the photo's own shape needs, but with the frame
+               reaching both edges of the phone the way a viewer expects. */}
             <Image source={{ uri }} style={styles.previewImage} resizeMode="contain" />
+          </Pressable>
+          {/* A visible way out. Tapping the backdrop works, but nothing on the
+              screen says so, and on a photo that fills the frame there is no
+              backdrop left to find. Deliberately small and low-contrast — it
+              should be the quiet way out, not a control competing with the
+              picture, and it clears the status bar and the notch rather than
+              sitting under them. */}
+          <Pressable
+            onPress={closePreview}
+            hitSlop={8}
+            style={[styles.previewClose, { top: insets.top + spacing.xs, right: insets.right + spacing.sm }]}
+            accessibilityRole="button"
+            accessibilityLabel={t('common.close')}
+          >
+            <Ionicons name="close" size={16} color="#FFFFFF" />
           </Pressable>
         </Animated.View>
       </Modal>
@@ -598,7 +746,7 @@ const voiceStyles = StyleSheet.create({
   // the content instead of the avatar.
   caption: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 4, paddingLeft: 30 + spacing.xs },
   durationText: { ...typography.caption, fontSize: scaleFont(10), fontVariant: ['tabular-nums'] },
-  timeText: { ...typography.caption, fontSize: scaleFont(10), fontWeight: '600' },
+  timeText: { ...typography.caption, fontSize: scaleFont(10), fontFamily: fonts.bodySemiBold },
 });
 
 export const makeStyles = (colors: Palette) =>
@@ -627,7 +775,7 @@ export const makeStyles = (colors: Palette) =>
     bubbleThem: {
       backgroundColor: colors.surfaceElevated,
       borderWidth: 1,
-      borderColor: colors.borderSoft,
+      borderColor: colors.border,
       borderBottomLeftRadius: 5,
     },
     text: { ...typography.body },
@@ -642,8 +790,17 @@ export const makeStyles = (colors: Palette) =>
       gap: spacing.xs,
     },
     previewFill: { flex: 1 },
-    previewOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.9)', alignItems: 'center', justifyContent: 'center' },
-    previewImage: { width: '100%', height: '80%' },
+    previewOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.94)', alignItems: 'center', justifyContent: 'center' },
+    previewImage: { width: '100%', height: '100%' },
+    previewClose: {
+      position: 'absolute',
+      width: 30,
+      height: 30,
+      borderRadius: 15,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: 'rgba(255,255,255,0.14)',
+    },
 
     // Reactions hang off the bottom edge of the bubble they belong to, on the
     // same side as the bubble, so a long thread still reads as two columns.
@@ -658,17 +815,17 @@ export const makeStyles = (colors: Palette) =>
       paddingVertical: 2,
       borderRadius: radius.pill,
       borderWidth: 1,
-      borderColor: colors.borderSoft,
+      borderColor: colors.border,
       backgroundColor: colors.surfaceElevated,
     },
     pillMine: { borderColor: withAlpha(colors.teal, 0.55), backgroundColor: withAlpha(colors.teal, 0.14) },
     pillEmoji: { fontSize: scaleFont(13) },
-    pillCount: { ...typography.caption, fontSize: scaleFont(11), color: colors.textSecondary, fontWeight: '700' },
+    pillCount: { ...typography.caption, fontSize: scaleFont(11), color: colors.textSecondary, fontFamily: fonts.bodyBold },
     pillCountMine: { color: colors.teal },
 
     pickerOverlay: {
       flex: 1,
-      backgroundColor: 'rgba(0,0,0,0.45)',
+      backgroundColor: colors.overlay,
       alignItems: 'center',
       justifyContent: 'center',
       padding: spacing.lg,
@@ -677,7 +834,7 @@ export const makeStyles = (colors: Palette) =>
       backgroundColor: colors.surfaceElevated,
       borderRadius: radius.lg,
       borderWidth: 1,
-      borderColor: colors.borderSoft,
+      borderColor: withAlpha(colors.gold, 0.45),
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.md,
       alignItems: 'center',
@@ -688,11 +845,11 @@ export const makeStyles = (colors: Palette) =>
     // action-sheet list — a title and a stack of text options, the same shape
     // as the "Delete message?" dialog this is modelled on, not filled buttons.
     pickerDivider: { alignSelf: 'stretch', height: StyleSheet.hairlineWidth, backgroundColor: colors.borderSoft },
-    deleteSheetTitle: { ...typography.bodyBold, color: colors.textPrimary, fontWeight: '800' },
+    deleteSheetTitle: { ...typography.bodyBold, color: colors.textPrimary, fontFamily: fonts.bodyBold },
     deleteOptionRow: { alignSelf: 'stretch', alignItems: 'center', paddingVertical: spacing.sm + 2 },
     deleteOptionDivider: { alignSelf: 'stretch', height: StyleSheet.hairlineWidth, backgroundColor: colors.borderSoft },
-    deleteOptionText: { ...typography.body, color: colors.teal, fontWeight: '700' },
-    pickerTitle: { ...typography.caption, color: colors.textSecondary, fontWeight: '700' },
+    deleteOptionText: { ...typography.body, color: colors.teal, fontFamily: fonts.bodyBold },
+    pickerTitle: { ...typography.caption, color: colors.textSecondary, fontFamily: fonts.bodyBold },
     // Never row-reverse: an emoji row has no reading order to mirror, and the
     // same six always sit in the same places whichever language is on.
     pickerRow: { flexDirection: 'row', gap: spacing.xs },
@@ -702,12 +859,14 @@ export const makeStyles = (colors: Palette) =>
       borderRadius: radius.pill,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: withAlpha(colors.textPrimary, 0.05),
+      backgroundColor: colors.background,
+      borderWidth: 1,
+      borderColor: colors.border,
     },
-    pickerButtonMine: { backgroundColor: withAlpha(colors.teal, 0.18) },
+    pickerButtonMine: { backgroundColor: colors.tealSoft, borderColor: colors.teal },
     pickerEmoji: { fontSize: scaleFont(24) },
 
-    timestamp: { ...typography.caption, fontSize: scaleFont(10), fontWeight: '600' },
+    timestamp: { ...typography.caption, fontSize: scaleFont(10), fontFamily: fonts.bodySemiBold },
     timestampMe: { color: colors.textTertiary, textAlign: 'right' },
     timestampThem: { color: colors.textTertiary, textAlign: 'left' },
     // The time and the delivery glyph read as one line, trailing the bubble on
@@ -724,5 +883,5 @@ export const makeStyles = (colors: Palette) =>
       borderRadius: radius.pill,
       backgroundColor: withAlpha(colors.danger, 0.12),
     },
-    retryLabel: { ...typography.caption, fontSize: scaleFont(10), color: colors.danger, fontWeight: '800' },
+    retryLabel: { ...typography.caption, fontSize: scaleFont(10), color: colors.danger, fontFamily: fonts.bodyBold },
   });

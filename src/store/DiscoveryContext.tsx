@@ -38,7 +38,7 @@ const FALLBACK_AVATAR = 'https://placehold.co/900x1200/EDE9E1/8B9A9C/png?text=No
 const MIN_DECK_SIZE = 8;
 
 // How often the held deck's last-seen times are re-read, and how many of them.
-// Shorter than the badge's ten-minute "now" window, so a member who comes online
+// Shorter than the badge's five-minute "now" window, so a member who comes online
 // while the deck is on screen shows as online before that window has passed.
 const ACTIVITY_REFRESH_MS = 3 * 60 * 1000;
 const ACTIVITY_REFRESH_LIMIT = 100;

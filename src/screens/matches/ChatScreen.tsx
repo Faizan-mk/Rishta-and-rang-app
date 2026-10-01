@@ -17,9 +17,10 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useKeyboardAvoidingEnabled } from '../../hooks/useKeyboardAvoidingEnabled';
 import Animated, { FadeInUp, ZoomIn } from 'react-native-reanimated';
 import * as ImagePicker from 'expo-image-picker';
-import { useAudioRecorder, RecordingPresets, requestRecordingPermissionsAsync } from 'expo-audio';
+import { useAudioRecorder, RecordingPresets, requestRecordingPermissionsAsync, setAudioModeAsync } from 'expo-audio';
 import { MessageBubble } from '../../components/matches/MessageBubble';
 import { Badge } from '../../components/common/Badge';
 import { ReportDialog, type ReportSubmission } from '../../components/common/ReportDialog';
@@ -37,7 +38,7 @@ import { rishtaProfileComplete } from '../../utils/rishtaProfile';
 import { activityLevel, dayLabel, sameDay } from '../../utils/time';
 import { discoveryService } from '../../services/discoveryService';
 import { supabase } from '../../services/supabase';
-import { radius, spacing, typography } from '../../theme';
+import { fonts, radius, spacing, typography } from '../../theme';
 import { scaleFont } from '../../theme/responsive';
 import { glow, modeAccent, withAlpha } from '../../theme/glow';
 import { ONLINE_GREEN, type Palette } from '../../theme/palettes';
@@ -128,9 +129,26 @@ export function ChatScreen() {
   const [headerHeight, setHeaderHeight] = useState(0);
   const headerRef = useRef<View>(null);
   const insets = useSafeAreaInsets();
+  const keyboardAvoidingEnabled = useKeyboardAvoidingEnabled();
   const [recording, setRecording] = useState(false);
   const [inputFocused, setInputFocused] = useState(false);
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+
+  // expo-audio ships `playsInSilentMode: false` as its iOS default, and with
+  // that AVAudioSession lands on `.ambient` — a category the ring switch
+  // mutes. Since almost everyone keeps a phone on silent, a voice note would
+  // tap, report itself as playing, and stay inaudible. Asking for `.playback`
+  // once on mount is what makes the sound actually come out of the speaker.
+  // `interruptionMode` is left at its `.mixWithOthers` default so this does not
+  // steal audio focus from music the user is already listening to, and
+  // `allowsRecording` is deliberately untouched so the recorder's permission
+  // gate behaves exactly as it did before.
+  useEffect(() => {
+    setAudioModeAsync({ playsInSilentMode: true, interruptionMode: 'mixWithOthers' }).catch(() => {
+      // Nothing useful to do if the session refuses: on Android this call is a
+      // no-op, and a failed session leaves playback on the platform default.
+    });
+  }, []);
 
   // The other member's last-seen time and live presence, kept current while
   // this screen is open. The match row carries a seed `lastActiveAt` from the
@@ -146,12 +164,16 @@ export function ChatScreen() {
   const counterpartId = match?.sourceProfileId;
   const [seenAt, setSeenAt] = useState<string | undefined>(match?.lastActiveAt);
   const [counterpartOnline, setCounterpartOnline] = useState(false);
+  // "Online" also expires with time (src/utils/time.ts), not only with a new
+  // value — a poll returning the same row would otherwise leave the badge up.
+  const [, setPresenceTick] = useState(0);
 
   useEffect(() => {
     if (!counterpartId) return;
     let cancelled = false;
 
     const refresh = async () => {
+      if (!cancelled) setPresenceTick((tick) => tick + 1);
       try {
         const activity = await discoveryService.fetchActivity([counterpartId]);
         const entry = activity.get(counterpartId);
@@ -269,7 +291,11 @@ export function ChatScreen() {
     }
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7 });
     if (!result.canceled && result.assets[0]) {
-      sendImageMessage(matchId, result.assets[0].uri, replyTo?.id);
+      // `mimeType` is the asset's own content type. It travels with the send so
+      // storage is told what the bytes actually are — without it a PNG (or a
+      // content:// URI carrying no extension) was stored and served as
+      // `image/jpeg`, which Android's decoder refuses to render.
+      sendImageMessage(matchId, result.assets[0].uri, replyTo?.id, result.assets[0].mimeType);
       setReplyTo(null);
     }
   };
@@ -493,8 +519,9 @@ export function ChatScreen() {
               colors={[colors.rishta, colors.plum]}
               start={GRADIENT_START}
               end={GRADIENT_END}
-              style={[styles.rishtaBanner, glow(colors.rishta, 0.45, 12, 5)]}
+              style={[styles.rishtaBanner, glow(colors.rishta, 0.3, 14, 5)]}
             >
+              <Ionicons name="moon" size={18} color={RISHTA_GOLD} />
               <Text style={styles.rishtaBannerText}>{t('chat.rishtaIncoming', { name: match.name })}</Text>
               <View style={styles.rishtaBannerActions}>
                 <Pressable onPress={() => onRespondRishta(false)} style={styles.rishtaDeclineButton}>
@@ -547,12 +574,11 @@ export function ChatScreen() {
         </FadeIn>
       )}
 
-      {/* Android's edge-to-edge display (on by default since SDK 54) stopped the
-          window from resizing itself for the keyboard, so `undefined` here left
-          the composer with nothing pushing it up above the keyboard — 'height'
-          is what shrinks this view's own height by the keyboard's, moving the
-          input row (its sibling inside here) back into view. */}
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      {/* 'padding' on both platforms, and only while the keyboard is up
+          (src/hooks/useKeyboardAvoidingEnabled.ts): Android's keyboard-hide event
+          measures against the window rather than the screen, which left a
+          status-bar-tall blank band under the composer after it closed. */}
+      <KeyboardAvoidingView style={styles.flex} behavior="padding" enabled={keyboardAvoidingEnabled}>
         {/* Inverted, which is what makes paging possible at all: the newest
             message is index 0 and sits at the bottom, so "load older" is the
             list's own end and the scroll position does not jump when a page
@@ -668,7 +694,7 @@ export function ChatScreen() {
             {draft.trim() ? (
               <Pressable onPress={sendMessage}>
                 <LinearGradient
-                  colors={[colors.teal, colors.sage]}
+                  colors={[colors.teal, colors.dating]}
                   start={GRADIENT_START}
                   end={GRADIENT_END}
                   style={[styles.sendButton, glow(colors.teal, 0.6, 14, 6)]}
@@ -812,6 +838,9 @@ function HeaderMenu({
   );
 }
 
+// Pale champagne that reads on the rosewood Rishta cards in both themes.
+const RISHTA_GOLD = '#F3D99B';
+
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
     safeArea: { flex: 1, backgroundColor: colors.background },
@@ -821,8 +850,8 @@ const makeStyles = (colors: Palette) =>
       alignItems: 'center',
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: colors.borderSoft,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
       backgroundColor: colors.surfaceElevated,
     },
     // Back button, avatar and the call/report icons all mirror together, so
@@ -830,18 +859,28 @@ const makeStyles = (colors: Palette) =>
     headerRtl: { flexDirection: 'row-reverse' },
     // Symmetric on purpose: the row mirrors wholesale in Urdu, so a directional
     // margin here would end up on the wrong side of the chevron.
-    backButton: { padding: spacing.xs, marginHorizontal: spacing.xs },
-    headerAvatarRing: { width: 42, height: 42, borderRadius: radius.pill, padding: 2 },
+    backButton: {
+      width: 38,
+      height: 38,
+      borderRadius: radius.pill,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+      marginRight: spacing.sm,
+    },
+    headerAvatarRing: { width: 44, height: 44, borderRadius: radius.pill, padding: 2 },
     headerAvatar: { width: '100%', height: '100%', borderRadius: radius.pill, backgroundColor: colors.skeleton },
     // The only column here that can give: everything else in the row is a fixed
     // size, so this is what a long name or a badge has to fit inside.
     headerTextWrap: { flex: 1, minWidth: 0, marginHorizontal: spacing.sm, gap: 2 },
-    headerName: { ...typography.bodyBold, color: colors.textPrimary, fontWeight: '800' },
+    headerName: { ...typography.h3, color: colors.textPrimary },
     headerMetaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
     headerMetaRowRtl: { flexDirection: 'row-reverse' },
     onlineRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
     onlineDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: ONLINE_GREEN },
-    onlineText: { ...typography.caption, color: ONLINE_GREEN, fontWeight: '800' },
+    onlineText: { ...typography.caption, color: ONLINE_GREEN, fontFamily: fonts.bodyBold },
     // Four of these sit in the row, so their margins are what the name and the
     // badge are actually competing against. The tap target stays 40dp-ish via
     // the padding; only the space between them comes down.
@@ -865,14 +904,16 @@ const makeStyles = (colors: Palette) =>
     // wide, and letting the card shrink-wrap its widest row let it stretch
     // most of the way across the screen instead of reading as a small menu.
     menuCard: {
-      width: 172,
+      width: 180,
       backgroundColor: colors.surfaceElevated,
-      borderRadius: radius.md,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
       paddingVertical: spacing.xs,
-      shadowColor: '#000',
-      shadowOpacity: 0.22,
-      shadowRadius: 18,
-      shadowOffset: { width: 0, height: 8 },
+      shadowColor: '#2A1720',
+      shadowOpacity: 0.12,
+      shadowRadius: 24,
+      shadowOffset: { width: 0, height: 10 },
       elevation: 12,
     },
     menuOptionRow: {
@@ -884,28 +925,35 @@ const makeStyles = (colors: Palette) =>
     },
     menuOptionIcon: { width: 16 },
     menuDivider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.borderSoft, marginVertical: spacing.xs },
-    menuOptionText: { fontSize: scaleFont(13.5), fontWeight: '600', color: colors.textPrimary },
+    menuOptionText: { fontSize: scaleFont(13.5), fontFamily: fonts.bodySemiBold, color: colors.textPrimary },
     rishtaBannerWrap: { paddingHorizontal: spacing.md, paddingTop: spacing.sm },
-    rishtaBanner: { borderRadius: radius.lg, padding: spacing.md, gap: spacing.sm },
-    rishtaBannerText: { ...typography.label, color: '#FFFFFF', fontWeight: '800' },
+    // Rosewood card with a gold hairline: the signature Rishta moment.
+    rishtaBanner: {
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: withAlpha(RISHTA_GOLD, 0.6),
+      padding: spacing.md,
+      gap: spacing.sm,
+    },
+    rishtaBannerText: { ...typography.h3, color: '#FFFFFF' },
     rishtaBannerActions: { flexDirection: 'row', gap: spacing.sm },
     rishtaAcceptButton: {
       flex: 1,
       alignItems: 'center',
-      paddingVertical: spacing.sm,
-      borderRadius: radius.md,
+      paddingVertical: spacing.sm + 2,
+      borderRadius: radius.pill,
       backgroundColor: '#FFFFFF',
     },
-    rishtaAcceptText: { ...typography.label, color: colors.rishta, fontWeight: '800' },
+    rishtaAcceptText: { ...typography.label, color: colors.rishta, fontFamily: fonts.bodyBold },
     rishtaDeclineButton: {
       flex: 1,
       alignItems: 'center',
-      paddingVertical: spacing.sm,
-      borderRadius: radius.md,
-      borderWidth: 1,
-      borderColor: withAlpha('#FFFFFF', 0.6),
+      paddingVertical: spacing.sm + 2,
+      borderRadius: radius.pill,
+      borderWidth: 1.5,
+      borderColor: withAlpha(RISHTA_GOLD, 0.8),
     },
-    rishtaDeclineText: { ...typography.label, color: '#FFFFFF', fontWeight: '700' },
+    rishtaDeclineText: { ...typography.label, color: '#FFFFFF', fontFamily: fonts.bodyBold },
     moveToRishtaWrap: { paddingHorizontal: spacing.md, paddingTop: spacing.sm },
     moveToRishtaBar: {
       flexDirection: 'row',
@@ -913,10 +961,12 @@ const makeStyles = (colors: Palette) =>
       justifyContent: 'center',
       gap: spacing.xs,
       borderRadius: radius.pill,
+      borderWidth: 1,
+      borderColor: withAlpha(RISHTA_GOLD, 0.6),
       paddingVertical: spacing.sm + 2,
     },
     moveToRishtaBarPending: { opacity: 0.6 },
-    moveToRishtaText: { ...typography.label, color: '#FFFFFF', fontWeight: '800' },
+    moveToRishtaText: { ...typography.label, color: '#FFFFFF', fontFamily: fonts.bodyBold },
     // An inverted list grows from the bottom on its own, so `justifyContent`
     // is not needed here any more — and would push a short thread the wrong way.
     listContent: { padding: spacing.md, flexGrow: 1 },
@@ -927,7 +977,7 @@ const makeStyles = (colors: Palette) =>
       gap: spacing.xs,
       paddingVertical: spacing.md,
     },
-    loadingOlderLabel: { ...typography.caption, color: colors.textTertiary, fontWeight: '600' },
+    loadingOlderLabel: { ...typography.caption, color: colors.textTertiary, fontFamily: fonts.bodySemiBold },
     // A quiet marker, not a heading: it separates days without competing with
     // the messages on either side of it.
     dayDivider: {
@@ -936,9 +986,11 @@ const makeStyles = (colors: Palette) =>
       paddingHorizontal: spacing.sm + 2,
       paddingVertical: 3,
       borderRadius: radius.pill,
-      backgroundColor: withAlpha(colors.textPrimary, 0.06),
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
     },
-    dayLabel: { ...typography.caption, color: colors.textSecondary, fontWeight: '700' },
+    dayLabel: { ...typography.caption, color: colors.textSecondary, fontFamily: fonts.bodyBold },
     reactionHint: {
       ...typography.caption,
       color: colors.textTertiary,
@@ -950,8 +1002,8 @@ const makeStyles = (colors: Palette) =>
       alignItems: 'flex-end',
       padding: spacing.sm,
       gap: spacing.sm,
-      borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: colors.borderSoft,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
       backgroundColor: colors.surfaceElevated,
     },
     inputRowRtl: { flexDirection: 'row-reverse' },
@@ -965,9 +1017,9 @@ const makeStyles = (colors: Palette) =>
       paddingVertical: spacing.xs + 2,
       backgroundColor: colors.surfaceElevated,
     },
-    replyBarAccent: { width: 3, alignSelf: 'stretch', borderRadius: 2, backgroundColor: colors.teal },
+    replyBarAccent: { width: 3, alignSelf: 'stretch', borderRadius: 2, backgroundColor: colors.gold },
     replyBarText: { flex: 1, minWidth: 0 },
-    replyBarLabel: { ...typography.caption, fontSize: scaleFont(11), color: colors.teal, fontWeight: '800' },
+    replyBarLabel: { ...typography.caption, fontSize: scaleFont(11), color: colors.teal, fontFamily: fonts.bodyBold },
     replyBarPreview: { ...typography.caption, color: colors.textSecondary, marginTop: 1 },
     replyBarClose: { padding: spacing.xs },
     blockedBar: {
@@ -975,34 +1027,35 @@ const makeStyles = (colors: Palette) =>
       alignItems: 'center',
       padding: spacing.sm,
       gap: spacing.sm,
-      borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: colors.borderSoft,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
       backgroundColor: colors.surfaceElevated,
     },
     blockedText: { ...typography.caption, color: colors.textSecondary, flex: 1 },
     unblockButton: {
       borderRadius: radius.pill,
       borderWidth: 1.5,
-      borderColor: colors.teal,
+      borderColor: colors.gold,
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
     },
-    unblockButtonText: { ...typography.label, color: colors.teal, fontWeight: '800' },
+    unblockButtonText: { ...typography.label, color: colors.teal, fontFamily: fonts.bodyBold },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },
     input: {
       flex: 1,
       maxHeight: 100,
-      borderWidth: 1.5,
-      borderColor: colors.borderSoft,
-      backgroundColor: withAlpha(colors.textPrimary, 0.04),
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.background,
       borderRadius: radius.pill,
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
       color: colors.textPrimary,
       fontSize: typography.body.fontSize,
+      fontFamily: typography.body.fontFamily,
       outlineWidth: 0,
     },
-    inputFocused: { borderColor: colors.teal },
+    inputFocused: { borderColor: colors.gold, backgroundColor: colors.surface },
     rtlInput: { textAlign: 'right', writingDirection: 'rtl' },
     attachButton: { padding: spacing.xs, marginBottom: 4 },
     recordingRow: {
@@ -1014,7 +1067,7 @@ const makeStyles = (colors: Palette) =>
       paddingHorizontal: spacing.md,
     },
     recordingDot: { width: 9, height: 9, borderRadius: 5, backgroundColor: colors.danger },
-    recordingText: { ...typography.body, color: colors.danger, fontWeight: '700' },
+    recordingText: { ...typography.body, color: colors.danger, fontFamily: fonts.bodyBold },
     sendButton: {
       width: 46,
       height: 46,
@@ -1023,9 +1076,9 @@ const makeStyles = (colors: Palette) =>
       justifyContent: 'center',
     },
     sendButtonIdle: {
-      backgroundColor: withAlpha(colors.teal, 0.12),
-      borderWidth: 1.5,
-      borderColor: withAlpha(colors.teal, 0.35),
+      backgroundColor: colors.tealSoft,
+      borderWidth: 1,
+      borderColor: withAlpha(colors.gold, 0.6),
     },
     sendButtonRecording: { backgroundColor: colors.danger },
   });
