@@ -43,7 +43,7 @@ export function SwipeActionBar({ canUndo, liked, locked, onUndo, onPass, onLike,
 
   return (
     <View style={[styles.wrap, { bottom: bottomInset }]} pointerEvents="box-none">
-      <View style={[styles.dock, glow(accent.primary, 0.35, 22, 10)]}>
+      <View style={[styles.dock, glow(accent.primary, 0.2, 24, 10)]}>
         <DockButton
           label={t('discover.pass')}
           icon="close"
@@ -146,7 +146,7 @@ function DockButton({
               colors={gradient}
               start={GRADIENT_START}
               end={GRADIENT_END}
-              style={[styles.iconCircle, styles.iconCirclePrimary, glow(tint, 0.7, 14, 8)]}
+              style={[styles.iconCircle, styles.iconCirclePrimary, glow(tint, 0.55, 14, 8)]}
             >
               <Ionicons name={icon} size={25} color="#FFFFFF" />
             </LinearGradient>
@@ -176,14 +176,15 @@ const GRADIENT_END = { x: 1, y: 1 } as const;
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
     wrap: { position: 'absolute', left: 0, right: 0, alignItems: 'center', gap: spacing.xs },
+    // Floating pill dock (Level 2): white, henna hairline, soft rose shadow.
     dock: {
       flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: colors.surfaceElevated,
-      borderRadius: radius.lg,
+      borderRadius: radius.pill,
       borderWidth: 1,
-      borderColor: colors.borderSoft,
-      paddingHorizontal: spacing.sm,
+      borderColor: colors.border,
+      paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
     },
     divider: { width: StyleSheet.hairlineWidth, alignSelf: 'stretch', backgroundColor: colors.border },
@@ -196,11 +197,14 @@ const makeStyles = (colors: Palette) =>
       width: 44,
       height: 44,
       borderRadius: 22,
-      backgroundColor: colors.backgroundAlt,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    iconCirclePrimary: { width: 48, height: 48, borderRadius: 24 },
+    // The lit Like button wears a gold ring.
+    iconCirclePrimary: { width: 50, height: 50, borderRadius: 25, borderWidth: 2, borderColor: colors.gold },
     lockBadge: {
       position: 'absolute',
       bottom: -1,
@@ -214,5 +218,5 @@ const makeStyles = (colors: Palette) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
-    buttonLabel: { ...typography.caption, fontWeight: '800' },
+    buttonLabel: { ...typography.label },
   });

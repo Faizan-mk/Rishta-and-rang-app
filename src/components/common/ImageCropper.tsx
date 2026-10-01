@@ -54,7 +54,7 @@ export function ImageCropper({ uri, aspect = 3 / 4, round = false, onCancel, onC
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const { width: winWidth, height: winHeight } = useWindowDimensions();
-  const cropRamp = [colors.teal, colors.sage] as const;
+  const cropRamp = [colors.teal, colors.dating] as const;
 
   const [source, setSource] = useState<Source | null>(null);
   const [failed, setFailed] = useState(false);

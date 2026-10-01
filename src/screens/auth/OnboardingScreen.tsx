@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   Image,
+  ImageSourcePropType,
   LayoutChangeEvent,
   NativeScrollEvent,
   NativeSyntheticEvent,
@@ -15,59 +16,63 @@ import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { Button } from '../../components/Button';
-import { FloatingHearts } from '../../components/common/FloatingHearts';
-import { spacing, typography } from '../../theme';
-import { glow } from '../../theme/glow';
+import { AccentHeading } from '../../components/common/AccentHeading';
+import { Chip } from '../../components/common/Chip';
+import { ProgressDots } from '../../components/common/ProgressDots';
+import { radius, spacing, typography } from '../../theme';
+import { modeAccent, withAlpha } from '../../theme/glow';
 import { scaleSpace } from '../../theme/responsive';
 import type { Palette } from '../../theme/palettes';
+import type { ProfileMode } from '../../types/user';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
 import { useOnboardingGate } from '../../store/OnboardingGateContext';
 
-const COUPLE_IMAGE = require('../../../assets/images/welcome-couple.png');
+const COUPLE_IMAGE = require('../../../assets/images/welcome-wedding.png');
 const FRIENDS_IMAGE = require('../../../assets/images/onboarding-friends.png');
-const BRAND_RAMP = ['#123234', '#1D4E52', '#3C7A5C'] as const;
-const CARD_RADIUS = 28;
-// Full-bleed page's own scrim: strong enough at top for the title, easing
-// off over the illustration, deepening again toward the footer.
-const PHOTO_SCRIM = ['rgba(20,8,10,0.55)', 'rgba(20,8,10,0.05)', 'rgba(20,8,10,0.55)'] as const;
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
 interface OnboardingPage {
-  layout: 'card' | 'photo';
-  badgeIcon: IconName;
-  ramp: readonly [string, string, ...string[]];
+  // Each page borrows one of the app's two mode colour worlds, so the intro
+  // teaches the same rose-versus-coral distinction the deck does. The accent
+  // is derived per render from the palette, so it tracks light/dark instead of
+  // being frozen into local hex values the way this screen used to.
+  mode: ProfileMode;
+  icon: IconName;
+  image: ImageSourcePropType;
   titleKey: string;
   subtitleKey: string;
   chips: { icon: IconName; labelKey: string }[];
 }
 
-function buildPages(colors: Palette): OnboardingPage[] {
-  return [
-    {
-      layout: 'card',
-      badgeIcon: 'heart',
-      ramp: [colors.teal, colors.plum] as const,
-      titleKey: 'onboarding.page1.title',
-      subtitleKey: 'onboarding.page1.subtitle',
-      chips: [],
-    },
-    {
-      layout: 'photo',
-      badgeIcon: 'chatbubble-ellipses',
-      ramp: [colors.dating, colors.plum] as const,
-      titleKey: 'onboarding.page2.title',
-      subtitleKey: 'onboarding.page2.subtitle',
-      chips: [
-        { icon: 'shield-checkmark', labelKey: 'onboarding.page2.chipSafe' },
-        { icon: 'people', labelKey: 'onboarding.page2.chipReal' },
-      ],
-    },
-  ];
-}
+const PAGES: OnboardingPage[] = [
+  {
+    mode: 'rishta',
+    icon: 'shield-checkmark',
+    image: COUPLE_IMAGE,
+    titleKey: 'onboarding.page1.title',
+    subtitleKey: 'onboarding.page1.subtitle',
+    chips: [],
+  },
+  {
+    mode: 'dating',
+    icon: 'chatbubble-ellipses',
+    image: FRIENDS_IMAGE,
+    titleKey: 'onboarding.page2.title',
+    subtitleKey: 'onboarding.page2.subtitle',
+    chips: [
+      { icon: 'shield-checkmark', labelKey: 'onboarding.page2.chipSafe' },
+      { icon: 'people', labelKey: 'onboarding.page2.chipReal' },
+    ],
+  },
+];
+
+// The footer bar is a fixed overlay, so every page reserves this much room
+// below its content rather than letting the photo slide underneath the button.
+const FOOTER_RESERVE = scaleSpace(152);
 
 export function OnboardingScreen() {
   const router = useRouter();
@@ -75,9 +80,9 @@ export function OnboardingScreen() {
   const { t, rtl } = useLanguage();
   const { markOnboardingSeen } = useOnboardingGate();
   // Same-render fallback only — on web the ResponsiveFrame shrinks the app
-  // into a centred "phone" smaller than the raw browser window, so the
-  // paging ScrollView has to size itself off the measured root (below),
-  // not off useWindowDimensions.
+  // into a centred "phone" smaller than the raw browser window, so the paging
+  // ScrollView has to size itself off the measured root (below), not off
+  // useWindowDimensions.
   const window = useWindowDimensions();
   const [layoutSize, setLayoutSize] = useState<{ width: number; height: number } | null>(null);
   const handleLayout = useCallback((e: LayoutChangeEvent) => {
@@ -87,17 +92,21 @@ export function OnboardingScreen() {
   const width = layoutSize?.width ?? window.width;
   const height = layoutSize?.height ?? window.height;
   const compact = height < 720;
-  const pages = useMemo(() => buildPages(colors), [colors]);
+  const styles = useMemo(() => makeStyles(colors, compact, rtl), [colors, compact, rtl]);
+
   const [index, setIndex] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
-  const styles = useMemo(() => makeStyles(colors, compact, rtl), [colors, compact, rtl]);
+
+  // The primary action wears the current page's ramp, so the button changes
+  // colour as the intro moves from the Rishta story to the Friends one.
+  const accent = useMemo(() => modeAccent(colors, PAGES[index].mode), [colors, index]);
 
   const finish = useCallback(() => {
     markOnboardingSeen();
     router.replace('/welcome');
   }, [markOnboardingSeen, router]);
 
-  const isLast = index === pages.length - 1;
+  const isLast = index === PAGES.length - 1;
 
   const goNext = useCallback(() => {
     if (isLast) {
@@ -129,56 +138,35 @@ export function OnboardingScreen() {
         scrollEventThrottle={16}
         style={{ width, height }}
       >
-        {pages.map((page, i) =>
-          page.layout === 'card' ? (
-            <CardPage
-              key={page.titleKey}
-              page={page}
-              active={i === index}
-              index={i}
-              total={pages.length}
-              width={width}
-              height={height}
-              colors={colors}
-              styles={styles}
-              t={t}
-            />
-          ) : (
-            <PhotoPage
-              key={page.titleKey}
-              page={page}
-              active={i === index}
-              index={i}
-              total={pages.length}
-              width={width}
-              height={height}
-              colors={colors}
-              styles={styles}
-              t={t}
-            />
-          )
-        )}
+        {PAGES.map((page, i) => (
+          <OnboardingPageView
+            key={page.titleKey}
+            page={page}
+            active={i === index}
+            width={width}
+            height={height}
+            styles={styles}
+            t={t}
+            rtl={rtl}
+          />
+        ))}
       </ScrollView>
 
       <SafeAreaView style={styles.topOverlay} edges={['top']} pointerEvents="box-none">
         <Pressable onPress={finish} hitSlop={10} style={styles.skipButton}>
-          <Ionicons name="close" size={20} color="#FFFFFF" />
+          <Ionicons name="close" size={18} color={colors.textSecondary} />
         </Pressable>
       </SafeAreaView>
 
-      <SafeAreaView style={styles.bottomOverlay} edges={['bottom']} pointerEvents="box-none">
-        <Animated.View entering={FadeInUp.delay(200).duration(500)} style={styles.footer}>
-          <View style={styles.dots}>
-            {pages.map((page, i) => (
-              <View key={page.titleKey} style={[styles.dot, i === index && styles.dotActive]} />
-            ))}
-          </View>
+      <SafeAreaView style={styles.footerBar} edges={['bottom']} pointerEvents="box-none">
+        <View style={styles.footer}>
+          <ProgressDots total={PAGES.length} current={index} />
           <Button
             label={isLast ? t('onboarding.getStarted') : t('common.next')}
-            gradient={BRAND_RAMP}
+            gradient={accent.ramp}
             onPress={goNext}
           />
-        </Animated.View>
+        </View>
       </SafeAreaView>
     </View>
   );
@@ -187,246 +175,174 @@ export function OnboardingScreen() {
 interface PageProps {
   page: OnboardingPage;
   active: boolean;
-  index: number;
-  total: number;
   width: number;
   height: number;
-  colors: Palette;
   styles: ReturnType<typeof makeStyles>;
   t: (key: string) => string;
+  rtl: boolean;
 }
 
-// Page 1: a bounded, rounded photo card sitting inside a coloured page — the
-// couple's portrait framed like a keepsake.
-function CardPage({ page, active, index, total, width, height, colors, styles, t }: PageProps) {
-  return (
-    <LinearGradient colors={page.ramp} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[styles.page, { width, height }]}>
-      <View style={styles.glowA} pointerEvents="none" />
-      <View style={styles.glowB} pointerEvents="none" />
-      {active && <FloatingHearts colors={['#FFFFFF', 'rgba(255,255,255,0.55)', colors.gold]} />}
-      <SafeAreaView style={styles.pageSafe} edges={['top', 'bottom']}>
-        <PageEyebrow icon={page.badgeIcon} index={index} total={total} active={active} styles={styles} />
-        <Animated.Text entering={active ? FadeInDown.delay(120).duration(500) : undefined} style={styles.title}>
-          {t(page.titleKey)}
-        </Animated.Text>
+// One template for both pages. The earlier version deliberately gave them two
+// different silhouettes — a floating photo card on a coloured page, then a
+// full-bleed photo with the copy on top — on the theory that variety reads as
+// designed. It reads as two unrelated screens, and the full-bleed one had to
+// stack a second scrim over a photo that already carried a baked gradient, so
+// both came out muddy. The pages now differ the way the rest of the app
+// differs: by accent colour, not by layout.
+function OnboardingPageView({ page, active, width, height, styles, t, rtl }: PageProps) {
+  const { colors } = useTheme();
+  const accent = useMemo(() => modeAccent(colors, page.mode), [colors, page.mode]);
 
-        {/* The couple art's own baked-in gradient gives the top of the photo
-            a plain zone, so the title above visually bleeds into the image
-            instead of stopping short. */}
-        <Animated.View entering={active ? FadeInDown.delay(220).duration(550) : undefined} style={styles.card}>
-          <View style={styles.cardClip}>
-            <Image source={COUPLE_IMAGE} style={styles.cardImage} resizeMode="cover" />
-            <LinearGradient
-              colors={['rgba(11,7,13,0.35)', 'rgba(11,7,13,0)', 'rgba(11,7,13,0.5)']}
-              style={StyleSheet.absoluteFill}
-              pointerEvents="none"
-            />
-          </View>
-          <View style={[styles.badge, styles.badgeLeft]}>
-            <LinearGradient colors={BRAND_RAMP} style={StyleSheet.absoluteFill} />
-            <Ionicons name={page.badgeIcon} size={22} color="#FFFFFF" />
-          </View>
-          <View style={[styles.badge, styles.badgeRight]}>
-            <LinearGradient colors={[colors.gold, '#F3D19B']} style={StyleSheet.absoluteFill} />
-            <Ionicons name="shield-checkmark" size={20} color="#123234" />
-          </View>
-        </Animated.View>
-      </SafeAreaView>
-    </LinearGradient>
-  );
-}
-
-// Page 2: the opposite treatment on purpose — an immersive full-bleed photo
-// with the copy floating straight on top of it, no card, so the two pages of
-// the intro don't read as the same template re-skinned.
-function PhotoPage({ page, active, index, total, width, height, colors, styles, t }: PageProps) {
   return (
     <View style={[styles.page, { width, height }]}>
-      <Image source={FRIENDS_IMAGE} style={[StyleSheet.absoluteFill, { width, height }]} resizeMode="cover" />
-      <LinearGradient colors={PHOTO_SCRIM} style={StyleSheet.absoluteFill} pointerEvents="none" />
-      {active && <FloatingHearts colors={['#FFFFFF', 'rgba(255,255,255,0.55)', colors.gold]} />}
-      <SafeAreaView style={styles.photoSafe} edges={['top', 'bottom']}>
-        <View>
-          <PageEyebrow icon={page.badgeIcon} index={index} total={total} active={active} styles={styles} />
-          <Animated.Text entering={active ? FadeInDown.delay(120).duration(500) : undefined} style={styles.title}>
-            {t(page.titleKey)}
-          </Animated.Text>
-          <Animated.Text entering={active ? FadeInDown.delay(220).duration(500) : undefined} style={styles.subtitle}>
-            {t(page.subtitleKey)}
-          </Animated.Text>
-        </View>
+      {/* A faint wash of the page's own accent, standing in for the animated
+          aurora the deck uses. Static on purpose: the intro is two quick pages
+          and doesn't need a 20-second colour cycle behind the copy. */}
+      <LinearGradient
+        colors={[withAlpha(accent.primary, 0.13), withAlpha(accent.secondary, 0.06), 'transparent']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0.35, y: 1 }}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
+      />
 
-        <Animated.View entering={active ? FadeInUp.delay(280).duration(500) : undefined} style={styles.chipRow}>
-          {page.chips.map((chip) => (
-            <View key={chip.labelKey} style={styles.chip}>
-              <Ionicons name={chip.icon} size={15} color="#FFFFFF" />
-              <Text style={styles.chipText}>{t(chip.labelKey)}</Text>
-            </View>
-          ))}
+      <SafeAreaView style={styles.pageSafe} edges={['top', 'bottom']}>
+        <Animated.View entering={active ? FadeInDown.delay(60).duration(450) : undefined} style={styles.head}>
+          <AccentHeading title={t(page.titleKey)} gradient={accent.duo} size="screen" centered style={styles.headTitle} />
+          <Text style={[styles.subtitle, rtl && styles.rtlText]}>{t(page.subtitleKey)}</Text>
         </Animated.View>
+
+        {/* The photo sits in a plain rounded frame, the same shape every photo
+            uses across the app. Nothing is ever written on top of it, so
+            resizeMode="cover" is free to crop wherever each image needs to.
+
+            The two assets are not the same shape, and the card crops each
+            differently on purpose. welcome-wedding.png is 0.75, almost exactly
+            the card's ratio, so it keeps nearly the whole frame. 
+            onboarding-friends.png is 0.55 and taller, so the card's cover crop
+            trims it to roughly its 16-84% band: that keeps the 35-65% band
+            where its subjects actually are, centred, and leaves a slice of the
+            flat gradient it carries at each end as a free vignette. The page
+            adds no scrim of its own over the top of the photo, which is what
+            used to turn that gradient to mud. */}
+        <Animated.View entering={active ? FadeIn.delay(140).duration(520) : undefined} style={styles.photo}>
+          <Image source={page.image} style={styles.photoImage} resizeMode="cover" />
+          <LinearGradient
+            colors={['rgba(20,11,16,0)', 'rgba(20,11,16,0.42)']}
+            style={StyleSheet.absoluteFill}
+            pointerEvents="none"
+          />
+          <View style={styles.photoBadge}>
+            <LinearGradient
+              colors={accent.duo}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            />
+            <Ionicons name={page.icon} size={17} color="#FFFFFF" />
+          </View>
+        </Animated.View>
+
+        {page.chips.length > 0 ? (
+          <Animated.View
+            entering={active ? FadeInDown.delay(220).duration(480) : undefined}
+            style={[styles.chipRow, rtl && styles.chipRowRtl]}
+          >
+            {page.chips.map((chip) => (
+              <Chip key={chip.labelKey} icon={chip.icon} label={t(chip.labelKey)} tone={page.mode} />
+            ))}
+          </Animated.View>
+        ) : null}
       </SafeAreaView>
     </View>
   );
 }
 
-function PageEyebrow({
-  icon,
-  index,
-  total,
-  active,
-  styles,
-}: {
-  icon: IconName;
-  index: number;
-  total: number;
-  active: boolean;
-  styles: ReturnType<typeof makeStyles>;
-}) {
-  return (
-    <Animated.View entering={active ? FadeInDown.delay(60).duration(450) : undefined} style={styles.eyebrow}>
-      <Ionicons name={icon} size={13} color="#FFFFFF" />
-      <Text style={styles.eyebrowText}>
-        {index + 1} / {total}
-      </Text>
-    </Animated.View>
-  );
-}
-
 const makeStyles = (colors: Palette, compact: boolean, rtl: boolean) =>
   StyleSheet.create({
-    root: { flex: 1, backgroundColor: colors.plum },
-    page: { flex: 1, overflow: 'hidden' },
-    // Two soft highlights so the backdrop has depth behind the card, echoing
-    // the same treatment on the welcome screen.
-    glowA: {
-      position: 'absolute',
-      top: -70,
-      right: -70,
-      width: 240,
-      height: 240,
-      borderRadius: 120,
-      backgroundColor: 'rgba(255,255,255,0.14)',
-    },
-    glowB: {
-      position: 'absolute',
-      bottom: 40,
-      left: -90,
-      width: 280,
-      height: 280,
-      borderRadius: 140,
-      backgroundColor: 'rgba(0,0,0,0.12)',
-    },
+    root: { flex: 1, backgroundColor: colors.background },
+    page: { flex: 1, overflow: 'hidden', backgroundColor: colors.background },
     pageSafe: {
       flex: 1,
       alignItems: 'center',
       paddingHorizontal: spacing.lg,
-      paddingTop: compact ? scaleSpace(48) : scaleSpace(60),
+      paddingTop: compact ? scaleSpace(8) : scaleSpace(12),
+      paddingBottom: FOOTER_RESERVE,
     },
-    // Page 2's own safe area: eyebrow/title/subtitle pinned near the top
-    // (where the photo's baked gradient is plain), chips pinned near the
-    // bottom, with the photo itself filling everything between.
-    photoSafe: {
-      flex: 1,
-      justifyContent: 'space-between',
-      paddingHorizontal: spacing.lg,
-      paddingTop: compact ? scaleSpace(48) : scaleSpace(60),
-      paddingBottom: compact ? scaleSpace(96) : scaleSpace(116),
-    },
-    eyebrow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: scaleSpace(6),
-      alignSelf: 'center',
-      paddingHorizontal: spacing.sm,
-      paddingVertical: scaleSpace(5),
-      borderRadius: 999,
-      backgroundColor: 'rgba(255,255,255,0.16)',
-      borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.3)',
-      marginBottom: spacing.sm,
-    },
-    eyebrowText: {
-      ...typography.label,
-      color: '#FFFFFF',
-      fontWeight: '700',
-      letterSpacing: 0.5,
-    },
-    title: {
-      ...typography.h1,
-      color: '#FFFFFF',
-      textAlign: 'center',
-      fontWeight: '800',
-      marginBottom: compact ? spacing.sm : spacing.md,
-      textShadowColor: 'rgba(0,0,0,0.3)',
-      textShadowOffset: { width: 0, height: 2 },
-      textShadowRadius: 10,
-    },
-    // The photo card: rounded, clipped, with room below it for the two
-    // badges to hang half off the bottom edge. `card` itself stays
-    // overflow: visible so the badges and shadow aren't cut off; the photo
-    // and its scrim are clipped by the nested cardClip instead.
-    card: {
-      width: '100%',
-      flex: 1,
-      maxHeight: compact ? 340 : 420,
-      marginBottom: compact ? spacing.xl : spacing.xl + spacing.sm,
-    },
-    cardClip: {
-      flex: 1,
-      borderRadius: CARD_RADIUS,
-      overflow: 'hidden',
-      ...glow('#000000', 0.3, 20, 10),
-    },
-    cardImage: {
-      width: '100%',
-      height: '100%',
-    },
-    badge: {
-      position: 'absolute',
-      bottom: -18,
-      width: 52,
-      height: 52,
-      borderRadius: 26,
-      alignItems: 'center',
-      justifyContent: 'center',
-      overflow: 'hidden',
-      borderWidth: 3,
-      borderColor: '#FFFFFF',
-      ...glow('#000000', 0.25, 12, 6),
-    },
-    badgeLeft: { left: 24 },
-    badgeRight: { right: 24 },
+
+    // The title block keeps the app's own AccentHeading treatment, so the intro
+    // opens with the same heading every other screen does. The subtitle is a
+    // separate line rather than AccentHeading's `subtitle` slot because that
+    // one is caption-sized, and this copy is two lines of running text.
+    head: { width: '100%', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md },
+    // The heading has to be told to fill the row it sits in. Left to measure
+    // itself inside this centred column it laid "Serious rishtas, made simple"
+    // out on one line at its natural width, which on a 360pt phone ran past
+    // both edges of the screen — and because the page clips its overflow, both
+    // ends of the title were sheared off. Stretched, it wraps onto two lines
+    // and the whole title stays on screen.
+    headTitle: { alignSelf: 'stretch' },
     subtitle: {
       ...typography.body,
-      color: 'rgba(255,255,255,0.92)',
+      color: colors.textSecondary,
       textAlign: 'center',
-      lineHeight: 22,
-      paddingHorizontal: spacing.sm,
+      maxWidth: scaleSpace(340),
     },
-    // Page 2's feature chips, standing in for page 1's floating badges — a
-    // horizontal row instead of circles overlapping a card, so the two
-    // pages don't share a silhouette even though both use small icon marks.
+
+    photo: {
+      flex: 1,
+      width: '100%',
+      maxWidth: scaleSpace(360),
+      // A floor, not a target: on a short phone the page gives the photo
+      // whatever is left after the heading, the chips and the footer bar, and
+      // this only stops it collapsing to nothing on the very smallest screens.
+      // Set too high it pushed the last chip row down under the footer, which
+      // is what made the second page feel like it ran off the bottom.
+      minHeight: compact ? scaleSpace(120) : scaleSpace(170),
+      borderRadius: radius.lg,
+      overflow: 'hidden',
+      backgroundColor: colors.skeleton,
+      borderWidth: 1,
+      borderColor: colors.border,
+      shadowColor: '#2A1720',
+      shadowOpacity: 0.1,
+      shadowRadius: 24,
+      shadowOffset: { width: 0, height: 10 },
+      elevation: 4,
+    },
+    photoImage: { width: '100%', height: '100%' },
+    // Hangs off the photo's bottom-leading corner, echoing the verified mark
+    // used on profiles without stealing the image's centre.
+    photoBadge: {
+      position: 'absolute',
+      bottom: spacing.md,
+      left: spacing.md,
+      width: 40,
+      height: 40,
+      borderRadius: radius.pill,
+      alignItems: 'center',
+      justifyContent: 'center',
+      overflow: 'hidden',
+      borderWidth: 2,
+      borderColor: colors.surface,
+      shadowColor: '#000000',
+      shadowOpacity: 0.22,
+      shadowRadius: 10,
+      shadowOffset: { width: 0, height: 4 },
+      elevation: 4,
+    },
+
     chipRow: {
       flexDirection: 'row',
+      flexWrap: 'wrap',
       justifyContent: 'center',
       gap: spacing.sm,
+      marginTop: spacing.lg,
     },
-    chip: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: scaleSpace(6),
-      paddingHorizontal: spacing.md,
-      paddingVertical: scaleSpace(9),
-      borderRadius: 999,
-      backgroundColor: 'rgba(255,255,255,0.16)',
-      borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.3)',
-    },
-    chipText: {
-      ...typography.label,
-      color: '#FFFFFF',
-      fontWeight: '700',
-    },
+    chipRowRtl: { flexDirection: 'row-reverse' },
+
+    // Skip reads as a quiet control on the light page rather than the dark
+    // translucent circle it was when the page behind it was a photo.
     topOverlay: {
       position: 'absolute',
       top: 0,
@@ -437,38 +353,37 @@ const makeStyles = (colors: Palette, compact: boolean, rtl: boolean) =>
       paddingTop: spacing.sm,
     },
     skipButton: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
+      width: 38,
+      height: 38,
+      borderRadius: radius.pill,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: 'rgba(0,0,0,0.28)',
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      shadowColor: '#2A1720',
+      shadowOpacity: 0.05,
+      shadowRadius: 8,
+      shadowOffset: { width: 0, height: 2 },
+      elevation: 1,
     },
-    bottomOverlay: {
+
+    // A solid bar with a hairline, so the primary action always has a surface
+    // under it no matter what the page is doing behind it.
+    footerBar: {
       position: 'absolute',
       left: 0,
       right: 0,
       bottom: 0,
+      backgroundColor: colors.surface,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
     },
     footer: {
       paddingHorizontal: spacing.lg,
-      paddingBottom: compact ? spacing.lg : spacing.xl,
-      gap: spacing.md,
+      paddingTop: spacing.md,
+      paddingBottom: spacing.xs,
     },
-    dots: {
-      flexDirection: 'row',
-      justifyContent: 'center',
-      alignItems: 'center',
-      gap: scaleSpace(8),
-    },
-    dot: {
-      width: scaleSpace(8),
-      height: scaleSpace(8),
-      borderRadius: scaleSpace(4),
-      backgroundColor: 'rgba(255,255,255,0.4)',
-    },
-    dotActive: {
-      width: scaleSpace(22),
-      backgroundColor: '#FFFFFF',
-    },
+
+    rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   });

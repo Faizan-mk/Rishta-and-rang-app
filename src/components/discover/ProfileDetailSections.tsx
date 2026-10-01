@@ -5,9 +5,10 @@ import { useEvent } from 'expo';
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import type { BrowseProfile } from '../../types/content';
-import { radius, spacing, typography } from '../../theme';
+import { fonts, radius, spacing, typography } from '../../theme';
+import { cardSurface } from '../../theme/surfaces';
 import { scaleFont } from '../../theme/responsive';
-import { glow, withAlpha } from '../../theme/glow';
+import { withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
@@ -18,7 +19,7 @@ import { AccentHeading } from '../common/AccentHeading';
 
 // Profile sections keep one ramp of their own rather than following the deck
 // mode, so the long read down a profile stays visually steady.
-const SECTION_RAMP = ['#1D4E52', '#7A3B6D'] as const;
+const SECTION_RAMP = ['#8E1B45', '#F2715E'] as const;
 
 function formatDuration(totalSeconds: number): string {
   const sec = Math.max(0, Math.floor(totalSeconds || 0));
@@ -111,12 +112,25 @@ interface AttributeChipData {
   label: string;
 }
 
+// Two fields can resolve to the same label — religion and sect both "Other",
+// or degree and industry both "Other" — and two identical chips side by side
+// say nothing the first did not. The label is also the chip's key, so a repeat
+// is a React duplicate-key error as well as a visual one.
+function uniqueChips(chips: AttributeChipData[]): AttributeChipData[] {
+  const seen = new Set<string>();
+  return chips.filter((chip) => {
+    if (seen.has(chip.label)) return false;
+    seen.add(chip.label);
+    return true;
+  });
+}
+
 function AttributeChip({ icon, label }: AttributeChipData) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeChipStyles(colors), [colors]);
   return (
     <View style={styles.chip}>
-      <Ionicons name={icon} size={15} color={colors.teal} />
+      <Ionicons name={icon} size={15} color={colors.gold} />
       <Text style={styles.chipText}>{label}</Text>
     </View>
   );
@@ -232,7 +246,7 @@ export function AboutMeSection({ profile }: { profile: BrowseProfile }) {
   return (
     <Section title={t('discover.aboutMeTitle')}>
       <View style={styles.chipRow}>
-        {chips.map((chip) => (
+        {uniqueChips(chips).map((chip) => (
           <AttributeChip key={chip.label} {...chip} />
         ))}
       </View>
@@ -264,7 +278,7 @@ export function FaithSection({ profile }: { profile: BrowseProfile }) {
   return (
     <Section title={t('discover.faithTitle')}>
       <View style={styles.chipRow}>
-        {chips.map((chip) => (
+        {uniqueChips(chips).map((chip) => (
           <AttributeChip key={chip.label} {...chip} />
         ))}
       </View>
@@ -286,7 +300,7 @@ export function FuturePlansSection({ profile }: { profile: BrowseProfile }) {
   return (
     <Section title={t('discover.futurePlansTitle')}>
       <View style={styles.chipRow}>
-        {chips.map((chip) => (
+        {uniqueChips(chips).map((chip) => (
           <AttributeChip key={chip.label} {...chip} />
         ))}
       </View>
@@ -306,7 +320,7 @@ export function InterestsSection({ profile }: { profile: BrowseProfile }) {
   return (
     <Section title={t('discover.interestsTitle')}>
       <View style={styles.chipRow}>
-        {interests.map((label) => (
+        {[...new Set(interests)].map((label) => (
           <AttributeChip key={label} icon="sparkles-outline" label={label} />
         ))}
       </View>
@@ -324,7 +338,7 @@ export function PersonalitySection({ profile }: { profile: BrowseProfile }) {
   return (
     <Section title={t('discover.personalityTitle')}>
       <View style={styles.chipRow}>
-        {traits.map((label) => (
+        {[...new Set(traits)].map((label) => (
           <AttributeChip key={label} icon="happy-outline" label={label} />
         ))}
       </View>
@@ -347,7 +361,7 @@ export function EducationCareerSection({ profile }: { profile: BrowseProfile }) 
   return (
     <Section title={t('discover.educationCareerTitle')}>
       <View style={styles.chipRow}>
-        {chips.map((chip) => (
+        {uniqueChips(chips).map((chip) => (
           <AttributeChip key={chip.label} {...chip} />
         ))}
       </View>
@@ -368,8 +382,8 @@ export function LanguagesBackgroundSection({ profile }: { profile: BrowseProfile
   return (
     <Section title={t('discover.languagesBackgroundTitle')}>
       <View style={styles.chipRow}>
-        {chips.map((chip, i) => (
-          <AttributeChip key={`${chip.label}-${i}`} {...chip} />
+        {uniqueChips(chips).map((chip) => (
+          <AttributeChip key={chip.label} {...chip} />
         ))}
       </View>
     </Section>
@@ -385,6 +399,7 @@ export function BioSection({ profile }: { profile: BrowseProfile }) {
 
   return (
     <Section title={t('discover.bioTitle')}>
+      <Text style={[styles.quoteMark, rtl && styles.rtlText]}>{'\u201C'}</Text>
       <Text style={[styles.bodyText, rtl && styles.rtlText]}>{text}</Text>
     </Section>
   );
@@ -427,7 +442,7 @@ export function VerificationSection({ profile }: { profile: BrowseProfile }) {
           <Ionicons
             name={item.verified ? 'checkmark-circle' : 'ellipse-outline'}
             size={18}
-            color={item.verified ? VERIFIED_BLUE : colors.textTertiary}
+            color={item.verified ? colors.success : colors.textTertiary}
           />
           <Text style={[styles.verificationLabel, rtl && styles.rtlText]}>{item.text}</Text>
         </View>
@@ -440,25 +455,18 @@ function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-// Verification blue reads the same in both themes, so it isn't a palette token.
-const VERIFIED_BLUE = '#3B9DF8';
 
 const makeReadinessStyles = (colors: Palette) =>
   StyleSheet.create({
-    card: {
-      backgroundColor: colors.sageLight,
-      borderRadius: radius.lg,
-      padding: spacing.md,
-      marginTop: spacing.lg,
-    },
+    card: { ...cardSurface(colors), marginTop: spacing.md, paddingBottom: spacing.lg },
     title: { ...typography.h3, color: colors.textPrimary },
     caption: { ...typography.caption, color: colors.textSecondary, marginTop: 2, marginBottom: spacing.md },
     segmentRow: { flexDirection: 'row', gap: 6 },
-    segment: { flex: 1, height: 8, borderRadius: 4, backgroundColor: colors.border },
+    segment: { flex: 1, height: 6, borderRadius: 3, backgroundColor: colors.border },
     segmentFilled: { backgroundColor: colors.sage },
     labelRow: { flexDirection: 'row', gap: 6, marginTop: spacing.sm },
     stepLabel: { ...typography.caption, color: colors.textSecondary, flex: 1, textAlign: 'center' },
-    stepLabelActive: { color: colors.sage, fontWeight: '800' },
+    stepLabelActive: { color: colors.sage, fontFamily: fonts.bodyBold },
     chipRow: { marginTop: spacing.md },
   });
 
@@ -468,14 +476,14 @@ const makeSimilarityStyles = (colors: Palette) =>
       flexDirection: 'row',
       alignItems: 'center',
       gap: 6,
-      backgroundColor: colors.surface,
+      backgroundColor: colors.successSoft,
       borderWidth: 1,
-      borderColor: colors.borderSoft,
+      borderColor: withAlpha(colors.success, 0.25),
       borderRadius: radius.pill,
       paddingHorizontal: spacing.sm + 4,
       paddingVertical: spacing.xs + 3,
     },
-    chipText: { ...typography.caption, color: colors.textPrimary, fontWeight: '600' },
+    chipText: { ...typography.label, color: colors.textPrimary },
   });
 
 const makeIntroStyles = (colors: Palette) =>
@@ -484,21 +492,21 @@ const makeIntroStyles = (colors: Palette) =>
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.sm,
-      backgroundColor: colors.surface,
+      backgroundColor: colors.tealSoft,
       borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: radius.lg,
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.sm + 2,
+      borderColor: withAlpha(colors.gold, 0.4),
+      borderRadius: radius.pill,
+      paddingHorizontal: spacing.sm + 2,
+      paddingVertical: spacing.sm,
     },
     voicePlayButton: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
     voiceBars: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 3, height: 22 },
     voiceBar: { width: 3, borderRadius: 2 },
-    voiceDuration: { ...typography.caption, color: colors.textSecondary, fontWeight: '600' },
+    voiceDuration: { ...typography.label, color: colors.textSecondary },
     videoWrap: {
       width: '100%',
       aspectRatio: 16 / 9,
-      borderRadius: radius.lg,
+      borderRadius: radius.md,
       overflow: 'hidden',
       backgroundColor: colors.skeleton,
       marginTop: spacing.sm,
@@ -510,13 +518,16 @@ const makeIntroStyles = (colors: Palette) =>
 
 const makeMidPhotoStyles = (colors: Palette) =>
   StyleSheet.create({
+    // Same rounded rectangle as the deck card's photo.
     wrap: {
       width: '100%',
       aspectRatio: 4 / 5,
       borderRadius: radius.lg,
+      borderWidth: 1.5,
+      borderColor: withAlpha(colors.gold, 0.8),
       overflow: 'hidden',
       backgroundColor: colors.skeleton,
-      marginTop: spacing.lg,
+      marginTop: spacing.md,
     },
     image: { width: '100%', height: '100%' },
     badge: {
@@ -526,12 +537,12 @@ const makeMidPhotoStyles = (colors: Palette) =>
       flexDirection: 'row',
       alignItems: 'center',
       gap: 4,
-      backgroundColor: 'rgba(10,10,12,0.55)',
+      backgroundColor: 'rgba(20,11,16,0.6)',
       borderRadius: radius.pill,
       paddingHorizontal: spacing.sm,
       paddingVertical: 4,
     },
-    badgeText: { ...typography.caption, color: '#FFFFFF', fontWeight: '700' },
+    badgeText: { ...typography.label, color: '#FFFFFF' },
   });
 
 const makeChipStyles = (colors: Palette) =>
@@ -540,34 +551,32 @@ const makeChipStyles = (colors: Palette) =>
       flexDirection: 'row',
       alignItems: 'center',
       gap: 6,
-      backgroundColor: withAlpha(colors.teal, 0.1),
+      backgroundColor: colors.tealSoft,
       borderWidth: 1,
-      borderColor: withAlpha(colors.teal, 0.28),
+      borderColor: withAlpha(colors.teal, 0.16),
       borderRadius: radius.pill,
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.sm + 4,
+      paddingVertical: spacing.xs + 3,
     },
-    chipText: { ...typography.body, color: colors.textPrimary, fontWeight: '600' },
+    chipText: { ...typography.label, color: colors.teal },
   });
 
 const makeSectionStyles = (colors: Palette) =>
   StyleSheet.create({
-    section: { marginTop: spacing.lg },
+    // Each section is its own biodata tile on the ivory page.
+    section: { ...cardSurface(colors), marginTop: spacing.md, paddingBottom: spacing.lg },
     sectionHeading: { marginBottom: spacing.md },
     chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
     bodyText: { ...typography.body, color: colors.textPrimary },
+    quoteMark: { fontFamily: fonts.display, fontSize: 44, lineHeight: 40, color: colors.gold, marginBottom: -spacing.sm },
     verificationCard: {
-      backgroundColor: colors.surfaceElevated,
-      borderRadius: radius.lg,
-      borderWidth: 1,
-      borderColor: colors.borderSoft,
-      padding: spacing.md,
-      marginTop: spacing.lg,
+      ...cardSurface(colors),
+      marginTop: spacing.md,
+      paddingBottom: spacing.lg,
       gap: spacing.sm,
-      ...glow(colors.teal, 0.16, 14, 4),
     },
     verificationHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-    verificationTitle: { ...typography.h3, color: colors.textPrimary, fontWeight: '800' },
+    verificationTitle: { ...typography.h3, color: colors.textPrimary },
     verificationRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
     verificationLabel: { ...typography.body, color: colors.textPrimary, flex: 1 },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },

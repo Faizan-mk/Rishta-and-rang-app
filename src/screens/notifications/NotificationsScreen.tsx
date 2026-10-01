@@ -1,31 +1,33 @@
 import React, { useMemo } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { AccentHeading } from '../../components/common/AccentHeading';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { EmptyOrb } from '../../components/common/EmptyOrb';
 import { NotificationRow } from '../../components/dashboard/NotificationRow';
 import { FadeIn } from '../../components/common/FadeInUp';
 import { useLanguage } from '../../store/LanguageContext';
+import { useDialog } from '../../store/DialogContext';
 import { useTheme } from '../../store/ThemeContext';
 import { useNotifications } from '../../store/NotificationContext';
 import { useAuth } from '../../store/AuthContext';
-import { radius, spacing, typography } from '../../theme';
-import { glow, modeAccent, withAlpha } from '../../theme/glow';
+import { fonts, radius, spacing, typography } from '../../theme';
+import { modeAccent, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 
 export function NotificationsScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
-  const { feed, unreadCount, markAllRead, markRead } = useNotifications();
+  const { feed, unreadCount, markAllRead, markRead, clearAll } = useNotifications();
   const { user } = useAuth();
   const router = useRouter();
+  const { confirm, notify } = useDialog();
   const accent = modeAccent(colors, user?.activeMode ?? 'dating');
 
-  // A message (or a Rishta step) happened inside a thread — the thread is
+  // A message (or a Rishta step) happened inside a thread ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â the thread is
   // the honest destination for that tap, same as a tapped push
   // (usePushNavigation). A like or a match is about someone specific instead,
   // with no thread yet, so that one opens their profile.
@@ -40,8 +42,36 @@ export function NotificationsScreen() {
     }
   };
 
+  // "Mark all read" and "Clear all" are not the same gesture and must not sit
+  // in the same corner fighting for the tap: one only tidies the badges, the
+  // other destroys the rows for good, on every device, with no undo. So the
+  // destructive one is confirmed, and it only appears once there is something
+  // in the feed to destroy.
+  const onClearAll = async () => {
+    const confirmed = await confirm({
+      title: t('notificationsScreen.clearAllTitle'),
+      message: t('notificationsScreen.clearAllBody'),
+      confirmLabel: t('notificationsScreen.clearAll'),
+      cancelLabel: t('common.cancel'),
+      destructive: true,
+    });
+    if (!confirmed) return;
+    try {
+      await clearAll();
+    } catch {
+      notify({
+        title: t('notificationsScreen.clearAll'),
+        message: t('notificationsScreen.clearAllFailed'),
+      });
+    }
+  };
+
   return (
-    <ScreenContainer scroll={false}>
+    // The stack already draws a "Notifications" header above this screen, so
+    // the container must not claim the top inset again ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â that double padding
+    // pushed the page's own heading most of the way down the phone, away from
+    // the header it is meant to sit under. Only the bottom edge is ours.
+    <ScreenContainer scroll={false} edges={['bottom']}>
       <FadeIn style={styles.header}>
         <AccentHeading
           size="screen"
@@ -62,23 +92,34 @@ export function NotificationsScreen() {
         data={feed}
         keyExtractor={(item) => item.id}
         renderItem={({ item, index }) => (
-          <Animated.View entering={FadeInUp.delay(Math.min(index * 60, 300)).duration(320)}>
+          <Animated.View
+            entering={FadeInUp.delay(Math.min(index * 60, 300)).duration(320)}
+            style={[styles.cell, index === 0 && styles.cellFirst, index === feed.length - 1 && styles.cellLast]}
+          >
             <NotificationRow item={item} onPress={() => onPressNotification(item)} />
           </Animated.View>
         )}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        ItemSeparatorComponent={() => (
+          <View style={styles.cell}>
+            <View style={[styles.separator, rtl && styles.separatorRtl]} />
+          </View>
+        )}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
+        // Under the feed rather than in the heading, where "Mark all read"
+        // already sits: this is a last-resort tidy-up for a long list, not a
+        // control you reach for while scrolling.
+        ListFooterComponent={
+          feed.length > 0 ? (
+            <Pressable onPress={onClearAll} style={styles.clearAll} accessibilityRole="button">
+              <Ionicons name="trash-outline" size={14} color={colors.danger} />
+              <Text style={styles.clearAllText}>{t('notificationsScreen.clearAll')}</Text>
+            </Pressable>
+          ) : null
+        }
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <LinearGradient
-              colors={accent.ramp}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={[styles.emptyOrb, glow(accent.primary, 0.5, 22, 10)]}
-            >
-              <Ionicons name="notifications-off" size={30} color="#FFFFFF" />
-            </LinearGradient>
+              <EmptyOrb ramp={accent.ramp} icon="notifications-off" />
             <Text style={[styles.emptyText, rtl && styles.rtlText]}>{t('notificationsScreen.empty')}</Text>
           </View>
         }
@@ -96,16 +137,50 @@ const makeStyles = (colors: Palette) =>
       gap: 4,
       borderRadius: radius.pill,
       borderWidth: 1,
-      borderColor: withAlpha(colors.teal, 0.35),
-      backgroundColor: withAlpha(colors.teal, 0.1),
+      borderColor: withAlpha(colors.gold, 0.6),
+      backgroundColor: colors.surface,
       paddingHorizontal: spacing.sm + 2,
       paddingVertical: 6,
     },
-    markAllRead: { ...typography.caption, color: colors.teal, fontWeight: '800' },
-    // The rows are cards now, so the list is spaced rather than ruled.
-    separator: { height: spacing.xs },
+    markAllRead: { ...typography.caption, color: colors.teal, fontFamily: fonts.bodyBold },
+    clearAll: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      marginTop: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    clearAllText: { ...typography.caption, color: colors.danger, fontFamily: fonts.bodyBold },
+    // One white card for the whole feed: each row is a cell of it, the first
+    // and last carrying its rounded ends, hairlines inset past the icon.
+    cell: {
+      backgroundColor: colors.surface,
+      borderLeftWidth: 1,
+      borderRightWidth: 1,
+      borderColor: colors.border,
+      paddingHorizontal: spacing.xs,
+    },
+    cellFirst: {
+      borderTopWidth: 1,
+      borderTopLeftRadius: radius.lg,
+      borderTopRightRadius: radius.lg,
+      paddingTop: spacing.xs,
+    },
+    cellLast: {
+      borderBottomWidth: 1,
+      borderBottomLeftRadius: radius.lg,
+      borderBottomRightRadius: radius.lg,
+      paddingBottom: spacing.xs,
+    },
+    separator: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: colors.border,
+      marginLeft: 40 + spacing.md + spacing.sm,
+      marginRight: spacing.sm,
+    },
+    separatorRtl: { marginLeft: spacing.sm, marginRight: 40 + spacing.md + spacing.sm },
     listContent: { paddingBottom: spacing.xl },
-    emptyOrb: { width: 78, height: 78, borderRadius: 39, alignItems: 'center', justifyContent: 'center' },
     emptyState: { alignItems: 'center', justifyContent: 'center', paddingTop: spacing.xxl, gap: spacing.md },
     emptyText: { ...typography.body, color: colors.textSecondary, textAlign: 'center' },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },

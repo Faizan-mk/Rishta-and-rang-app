@@ -1,7 +1,6 @@
 import React, { useMemo } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,6 +10,7 @@ import { MatchRow } from '../../components/matches/MatchRow';
 import { ModeToggle } from '../../components/profile/ModeToggle';
 import { AccentHeading } from '../../components/common/AccentHeading';
 import { AuroraBackground } from '../../components/common/AuroraBackground';
+import { EmptyOrb } from '../../components/common/EmptyOrb';
 import { FadeIn } from '../../components/common/FadeInUp';
 import { useAuth } from '../../store/AuthContext';
 import { useLanguage } from '../../store/LanguageContext';
@@ -18,7 +18,8 @@ import { useTheme } from '../../store/ThemeContext';
 import { useMatches } from '../../store/MatchesContext';
 import type { Match } from '../../types/content';
 import type { ProfileMode } from '../../types/user';
-import { radius, spacing, typography } from '../../theme';
+import { fonts, radius, spacing, typography } from '../../theme';
+import { scaleSpace } from '../../theme/responsive';
 import { glow, modeAccent } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 
@@ -47,7 +48,7 @@ export function MatchesScreen() {
   const mode: ProfileMode = user?.activeMode ?? 'dating';
   const accent = modeAccent(colors, mode);
   // Blocking keeps the thread (supabase/35_block_keeps_thread.sql) and keeps
-  // it right here too, rather than stepping it out of the list — the chat
+  // it right here too, rather than stepping it out of the list Ã¢â‚¬â€ the chat
   // itself is what shows the blocked state and the way to undo it.
   const friendsMatches = useMemo(() => matches.filter((m) => threadMode(m) === 'dating'), [matches]);
   const rishtaMatches = useMemo(() => matches.filter((m) => threadMode(m) === 'rishta'), [matches]);
@@ -99,25 +100,29 @@ export function MatchesScreen() {
         data={visibleMatches}
         keyExtractor={(item) => item.id}
         renderItem={({ item, index }) => (
-          <Animated.View entering={FadeInUp.delay(Math.min(index * 60, 300)).duration(320)}>
+          <Animated.View
+            entering={FadeInUp.delay(Math.min(index * 60, 300)).duration(320)}
+            style={[
+              styles.cell,
+              index === 0 && styles.cellFirst,
+              index === visibleMatches.length - 1 && styles.cellLast,
+            ]}
+          >
             <MatchRow match={item} onPress={() => router.push(`/chat/${item.id}`)} />
           </Animated.View>
         )}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        ItemSeparatorComponent={() => (
+          <View style={styles.cell}>
+            <View style={[styles.separator, rtl && styles.separatorRtl]} />
+          </View>
+        )}
         showsVerticalScrollIndicator={false}
         onScroll={onScroll}
         scrollEventThrottle={16}
         contentContainerStyle={[styles.listContent, { paddingBottom: TAB_BAR_BASE_HEIGHT + insets.bottom + spacing.lg }]}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <LinearGradient
-              colors={accent.ramp}
-              start={GRADIENT_START}
-              end={GRADIENT_END}
-              style={[styles.emptyOrb, glow(accent.primary, 0.5, 22, 10)]}
-            >
-              <Ionicons name="chatbubbles" size={32} color="#FFFFFF" />
-            </LinearGradient>
+              <EmptyOrb ramp={accent.ramp} icon="chatbubbles" />
             <Text style={[styles.emptyText, rtl && styles.rtlText]}>
               {t(mode === 'dating' ? 'matches.emptyFriends' : 'matches.emptyRishta')}
             </Text>
@@ -159,13 +164,38 @@ const makeStyles = (colors: Palette) =>
       paddingVertical: 5,
     },
     unreadDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#FFFFFF' },
-    unreadPillText: { ...typography.caption, color: '#FFFFFF', fontWeight: '800' },
+    unreadPillText: { ...typography.caption, color: '#FFFFFF', fontFamily: fonts.bodyBold },
     toggleWrap: { paddingBottom: spacing.md },
-    // The rows are cards now, so the list is spaced rather than ruled.
-    separator: { height: spacing.sm },
+    // The whole list is one white card: every row is a cell of it, the first
+    // and last carrying its rounded ends, with hairlines inset past the avatar.
+    cell: {
+      backgroundColor: colors.surface,
+      borderLeftWidth: 1,
+      borderRightWidth: 1,
+      borderColor: colors.border,
+      paddingHorizontal: spacing.xs,
+    },
+    cellFirst: {
+      borderTopWidth: 1,
+      borderTopLeftRadius: radius.lg,
+      borderTopRightRadius: radius.lg,
+      paddingTop: spacing.xs,
+    },
+    cellLast: {
+      borderBottomWidth: 1,
+      borderBottomLeftRadius: radius.lg,
+      borderBottomRightRadius: radius.lg,
+      paddingBottom: spacing.xs,
+    },
+    separator: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: colors.border,
+      marginLeft: scaleSpace(56) + spacing.md + spacing.sm,
+      marginRight: spacing.sm,
+    },
+    separatorRtl: { marginLeft: spacing.sm, marginRight: scaleSpace(56) + spacing.md + spacing.sm },
     listContent: { paddingBottom: spacing.xl },
     emptyState: { alignItems: 'center', justifyContent: 'center', paddingTop: spacing.xxl, gap: spacing.md },
-    emptyOrb: { width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center' },
     emptyText: { ...typography.body, color: colors.textSecondary, textAlign: 'center', paddingHorizontal: spacing.xl },
     emptyHint: { ...typography.caption, color: colors.textTertiary, textAlign: 'center', paddingHorizontal: spacing.xl },
     switchButton: {
@@ -173,6 +203,6 @@ const makeStyles = (colors: Palette) =>
       paddingHorizontal: spacing.lg,
       paddingVertical: spacing.sm + 2,
     },
-    switchLabel: { ...typography.label, color: '#FFFFFF', fontWeight: '800' },
+    switchLabel: { ...typography.label, color: '#FFFFFF', fontFamily: fonts.bodyBold },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   });

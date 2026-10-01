@@ -140,6 +140,21 @@ async function markReadByMatch(profileId: string, matchId: string): Promise<void
   if (error) throw new Error(error.message);
 }
 
+/**
+ * Delete every notification this member has.
+ *
+ * A hard delete rather than another "read" flag: "Clear all" that leaves the
+ * rows behind is just "Mark all read" wearing a different name, and the feed
+ * would refill the moment the screen refetched. The
+ * `notifications_delete` RLS policy (supabase/15_notifications.sql) already
+ * scopes this to the caller's own rows, so `.eq('profile_id', …)` cannot reach
+ * anyone else's.
+ */
+async function clearAll(profileId: string): Promise<void> {
+  const { error } = await supabase.from('notifications').delete().eq('profile_id', profileId);
+  if (error) throw new Error(error.message);
+}
+
 export const notificationsService = {
   fetchFeed,
   fetchPrefs,
@@ -148,4 +163,5 @@ export const notificationsService = {
   markAllRead,
   markRead,
   markReadByMatch,
+  clearAll,
 };

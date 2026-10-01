@@ -130,7 +130,8 @@ export const AuroraBackground = React.memo(function AuroraBackground({ colors, m
         delay: 1200,
       },
       {
-        color: colors.plum,
+        // Gold warms the Friends room; rose deepens the Rishta one.
+        color: mode === 'dating' ? colors.gold : colors.plum,
         size: width * 1.15,
         x: -width * 0.3,
         y: height * 0.62,
@@ -140,7 +141,7 @@ export const AuroraBackground = React.memo(function AuroraBackground({ colors, m
         delay: 2400,
       },
     ],
-    [accent.primary, accent.secondary, colors.plum, width, height]
+    [accent.primary, accent.secondary, colors.gold, colors.plum, mode, width, height]
   );
 
   return (

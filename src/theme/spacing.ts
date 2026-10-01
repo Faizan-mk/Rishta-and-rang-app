@@ -13,7 +13,7 @@ export const spacing = {
 
 export const radius = {
   sm: scaleSpace(8),
-  md: scaleSpace(14),
-  lg: scaleSpace(20),
+  md: scaleSpace(16),
+  lg: scaleSpace(24),
   pill: 999,
 } as const;

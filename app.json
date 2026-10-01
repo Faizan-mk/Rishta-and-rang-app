@@ -2,7 +2,7 @@
   "expo": {
     "name": "Rishta & Rang",
     "slug": "rishta-and-rang",
-    "version": "1.0.3",
+    "version": "1.0.5",
     "orientation": "portrait",
     "icon": "./assets/heart.png",
     "userInterfaceStyle": "automatic",
@@ -17,7 +17,7 @@
     "android": {
       "googleServicesFile": "./google-services.json",
       "package": "com.rishtaandrang.app",
-      "versionCode": 4,
+      "versionCode": 6,
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/heart.png"
@@ -54,9 +54,13 @@
         "expo-splash-screen",
         {
           "image": "./assets/splash-icon.png",
-          "imageWidth": 200,
+          "imageWidth": 140,
           "resizeMode": "contain",
-          "backgroundColor": "#E6F4FE"
+          "backgroundColor": "#FFFAF6",
+          "dark": {
+            "image": "./assets/splash-icon.png",
+            "backgroundColor": "#140B10"
+          }
         }
       ],
       "expo-notifications",

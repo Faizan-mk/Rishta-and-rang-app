@@ -12,6 +12,9 @@ interface NotificationContextValue {
   markAllRead: () => void;
   markRead: (id: string) => void;
   markReadForMatch: (matchId: string) => void;
+  /** Empties the feed for good. Rejects if the server refused, so the caller
+   *  can put the rows back on screen rather than showing a lie. */
+  clearAll: () => Promise<void>;
   addNotification: (type: NotificationItem['type'], title: string, body: string) => void;
 }
 
@@ -93,6 +96,26 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     notificationsService.markReadByMatch(user.id, matchId);
   };
 
+  /**
+   * Empties the feed for good.
+   *
+   * The previous rows are held rather than dropped blind: a delete that fails
+   * on a flaky connection would otherwise leave the screen showing an empty
+   * list that silently refills the next time the feed is fetched. On failure
+   * they go straight back and the rejection tells the caller to say so.
+   */
+  const clearAll = async () => {
+    if (!user) return;
+    const previous = feed;
+    setFeed([]);
+    try {
+      await notificationsService.clearAll(user.id);
+    } catch (error) {
+      setFeed(previous);
+      throw error;
+    }
+  };
+
   const addNotification = (type: NotificationItem['type'], title: string, body: string) => {
     if (!user || !prefs[PREF_KEY_BY_TYPE[type]]) return;
     notificationsService.addNotification(user.id, type, title, body).then((item) => {
@@ -103,7 +126,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const unreadCount = useMemo(() => feed.filter((n) => !n.read).length, [feed]);
 
   const value = useMemo(
-    () => ({ prefs, setPref, feed, unreadCount, markAllRead, markRead, markReadForMatch, addNotification }),
+    () => ({ prefs, setPref, feed, unreadCount, markAllRead, markRead, markReadForMatch, clearAll, addNotification }),
     [prefs, feed, unreadCount, user?.id]
   );
 

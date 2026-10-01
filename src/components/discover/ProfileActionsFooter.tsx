@@ -58,7 +58,7 @@ export function ProfileActionsFooter({ name, onSendCompliment }: ProfileActionsF
       <Pressable onPress={onSubmitCompliment} disabled={!canSubmit}>
         {canSubmit || sending ? (
           <LinearGradient
-            colors={[colors.teal, colors.sage]}
+            colors={[colors.teal, colors.dating]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={[styles.submit, glow(colors.teal, 0.5, 16, 7)]}
@@ -81,29 +81,38 @@ export function ProfileActionsFooter({ name, onSendCompliment }: ProfileActionsF
 
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
-    section: { marginTop: spacing.xl },
+    // A blush card with a gold hairline: the respectful first-message moment.
+    section: {
+      marginTop: spacing.md,
+      backgroundColor: colors.tealSoft,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: withAlpha(colors.gold, 0.5),
+      padding: spacing.lg,
+    },
     eyebrow: {
-      color: colors.textTertiary,
+      ...typography.label,
+      color: colors.gold,
       fontSize: scaleFont(11),
-      fontWeight: '700',
       letterSpacing: 1.4,
       textTransform: 'uppercase',
     },
     heading: { ...typography.h2, color: colors.textPrimary, marginTop: spacing.xs, marginBottom: spacing.md },
     input: {
       minHeight: 96,
-      borderWidth: 1.5,
-      borderColor: colors.borderSoft,
+      borderWidth: 1,
+      borderColor: colors.border,
       borderRadius: radius.md,
       backgroundColor: colors.surface,
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm + 4,
       fontSize: typography.body.fontSize,
+      fontFamily: typography.body.fontFamily,
       color: colors.textPrimary,
       textAlignVertical: 'top',
       outlineWidth: 0,
     },
-    inputFocused: { borderColor: colors.teal },
+    inputFocused: { borderColor: colors.gold },
     charCount: { ...typography.caption, color: colors.textTertiary, textAlign: 'right', marginTop: spacing.xs },
     charCountRtl: { textAlign: 'left' },
     submit: {
@@ -115,6 +124,6 @@ const makeStyles = (colors: Palette) =>
       minHeight: 48,
     },
     submitDisabled: { backgroundColor: colors.textTertiary, opacity: 0.5 },
-    submitLabel: { ...typography.h3, color: '#FFFFFF', fontWeight: '800' },
+    submitLabel: { ...typography.bodyBold, color: '#FFFFFF' },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   });

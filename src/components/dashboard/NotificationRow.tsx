@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { NotificationItem, NotificationType } from '../../types/content';
-import { radius, spacing, typography } from '../../theme';
+import { fonts, radius, spacing, typography } from '../../theme';
 import { glow, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
@@ -27,14 +27,14 @@ export function NotificationRow({ item, onPress }: { item: NotificationItem; onP
   return (
     <Pressable
       onPress={onPress}
-      style={[styles.row, rtl && styles.rowRtl, !item.read && [styles.rowUnread, { borderColor: withAlpha(tone, 0.35) }]]}
+      style={[styles.row, rtl && styles.rowRtl, !item.read && { backgroundColor: withAlpha(tone, 0.06) }]}
     >
       <View
         style={[
           styles.iconWrap,
           rtl ? styles.iconWrapRtl : styles.iconWrapLtr,
           { backgroundColor: toneSoft },
-          !item.read && glow(tone, 0.45, 10, 4),
+          !item.read && styles.iconUnread,
         ]}
       >
         <Ionicons name={ICONS[item.type]} size={18} color={tone} />
@@ -57,17 +57,12 @@ const makeStyles = (colors: Palette) =>
       flexDirection: 'row',
       alignItems: 'flex-start',
       borderRadius: radius.md,
-      borderWidth: 1,
-      borderColor: 'transparent',
       paddingHorizontal: spacing.sm,
-      paddingVertical: spacing.sm + 2,
+      paddingVertical: spacing.md,
     },
     // Urdu reads right-to-left, so the avatar leads from the right edge and the
     // timestamp trails on the left — the mirror image of the English row.
     rowRtl: { flexDirection: 'row-reverse' },
-    // Unread notifications sit on their own tinted card so the list separates
-    // into "new" and "seen" without a second colour language.
-    rowUnread: { backgroundColor: colors.surfaceElevated },
     iconWrap: {
       width: 40,
       height: 40,
@@ -75,10 +70,12 @@ const makeStyles = (colors: Palette) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
-    iconWrapLtr: { marginRight: spacing.sm },
-    iconWrapRtl: { marginLeft: spacing.sm },
+    iconWrapLtr: { marginRight: spacing.md },
+    iconWrapRtl: { marginLeft: spacing.md },
+    // A gold rim marks the unread ones.
+    iconUnread: { borderWidth: 1.5, borderColor: colors.gold },
     textWrap: { flex: 1 },
-    title: { ...typography.bodyBold, color: colors.textPrimary, fontWeight: '700' },
+    title: { ...typography.bodyBold, color: colors.textPrimary },
     body: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
     metaWrap: { alignItems: 'flex-end' },
     metaWrapLtr: { marginLeft: spacing.sm },

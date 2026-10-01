@@ -8,7 +8,7 @@ import { SelectField } from '../common/SelectField';
 import { PAKISTAN_CITIES } from '../../data/locations';
 import { SECT_OPTIONS } from '../../data/sects';
 import type { Intent, ProfileMode, RishtaReadiness } from '../../types/user';
-import { radius, spacing, typography } from '../../theme';
+import { fonts, radius, spacing, typography } from '../../theme';
 import { glow, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
@@ -280,15 +280,15 @@ export function BrowseSortSheet({ visible, sort, onChange, onClose }: BrowseSort
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
     // Filters
-    groupLabel: { ...typography.label, color: colors.textPrimary, marginBottom: spacing.xs, fontWeight: '700' },
+    groupLabel: { ...typography.label, color: colors.textPrimary, marginBottom: spacing.xs, fontFamily: fonts.bodyBold },
     ageBlock: { marginBottom: spacing.md },
     ageHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    ageValue: { ...typography.label, color: colors.teal, fontWeight: '800' },
+    ageValue: { ...typography.label, color: colors.teal, fontFamily: fonts.bodyBold },
     ageRow: { flexDirection: 'row', gap: spacing.sm },
     stepper: {
       flex: 1,
-      borderWidth: 1.5,
-      borderColor: colors.borderSoft,
+      borderWidth: 1,
+      borderColor: colors.border,
       borderRadius: radius.md,
       paddingHorizontal: spacing.sm,
       paddingVertical: spacing.sm,
@@ -299,32 +299,31 @@ const makeStyles = (colors: Palette) =>
     stepperButton: {
       width: 34,
       height: 34,
-      borderRadius: radius.sm,
-      backgroundColor: withAlpha(colors.teal, 0.12),
+      borderRadius: radius.pill,
+      backgroundColor: colors.tealSoft,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    stepperValue: { ...typography.h3, color: colors.textPrimary, fontWeight: '800' },
+    stepperValue: { ...typography.h3, color: colors.textPrimary },
     readinessRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.md },
     readinessChip: {
-      borderWidth: 1.5,
-      borderColor: colors.borderSoft,
+      borderWidth: 1,
+      borderColor: colors.border,
       borderRadius: radius.pill,
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.xs + 2,
     },
     readinessChipSelected: {
-      backgroundColor: withAlpha(colors.teal, 0.14),
+      backgroundColor: colors.tealSoft,
       borderColor: colors.teal,
-      ...glow(colors.teal, 0.3, 10, 4),
     },
-    readinessChipText: { ...typography.caption, color: colors.textSecondary, fontWeight: '700' },
-    readinessChipTextSelected: { color: colors.teal, fontWeight: '800' },
+    readinessChipText: { ...typography.caption, color: colors.textSecondary, fontFamily: fonts.bodyBold },
+    readinessChipTextSelected: { color: colors.teal, fontFamily: fonts.bodyBold },
 
     // Sort sheet
     header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.sm },
     closeButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-    title: { ...typography.h2, color: colors.textPrimary, flex: 1, textAlign: 'center', fontWeight: '800' },
+    title: { ...typography.h2, color: colors.textPrimary, flex: 1, textAlign: 'center' },
     list: { paddingBottom: spacing.lg },
     option: {
       flexDirection: 'row',
@@ -334,14 +333,16 @@ const makeStyles = (colors: Palette) =>
       paddingHorizontal: spacing.lg,
       paddingVertical: spacing.md + 2,
       borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: colors.borderSoft,
+      borderBottomColor: colors.border,
     },
     optionRtl: { flexDirection: 'row-reverse' },
-    optionLabel: { ...typography.h3, color: colors.textPrimary, fontWeight: '600', flexShrink: 1 },
-    optionLabelSelected: { color: colors.teal, fontWeight: '800' },
+    optionLabel: { ...typography.bodyBold, color: colors.textPrimary, flexShrink: 1 },
+    optionLabelSelected: { color: colors.teal, fontFamily: fonts.bodyBold },
     footer: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.lg },
     confirmButton: {
       backgroundColor: colors.teal,
+      borderWidth: 1,
+      borderColor: withAlpha(colors.gold, 0.7),
       borderRadius: radius.pill,
       alignItems: 'center',
       justifyContent: 'center',
@@ -349,6 +350,6 @@ const makeStyles = (colors: Palette) =>
       minHeight: 52,
       ...glow(colors.teal, 0.5, 16, 7),
     },
-    confirmLabel: { ...typography.h3, color: '#FFFFFF', fontWeight: '800' },
+    confirmLabel: { ...typography.bodyBold, color: '#FFFFFF', fontFamily: fonts.bodyBold },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   });

@@ -3,8 +3,8 @@ import type { ProfileMode } from '../types/user';
 
 // Gradient + glow tokens for the browse surfaces. They live in the theme rather
 // than in each component so Friends and Rishta stay two recognisable colour
-// worlds — warm coral/gold on the Friends deck, cool orchid/teal on Rishta —
-// instead of every card inventing its own pair.
+// worlds — sunlit coral/gold on the Friends deck, the rosewood-to-coral
+// signature gradient on Rishta — instead of every card inventing its own pair.
 
 // expo-linear-gradient needs to see at least two stops at the type level.
 export type Gradient = readonly [string, string, ...string[]];
@@ -33,10 +33,19 @@ export function withAlpha(hex: string, alpha: number): string {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
+// Straight blend of two '#RRGGBB' colours, t = 0 is `a` and t = 1 is `b`.
+export function mixHex(a: string, b: string, t: number): string {
+  const pa = parseInt(a.slice(1), 16);
+  const pb = parseInt(b.slice(1), 16);
+  const channel = (shift: number) =>
+    Math.round(((pa >> shift) & 255) + (((pb >> shift) & 255) - ((pa >> shift) & 255)) * t);
+  return `#${[16, 8, 0].map((shift) => channel(shift).toString(16).padStart(2, '0')).join('')}`;
+}
+
 export function modeAccent(colors: Palette, mode: ProfileMode): ModeAccent {
   const primary = mode === 'dating' ? colors.dating : colors.rishta;
-  const secondary = mode === 'dating' ? colors.gold : colors.teal;
-  const middle = mode === 'dating' ? colors.plum : colors.dating;
+  const secondary = mode === 'dating' ? colors.gold : colors.dating;
+  const middle = mode === 'dating' ? mixHex(colors.dating, colors.gold, 0.5) : colors.plum;
 
   return {
     primary,

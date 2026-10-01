@@ -1,4 +1,3 @@
-import * as Linking from 'expo-linking';
 import { supabase } from './supabase';
 import { mediaUpload } from './mediaUpload';
 import { AppError } from '../utils/appError';
@@ -35,6 +34,9 @@ export interface SignupInput {
   selfieUri?: string;
   cnicNumber: string;
   cnicPhotoUri?: string;
+  /** From `verifyOtp(email, 'signup', code)` — proof the inbox is theirs. Absent
+   *  only when resuming an account that already exists (see `inspectEmail`). */
+  emailTicket?: string;
 }
 
 /**
@@ -426,25 +428,14 @@ function isPlaceholderProfile(profile: ProfileDoc, email: string): boolean {
   );
 }
 
-/** Maps a Supabase signup failure to a dictionary key (see AppError). */
-function signupErrorMessage(err: unknown): string {
-  const code = (err as { code?: string })?.code ?? '';
-  const message = (err as { message?: string })?.message ?? '';
-  if (code === 'email_exists' || /already registered/i.test(message)) {
-    return 'authErrors.emailTaken';
-  }
-  if (code === 'weak_password' || message.includes('must be at least')) {
-    return 'authErrors.weakPassword';
-  }
-  if (code === 'invalid_email' || message.toLowerCase().includes('invalid email')) {
-    return 'authErrors.invalidEmail';
-  }
-  return 'authErrors.signupFailed';
-}
-
 /**
  * Creates the auth user and leaves a live session behind, or reuses the one an
  * earlier attempt already created.
+ *
+ * The account is created by the auth-otp function, not `supabase.auth.signUp`:
+ * the function only does it for a ticket from a correct email code, and marks
+ * the address confirmed as it goes — so Supabase sends no confirmation link of
+ * its own and the member never has to leave the app.
  *
  * The resume path matters: signup writes an auth user first and the Postgres
  * rows after, so an attempt that died in between leaves an account that can
@@ -453,64 +444,55 @@ function signupErrorMessage(err: unknown): string {
  * finishes the rows it never got to write.
  */
 async function createAccount(email: string, input: SignupInput): Promise<string> {
-  try {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password: input.password,
-      options: { data: { fullName: input.fullName.trim() } },
-    });
-    if (error) throw error;
-
-    // With enumeration protection on, signing up an address that already exists
-    // returns a decoy user with no identities rather than an error.
-    const alreadyRegistered = data.user && (data.user.identities?.length ?? 0) === 0;
-    if (alreadyRegistered) throw { code: 'email_exists' };
-
-    const createdUserId = data.user?.id;
-    if (!createdUserId) throw new AppError('authErrors.signupFailed');
-
-    // With email confirmation turned ON in the dashboard, signUp returns no
-    // session yet. The storage uploads below and the profile writes need a
-    // live session, so best-effort sign in (works once the address works).
-    if (!data.session) {
-      const { error: sessionError } = await supabase.auth.signInWithPassword({ email, password: input.password });
-      if (sessionError) {
-        throw new AppError('authErrors.confirmEmailFirst');
-      }
+  let created = false;
+  if (input.emailTicket) {
+    try {
+      await callAuthOtp({
+        action: 'signup',
+        email,
+        password: input.password,
+        fullName: input.fullName.trim(),
+        ticket: input.emailTicket,
+      });
+      created = true;
+    } catch (err) {
+      // Already registered falls through to the resume check below; anything
+      // else (expired ticket, weak password, server down) is the answer.
+      if (!(err instanceof AppError && err.key === 'authErrors.emailTaken')) throw err;
     }
-    return createdUserId;
-  } catch (err) {
-    const code = (err as { code?: string })?.code ?? '';
-    const message = (err as { message?: string })?.message ?? '';
-    if (code === 'email_exists' || /already registered|already been registered/i.test(message)) {
-      // Same person retrying their own half-finished signup, or someone typing
-      // an address that isn't theirs — a matching password alone can't tell the
-      // two apart, since it also matches a stranger's account with the same
-      // (coincidentally identical) password. Only a placeholder profile — the
-      // marker `login` leaves behind for a signup that died before writing its
-      // rows — proves it's the former.
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password: input.password });
-      if (!error && data.user) {
-        // A failed read must NOT be treated as "no row yet" — fail closed, the
-        // same as `inspectEmail`, or an unreadable profile (RLS/grant issue,
-        // network blip) would look identical to a genuinely missing one and let
-        // the caller in as if this were their own dead signup.
-        let profile;
-        try {
-          profile = await fetchProfileRow(data.user.id);
-        } catch {
-          await supabase.auth.signOut({ scope: 'local' });
-          throw new AppError('authErrors.emailTaken');
-        }
-        if (!profile || isPlaceholderProfile(profile, email)) {
-          return data.user.id;
-        }
-        await supabase.auth.signOut({ scope: 'local' });
-      }
-      throw new AppError('authErrors.emailTaken');
-    }
-    throw new AppError(signupErrorMessage(err));
   }
+
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password: input.password });
+  if (error || !data.user) {
+    if (created) throw new AppError('authErrors.signupFailed');
+    // No ticket and no account to resume: the code step was skipped.
+    throw new AppError(input.emailTicket ? 'authErrors.emailTaken' : 'authErrors.emailNotVerified');
+  }
+  if (created) return data.user.id;
+
+  // Same person retrying their own half-finished signup, or someone typing an
+  // address that isn't theirs — a matching password alone can't tell the two
+  // apart, since it also matches a stranger's account with the same
+  // (coincidentally identical) password. Only a placeholder profile — the
+  // marker `login` leaves behind for a signup that died before writing its
+  // rows — proves it's the former.
+  //
+  // A failed read must NOT be treated as "no row yet" — fail closed, the same
+  // as `inspectEmail`, or an unreadable profile (RLS/grant issue, network blip)
+  // would look identical to a genuinely missing one and let the caller in as if
+  // this were their own dead signup.
+  let profile;
+  try {
+    profile = await fetchProfileRow(data.user.id);
+  } catch {
+    await supabase.auth.signOut({ scope: 'local' });
+    throw new AppError('authErrors.emailTaken');
+  }
+  if (!profile || isPlaceholderProfile(profile, email)) {
+    return data.user.id;
+  }
+  await supabase.auth.signOut({ scope: 'local' });
+  throw new AppError('authErrors.emailTaken');
 }
 
 interface SignupMedia {
@@ -872,114 +854,110 @@ async function setReadiness(userId: string, readiness: UserProfile['rishta']['re
   await supabase.from('profiles').update({ rishta_readiness: readiness }).eq('id', userId);
 }
 
-// Sends the Supabase "reset password" email. Deliberately quiet about whether
-// the address is registered — telling an anonymous caller which emails have
-// accounts is an account-enumeration leak.
-async function requestPasswordReset(email: string): Promise<void> {
-  // Expo Go builds this from the dev server's LAN address, so it changes with
-  // the network — and Supabase silently falls back to the project's Site URL for
-  // any redirect that is not on its allow-list, which is what sends the tap to a
-  // dead localhost page instead of the app. Printing it here is the only way to
-  // copy the exact string the allow-list needs.
-  const redirectTo = Linking.createURL('/reset-password');
-  if (__DEV__) console.log('[password reset] redirectTo =', redirectTo);
-  const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), { redirectTo });
-  if (error && error.status !== 400 && error.status !== 422) throw error;
+// ---------------------------------------------------------------------------
+// Email one-time codes (supabase/functions/auth-otp)
+//
+// Signup and "forgot password" both prove the inbox with a 6-digit code typed
+// into the app — no link, no browser, no redirect allow-list. A correct code
+// buys a short-lived ticket, and the ticket is what the server accepts for the
+// step after: creating the account, or writing the new password.
+// ---------------------------------------------------------------------------
+
+export type OtpPurpose = 'signup' | 'reset';
+
+interface OtpErrorPayload {
+  error?: string;
+  retryAfter?: number;
+  remaining?: number;
 }
 
-function decodeParam(value: string): string {
-  try {
-    return decodeURIComponent(value.replace(/\+/g, ' '));
-  } catch {
-    return value;
+/** Maps the function's error codes to dictionary keys (see AppError). */
+function otpError(payload: OtpErrorPayload): AppError {
+  switch (payload.error) {
+    case 'email_taken':
+      return new AppError('authErrors.emailTaken');
+    case 'invalid_email':
+      return new AppError('authErrors.invalidEmail');
+    case 'weak_password':
+      return new AppError('signup.passwordRequirementsError');
+    case 'cooldown':
+      return new AppError('authErrors.otpCooldown', { seconds: payload.retryAfter ?? 60 });
+    case 'rate_limited':
+      return new AppError('authErrors.otpRateLimited', {
+        minutes: Math.max(1, Math.ceil((payload.retryAfter ?? 3600) / 60)),
+      });
+    case 'send_failed':
+      return new AppError('authErrors.otpSendFailed');
+    case 'invalid_code':
+      return typeof payload.remaining === 'number'
+        ? new AppError('authErrors.otpInvalid', { remaining: payload.remaining })
+        : new AppError('authErrors.otpInvalidNoCount');
+    case 'too_many_attempts':
+      return new AppError('authErrors.otpTooManyAttempts');
+    case 'code_expired':
+      return new AppError('authErrors.otpExpired');
+    case 'ticket_invalid':
+      return new AppError('authErrors.otpTicketInvalid');
+    default:
+      return new AppError('common.somethingWentWrong');
   }
 }
 
-/**
- * Every parameter a reset link carries, read from the query string and the
- * fragment alike. Which of the two holds the credential depends on the flow the
- * client is configured for — the implicit flow puts access_token/refresh_token
- * after the '#', PKCE puts a code in the query — so reading both means the reset
- * keeps working if that setting ever changes.
- */
-function linkParams(url: string): Record<string, string> {
-  const params: Record<string, string> = {};
-  const collect = (query: string) => {
-    for (const pair of query.split('&')) {
-      if (!pair) continue;
-      const eq = pair.indexOf('=');
-      const key = decodeParam(eq === -1 ? pair : pair.slice(0, eq));
-      if (key) params[key] = eq === -1 ? '' : decodeParam(pair.slice(eq + 1));
+async function callAuthOtp<T>(body: Record<string, unknown>): Promise<T> {
+  const { data, error } = await supabase.functions.invoke('auth-otp', { body });
+  if (!error) return data as T;
+
+  // A non-2xx answer arrives as FunctionsHttpError with the Response on
+  // `context`; the function's own error code is in its JSON body.
+  let payload: OtpErrorPayload = {};
+  const context = (error as { context?: { json?: () => Promise<unknown> } }).context;
+  if (typeof context?.json === 'function') {
+    try {
+      payload = ((await context.json()) as OtpErrorPayload) ?? {};
+    } catch {
+      // Not JSON — falls through to the generic message.
     }
-  };
-  const hash = url.indexOf('#');
-  if (hash !== -1) collect(url.slice(hash + 1));
-  const path = hash === -1 ? url : url.slice(0, hash);
-  const question = path.indexOf('?');
-  if (question !== -1) collect(path.slice(question + 1));
-  return params;
+  }
+  throw otpError(payload);
 }
 
 /**
- * Turns a tapped reset link into a live session — the authority updatePassword
- * needs to write a new password for an account nobody can currently log into.
- *
- * The session this leaves behind is an ordinary one, which is why the reset
- * screen sits outside the signed-out route group: the moment this resolves, the
- * rest of the app counts the visitor as signed in.
+ * Emails a fresh code. Resolves with how many seconds until another may be
+ * requested. For 'reset' this succeeds whether or not the address has an
+ * account — the function sends nothing for an unknown one, but says so to
+ * nobody.
  */
-async function openPasswordResetLink(url: string): Promise<void> {
-  const params = linkParams(url);
+async function requestOtp(email: string, purpose: OtpPurpose, language: AppLanguage): Promise<{ resendIn: number }> {
+  const result = await callAuthOtp<{ resendIn?: number }>({
+    action: 'request',
+    email: email.trim().toLowerCase(),
+    purpose,
+    language,
+  });
+  return { resendIn: result?.resendIn ?? 60 };
+}
 
-  // An expired or already-spent link is reported by redirecting with the reason
-  // attached, not by failing the request — so this is checked before the rest.
-  if (params.error || params.error_code) {
-    // Supabase attaches its own reason on the redirect; keep it when present.
-    if (params.error_description) throw new Error(params.error_description);
-    throw new AppError('authErrors.resetLinkExpired');
-  }
-
-  if (params.access_token && params.refresh_token) {
-    const { error } = await supabase.auth.setSession({
-      access_token: params.access_token,
-      refresh_token: params.refresh_token,
-    });
-    if (error) throw new Error(error.message);
-    return;
-  }
-
-  if (params.code) {
-    const { error } = await supabase.auth.exchangeCodeForSession(params.code);
-    if (error) throw new Error(error.message);
-    return;
-  }
-
-  if (params.token_hash) {
-    const { error } = await supabase.auth.verifyOtp({ type: 'recovery', token_hash: params.token_hash });
-    if (error) throw new Error(error.message);
-    return;
-  }
-
-  // On web, detectSessionInUrl consumes the fragment before this runs, so a link
-  // with nothing left on it is still good if it left a session behind.
-  const { data } = await supabase.auth.getSession();
-  if (!data.session) {
-    throw new AppError('authErrors.resetLinkSpent');
-  }
+/** Trades a correct code for the ticket the next step needs. */
+async function verifyOtp(email: string, purpose: OtpPurpose, code: string): Promise<string> {
+  const result = await callAuthOtp<{ ticket?: string }>({
+    action: 'verify',
+    email: email.trim().toLowerCase(),
+    purpose,
+    code: code.trim(),
+  });
+  if (!result?.ticket) throw new AppError('common.somethingWentWrong');
+  return result.ticket;
 }
 
 /**
- * Writes the new password against whatever session is live — the recovery one
- * the link established, or an ordinary one for a password change made while
- * signed in. This is the call that lands the change in the database.
+ * Writes the new password with a 'reset' ticket. Every existing session on the
+ * account is ended server-side; the member signs in afresh with the new one.
  */
-async function updatePassword(newPassword: string): Promise<void> {
-  const { error } = await supabase.auth.updateUser({ password: newPassword });
-  if (error) throw new Error(error.message);
+async function resetPasswordWithOtp(email: string, ticket: string, newPassword: string): Promise<void> {
+  await callAuthOtp({ action: 'reset', email: email.trim().toLowerCase(), ticket, password: newPassword });
 }
 
 export const authService = {
-
   touchLastActive,
   touchOffline,
   setIntent,
@@ -993,7 +971,7 @@ export const authService = {
   deleteAccount,
   emailExists,
   inspectEmail,
-  requestPasswordReset,
-  openPasswordResetLink,
-  updatePassword,
+  requestOtp,
+  verifyOtp,
+  resetPasswordWithOtp,
 };

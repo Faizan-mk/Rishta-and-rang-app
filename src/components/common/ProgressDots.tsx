@@ -14,12 +14,12 @@ export function ProgressDots({ total, current }: { total: number; current: numbe
     <View style={styles.row}>
       {Array.from({ length: total }).map((_, index) => {
         // The step you are on is lit; the ones behind you are a solid, calmer
-        // green so progress reads as a filling bar rather than a row of dots.
+        // rosewood so progress reads as a filling bar rather than a row of dots.
         if (index === current) {
           return (
             <LinearGradient
               key={index}
-              colors={[colors.teal, colors.sage]}
+              colors={[colors.teal, colors.dating]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={[styles.dot, glow(colors.teal, 0.7, 8, 4)]}
@@ -37,10 +37,10 @@ const makeStyles = (colors: Palette) =>
     row: { flexDirection: 'row', marginBottom: spacing.lg },
     dot: {
       flex: 1,
-      height: 5,
+      height: 6,
       borderRadius: 3,
       backgroundColor: colors.border,
       marginRight: spacing.xs,
     },
-    dotDone: { backgroundColor: colors.sage },
+    dotDone: { backgroundColor: colors.teal },
   });

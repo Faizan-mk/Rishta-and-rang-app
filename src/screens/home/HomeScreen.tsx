@@ -2,12 +2,12 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Image, Modal, Pressable, RefreshControl, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   FadeIn as ReanimatedFadeIn,
 } from 'react-native-reanimated';
 import { AuroraBackground } from '../../components/common/AuroraBackground';
+import { EmptyOrb } from '../../components/common/EmptyOrb';
 import { DiscoverProfileCard } from '../../components/discover/DiscoverProfileCard';
 import { TAB_BAR_BASE_HEIGHT, useHideTabBarOnScroll } from '../../store/TabBarVisibilityContext';
 import { MatchCelebration } from '../../components/discover/MatchCelebration';
@@ -109,7 +109,7 @@ function sortProfiles<T extends BrowseProfile>(profiles: T[], sort: BrowseSortKe
     case 'justJoined':
       return sorted.sort((a, b) => timestamp(b.joinedAt) - timestamp(a.joinedAt));
     case 'freeToChat':
-      // Anyone there's no thread with yet comes first — they can still take a chat.
+      // Anyone there's no thread with yet comes first â€” they can still take a chat.
       return sorted.sort((a, b) => Number(chattingWith.has(a.id)) - Number(chattingWith.has(b.id)));
     case 'verified': {
       const badges = (p: T) => Number(Boolean(p.selfieVerified)) + Number(Boolean(p.bureauVerified));
@@ -172,7 +172,7 @@ export function HomeScreen() {
     [blockedProfiles]
   );
 
-  // Anyone whose thread moved to Rishta is off the Friends deck for good — they
+  // Anyone whose thread moved to Rishta is off the Friends deck for good â€” they
   // only come round again on the Rishta side. Casual intent belongs on Friends;
   // serious/matrimonial intent belongs on Rishta.
   const visibleDatingProfiles = useMemo(
@@ -217,7 +217,7 @@ export function HomeScreen() {
   const currentProfile = visibleProfiles[safeCursor];
 
   // The deck arrives a page at a time now, so the next page is fetched while
-  // there are still cards left to swipe — not when the member hits the end and
+  // there are still cards left to swipe â€” not when the member hits the end and
   // has to wait. The filters run client-side over what has been fetched, so a
   // narrow filter is exactly the case that needs more pages.
   useEffect(() => {
@@ -248,7 +248,7 @@ export function HomeScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, currentProfile?.id]);
 
-  // A re-filtered or re-sorted deck is a different deck — start it from the top
+  // A re-filtered or re-sorted deck is a different deck â€” start it from the top
   // instead of landing mid-way through it.
   useEffect(() => {
     setDatingCursor(0);
@@ -362,7 +362,7 @@ export function HomeScreen() {
       });
     } catch {
       // The cap is the server's to enforce now, so it can refuse even when the
-      // local counter thought there was room — a second device, or a count this
+      // local counter thought there was room â€” a second device, or a count this
       // session never saw.
       const wantsUpgrade = await promptUpgrade(t('discover.limitReachedTitle'), t('discover.limitReachedBody'));
       if (!wantsUpgrade) advance();
@@ -398,7 +398,7 @@ export function HomeScreen() {
     try {
       await Share.share({ message: t('discover.shareMessage', { name: currentProfile.name }) });
     } catch {
-      // User dismissed the share sheet — nothing to do.
+      // User dismissed the share sheet â€” nothing to do.
     }
   };
 
@@ -413,7 +413,7 @@ export function HomeScreen() {
       destructive: true,
     });
     if (!confirmed) return;
-    // Blocking is per person, not per thread — there may well be no thread with
+    // Blocking is per person, not per thread â€” there may well be no thread with
     // someone you are blocking straight off the deck.
     blockProfile({ id: profile.id, name: profile.name, photo: profile.photos[0], mode });
   };
@@ -468,7 +468,7 @@ export function HomeScreen() {
         mode={mode}
       />
 
-      {/* Friends / Rishta decks are separate — this is how a member switches
+      {/* Friends / Rishta decks are separate â€” this is how a member switches
           between them without leaving Home. */}
       <View style={styles.toggleWrap}>
         <ModeToggle
@@ -554,14 +554,7 @@ export function HomeScreen() {
         </Animated.View>
       ) : (
         <Animated.View entering={ReanimatedFadeIn.duration(240)} style={styles.emptyState}>
-          <LinearGradient
-            colors={accent.ramp}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={[styles.emptyOrb, glow(accent.primary, 0.55, 24, 10)]}
-          >
-            <Ionicons name="sparkles" size={34} color="#FFFFFF" />
-          </LinearGradient>
+          <EmptyOrb ramp={accent.ramp} icon="sparkles" />
           <Text style={[styles.emptyText, rtl && styles.rtlText]}>
             {filtersActive > 0 ? t('discover.filtersEmpty') : t('discover.outOfProfiles')}
           </Text>
@@ -630,13 +623,12 @@ const makeStyles = (colors: Palette) =>
     toggleWrap: { paddingHorizontal: spacing.lg, paddingBottom: spacing.md },
     emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, paddingHorizontal: spacing.xl },
     emptyText: { ...typography.body, color: colors.textSecondary, textAlign: 'center' },
-    emptyOrb: { width: 84, height: 84, borderRadius: 42, alignItems: 'center', justifyContent: 'center' },
     emptyResetButton: {
       borderRadius: radius.pill,
       paddingHorizontal: spacing.lg,
       paddingVertical: spacing.sm + 2,
     },
-    emptyResetLabel: { ...typography.label, color: '#FFFFFF', fontWeight: '800', fontSize: scaleFont(13) },
+    emptyResetLabel: { ...typography.label, color: '#FFFFFF', fontSize: scaleFont(13) },
     previewOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', alignItems: 'center', justifyContent: 'center' },
     previewImage: { width: '100%', height: '80%' },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },

@@ -3,7 +3,7 @@ import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { Button } from '../Button';
 import { TextField } from './TextField';
-import { radius, spacing, typography } from '../../theme';
+import { fonts, radius, spacing, typography } from '../../theme';
 import { withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
@@ -82,6 +82,11 @@ export function ReportDialog({ visible, name, onCancel, onSubmit }: ReportDialog
       <Pressable style={styles.overlay} onPress={handleCancel}>
         <Animated.View entering={FadeInUp.duration(220)} style={styles.card}>
           <Pressable onPress={(e) => e.stopPropagation()}>
+            <View style={styles.flourish}>
+              <View style={styles.flourishLine} />
+              <View style={styles.flourishDiamond} />
+              <View style={styles.flourishLine} />
+            </View>
             <Text style={[styles.title, rtl && styles.rtlText]}>{t('chat.reportConfirmTitle', { name })}</Text>
             <Text style={[styles.subtitle, rtl && styles.rtlText]}>{t('report.subtitle')}</Text>
 
@@ -142,17 +147,21 @@ const makeStyles = (colors: Palette) =>
       width: '100%',
       maxWidth: 380,
       backgroundColor: colors.surfaceElevated,
-      borderRadius: radius.lg,
+      borderRadius: radius.lg + 4,
       borderWidth: 1,
-      borderColor: colors.borderSoft,
+      borderColor: withAlpha(colors.gold, 0.5),
       padding: spacing.lg,
-      shadowColor: '#000',
-      shadowOpacity: 0.3,
-      shadowRadius: 28,
-      shadowOffset: { width: 0, height: 10 },
+      shadowColor: '#2A1720',
+      shadowOpacity: 0.2,
+      shadowRadius: 32,
+      shadowOffset: { width: 0, height: 12 },
       elevation: 16,
     },
-    title: { ...typography.h3, color: colors.textPrimary, marginBottom: spacing.xs, fontWeight: '800' },
+    // Gold flourish above the title: the invitation-card rule.
+    flourish: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
+    flourishLine: { width: 22, height: 1, backgroundColor: colors.gold },
+    flourishDiamond: { width: 6, height: 6, backgroundColor: colors.gold, transform: [{ rotate: '45deg' }] },
+    title: { ...typography.h3, color: colors.textPrimary, marginBottom: spacing.xs },
     subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.md },
     reasonRow: {
       flexDirection: 'row',
@@ -162,7 +171,7 @@ const makeStyles = (colors: Palette) =>
       paddingHorizontal: spacing.sm,
       borderRadius: radius.md,
     },
-    reasonRowSelected: { backgroundColor: withAlpha(colors.teal, 0.12) },
+    reasonRowSelected: { backgroundColor: colors.tealSoft },
     radio: {
       width: 18,
       height: 18,
@@ -172,9 +181,9 @@ const makeStyles = (colors: Palette) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
-    radioSelected: { borderColor: colors.teal, borderWidth: 2 },
+    radioSelected: { borderColor: colors.gold, borderWidth: 2 },
     radioDot: { width: 9, height: 9, borderRadius: 5, backgroundColor: colors.teal },
-    reasonText: { ...typography.body, color: colors.textPrimary, flex: 1, fontWeight: '600' },
+    reasonText: { ...typography.body, color: colors.textPrimary, flex: 1, fontFamily: fonts.bodySemiBold },
     customInput: { minHeight: 70, textAlignVertical: 'top', marginTop: spacing.xs },
     errorText: { ...typography.caption, color: colors.danger, marginTop: spacing.xs },
     actions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },

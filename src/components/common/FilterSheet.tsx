@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { BottomSheet } from './BottomSheet';
 import { Button } from '../Button';
-import { radius, spacing, typography } from '../../theme';
+import { fonts, radius, spacing, typography } from '../../theme';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
@@ -52,8 +52,8 @@ const makeStyles = (colors: Palette) =>
     // ambiguous auto height — see the note above.
     body: { paddingHorizontal: spacing.lg, paddingBottom: spacing.lg, flex: 1 },
     headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md },
-    title: { ...typography.h3, color: colors.textPrimary },
-    resetText: { ...typography.caption, color: colors.teal, fontWeight: '700' },
+    title: { ...typography.h2, color: colors.textPrimary },
+    resetText: { ...typography.caption, color: colors.teal, fontFamily: fonts.bodyBold },
     // flex: 1 fills whatever space is left between the header and the Apply button
     // and scrolls internally for it, identically on web and native.
     content: { flex: 1, marginBottom: spacing.md },
