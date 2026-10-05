@@ -3,7 +3,7 @@ import type { ProfileMode } from '../types/user';
 
 // Gradient + glow tokens for the browse surfaces. They live in the theme rather
 // than in each component so Friends and Rishta stay two recognisable colour
-// worlds — sunlit coral/gold on the Friends deck, the rosewood-to-coral
+// worlds — sunlit gold on the Friends deck, the maroon-to-rose
 // signature gradient on Rishta — instead of every card inventing its own pair.
 
 // expo-linear-gradient needs to see at least two stops at the type level.
@@ -44,8 +44,8 @@ export function mixHex(a: string, b: string, t: number): string {
 
 export function modeAccent(colors: Palette, mode: ProfileMode): ModeAccent {
   const primary = mode === 'dating' ? colors.dating : colors.rishta;
-  const secondary = mode === 'dating' ? colors.gold : colors.dating;
-  const middle = mode === 'dating' ? mixHex(colors.dating, colors.gold, 0.5) : colors.plum;
+  const secondary = mode === 'dating' ? colors.gold : colors.plum;
+  const middle = mixHex(primary, secondary, 0.5);
 
   return {
     primary,

@@ -19,7 +19,7 @@ export function ProgressDots({ total, current }: { total: number; current: numbe
           return (
             <LinearGradient
               key={index}
-              colors={[colors.teal, colors.dating]}
+              colors={[colors.teal, colors.plum]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={[styles.dot, glow(colors.teal, 0.7, 8, 4)]}

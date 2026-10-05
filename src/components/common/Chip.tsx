@@ -31,7 +31,7 @@ export function Chip({ label, selected, onPress, tone = 'neutral', icon }: ChipP
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const toneColor = tone === 'dating' ? colors.dating : tone === 'rishta' ? colors.rishta : colors.teal;
-  const toneEnd = tone === 'dating' ? colors.gold : tone === 'rishta' ? colors.plum : colors.dating;
+  const toneEnd = tone === 'dating' ? colors.gold : colors.plum;
   const scale = useSharedValue(1);
   const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 

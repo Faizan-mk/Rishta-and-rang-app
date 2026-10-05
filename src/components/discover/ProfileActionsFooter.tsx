@@ -58,7 +58,7 @@ export function ProfileActionsFooter({ name, onSendCompliment }: ProfileActionsF
       <Pressable onPress={onSubmitCompliment} disabled={!canSubmit}>
         {canSubmit || sending ? (
           <LinearGradient
-            colors={[colors.teal, colors.dating]}
+            colors={[colors.teal, colors.plum]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={[styles.submit, glow(colors.teal, 0.5, 16, 7)]}

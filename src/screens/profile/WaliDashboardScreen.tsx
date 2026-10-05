@@ -65,7 +65,7 @@ export function WaliDashboardScreen() {
   const renderMatch = ({ item, index }: { item: Match; index: number }) => (
     <Animated.View entering={FadeInUp.delay(Math.min(index * 60, 300)).duration(320)} style={styles.matchRow}>
       <View style={styles.matchIcon}>
-        <Ionicons name="git-merge" size={14} color="#F3D99B" />
+        <Ionicons name="git-merge" size={14} color="#D9B872" />
       </View>
       <Text style={[styles.matchName, rtl && styles.rtlText]}>{item.name}</Text>
     </Animated.View>
@@ -83,7 +83,7 @@ export function WaliDashboardScreen() {
           >
             <View style={styles.heroGlow} pointerEvents="none" />
             <View style={styles.heroIcon}>
-              <Ionicons name="people" size={20} color="#F3D99B" />
+              <Ionicons name="people" size={20} color="#D9B872" />
             </View>
             <Text style={[styles.heroTitle, rtl && styles.rtlText]}>{t('wali.title')}</Text>
             <Text style={[styles.heroSubtitle, rtl && styles.rtlText]}>{t('wali.explainer')}</Text>
@@ -101,7 +101,7 @@ export function WaliDashboardScreen() {
             />
             {error ? (
               <View style={styles.errorCard}>
-                <Ionicons name="alert-circle" size={16} color={colors.danger} />
+                <Ionicons name="alert-circle-outline" size={16} color={colors.danger} />
                 <Text style={[styles.errorText, rtl && styles.rtlText]}>{error}</Text>
               </View>
             ) : null}
@@ -179,9 +179,9 @@ const makeStyles = (colors: Palette) =>
       width: 40,
       height: 40,
       borderRadius: 20,
-      backgroundColor: 'rgba(20,11,16,0.25)',
+      backgroundColor: 'rgba(36,31,33,0.25)',
       borderWidth: 1.5,
-      borderColor: '#F3D99B',
+      borderColor: '#D9B872',
       alignItems: 'center',
       justifyContent: 'center',
       marginBottom: spacing.xs,

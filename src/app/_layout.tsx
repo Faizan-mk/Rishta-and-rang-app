@@ -60,7 +60,7 @@ function RootNavigator() {
         card: colors.surface,
         text: colors.textPrimary,
         border: colors.border,
-        notification: colors.dating,
+        notification: colors.teal,
       },
     };
   }, [colors, isDark]);

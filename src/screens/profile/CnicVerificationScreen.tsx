@@ -176,7 +176,7 @@ export function CnicVerificationScreen() {
                 onPress={onSave}
                 loading={saving}
                 disabled={checkingPhoto}
-                gradient={checkingPhoto ? undefined : [colors.teal, colors.dating]}
+                gradient={checkingPhoto ? undefined : [colors.teal, colors.plum]}
                 style={styles.editActionButton}
               />
               <Button label={t('common.cancel')} variant="ghost" onPress={() => setEditing(false)} style={styles.editActionButton} />

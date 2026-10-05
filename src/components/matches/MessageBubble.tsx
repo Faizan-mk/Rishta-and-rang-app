@@ -279,7 +279,7 @@ export const MessageBubble = React.memo(function MessageBubble({
             <View accessibilityRole="button" accessibilityLabel={t('reactions.a11yReact')}>
               {message.fromMe ? (
                 <LinearGradient
-                  colors={[colors.teal, colors.dating]}
+                  colors={[colors.teal, colors.plum]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={[styles.bubble, styles.bubbleMe, glow(colors.teal, 0.35, 10, 4)]}

@@ -42,12 +42,12 @@ const GRADIENT_START = { x: 0, y: 0 } as const;
 const GRADIENT_END = { x: 1, y: 1 } as const;
 // Explore+ has its own colour identity — gold through ember into rose — so the
 // paid surface never reads as just another mode-tinted screen.
-const PLUS_RAMP = ['#F3D99B', '#D4A857', '#B8893A'] as const;
+const PLUS_RAMP = ['#D9B872', '#C9A45C', '#B8893A'] as const;
 // The premium room: deep maroon velvet under champagne gold, fixed in both
 // themes so the gold always has something dark to shine against.
-const VELVET_RAMP = ['#3F0A1F', '#5E0F2E', '#8E1B45'] as const;
-const CHAMPAGNE = '#F3D99B';
-const MAROON_INK = '#3F0A1F';
+const VELVET_RAMP = ['#3A0C18', '#4B1020', '#7A1F35'] as const;
+const CHAMPAGNE = '#D9B872';
+const MAROON_INK = '#3A0C18';
 
 // Profile boosts included with any paid plan.
 const BOOSTS_PER_SUBSCRIPTION = 5;
@@ -175,7 +175,7 @@ export function ExplorePlusScreen() {
         colors={VELVET_RAMP}
         start={GRADIENT_START}
         end={GRADIENT_END}
-        style={[styles.hero, glow('#8E1B45', 0.35, 24, 10)]}
+        style={[styles.hero, glow('#7A1F35', 0.35, 24, 10)]}
       >
         <View style={styles.heroGlowA} pointerEvents="none" />
         <View style={styles.heroGlowB} pointerEvents="none" />
@@ -404,7 +404,7 @@ const makeStyles = (colors: Palette) =>
       width: 180,
       height: 180,
       borderRadius: 90,
-      backgroundColor: 'rgba(243,217,155,0.14)',
+      backgroundColor: 'rgba(217,184,114,0.14)',
     },
     heroGlowB: {
       position: 'absolute',
@@ -419,7 +419,7 @@ const makeStyles = (colors: Palette) =>
       width: 60,
       height: 60,
       borderRadius: 30,
-      backgroundColor: 'rgba(20,11,16,0.3)',
+      backgroundColor: 'rgba(36,31,33,0.3)',
       borderWidth: 1.5,
       borderColor: CHAMPAGNE,
       alignItems: 'center',

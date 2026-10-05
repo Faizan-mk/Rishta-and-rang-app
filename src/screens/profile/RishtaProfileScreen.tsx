@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { RishtaReadiness } from '../../types/user';
 import { AccentHeading } from '../../components/common/AccentHeading';
@@ -66,7 +66,7 @@ export function RishtaProfileScreen() {
         >
           <View style={styles.heroGlow} pointerEvents="none" />
           <View style={styles.heroIcon}>
-            <Ionicons name="moon" size={20} color="#F3D99B" />
+            <MaterialCommunityIcons name="ring" size={20} color="#D9B872" />
           </View>
           <Text style={[styles.heroTitle, rtl && styles.rtlText]}>{t('rishtaProfile.title')}</Text>
         </LinearGradient>
@@ -150,9 +150,9 @@ const makeStyles = (colors: Palette) =>
       width: 40,
       height: 40,
       borderRadius: 20,
-      backgroundColor: 'rgba(20,11,16,0.25)',
+      backgroundColor: 'rgba(36,31,33,0.25)',
       borderWidth: 1.5,
-      borderColor: '#F3D99B',
+      borderColor: '#D9B872',
       alignItems: 'center',
       justifyContent: 'center',
     },

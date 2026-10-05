@@ -1,15 +1,16 @@
 import React, { useEffect, useMemo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
-import { StepHeader } from '../../components/common/StepHeader';
+import { ProgressDots } from '../../components/common/ProgressDots';
+import { WaveHeader } from '../../components/auth/WaveHeader';
 import { OtpVerification } from '../../components/auth/OtpVerification';
-import { ArchBadge } from '../../components/common/ArchBadge';
 import { useLanguage } from '../../store/LanguageContext';
 import { useTheme } from '../../store/ThemeContext';
 import { useOnboarding } from '../../store/onboardingStore';
-import { spacing, typography } from '../../theme';
+import { spacing } from '../../theme';
 import type { Palette } from '../../theme/palettes';
 import { cardSurface } from '../../theme/surfaces';
 
@@ -37,11 +38,15 @@ export function VerifyEmailScreen() {
   const cooldown = Number(resendIn);
 
   return (
-    <ScreenContainer>
-      <StepHeader total={3} current={0} onBack={() => router.back()} />
-      <Animated.View entering={FadeInUp.duration(400)}>
-        <ArchBadge icon="mail-unread-outline" style={styles.badge} />
-        <Text style={[styles.title, rtl && styles.rtlText]}>{t('otp.verifyEmailTitle')}</Text>
+    <ScreenContainer edges={['bottom']} style={styles.container}>
+      <WaveHeader
+        title={t('otp.verifyEmailTitle')}
+        badge={<Ionicons name="mail-unread-outline" size={26} color="#FFFFFF" />}
+        onBack={() => router.back()}
+        rtl={rtl}
+      />
+      <Animated.View entering={FadeInUp.duration(400)} style={styles.body}>
+        <ProgressDots total={3} current={0} />
         <View style={styles.card}>
           <OtpVerification
             email={draft.email.trim().toLowerCase()}
@@ -63,8 +68,9 @@ export function VerifyEmailScreen() {
 
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
-    badge: { marginBottom: spacing.md },
-    title: { ...typography.h1, color: colors.textPrimary, marginBottom: spacing.lg, textAlign: 'center' },
+    // The wave header runs edge to edge, so the screen drops its own padding
+    // and the content below carries it instead.
+    container: { padding: 0, paddingBottom: spacing.lg },
+    body: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
     card: cardSurface(colors),
-    rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   });

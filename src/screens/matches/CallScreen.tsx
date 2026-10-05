@@ -107,7 +107,7 @@ export function CallScreen() {
             <Button
               label={t('call.grantAccess')}
               onPress={requestPermission}
-              gradient={['#8E1B45', '#F2715E']}
+              gradient={['#7A1F35', '#9B3A56']}
               style={styles.permissionButton}
             />
           </View>
@@ -211,15 +211,15 @@ function EndCallButton({ onPress, style }: { onPress: () => void; style: ViewSty
   );
 }
 
-const GOLD = '#E9C27A';
-const CALL_WASH = ['rgba(20,11,16,0.92)', 'rgba(94,15,46,0.82)', 'rgba(20,11,16,0.95)'] as const;
+const GOLD = '#D9B872';
+const CALL_WASH = ['rgba(36,31,33,0.92)', 'rgba(75,16,32,0.82)', 'rgba(36,31,33,0.95)'] as const;
 
-// Glass discs on the dark call room; a toggled control turns rosewood with a
+// Glass discs on the dark call room; a toggled control turns maroon with a
 // gold rim.
 const controlStyles = StyleSheet.create({
   button: { width: 60, height: 60, borderRadius: 30, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
   buttonIdle: { backgroundColor: 'rgba(255,255,255,0.12)', borderColor: 'rgba(255,255,255,0.22)' },
-  buttonActive: { backgroundColor: '#8E1B45', borderColor: GOLD },
+  buttonActive: { backgroundColor: '#7A1F35', borderColor: GOLD },
   endIcon: { transform: [{ rotate: '135deg' }] },
 });
 
@@ -249,7 +249,7 @@ const makeStyles = (colors: Palette) =>
       borderWidth: 2,
       borderColor: GOLD,
       backgroundColor: 'rgba(255,255,255,0.08)',
-      ...glow('#8E1B45', 0.6, 24, 10),
+      ...glow('#7A1F35', 0.6, 24, 10),
     },
     name: { ...typography.h1, color: '#FFFFFF', marginTop: spacing.lg },
     hint: { ...typography.body, color: 'rgba(255,255,255,0.75)', marginTop: spacing.xs },

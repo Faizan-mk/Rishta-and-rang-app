@@ -401,11 +401,11 @@ export function ExploreScreen() {
                 <View style={styles.eventBody}>
                   <View style={[styles.eventMetaRow, rtl && styles.rowRtl]}>
                     <View style={[styles.eventTag, { backgroundColor: withAlpha(colors.teal, 0.12) }]}>
-                      <Ionicons name="location" size={12} color={colors.teal} />
+                      <Ionicons name="location-outline" size={12} color={colors.teal} />
                       <Text style={[styles.eventTagText, { color: colors.teal }]}>{vocabularyLabel(event.city, t)}</Text>
                     </View>
                     <View style={[styles.eventTag, { backgroundColor: withAlpha(colors.gold, 0.14) }]}>
-                      <Ionicons name="calendar" size={12} color={colors.gold} />
+                      <Ionicons name="calendar-outline" size={12} color={colors.gold} />
                       <Text style={[styles.eventTagText, { color: colors.gold }]}>{event.dateLabel}</Text>
                     </View>
                   </View>
@@ -501,11 +501,11 @@ export function ExploreScreen() {
               <View style={styles.eventModalBody}>
                 <View style={styles.eventMetaRow}>
                   <View style={[styles.eventTag, { backgroundColor: withAlpha(colors.teal, 0.12) }]}>
-                    <Ionicons name="location" size={12} color={colors.teal} />
+                    <Ionicons name="location-outline" size={12} color={colors.teal} />
                     <Text style={[styles.eventTagText, { color: colors.teal }]}>{vocabularyLabel(activeEvent.city, t)}</Text>
                   </View>
                   <View style={[styles.eventTag, { backgroundColor: withAlpha(colors.gold, 0.14) }]}>
-                    <Ionicons name="calendar" size={12} color={colors.gold} />
+                    <Ionicons name="calendar-outline" size={12} color={colors.gold} />
                     <Text style={[styles.eventTagText, { color: colors.gold }]}>{activeEvent.dateLabel}</Text>
                   </View>
                 </View>
@@ -563,7 +563,7 @@ function PhotoTile({
         <View style={styles.tileInner}>
           <SmartImage uri={uri} name={name} style={styles.gridPhoto} size={30} />
           <LinearGradient
-            colors={['transparent', 'rgba(20,11,16,0.15)', 'rgba(20,11,16,0.85)']}
+            colors={['transparent', 'rgba(36,31,33,0.15)', 'rgba(36,31,33,0.85)']}
             start={SCRIM_START}
             end={SCRIM_END}
             style={styles.tileScrim}
@@ -650,7 +650,7 @@ const makeStyles = (colors: Palette) =>
       backgroundColor: colors.surface,
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
-      shadowColor: '#2A1720',
+      shadowColor: '#241F21',
       shadowOpacity: 0.06,
       shadowRadius: 12,
       shadowOffset: { width: 0, height: 4 },
@@ -679,7 +679,7 @@ const makeStyles = (colors: Palette) =>
       backgroundColor: colors.surface,
       borderWidth: 1,
       borderColor: colors.border,
-      shadowColor: '#8E1B45',
+      shadowColor: '#7A1F35',
       shadowOpacity: 0.1,
       shadowRadius: 16,
       shadowOffset: { width: 0, height: 8 },
@@ -846,7 +846,7 @@ const makeStyles = (colors: Palette) =>
       paddingHorizontal: spacing.sm + 4,
       paddingVertical: spacing.sm + 2,
       marginBottom: spacing.sm,
-      shadowColor: '#2A1720',
+      shadowColor: '#241F21',
       shadowOpacity: 0.06,
       shadowRadius: 12,
       shadowOffset: { width: 0, height: 4 },

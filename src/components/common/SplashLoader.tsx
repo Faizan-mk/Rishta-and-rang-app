@@ -24,8 +24,8 @@ const HEART = require('../../../assets/splash-icon.png');
 
 // The two halves of the logo heart. Brand colours rather than palette tokens:
 // they have to match the icon exactly in both themes.
-const ORANGE = '#F39A2E';
-const PINK = '#D6246B';
+const MAROON = '#7A1F35';
+const GOLD = '#C9A45C';
 
 // splash-icon.png is a square canvas with the heart centred in it; the heart
 // itself only covers the middle band. Mapping progress onto that band means 0%
@@ -316,13 +316,13 @@ export function SplashLoader({ ready, onFinish }: SplashLoaderProps) {
       accessibilityValue={{ min: 0, max: 100, now: percent }}
     >
       <View style={[StyleSheet.absoluteFill, styles.field]} pointerEvents="none">
-        <GlowOrb color={ORANGE} size={width * 1.1} x={-width * 0.55} y={-height * 0.12} drift={drift} />
-        <GlowOrb color={PINK} size={width * 1.2} x={width * 0.35} y={height * 0.5} drift={drift} />
+        <GlowOrb color={MAROON} size={width * 1.1} x={-width * 0.55} y={-height * 0.12} drift={drift} />
+        <GlowOrb color={GOLD} size={width * 1.2} x={width * 0.35} y={height * 0.5} drift={drift} />
       </View>
 
       <View style={styles.stage}>
-        <Animated.View style={[styles.ring, { borderColor: PINK }, rippleStyle]} />
-        <Animated.View style={[styles.halo, { backgroundColor: withAlpha(PINK, 0.12) }, haloStyle]} />
+        <Animated.View style={[styles.ring, { borderColor: MAROON }, rippleStyle]} />
+        <Animated.View style={[styles.halo, { backgroundColor: withAlpha(MAROON, 0.12) }, haloStyle]} />
 
         <Animated.View style={[styles.heart, heartStyle]}>
           <HeartHalf side="left" join={join} />

@@ -51,7 +51,7 @@ interface OnboardingPage {
 const PAGES: OnboardingPage[] = [
   {
     mode: 'rishta',
-    icon: 'shield-checkmark',
+    icon: 'shield-checkmark-outline',
     image: COUPLE_IMAGE,
     titleKey: 'onboarding.page1.title',
     subtitleKey: 'onboarding.page1.subtitle',
@@ -59,20 +59,20 @@ const PAGES: OnboardingPage[] = [
   },
   {
     mode: 'dating',
-    icon: 'chatbubble-ellipses',
+    icon: 'chatbubble-ellipses-outline',
     image: FRIENDS_IMAGE,
     titleKey: 'onboarding.page2.title',
     subtitleKey: 'onboarding.page2.subtitle',
     chips: [
-      { icon: 'shield-checkmark', labelKey: 'onboarding.page2.chipSafe' },
-      { icon: 'people', labelKey: 'onboarding.page2.chipReal' },
+      { icon: 'shield-checkmark-outline', labelKey: 'onboarding.page2.chipSafe' },
+      { icon: 'people-outline', labelKey: 'onboarding.page2.chipReal' },
     ],
   },
 ];
 
 // The footer bar is a fixed overlay, so every page reserves this much room
 // below its content rather than letting the photo slide underneath the button.
-const FOOTER_RESERVE = scaleSpace(152);
+const FOOTER_RESERVE = scaleSpace(172);
 
 export function OnboardingScreen() {
   const router = useRouter();
@@ -228,7 +228,7 @@ function OnboardingPageView({ page, active, width, height, styles, t, rtl }: Pag
         <Animated.View entering={active ? FadeIn.delay(140).duration(520) : undefined} style={styles.photo}>
           <Image source={page.image} style={styles.photoImage} resizeMode="cover" />
           <LinearGradient
-            colors={['rgba(20,11,16,0)', 'rgba(20,11,16,0.42)']}
+            colors={['rgba(36,31,33,0)', 'rgba(36,31,33,0.42)']}
             style={StyleSheet.absoluteFill}
             pointerEvents="none"
           />
@@ -304,7 +304,7 @@ const makeStyles = (colors: Palette, compact: boolean, rtl: boolean) =>
       backgroundColor: colors.skeleton,
       borderWidth: 1,
       borderColor: colors.border,
-      shadowColor: '#2A1720',
+      shadowColor: '#241F21',
       shadowOpacity: 0.1,
       shadowRadius: 24,
       shadowOffset: { width: 0, height: 10 },
@@ -361,7 +361,7 @@ const makeStyles = (colors: Palette, compact: boolean, rtl: boolean) =>
       backgroundColor: colors.surface,
       borderWidth: 1,
       borderColor: colors.border,
-      shadowColor: '#2A1720',
+      shadowColor: '#241F21',
       shadowOpacity: 0.05,
       shadowRadius: 8,
       shadowOffset: { width: 0, height: 2 },
@@ -382,7 +382,8 @@ const makeStyles = (colors: Palette, compact: boolean, rtl: boolean) =>
     footer: {
       paddingHorizontal: spacing.lg,
       paddingTop: spacing.md,
-      paddingBottom: spacing.xs,
+      // Clear of the screen edge on phones whose nav bar reports no inset.
+      paddingBottom: spacing.lg,
     },
 
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },

@@ -95,7 +95,7 @@ const makeStyles = (colors: Palette) =>
       borderWidth: 1,
       borderColor: withAlpha(colors.gold, 0.5),
       padding: spacing.md,
-      shadowColor: '#2A1720',
+      shadowColor: '#241F21',
       shadowOpacity: 0.2,
       shadowRadius: 32,
       shadowOffset: { width: 0, height: 12 },

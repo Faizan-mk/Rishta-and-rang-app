@@ -21,7 +21,7 @@ export function NotificationRow({ item, onPress }: { item: NotificationItem; onP
   const { colors } = useTheme();
   const { t, rtl } = useLanguage();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const tone = item.type === 'rishta_request' ? colors.rishta : item.type === 'match' ? colors.dating : colors.teal;
+  const tone = item.type === 'rishta_request' ? colors.rishta : item.type === 'match' ? colors.plum : colors.teal;
   const toneSoft = item.type === 'rishta_request' ? colors.rishtaSoft : item.type === 'match' ? colors.datingSoft : colors.tealSoft;
 
   return (

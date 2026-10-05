@@ -208,7 +208,7 @@ function NotificationBadge({
 const GRADIENT_START = { x: 0, y: 0 } as const;
 const GRADIENT_END = { x: 1, y: 1 } as const;
 // Reads as "lit" against either theme, so it isn't a palette token.
-const BOOST_GRADIENT = ['#D4A857', '#F2715E'] as const;
+const BOOST_GRADIENT = ['#D9B872', '#C9A45C'] as const;
 
 const makeStyles = (colors: Palette, accentColor: string) =>
   StyleSheet.create({
@@ -233,7 +233,7 @@ const makeStyles = (colors: Palette, accentColor: string) =>
       backgroundColor: colors.surface,
       paddingHorizontal: spacing.sm + 2,
       paddingVertical: 7,
-      shadowColor: '#2A1720',
+      shadowColor: '#241F21',
       shadowOpacity: 0.06,
       shadowRadius: 12,
       shadowOffset: { width: 0, height: 4 },
@@ -262,7 +262,7 @@ const makeStyles = (colors: Palette, accentColor: string) =>
       backgroundColor: colors.surface,
       borderWidth: 1,
       borderColor: colors.border,
-      shadowColor: '#2A1720',
+      shadowColor: '#241F21',
       shadowOpacity: 0.06,
       shadowRadius: 12,
       shadowOffset: { width: 0, height: 4 },
@@ -278,7 +278,7 @@ const makeStyles = (colors: Palette, accentColor: string) =>
       backgroundColor: colors.surface,
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
-      shadowColor: '#2A1720',
+      shadowColor: '#241F21',
       shadowOpacity: 0.06,
       shadowRadius: 12,
       shadowOffset: { width: 0, height: 4 },
@@ -314,7 +314,7 @@ const makeStyles = (colors: Palette, accentColor: string) =>
       height: 17,
       borderRadius: 9,
       overflow: 'hidden',
-      backgroundColor: colors.dating,
+      backgroundColor: colors.teal,
       borderWidth: 1.5,
       borderColor: colors.surface,
     },

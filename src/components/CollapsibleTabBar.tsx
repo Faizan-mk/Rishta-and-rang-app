@@ -15,9 +15,9 @@ import type { Palette } from '../theme/palettes';
 
 // Keyed by the file names under src/app/(tabs).
 const ICONS: Record<string, { active: keyof typeof Ionicons.glyphMap; inactive: keyof typeof Ionicons.glyphMap }> = {
-  home: { active: 'flame', inactive: 'flame-outline' },
-  explore: { active: 'compass', inactive: 'compass-outline' },
-  messages: { active: 'chatbubbles', inactive: 'chatbubbles-outline' },
+  home: { active: 'home', inactive: 'home-outline' },
+  explore: { active: 'search', inactive: 'search-outline' },
+  messages: { active: 'chatbubble-ellipses', inactive: 'chatbubble-ellipses-outline' },
   profile: { active: 'menu', inactive: 'menu-outline' },
 };
 
@@ -159,7 +159,7 @@ const makeStyles = (colors: Palette, bottomInset: number) =>
       borderWidth: 1,
       borderBottomWidth: 0,
       borderColor: colors.border,
-      shadowColor: '#2A1720',
+      shadowColor: '#241F21',
       shadowOpacity: 0.1,
       shadowRadius: 20,
       shadowOffset: { width: 0, height: -6 },

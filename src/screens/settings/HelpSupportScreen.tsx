@@ -27,7 +27,7 @@ export function HelpSupportScreen() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
-  const safeRamp = [colors.teal, colors.dating] as const;
+  const safeRamp = [colors.teal, colors.plum] as const;
 
   const onSend = async () => {
     if (!subject.trim() || !message.trim()) {

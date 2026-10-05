@@ -101,7 +101,7 @@ export const DiscoverProfileCard = React.memo(function DiscoverProfileCard({
 
           {/* Colour wash over the photo's foot, tying it to the panel below. */}
           <LinearGradient
-            colors={['transparent', 'rgba(20,11,16,0.15)', withAlpha(accent.primary, 0.45)]}
+            colors={['transparent', 'rgba(36,31,33,0.15)', withAlpha(accent.primary, 0.45)]}
             style={styles.photoScrim}
             pointerEvents="none"
           />
@@ -150,7 +150,7 @@ export const DiscoverProfileCard = React.memo(function DiscoverProfileCard({
           )}
 
           {liked && (
-            <View style={[styles.likedBadge, glow(colors.dating, 0.8, 12, 6)]} pointerEvents="none">
+            <View style={[styles.likedBadge, glow(colors.teal, 0.8, 12, 6)]} pointerEvents="none">
               <Ionicons name="heart" size={15} color="#FFFFFF" />
             </View>
           )}
@@ -178,7 +178,7 @@ export const DiscoverProfileCard = React.memo(function DiscoverProfileCard({
 
         {locationLine.length > 0 && (
           <View style={[styles.metaRow, rtl && styles.rowRtl]}>
-            <Ionicons name="location" size={12} color={colors.gold} />
+            <Ionicons name="location-outline" size={12} color={colors.gold} />
             <Text style={[styles.meta, rtl && styles.rtlText]} numberOfLines={1}>
               {locationLine}
             </Text>
@@ -277,7 +277,7 @@ const makeStyles = (colors: Palette) =>
       flexDirection: 'row',
       alignItems: 'center',
       gap: 5,
-      backgroundColor: 'rgba(20,11,16,0.55)',
+      backgroundColor: 'rgba(36,31,33,0.55)',
       borderWidth: 1,
       borderColor: 'rgba(255,255,255,0.18)',
       borderRadius: radius.pill,
@@ -296,7 +296,7 @@ const makeStyles = (colors: Palette) =>
       borderRadius: 15,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: colors.dating,
+      backgroundColor: colors.teal,
     },
     // Tucks under the photo so the two read as one card, without covering the face.
     identityPanel: {
@@ -309,7 +309,7 @@ const makeStyles = (colors: Palette) =>
       paddingHorizontal: spacing.md,
       paddingTop: spacing.sm + 2,
       paddingBottom: spacing.md,
-      shadowColor: '#2A1720',
+      shadowColor: '#241F21',
       shadowOpacity: 0.08,
       shadowRadius: 20,
       shadowOffset: { width: 0, height: 8 },
