@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo } from 'react';
 import { LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   Easing,
@@ -77,8 +77,7 @@ export function ModeToggle({ mode, onChange, datingLabel, rishtaLabel, datingCou
 
       <ToggleOption
         active={mode === 'dating'}
-        icon="sparkles"
-        activeIconColor="#FFFFFF"
+        icon={{ set: 'ion', name: 'people-outline' }}
         label={datingLabel}
         count={datingCount}
         onPress={() => onChange('dating')}
@@ -87,8 +86,7 @@ export function ModeToggle({ mode, onChange, datingLabel, rishtaLabel, datingCou
       />
       <ToggleOption
         active={mode === 'rishta'}
-        icon="moon"
-        activeIconColor={RISHTA_CRESCENT}
+        icon={{ set: 'mci', name: 'ring' }}
         label={rishtaLabel}
         count={rishtaCount}
         onPress={() => onChange('rishta')}
@@ -102,7 +100,6 @@ export function ModeToggle({ mode, onChange, datingLabel, rishtaLabel, datingCou
 function ToggleOption({
   active,
   icon,
-  activeIconColor,
   label,
   count,
   onPress,
@@ -110,8 +107,7 @@ function ToggleOption({
   styles,
 }: {
   active: boolean;
-  icon: keyof typeof Ionicons.glyphMap;
-  activeIconColor: string;
+  icon: ToggleIcon;
   label: string;
   count?: number;
   onPress: () => void;
@@ -129,7 +125,11 @@ function ToggleOption({
   return (
     <Pressable onPress={onPress} style={styles.option}>
       <Animated.View style={[styles.optionInner, style]}>
-        <Ionicons name={icon} size={15} color={active ? activeIconColor : colors.textTertiary} />
+        {icon.set === 'mci' ? (
+          <MaterialCommunityIcons name={icon.name} size={16} color={active ? '#FFFFFF' : colors.textTertiary} />
+        ) : (
+          <Ionicons name={icon.name} size={15} color={active ? '#FFFFFF' : colors.textTertiary} />
+        )}
         <Text style={[styles.label, active && styles.labelActive]}>{label}</Text>
         {Boolean(count) && <Text style={[styles.count, active && styles.labelActive]}>{count}</Text>}
       </Animated.View>
@@ -139,9 +139,11 @@ function ToggleOption({
 
 const GRADIENT_START = { x: 0, y: 0 } as const;
 const GRADIENT_END = { x: 1, y: 1 } as const;
-// The design system's "understated gold crescent" on the Rishta side: a pale
-// champagne that still reads on the rosewood thumb.
-const RISHTA_CRESCENT = '#F3D99B';
+// Friends wears the people glyph and Rishta the ring, as in the design system.
+// The ring only exists in MaterialCommunityIcons, hence the tagged union.
+type ToggleIcon =
+  | { set: 'ion'; name: keyof typeof Ionicons.glyphMap }
+  | { set: 'mci'; name: keyof typeof MaterialCommunityIcons.glyphMap };
 
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
@@ -154,7 +156,7 @@ const makeStyles = (colors: Palette) =>
       borderColor: colors.border,
       padding: 4,
       position: 'relative',
-      shadowColor: '#8E1B45',
+      shadowColor: '#7A1F35',
       shadowOpacity: 0.12,
       shadowRadius: 16,
       shadowOffset: { width: 0, height: 8 },

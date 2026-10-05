@@ -46,7 +46,7 @@ export function MatchCelebration({ visible, name, photo, onClose }: MatchCelebra
           colors={VELVET}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={[styles.card, glow('#8E1B45', 0.5, 30, 14)]}
+          style={[styles.card, glow('#7A1F35', 0.5, 30, 14)]}
         >
           <View style={styles.glowA} pointerEvents="none" />
           <View style={styles.glowB} pointerEvents="none" />
@@ -77,8 +77,8 @@ export function MatchCelebration({ visible, name, photo, onClose }: MatchCelebra
   );
 }
 
-const GOLD = '#F3D99B';
-const VELVET = ['#3F0A1F', '#8E1B45', '#F2715E'] as const;
+const GOLD = '#D9B872';
+const VELVET = ['#4B1020', '#7A1F35', '#9B3A56'] as const;
 
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
@@ -99,7 +99,7 @@ const makeStyles = (colors: Palette) =>
       width: 200,
       height: 200,
       borderRadius: 100,
-      backgroundColor: 'rgba(243,217,155,0.16)',
+      backgroundColor: 'rgba(217,184,114,0.16)',
     },
     glowB: {
       position: 'absolute',
@@ -116,7 +116,7 @@ const makeStyles = (colors: Palette) =>
       borderRadius: 34,
       borderWidth: 1.5,
       borderColor: GOLD,
-      backgroundColor: 'rgba(20,11,16,0.25)',
+      backgroundColor: 'rgba(36,31,33,0.25)',
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -142,5 +142,5 @@ const makeStyles = (colors: Palette) =>
     },
     // A white pill with maroon ink on the velvet card.
     button: { marginTop: spacing.xl, width: '100%', borderColor: GOLD, backgroundColor: '#FFFFFF' },
-    buttonLabel: { color: '#3F0A1F' },
+    buttonLabel: { color: '#4B1020' },
   });

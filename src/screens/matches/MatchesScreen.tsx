@@ -122,7 +122,7 @@ export function MatchesScreen() {
         contentContainerStyle={[styles.listContent, { paddingBottom: TAB_BAR_BASE_HEIGHT + insets.bottom + spacing.lg }]}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-              <EmptyOrb ramp={accent.ramp} icon="chatbubbles" />
+              <EmptyOrb ramp={accent.ramp} icon="chatbubble-ellipses-outline" />
             <Text style={[styles.emptyText, rtl && styles.rtlText]}>
               {t(mode === 'dating' ? 'matches.emptyFriends' : 'matches.emptyRishta')}
             </Text>

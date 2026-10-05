@@ -162,7 +162,7 @@ export function ProfileScreen() {
           <Text style={[styles.name, rtl && styles.rtlText]}>{user.fullName}</Text>
         </View>
         <View style={[styles.metaRow, rtl && styles.rowRtl]}>
-          <Ionicons name="location" size={13} color={accent.primary} />
+          <Ionicons name="location-outline" size={13} color={accent.primary} />
           <Text style={[styles.meta, { color: accent.primary }, rtl && styles.rtlText]}>{vocabularyLabel(user.city, t)}</Text>
         </View>
 
@@ -191,21 +191,21 @@ export function ProfileScreen() {
 
       <View style={styles.statsRow}>
         <StatTile
-          icon="pie-chart"
+          icon="pie-chart-outline"
           tint={colors.teal}
           value={`${completion}%`}
           label={t('profile.completion')}
           colors={colors}
         />
         <StatTile
-          icon="images"
+          icon="images-outline"
           tint={colors.plum}
           value={String(user.photos.length)}
           label={t('photos.title')}
           colors={colors}
         />
         <StatTile
-          icon="ribbon"
+          icon="ribbon-outline"
           tint={colors.gold}
           value={String(memberSince)}
           label={t('profile.memberSince')}
@@ -335,10 +335,10 @@ export function ProfileScreen() {
 
       <View style={styles.section}>
         <View style={styles.quickLinks}>
-          <QuickLinkRow icon="heart" tint={colors.dating} label={t('profile.favorites')} onPress={() => router.push('/favorites')} rtl={rtl} />
-          <QuickLinkRow icon="sparkles" tint={colors.gold} label={t('profile.subscription')} onPress={() => router.push('/explore-plus')} rtl={rtl} />
-          <QuickLinkRow icon="notifications" tint={colors.plum} label={t('profile.notifications')} onPress={() => router.push('/notifications')} rtl={rtl} />
-          <QuickLinkRow icon="settings" tint={colors.teal} label={t('profile.settings')} onPress={() => router.push('/settings')} rtl={rtl} last />
+          <QuickLinkRow icon="star-outline" tint={colors.gold} label={t('profile.favorites')} onPress={() => router.push('/favorites')} rtl={rtl} />
+          <QuickLinkRow icon="sparkles-outline" tint={colors.gold} label={t('profile.subscription')} onPress={() => router.push('/explore-plus')} rtl={rtl} />
+          <QuickLinkRow icon="notifications-outline" tint={colors.plum} label={t('profile.notifications')} onPress={() => router.push('/notifications')} rtl={rtl} />
+          <QuickLinkRow icon="settings-outline" tint={colors.teal} label={t('profile.settings')} onPress={() => router.push('/settings')} rtl={rtl} last />
         </View>
       </View>
 
@@ -463,7 +463,7 @@ function QuickLinkRow({
 
 // Gold ring for paying members — the one place the palette's premium colour
 // outranks the member's own mode colour.
-const PREMIUM_RING: Gradient = ['#F3D99B', '#D4A857', '#B8893A'];
+const PREMIUM_RING: Gradient = ['#D9B872', '#C9A45C', '#B8893A'];
 
 const detailStyles = StyleSheet.create({
   row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.sm + 4 },

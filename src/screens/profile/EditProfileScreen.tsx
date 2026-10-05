@@ -326,14 +326,14 @@ export function EditProfileScreen() {
                   {index === 0 ? (
                     <View style={styles.primaryBadge}>
                       <Ionicons name="star" size={10} color="#FFFFFF" />
-                      <Text style={styles.primaryBadgeText}>{t('editProfile.primaryPhoto')}</Text>
+                      <Text style={styles.primaryBadgeText} numberOfLines={1}>{t('editProfile.primaryPhoto')}</Text>
                     </View>
                   ) : (
                     // The whole tile already sets primary, but the action has to be
                     // visible — nobody discovers a tap-anywhere gesture on its own.
                     <Pressable onPress={() => setPrimaryPhoto(uri)} style={styles.makePrimaryBadge} hitSlop={6}>
                       <Ionicons name="star-outline" size={11} color="#FFFFFF" />
-                      <Text style={styles.primaryBadgeText}>{t('editProfile.makePrimary')}</Text>
+                      <Text style={styles.primaryBadgeText} numberOfLines={1}>{t('editProfile.makePrimary')}</Text>
                     </Pressable>
                   )}
                   <Pressable onPress={() => removePhoto(uri)} style={styles.removeBadge} hitSlop={6}>
@@ -591,7 +591,7 @@ function BooleanRow({
       <Pressable onPress={() => onChange(!value)} hitSlop={6}>
         {value ? (
           <LinearGradient
-            colors={[colors.teal, colors.dating]}
+            colors={[colors.teal, colors.plum]}
             start={GRADIENT_START}
             end={GRADIENT_END}
             style={[styles.toggleTrack, glow(colors.teal, 0.6, 10, 4)]}
@@ -698,6 +698,7 @@ const makeStyles = (colors: Palette) =>
       backgroundColor: colors.gold,
       borderRadius: radius.pill,
       paddingVertical: 3,
+      paddingHorizontal: 4,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -708,21 +709,22 @@ const makeStyles = (colors: Palette) =>
       right: 4,
       flexDirection: 'row',
       gap: 3,
-      backgroundColor: 'rgba(20,11,16,0.6)',
+      backgroundColor: 'rgba(36,31,33,0.6)',
       borderRadius: radius.pill,
       paddingVertical: 3,
+      paddingHorizontal: 4,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    primaryBadgeText: { color: '#FFFFFF', fontSize: scaleFont(9), fontFamily: fonts.bodyBold },
+    primaryBadgeText: { color: '#FFFFFF', fontSize: scaleFont(9), fontFamily: fonts.bodyBold, flexShrink: 1 },
     removeBadge: {
       position: 'absolute',
-      top: '30%',
+      top: 4,
       right: 4,
       width: 22,
       height: 22,
       borderRadius: 11,
-      backgroundColor: 'rgba(20,11,16,0.6)',
+      backgroundColor: 'rgba(36,31,33,0.6)',
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -759,7 +761,7 @@ const makeStyles = (colors: Palette) =>
     videoPreviewWrap: { width: '100%', aspectRatio: 16 / 9, borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.skeleton, marginTop: spacing.sm },
     videoPreviewInner: { flex: 1 },
     videoPreview: { width: '100%', height: '100%' },
-    videoPlayOverlay: { alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(20,11,16,0.25)' },
+    videoPlayOverlay: { alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(36,31,33,0.25)' },
     bioInput: { minHeight: 90, textAlignVertical: 'top' },
     chipRow: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.xs },
     tagInputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm },

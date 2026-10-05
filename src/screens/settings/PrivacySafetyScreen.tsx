@@ -26,7 +26,7 @@ export function PrivacySafetyScreen() {
   const { confirm, notify } = useDialog();
   const { prefs, setPref } = usePrivacy();
   const { blockedProfiles } = useMatches();
-  const safeRamp = [colors.teal, colors.dating] as const;
+  const safeRamp = [colors.teal, colors.plum] as const;
 
   const onDeleteAccount = async () => {
     const confirmed = await confirm({

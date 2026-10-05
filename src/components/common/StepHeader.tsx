@@ -46,7 +46,7 @@ const makeStyles = (colors: Palette) =>
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: colors.surface,
-      shadowColor: '#2A1720',
+      shadowColor: '#241F21',
       shadowOpacity: 0.05,
       shadowRadius: 8,
       shadowOffset: { width: 0, height: 2 },

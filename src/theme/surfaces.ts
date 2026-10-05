@@ -11,7 +11,7 @@ export function cardSurface(colors: Palette) {
     borderColor: colors.border,
     padding: spacing.lg,
     paddingBottom: spacing.sm,
-    shadowColor: '#2A1720',
+    shadowColor: '#241F21',
     shadowOpacity: 0.06,
     shadowRadius: 24,
     shadowOffset: { width: 0, height: 8 },

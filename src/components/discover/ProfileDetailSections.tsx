@@ -19,7 +19,7 @@ import { AccentHeading } from '../common/AccentHeading';
 
 // Profile sections keep one ramp of their own rather than following the deck
 // mode, so the long read down a profile stays visually steady.
-const SECTION_RAMP = ['#8E1B45', '#F2715E'] as const;
+const SECTION_RAMP = ['#7A1F35', '#9B3A56'] as const;
 
 function formatDuration(totalSeconds: number): string {
   const sec = Math.max(0, Math.floor(totalSeconds || 0));
@@ -537,7 +537,7 @@ const makeMidPhotoStyles = (colors: Palette) =>
       flexDirection: 'row',
       alignItems: 'center',
       gap: 4,
-      backgroundColor: 'rgba(20,11,16,0.6)',
+      backgroundColor: 'rgba(36,31,33,0.6)',
       borderRadius: radius.pill,
       paddingHorizontal: spacing.sm,
       paddingVertical: 4,

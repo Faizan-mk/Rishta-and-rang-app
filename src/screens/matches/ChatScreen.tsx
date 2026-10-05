@@ -14,7 +14,7 @@ import {
   View,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useKeyboardAvoidingEnabled } from '../../hooks/useKeyboardAvoidingEnabled';
@@ -491,7 +491,7 @@ export function ChatScreen() {
           style={styles.headerIconButton}
           accessibilityLabel={t('chat.moreOptions')}
         >
-          <Ionicons name="ellipsis-vertical" size={20} color={colors.textSecondary} />
+          <Ionicons name="ellipsis-horizontal" size={20} color={colors.textSecondary} />
         </Pressable>
       </FadeIn>
 
@@ -521,7 +521,7 @@ export function ChatScreen() {
               end={GRADIENT_END}
               style={[styles.rishtaBanner, glow(colors.rishta, 0.3, 14, 5)]}
             >
-              <Ionicons name="moon" size={18} color={RISHTA_GOLD} />
+              <MaterialCommunityIcons name="ring" size={18} color={RISHTA_GOLD} />
               <Text style={styles.rishtaBannerText}>{t('chat.rishtaIncoming', { name: match.name })}</Text>
               <View style={styles.rishtaBannerActions}>
                 <Pressable onPress={() => onRespondRishta(false)} style={styles.rishtaDeclineButton}>
@@ -670,7 +670,7 @@ export function ChatScreen() {
             )}
             <View style={[styles.inputRow, rtl && styles.inputRowRtl]}>
             <Pressable onPress={pickImage} style={styles.attachButton} disabled={recording}>
-              <Ionicons name="image-outline" size={22} color={recording ? colors.textTertiary : colors.textSecondary} />
+              <Ionicons name="attach-outline" size={24} color={recording ? colors.textTertiary : colors.textSecondary} />
             </Pressable>
 
             {recording ? (
@@ -694,7 +694,7 @@ export function ChatScreen() {
             {draft.trim() ? (
               <Pressable onPress={sendMessage}>
                 <LinearGradient
-                  colors={[colors.teal, colors.dating]}
+                  colors={[colors.teal, colors.plum]}
                   start={GRADIENT_START}
                   end={GRADIENT_END}
                   style={[styles.sendButton, glow(colors.teal, 0.6, 14, 6)]}
@@ -838,8 +838,8 @@ function HeaderMenu({
   );
 }
 
-// Pale champagne that reads on the rosewood Rishta cards in both themes.
-const RISHTA_GOLD = '#F3D99B';
+// Brand gold that reads on the maroon Rishta cards in both themes.
+const RISHTA_GOLD = '#D9B872';
 
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
@@ -910,7 +910,7 @@ const makeStyles = (colors: Palette) =>
       borderWidth: 1,
       borderColor: colors.border,
       paddingVertical: spacing.xs,
-      shadowColor: '#2A1720',
+      shadowColor: '#241F21',
       shadowOpacity: 0.12,
       shadowRadius: 24,
       shadowOffset: { width: 0, height: 10 },

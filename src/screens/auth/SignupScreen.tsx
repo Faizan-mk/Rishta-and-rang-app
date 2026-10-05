@@ -32,7 +32,7 @@ export function SignupScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl, language } = useLanguage();
-  const onboardRamp = [colors.teal, colors.dating] as const;
+  const onboardRamp = [colors.teal, colors.plum] as const;
   const { draft, startDraft } = useOnboarding();
 
   const [email, setEmail] = useState('');
@@ -254,7 +254,7 @@ export function SignupScreen() {
 
         {error ? (
           <View style={styles.errorCard}>
-            <Ionicons name="alert-circle" size={16} color={colors.danger} />
+            <Ionicons name="alert-circle-outline" size={16} color={colors.danger} />
             <Text style={[styles.errorText, rtl && styles.rtlText]}>{error}</Text>
           </View>
         ) : null}

@@ -19,7 +19,7 @@ export function BlockedUsersScreen() {
   const { t, rtl } = useLanguage();
   const { blockedProfiles, unblockUser, getMatchForProfile } = useMatches();
   // Safety screens keep the app's calm teal rather than a deck's mode colour.
-  const safeRamp = [colors.teal, colors.dating] as const;
+  const safeRamp = [colors.teal, colors.plum] as const;
 
   const renderItem = ({ item, index }: { item: BlockedProfile; index: number }) => {
     // Blocking keeps the thread now (supabase/35_block_keeps_thread.sql), so

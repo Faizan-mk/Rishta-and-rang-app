@@ -9,7 +9,7 @@ import { PAKISTAN_CITIES } from '../../data/locations';
 import { SECT_OPTIONS } from '../../data/sects';
 import type { Intent, ProfileMode, RishtaReadiness } from '../../types/user';
 import { fonts, radius, spacing, typography } from '../../theme';
-import { glow, withAlpha } from '../../theme/glow';
+import { glow } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
@@ -341,8 +341,6 @@ const makeStyles = (colors: Palette) =>
     footer: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.lg },
     confirmButton: {
       backgroundColor: colors.teal,
-      borderWidth: 1,
-      borderColor: withAlpha(colors.gold, 0.7),
       borderRadius: radius.pill,
       alignItems: 'center',
       justifyContent: 'center',

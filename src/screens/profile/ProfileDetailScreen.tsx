@@ -164,7 +164,7 @@ export function ProfileDetailScreen() {
 
           {/* Aubergine wash at the foot, so the sheet below rises out of it. */}
           <LinearGradient
-            colors={['transparent', 'rgba(20,11,16,0.55)']}
+            colors={['transparent', 'rgba(36,31,33,0.55)']}
             style={styles.galleryScrim}
             pointerEvents="none"
           />
@@ -198,10 +198,10 @@ export function ProfileDetailScreen() {
                 <Badge label={t(READINESS_KEY[(profile as RishtaListingProfile).readiness])} tone="rishta" />
               )}
               <IconButton
-                icon={isFavorite(profile.id) ? 'heart' : 'heart-outline'}
+                icon={isFavorite(profile.id) ? 'star' : 'star-outline'}
                 onPress={onToggleFavorite}
                 background={GLASS}
-                color={isFavorite(profile.id) ? colors.dating : '#FFFFFF'}
+                color={isFavorite(profile.id) ? colors.gold : '#FFFFFF'}
                 style={styles.noBorder}
               />
             </View>
@@ -226,7 +226,7 @@ export function ProfileDetailScreen() {
             {profile.name}
           </Text>
           <View style={styles.metaRow}>
-            <Ionicons name="location" size={14} color={colors.gold} />
+            <Ionicons name="location-outline" size={14} color={colors.gold} />
             <Text style={styles.metaText}>{vocabularyLabel(profile.city, t)}</Text>
           </View>
 
@@ -333,7 +333,7 @@ export function ProfileDetailScreen() {
 }
 
 // Dark glass for the buttons floating on the photo.
-const GLASS = 'rgba(20,11,16,0.45)';
+const GLASS = 'rgba(36,31,33,0.45)';
 
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
@@ -420,7 +420,7 @@ const makeStyles = (colors: Palette) =>
       borderWidth: 1,
       borderBottomWidth: 0,
       borderColor: colors.border,
-      shadowColor: '#2A1720',
+      shadowColor: '#241F21',
       shadowOpacity: 0.1,
       shadowRadius: 16,
       shadowOffset: { width: 0, height: -4 },

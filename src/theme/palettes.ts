@@ -53,94 +53,94 @@ export interface Palette {
  */
 export const ONLINE_GREEN = '#22C55E';
 
-// "Noor & Nisa" design system: Rosewood (Rishta), Warm Coral (Friends/Rang) and
-// Champagne Gold (verification, premium) on warm ivory. Token names predate the
-// redesign and are kept so every screen picks the new colours up unchanged:
-// `teal` is the brand primary (Rosewood), `sage` is the verified/success
-// Emerald, `plum` is a rose mid-tone used between the two mode colours.
+// "Rishta & Rang" design system: deep Maroon (Rishta, primary CTA) and Gold
+// (premium, verified) on warm ivory, with a maroon-to-rose gradient for
+// highlights. Token names predate the redesign and are kept so every screen
+// picks the new colours up unchanged: `teal` is the brand primary (Maroon),
+// `sage` is the success green, `plum` is the rose end of the primary gradient.
 export const lightPalette: Palette = {
-  background: '#FFFAF6',
-  backgroundAlt: '#FFF0F4',
+  background: '#FCF9F5',
+  backgroundAlt: '#F6F0EA',
   surface: '#FFFFFF',
   surfaceElevated: '#FFFFFF',
-  border: '#F0E4E0',
-  borderSoft: '#F7EEEA',
+  border: '#E9E1DB',
+  borderSoft: '#F2ECE6',
 
-  textPrimary: '#2A1720',
-  textSecondary: '#7A6670',
-  textTertiary: '#A8959D',
+  textPrimary: '#241F21',
+  textSecondary: '#756E70',
+  textTertiary: '#A39C9E',
   textInverse: '#FFFFFF',
 
-  teal: '#8E1B45',
-  tealDark: '#5E0F2E',
-  tealSoft: '#F7E1E7',
-  gold: '#D4A857',
-  goldSoft: '#FBF1DC',
-  sage: '#1F8A5B',
-  sageLight: '#E3F3EA',
-  plum: '#A83158',
-  plumLight: '#FFE8F0',
+  teal: '#7A1F35',
+  tealDark: '#4B1020',
+  tealSoft: '#F5E6EA',
+  gold: '#C9A45C',
+  goldSoft: '#F7EEDC',
+  sage: '#198754',
+  sageLight: '#E2F3EA',
+  plum: '#9B3A56',
+  plumLight: '#F8E9EE',
 
-  dating: '#F2715E',
-  datingSoft: '#FDE8E4',
-  rishta: '#8E1B45',
-  rishtaSoft: '#F7E1E7',
+  dating: '#B08A45',
+  datingSoft: '#F7EEDC',
+  rishta: '#7A1F35',
+  rishtaSoft: '#F5E6EA',
 
-  success: '#1F8A5B',
-  successSoft: '#E3F3EA',
-  danger: '#D0393E',
-  dangerSoft: '#FCE6E6',
-  warning: '#D4A857',
-  warningSoft: '#FBF1DC',
+  success: '#198754',
+  successSoft: '#E2F3EA',
+  danger: '#C43D4B',
+  dangerSoft: '#F9E5E7',
+  warning: '#C9A45C',
+  warningSoft: '#F7EEDC',
 
   readReceipt: '#2B7FB8',
 
-  overlay: 'rgba(20, 11, 16, 0.65)',
-  shadow: 'rgba(42, 23, 32, 0.10)',
-  skeleton: '#F7E9EC',
+  overlay: 'rgba(18, 15, 16, 0.65)',
+  shadow: 'rgba(36, 31, 33, 0.10)',
+  skeleton: '#F2ECE6',
 };
 
-// Dark variant: aubergine-tinted black with night-plum surfaces, the rose and
-// gold brightened so they still read on the dark canvas.
+// Dark variant: warm charcoal canvas with the maroon and gold brightened so
+// they still read on the dark surfaces.
 export const darkPalette: Palette = {
-  background: '#140B10',
-  backgroundAlt: '#0C0609',
-  surface: '#1F141A',
-  surfaceElevated: '#2A1C23',
-  border: '#3A2830',
-  borderSoft: '#26191F',
+  background: '#141112',
+  backgroundAlt: '#0D0B0C',
+  surface: '#1E1A1C',
+  surfaceElevated: '#282325',
+  border: '#3A3336',
+  borderSoft: '#252022',
 
-  textPrimary: '#F8EEF1',
-  textSecondary: '#B8A4AD',
-  textTertiary: '#85727B',
+  textPrimary: '#F5F0EE',
+  textSecondary: '#B5ADAF',
+  textTertiary: '#857D80',
   textInverse: '#FFFFFF',
 
-  teal: '#E0577F',
-  tealDark: '#8E1B45',
-  tealSoft: '#3A1624',
-  gold: '#E9C27A',
-  goldSoft: '#33270F',
-  sage: '#4CC38A',
+  teal: '#C2516E',
+  tealDark: '#7A1F35',
+  tealSoft: '#3A1A23',
+  gold: '#D9B872',
+  goldSoft: '#332914',
+  sage: '#3DBE7F',
   sageLight: '#12301F',
-  plum: '#F08BA6',
-  plumLight: '#3A1A26',
+  plum: '#D16F8B',
+  plumLight: '#3A1D27',
 
-  dating: '#FF8A78',
-  datingSoft: '#3A1A16',
-  rishta: '#E0577F',
-  rishtaSoft: '#3A1624',
+  dating: '#D9B872',
+  datingSoft: '#332914',
+  rishta: '#C2516E',
+  rishtaSoft: '#3A1A23',
 
-  success: '#4CC38A',
+  success: '#3DBE7F',
   successSoft: '#12301F',
-  danger: '#F1767A',
+  danger: '#E0646F',
   dangerSoft: '#3A1718',
-  warning: '#E9C27A',
-  warningSoft: '#33270F',
+  warning: '#D9B872',
+  warningSoft: '#332914',
 
   // Brighter against near-black, the same way the other dark accents are.
   readReceipt: '#5AB6E8',
 
   overlay: 'rgba(0, 0, 0, 0.75)',
   shadow: 'rgba(0, 0, 0, 0.7)',
-  skeleton: '#2A1C23',
+  skeleton: '#282325',
 };

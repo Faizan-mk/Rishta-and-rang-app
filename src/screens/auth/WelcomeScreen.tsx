@@ -16,12 +16,12 @@ import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
 import { useOnboardingGate } from '../../store/OnboardingGateContext';
 
-// The signature Rosewood-to-Coral ramp. It is the app's front door, so it does
+// The signature Maroon-to-Rose ramp. It is the app's front door, so it does
 // not follow a deck mode.
-const BRAND_RAMP = ['#5E0F2E', '#8E1B45', '#F2715E'] as const;
-// Champagne gold, fixed rather than themed: this screen always sits on a dark
+const BRAND_RAMP = ['#4B1020', '#7A1F35', '#9B3A56'] as const;
+// Brand gold, fixed rather than themed: this screen always sits on a dark
 // photo, so it wants the bright gold in both themes.
-const GOLD = '#E9C27A';
+const GOLD = '#C9A45C';
 // Darkens the top of the photo for the title and the bottom for the sheet,
 // leaving the couple untouched. Measured on this asset, the couple's heads
 // sit in the 10-20% band: a 10x20 luminance grid puts the brightest cells in
@@ -31,11 +31,11 @@ const GOLD = '#E9C27A';
 // the screen. The top scrim therefore hands over at 0.2, which is above the
 // faces: the title in the first ~16% stays legible and the couple keeps its
 // light.
-const SCRIM_RAMP = ['rgba(20,11,16,0.78)', 'rgba(20,11,16,0)', 'rgba(20,11,16,0)', 'rgba(20,11,16,0.85)'] as const;
+const SCRIM_RAMP = ['rgba(36,31,33,0.78)', 'rgba(36,31,33,0)', 'rgba(36,31,33,0)', 'rgba(36,31,33,0.85)'] as const;
 const SCRIM_STOPS = [0, 0.2, 0.5, 1] as const;
 const HERO_IMAGE = require('../../../assets/images/welcome-wedding.png');
-// Aubergine black: shows only if the photo is still loading.
-const PLUM_DEEP = '#140B10';
+// Charcoal: shows only if the photo is still loading.
+const PLUM_DEEP = '#241F21';
 
 const LANGUAGES = [
   { key: 'en', labelKey: 'language.english' },
@@ -121,10 +121,10 @@ export function WelcomeScreen() {
                   >
                     {selected && (
                       <LinearGradient
-                        colors={['#8E1B45', '#F2715E']}
+                        colors={['#7A1F35', '#9B3A56']}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
-                        style={[styles.langOption, glow('#8E1B45', 0.4, 10, 4)]}
+                        style={[styles.langOption, glow('#7A1F35', 0.4, 10, 4)]}
                         pointerEvents="none"
                       />
                     )}
@@ -245,7 +245,7 @@ const makeStyles = (colors: Palette, compact: boolean, tiny: boolean) =>
     },
     cardTint: {
       ...StyleSheet.absoluteFillObject,
-      backgroundColor: 'rgba(20,11,16,0.35)',
+      backgroundColor: 'rgba(36,31,33,0.35)',
     },
     cardContent: {
       padding: tiny ? scaleSpace(12) : compact ? scaleSpace(16) : spacing.lg,
@@ -291,7 +291,7 @@ const makeStyles = (colors: Palette, compact: boolean, tiny: boolean) =>
       textShadowRadius: 4,
     },
     actions: { gap: spacing.sm },
-    // Secondary action per the design system: an outlined champagne-gold pill.
+    // Secondary action per the design system: an outlined gold pill.
     outlineButton: { borderWidth: 1.5, borderColor: GOLD, backgroundColor: 'rgba(255,255,255,0.1)' },
     outlineLabel: { color: '#FFFFFF', fontFamily: fonts.bodyBold },
     devReset: {

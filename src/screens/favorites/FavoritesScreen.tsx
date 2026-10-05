@@ -35,7 +35,7 @@ export function FavoritesScreen() {
         onPress={() => router.push({ pathname: '/profile-detail', params: { kind: item.kind, id: item.id } })}
         action={
           <Pressable onPress={() => removeFavorite(item.id)} hitSlop={8} style={styles.removeButton}>
-            <Ionicons name="heart" size={20} color={colors.dating} />
+            <Ionicons name="star" size={20} color={colors.gold} />
           </Pressable>
         }
       />
@@ -64,7 +64,7 @@ export function FavoritesScreen() {
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-              <EmptyOrb ramp={accent.ramp} icon="heart" />
+              <EmptyOrb ramp={accent.ramp} icon="star-outline" />
             <Text style={[styles.emptyText, rtl && styles.rtlText]}>{t('favorites.empty')}</Text>
           </View>
         }
@@ -82,9 +82,9 @@ const makeStyles = (colors: Palette) =>
       borderRadius: radius.pill,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: withAlpha(colors.dating, 0.1),
+      backgroundColor: withAlpha(colors.gold, 0.12),
       borderWidth: 1,
-      borderColor: withAlpha(colors.dating, 0.3),
+      borderColor: withAlpha(colors.gold, 0.4),
     },
       listContent: { paddingBottom: spacing.xl },
       emptyState: { alignItems: 'center', justifyContent: 'center', paddingTop: spacing.xxl, gap: spacing.md },
