@@ -157,7 +157,7 @@ function BoostChip({
   return (
     <Animated.View style={[styles.boostGlow, glow(colors.gold, 0.6, 14, 8), style]}>
       <Pressable onPress={onPress} hitSlop={6}>
-        <LinearGradient colors={BOOST_GRADIENT} start={GRADIENT_START} end={GRADIENT_END} style={styles.boostChipActive}>
+        <LinearGradient colors={[colors.metalBright, colors.metal]} start={GRADIENT_START} end={GRADIENT_END} style={styles.boostChipActive}>
           {icon}
           <Text style={[styles.boostLabel, styles.boostLabelActive]}>{label}</Text>
         </LinearGradient>
@@ -208,7 +208,6 @@ function NotificationBadge({
 const GRADIENT_START = { x: 0, y: 0 } as const;
 const GRADIENT_END = { x: 1, y: 1 } as const;
 // Reads as "lit" against either theme, so it isn't a palette token.
-const BOOST_GRADIENT = ['#D9B872', '#C9A45C'] as const;
 
 const makeStyles = (colors: Palette, accentColor: string) =>
   StyleSheet.create({
@@ -241,7 +240,7 @@ const makeStyles = (colors: Palette, accentColor: string) =>
     },
     // Solid beneath the gradient: iOS derives a shadow from the layer's own
     // background, so a bare transparent wrapper would cast nothing.
-    boostGlow: { borderRadius: radius.pill, backgroundColor: BOOST_GRADIENT[0] },
+    boostGlow: { borderRadius: radius.pill, backgroundColor: colors.metalBright },
     boostChipActive: {
       flexDirection: 'row',
       alignItems: 'center',

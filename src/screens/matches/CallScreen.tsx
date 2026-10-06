@@ -19,7 +19,7 @@ import { FadeIn } from '../../components/common/FadeInUp';
 import { useLanguage } from '../../store/LanguageContext';
 import { useTheme } from '../../store/ThemeContext';
 import { radius, spacing, typography } from '../../theme';
-import { glow } from '../../theme/glow';
+import { glow, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 
 function formatDuration(totalSeconds: number): string {
@@ -91,7 +91,7 @@ export function CallScreen() {
               colours: the call is always a dark room, whatever the theme. */}
           {photo ? <Image source={{ uri: photo }} style={StyleSheet.absoluteFill} blurRadius={28} /> : null}
           <LinearGradient
-            colors={CALL_WASH}
+            colors={['rgba(36,31,33,0.92)', withAlpha(colors.brandDeep, 0.82), 'rgba(36,31,33,0.95)']}
             start={{ x: 0.1, y: 0 }}
             end={{ x: 0.9, y: 1 }}
             style={StyleSheet.absoluteFill}
@@ -107,7 +107,7 @@ export function CallScreen() {
             <Button
               label={t('call.grantAccess')}
               onPress={requestPermission}
-              gradient={['#7A1F35', '#9B3A56']}
+              gradient={[colors.brandMain, colors.brandRose]}
               style={styles.permissionButton}
             />
           </View>
@@ -182,7 +182,7 @@ function CallControl({
       }}
       style={[
         controlStyles.button,
-        active ? controlStyles.buttonActive : controlStyles.buttonIdle,
+        active ? { backgroundColor: colors.brandMain, borderColor: colors.metalBright } : controlStyles.buttonIdle,
         animatedStyle,
       ]}
     >
@@ -211,15 +211,12 @@ function EndCallButton({ onPress, style }: { onPress: () => void; style: ViewSty
   );
 }
 
-const GOLD = '#D9B872';
-const CALL_WASH = ['rgba(36,31,33,0.92)', 'rgba(75,16,32,0.82)', 'rgba(36,31,33,0.95)'] as const;
 
-// Glass discs on the dark call room; a toggled control turns maroon with a
-// gold rim.
+// Glass discs on the dark call room; a toggled control takes the theme's brand
+// colour with a metal rim (set inline in CallControl, since it needs the palette).
 const controlStyles = StyleSheet.create({
   button: { width: 60, height: 60, borderRadius: 30, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
   buttonIdle: { backgroundColor: 'rgba(255,255,255,0.12)', borderColor: 'rgba(255,255,255,0.22)' },
-  buttonActive: { backgroundColor: '#7A1F35', borderColor: GOLD },
   endIcon: { transform: [{ rotate: '135deg' }] },
 });
 
@@ -228,7 +225,7 @@ const makeStyles = (colors: Palette) =>
     flex: { flex: 1 },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     topBar: { alignItems: 'center', paddingTop: spacing.lg },
-    status: { ...typography.label, color: GOLD, letterSpacing: 1.6 },
+    status: { ...typography.label, color: colors.metalBright, letterSpacing: 1.6 },
     statusOnCamera: { color: '#FFFFFF', textShadowColor: 'rgba(0,0,0,0.5)', textShadowRadius: 4 },
     avatarWrap: { marginTop: spacing.lg, alignItems: 'center', justifyContent: 'center' },
     // The avatar and its ringing halo share one rounded-rectangle silhouette,
@@ -239,17 +236,17 @@ const makeStyles = (colors: Palette) =>
       height: 220,
       borderRadius: radius.lg + 12,
       borderWidth: 1.5,
-      borderColor: GOLD,
-      ...glow(GOLD, 0.5, 20, 0),
+      borderColor: colors.metalBright,
+      ...glow(colors.metalBright, 0.5, 20, 0),
     },
     avatar: {
       width: 150,
       height: 186,
       borderRadius: radius.lg,
       borderWidth: 2,
-      borderColor: GOLD,
+      borderColor: colors.metalBright,
       backgroundColor: 'rgba(255,255,255,0.08)',
-      ...glow('#7A1F35', 0.6, 24, 10),
+      ...glow(colors.brandMain, 0.6, 24, 10),
     },
     name: { ...typography.h1, color: '#FFFFFF', marginTop: spacing.lg },
     hint: { ...typography.body, color: 'rgba(255,255,255,0.75)', marginTop: spacing.xs },
@@ -263,7 +260,7 @@ const makeStyles = (colors: Palette) =>
       borderRadius: radius.md,
       overflow: 'hidden',
       borderWidth: 1.5,
-      borderColor: GOLD,
+      borderColor: colors.metalBright,
       ...glow('#000000', 0.5, 14, 8),
     },
     remoteTileRtl: { right: undefined, left: spacing.md },

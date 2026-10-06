@@ -108,6 +108,7 @@ function RootNavigator() {
                 <Stack.Screen name="edit-profile" options={{ title: t('editProfile.title') }} />
                 <Stack.Screen name="rishta-profile" options={{ title: t('rishtaProfile.title') }} />
                 <Stack.Screen name="settings" options={{ title: t('settings.title') }} />
+                <Stack.Screen name="themes" options={{ title: t('settings.themesTitle') }} />
                 <Stack.Screen name="notifications" options={{ title: t('notificationsScreen.title') }} />
                 <Stack.Screen name="explore-plus" options={{ title: t('explorePlus.title') }} />
                 <Stack.Screen name="favorites" options={{ title: t('favorites.title') }} />

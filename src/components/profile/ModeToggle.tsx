@@ -156,7 +156,7 @@ const makeStyles = (colors: Palette) =>
       borderColor: colors.border,
       padding: 4,
       position: 'relative',
-      shadowColor: '#7A1F35',
+      shadowColor: colors.brandMain,
       shadowOpacity: 0.12,
       shadowRadius: 16,
       shadowOffset: { width: 0, height: 8 },
