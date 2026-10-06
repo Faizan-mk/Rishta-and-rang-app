@@ -18,10 +18,8 @@ import { useOnboardingGate } from '../../store/OnboardingGateContext';
 
 // The signature Maroon-to-Rose ramp. It is the app's front door, so it does
 // not follow a deck mode.
-const BRAND_RAMP = ['#4B1020', '#7A1F35', '#9B3A56'] as const;
 // Brand gold, fixed rather than themed: this screen always sits on a dark
 // photo, so it wants the bright gold in both themes.
-const GOLD = '#C9A45C';
 // Darkens the top of the photo for the title and the bottom for the sheet,
 // leaving the couple untouched. Measured on this asset, the couple's heads
 // sit in the 10-20% band: a 10x20 luminance grid puts the brightest cells in
@@ -121,10 +119,10 @@ export function WelcomeScreen() {
                   >
                     {selected && (
                       <LinearGradient
-                        colors={['#7A1F35', '#9B3A56']}
+                        colors={[colors.brandMain, colors.brandRose]}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
-                        style={[styles.langOption, glow('#7A1F35', 0.4, 10, 4)]}
+                        style={[styles.langOption, glow(colors.brandMain, 0.4, 10, 4)]}
                         pointerEvents="none"
                       />
                     )}
@@ -137,7 +135,7 @@ export function WelcomeScreen() {
             </View>
 
             <View style={styles.actions}>
-              <Button label={t('login.submit')} gradient={BRAND_RAMP} onPress={() => router.push('/login')} />
+              <Button label={t('login.submit')} gradient={[colors.brandDeep, colors.brandMain, colors.brandRose]} onPress={() => router.push('/login')} />
               <Button
                 label={t('login.createAccount')}
                 variant="ghost"
@@ -198,11 +196,11 @@ const makeStyles = (colors: Palette, compact: boolean, tiny: boolean) =>
       gap: spacing.sm,
       marginTop: tiny ? scaleSpace(2) : compact ? scaleSpace(4) : scaleSpace(8),
     },
-    flourishLine: { width: scaleSpace(36), height: 1, backgroundColor: GOLD },
+    flourishLine: { width: scaleSpace(36), height: 1, backgroundColor: colors.metal },
     flourishDiamond: {
       width: scaleSpace(7),
       height: scaleSpace(7),
-      backgroundColor: GOLD,
+      backgroundColor: colors.metal,
       transform: [{ rotate: '45deg' }],
     },
     brandTitle: {
@@ -222,7 +220,7 @@ const makeStyles = (colors: Palette, compact: boolean, tiny: boolean) =>
       ...typography.body,
       fontFamily: fonts.displayItalic,
       fontSize: scaleFont(17),
-      color: GOLD,
+      color: colors.metal,
       textAlign: 'center',
       marginTop: scaleSpace(2),
       paddingHorizontal: spacing.lg,
@@ -236,7 +234,7 @@ const makeStyles = (colors: Palette, compact: boolean, tiny: boolean) =>
       borderRadius: scaleSpace(32),
       overflow: 'hidden',
       borderWidth: 1,
-      borderColor: withAlpha(GOLD, 0.35),
+      borderColor: withAlpha(colors.metal, 0.35),
       shadowColor: '#000',
       shadowOpacity: 0.3,
       shadowRadius: 24,
@@ -292,7 +290,7 @@ const makeStyles = (colors: Palette, compact: boolean, tiny: boolean) =>
     },
     actions: { gap: spacing.sm },
     // Secondary action per the design system: an outlined gold pill.
-    outlineButton: { borderWidth: 1.5, borderColor: GOLD, backgroundColor: 'rgba(255,255,255,0.1)' },
+    outlineButton: { borderWidth: 1.5, borderColor: colors.metal, backgroundColor: 'rgba(255,255,255,0.1)' },
     outlineLabel: { color: '#FFFFFF', fontFamily: fonts.bodyBold },
     devReset: {
       alignSelf: 'center',

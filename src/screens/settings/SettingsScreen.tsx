@@ -106,6 +106,9 @@ export function SettingsScreen() {
             );
           })}
         </View>
+        <View style={[styles.card, styles.themesCard]}>
+          <SettingsRow icon="color-palette-outline" label={t('settings.appTheme')} right="chevron" onPress={() => router.push('/themes')} />
+        </View>
       </FadeIn>
 
       <FadeIn delay={90}>
@@ -198,6 +201,7 @@ const makeStyles = (colors: Palette) =>
     themeLabel: { ...typography.label, color: colors.textSecondary },
     themeLabelSelected: { color: '#FFFFFF', fontFamily: fonts.bodyBold },
     card: { ...cardSurface(colors), paddingVertical: 0, paddingBottom: 0, paddingHorizontal: spacing.md },
+    themesCard: { marginTop: spacing.md },
     divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border },
     logout: { marginTop: spacing.xl },
     version: { ...typography.caption, color: colors.textTertiary, textAlign: 'center', marginTop: spacing.md, marginBottom: spacing.lg },

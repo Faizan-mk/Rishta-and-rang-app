@@ -679,7 +679,7 @@ const makeStyles = (colors: Palette) =>
       backgroundColor: colors.surface,
       borderWidth: 1,
       borderColor: colors.border,
-      shadowColor: '#7A1F35',
+      shadowColor: colors.brandMain,
       shadowOpacity: 0.1,
       shadowRadius: 16,
       shadowOffset: { width: 0, height: 8 },

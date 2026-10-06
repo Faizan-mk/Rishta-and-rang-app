@@ -521,7 +521,7 @@ export function ChatScreen() {
               end={GRADIENT_END}
               style={[styles.rishtaBanner, glow(colors.rishta, 0.3, 14, 5)]}
             >
-              <MaterialCommunityIcons name="ring" size={18} color={RISHTA_GOLD} />
+              <MaterialCommunityIcons name="ring" size={18} color={colors.metalBright} />
               <Text style={styles.rishtaBannerText}>{t('chat.rishtaIncoming', { name: match.name })}</Text>
               <View style={styles.rishtaBannerActions}>
                 <Pressable onPress={() => onRespondRishta(false)} style={styles.rishtaDeclineButton}>
@@ -838,9 +838,6 @@ function HeaderMenu({
   );
 }
 
-// Brand gold that reads on the maroon Rishta cards in both themes.
-const RISHTA_GOLD = '#D9B872';
-
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
     safeArea: { flex: 1, backgroundColor: colors.background },
@@ -931,7 +928,7 @@ const makeStyles = (colors: Palette) =>
     rishtaBanner: {
       borderRadius: radius.lg,
       borderWidth: 1,
-      borderColor: withAlpha(RISHTA_GOLD, 0.6),
+      borderColor: withAlpha(colors.metalBright, 0.6),
       padding: spacing.md,
       gap: spacing.sm,
     },
@@ -951,7 +948,7 @@ const makeStyles = (colors: Palette) =>
       paddingVertical: spacing.sm + 2,
       borderRadius: radius.pill,
       borderWidth: 1.5,
-      borderColor: withAlpha(RISHTA_GOLD, 0.8),
+      borderColor: withAlpha(colors.metalBright, 0.8),
     },
     rishtaDeclineText: { ...typography.label, color: '#FFFFFF', fontFamily: fonts.bodyBold },
     moveToRishtaWrap: { paddingHorizontal: spacing.md, paddingTop: spacing.sm },
@@ -962,7 +959,7 @@ const makeStyles = (colors: Palette) =>
       gap: spacing.xs,
       borderRadius: radius.pill,
       borderWidth: 1,
-      borderColor: withAlpha(RISHTA_GOLD, 0.6),
+      borderColor: withAlpha(colors.metalBright, 0.6),
       paddingVertical: spacing.sm + 2,
     },
     moveToRishtaBarPending: { opacity: 0.6 },
@@ -999,7 +996,7 @@ const makeStyles = (colors: Palette) =>
     },
     inputRow: {
       flexDirection: 'row',
-      alignItems: 'flex-end',
+      alignItems: 'center',
       padding: spacing.sm,
       gap: spacing.sm,
       borderTopWidth: 1,
@@ -1043,21 +1040,29 @@ const makeStyles = (colors: Palette) =>
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },
     input: {
       flex: 1,
+      // Same height as the send button so the row lines up, and a radius of
+      // half that rather than a pill: a pill radius on a box taller than one
+      // line curves the top edge away and the border looks cut in half.
+      minHeight: 46,
       maxHeight: 100,
       borderWidth: 1,
       borderColor: colors.border,
       backgroundColor: colors.background,
-      borderRadius: radius.pill,
+      borderRadius: 23,
       paddingHorizontal: spacing.md,
-      paddingVertical: spacing.sm,
+      paddingTop: 12,
+      paddingBottom: 12,
+      textAlignVertical: 'center',
       color: colors.textPrimary,
       fontSize: typography.body.fontSize,
       fontFamily: typography.body.fontFamily,
       outlineWidth: 0,
+      // The browser's own focus ring drew a black edge round the box on web.
+      outlineColor: 'transparent',
     },
     inputFocused: { borderColor: colors.gold, backgroundColor: colors.surface },
     rtlInput: { textAlign: 'right', writingDirection: 'rtl' },
-    attachButton: { padding: spacing.xs, marginBottom: 4 },
+    attachButton: { width: 40, height: 46, alignItems: 'center', justifyContent: 'center' },
     recordingRow: {
       flex: 1,
       flexDirection: 'row',

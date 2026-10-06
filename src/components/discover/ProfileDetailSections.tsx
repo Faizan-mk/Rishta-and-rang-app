@@ -19,7 +19,6 @@ import { AccentHeading } from '../common/AccentHeading';
 
 // Profile sections keep one ramp of their own rather than following the deck
 // mode, so the long read down a profile stays visually steady.
-const SECTION_RAMP = ['#7A1F35', '#9B3A56'] as const;
 
 function formatDuration(totalSeconds: number): string {
   const sec = Math.max(0, Math.floor(totalSeconds || 0));
@@ -142,7 +141,7 @@ function Section({ title, subtitle, children }: { title: string; subtitle?: stri
   // AccentHeading handles RTL for the title and subtitle itself.
   return (
     <View style={styles.section}>
-      <AccentHeading title={title} subtitle={subtitle} gradient={SECTION_RAMP} style={styles.sectionHeading} />
+      <AccentHeading title={title} subtitle={subtitle} gradient={[colors.brandMain, colors.brandRose]} style={styles.sectionHeading} />
       {children}
     </View>
   );

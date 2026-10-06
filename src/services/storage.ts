@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const KEYS = {
   themeMode: 'rishta.themeMode.v1',
+  appTheme: 'rishta.appTheme.v1',
 } as const;
 
 async function getJSON<T>(key: string, fallback: T): Promise<T> {

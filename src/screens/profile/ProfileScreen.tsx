@@ -134,7 +134,7 @@ export function ProfileScreen() {
       <Animated.View entering={FadeInUp.duration(360)} style={styles.headerCard}>
         <View style={styles.avatarWrap}>
           <LinearGradient
-            colors={user.isExplorePlus ? PREMIUM_RING : accent.ramp}
+            colors={user.isExplorePlus ? [colors.metalBright, colors.metal, colors.metalDeep] as const : accent.ramp}
             start={GRADIENT_START}
             end={GRADIENT_END}
             style={[styles.avatarRing, glow(user.isExplorePlus ? colors.gold : accent.primary, 0.5, 18, 8)]}
@@ -463,7 +463,6 @@ function QuickLinkRow({
 
 // Gold ring for paying members — the one place the palette's premium colour
 // outranks the member's own mode colour.
-const PREMIUM_RING: Gradient = ['#D9B872', '#C9A45C', '#B8893A'];
 
 const detailStyles = StyleSheet.create({
   row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.sm + 4 },

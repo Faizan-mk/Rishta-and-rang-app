@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { Appearance } from 'react-native';
 import { storage } from '../services/storage';
-import { lightPalette, darkPalette, Palette } from '../theme/palettes';
+import { APP_THEMES, AppThemeId, Palette } from '../theme/palettes';
 
 export type ThemeMode = 'light' | 'dark' | 'system';
 
@@ -11,16 +11,23 @@ interface ThemeContextValue {
   isDark: boolean;
   colors: Palette;
   setMode: (mode: ThemeMode) => void;
+  themeId: AppThemeId;
+  setThemeId: (id: AppThemeId) => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [mode, setModeState] = useState<ThemeMode>('system');
+  const [themeId, setThemeIdState] = useState<AppThemeId>('maroon');
   const [systemScheme, setSystemScheme] = useState(Appearance.getColorScheme() ?? 'light');
 
   useEffect(() => {
     storage.getJSON<ThemeMode>(storage.KEYS.themeMode, 'system').then(setModeState);
+    // A stored id from a theme that has since been removed falls back to the default.
+    storage.getJSON<AppThemeId>(storage.KEYS.appTheme, 'maroon').then((id) => {
+      if (id in APP_THEMES) setThemeIdState(id);
+    });
   }, []);
 
   useEffect(() => {
@@ -35,6 +42,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     storage.setJSON(storage.KEYS.themeMode, next);
   };
 
+  const setThemeId = (next: AppThemeId) => {
+    setThemeIdState(next);
+    storage.setJSON(storage.KEYS.appTheme, next);
+  };
+
   const resolvedMode: 'light' | 'dark' = mode === 'system' ? (systemScheme === 'dark' ? 'dark' : 'light') : mode;
 
   const value = useMemo<ThemeContextValue>(
@@ -42,10 +54,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       mode,
       resolvedMode,
       isDark: resolvedMode === 'dark',
-      colors: resolvedMode === 'dark' ? darkPalette : lightPalette,
+      colors: resolvedMode === 'dark' ? APP_THEMES[themeId].dark : APP_THEMES[themeId].light,
       setMode,
+      themeId,
+      setThemeId,
     }),
-    [mode, resolvedMode]
+    [mode, resolvedMode, themeId]
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

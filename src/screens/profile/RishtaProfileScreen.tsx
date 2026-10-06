@@ -66,7 +66,7 @@ export function RishtaProfileScreen() {
         >
           <View style={styles.heroGlow} pointerEvents="none" />
           <View style={styles.heroIcon}>
-            <MaterialCommunityIcons name="ring" size={20} color="#D9B872" />
+            <MaterialCommunityIcons name="ring" size={20} color={colors.metalBright} />
           </View>
           <Text style={[styles.heroTitle, rtl && styles.rtlText]}>{t('rishtaProfile.title')}</Text>
         </LinearGradient>
@@ -152,7 +152,7 @@ const makeStyles = (colors: Palette) =>
       borderRadius: 20,
       backgroundColor: 'rgba(36,31,33,0.25)',
       borderWidth: 1.5,
-      borderColor: '#D9B872',
+      borderColor: colors.metalBright,
       alignItems: 'center',
       justifyContent: 'center',
     },
