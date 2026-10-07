@@ -23,7 +23,7 @@
 //                    only has to be a verified address, not a domain.
 //   RESEND_API_KEY   Resend → API Keys. Used when Brevo's isn't set; needs a
 //                    verified domain to reach anyone but the account owner.
-//   OTP_FROM_EMAIL   "Rishta & Rang <address>" — for Brevo, the address
+//   OTP_FROM_EMAIL   "Matrimonial App <address>" — for Brevo, the address
 //                    verified under Senders; for Resend, one on its domain
 //   OTP_SECRET       any long random string; keys the code/ticket hashes.
 //                    Falls back to the service role key when unset.
@@ -103,20 +103,20 @@ async function hmac(secret: string, message: string): Promise<string> {
 
 const COPY: Record<string, Record<Purpose, { subject: string; intro: string }> & { expiry: string; ignore: string }> = {
   en: {
-    signup: { subject: 'Your Rishta & Rang verification code', intro: 'Use this code to verify your email and finish creating your account.' },
-    reset: { subject: 'Your Rishta & Rang password reset code', intro: 'Use this code to reset your password.' },
+    signup: { subject: 'Your Matrimonial App verification code', intro: 'Use this code to verify your email and finish creating your account.' },
+    reset: { subject: 'Your Matrimonial App password reset code', intro: 'Use this code to reset your password.' },
     expiry: 'The code expires in {minutes} minutes. Never share it with anyone — our team will never ask for it.',
     ignore: "If you didn't request this, you can safely ignore this email.",
   },
   roman: {
-    signup: { subject: 'Rishta & Rang tasdeeqi code', intro: 'Apni email ki tasdeeq aur account mukammal karne ke liye yeh code istemal karein.' },
-    reset: { subject: 'Rishta & Rang password reset code', intro: 'Apna password reset karne ke liye yeh code istemal karein.' },
+    signup: { subject: 'Matrimonial App tasdeeqi code', intro: 'Apni email ki tasdeeq aur account mukammal karne ke liye yeh code istemal karein.' },
+    reset: { subject: 'Matrimonial App password reset code', intro: 'Apna password reset karne ke liye yeh code istemal karein.' },
     expiry: 'Yeh code {minutes} minute mein khatam ho jayega. Yeh code kisi ko na batayein — hamari team kabhi yeh nahi mangegi.',
     ignore: 'Agar aap ne yeh request nahi ki to is email ko nazar andaz kar dein.',
   },
   ur: {
-    signup: { subject: 'رشتہ اینڈ رنگ تصدیقی کوڈ', intro: 'اپنی ای میل کی تصدیق اور اکاؤنٹ مکمل کرنے کے لیے یہ کوڈ استعمال کریں۔' },
-    reset: { subject: 'رشتہ اینڈ رنگ پاس ورڈ ری سیٹ کوڈ', intro: 'اپنا پاس ورڈ ری سیٹ کرنے کے لیے یہ کوڈ استعمال کریں۔' },
+    signup: { subject: 'میٹریمونیل ایپ تصدیقی کوڈ', intro: 'اپنی ای میل کی تصدیق اور اکاؤنٹ مکمل کرنے کے لیے یہ کوڈ استعمال کریں۔' },
+    reset: { subject: 'میٹریمونیل ایپ پاس ورڈ ری سیٹ کوڈ', intro: 'اپنا پاس ورڈ ری سیٹ کرنے کے لیے یہ کوڈ استعمال کریں۔' },
     expiry: 'یہ کوڈ {minutes} منٹ میں ختم ہو جائے گا۔ یہ کوڈ کسی کو نہ بتائیں — ہماری ٹیم کبھی یہ نہیں مانگے گی۔',
     ignore: 'اگر آپ نے یہ درخواست نہیں کی تو اس ای میل کو نظر انداز کر دیں۔',
   },
@@ -133,7 +133,7 @@ function renderEmail(purpose: Purpose, code: string, language: string) {
 <html dir="${dir}"><body style="margin:0;padding:24px;background:#f4f1ec;font-family:Arial,Helvetica,sans-serif;color:#1f2a2e">
   <table role="presentation" width="100%" style="max-width:480px;margin:0 auto;background:#ffffff;border-radius:16px;padding:32px">
     <tr><td>
-      <h1 style="margin:0 0 16px;font-size:20px;color:#1f6f6b">Rishta &amp; Rang</h1>
+      <h1 style="margin:0 0 16px;font-size:20px;color:#1f6f6b">Matrimonial App</h1>
       <p style="margin:0 0 24px;font-size:15px;line-height:22px">${intro}</p>
       <p dir="ltr" style="margin:0 0 24px;font-size:34px;font-weight:bold;letter-spacing:10px;text-align:center;color:#1f2a2e">${code}</p>
       <p style="margin:0 0 12px;font-size:13px;line-height:20px;color:#5b6b70">${expiry}</p>
@@ -149,8 +149,8 @@ function renderEmail(purpose: Purpose, code: string, language: string) {
 /** "Name <address>" → its two halves; a bare address gets the app's name. */
 function parseSender(from: string): { name: string; email: string } {
   const match = from.match(/^\s*(.*?)\s*<\s*([^>]+?)\s*>\s*$/);
-  if (match) return { name: match[1].replace(/^"|"$/g, '') || 'Rishta & Rang', email: match[2] };
-  return { name: 'Rishta & Rang', email: from.trim() };
+  if (match) return { name: match[1].replace(/^"|"$/g, '') || 'Matrimonial App', email: match[2] };
+  return { name: 'Matrimonial App', email: from.trim() };
 }
 
 /** `detail` is the provider's own reason for a refusal — logged, and returned
@@ -198,7 +198,7 @@ async function sendEmail(to: string, purpose: Purpose, code: string, language: s
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from: from || 'Rishta & Rang <onboarding@resend.dev>', to: [to], subject, html, text }),
+    body: JSON.stringify({ from: from || 'Matrimonial App <onboarding@resend.dev>', to: [to], subject, html, text }),
   });
   if (!res.ok) {
     const detail = `Resend ${res.status}: ${(await res.text()).slice(0, 300)}`;
