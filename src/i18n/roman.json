@@ -1,5 +1,5 @@
 {
-  "appName": "Rishta & Rang",
+  "appName": "Matrimonial App",
   "common": {
     "next": "Aage",
     "back": "Peeche",
@@ -107,7 +107,7 @@
     "submit": "Jari Rakhein",
     "missingFields": "Baraye meherbani tamam khane pur karein.",
     "invalidDob": "Tareekh-e-paidaish sahi format YYYY-MM-DD mein darj karein.",
-    "tooYoung": "Rishta & Rang istemal karne ke liye umar 18 saal ya us se zyada honi chahiye."
+    "tooYoung": "Matrimonial App istemal karne ke liye umar 18 saal ya us se zyada honi chahiye."
   },
   "intent": {
     "title": "Aap Yahan Kyun Aaye Hain?",
@@ -153,7 +153,7 @@
       "subtitle": "Verified profiles, wali ki shumooliyat, aur privacy controls — har qadam par aapke saath."
     },
     "page2": {
-      "title": "Dosti aur rang, apne andaaz mein",
+      "title": "Dosti, apne andaaz mein",
       "subtitle": "Ek mehfooz aur ba-waqar mahol mein baat cheet karein aur haqeeqi taalluqaat banayein.",
       "chipSafe": "Mehfooz baat cheet",
       "chipReal": "Haqeeqi log"
@@ -213,7 +213,7 @@
     "favourited": "Pasandeeda mein shamil",
     "block": "Block Karein",
     "report": "Report Karein",
-    "shareMessage": "{name} ki profile Rishta & Rang par dekhein!",
+    "shareMessage": "{name} ki profile Matrimonial App par dekhein!",
     "openToRelocate": "Muntaqli ke liye tayyar",
     "careerPlansTitle": "Career ke mansooby",
     "grewUpIn": "{place} mein parwarish payi",
@@ -472,7 +472,7 @@
     "themesSubtitle": "Poori app ke liye rangon ki theme chunein. Roshan aur tareek mode is ke saath bhi chalte hain.",
     "themeActive": "Faal",
     "themeMaroon": "Maroon aur Sunehra",
-    "themeMaroonDesc": "Rishta & Rang ka classic andaaz",
+    "themeMaroonDesc": "Matrimonial App ka classic andaaz",
     "themeEmerald": "Zamurradi aur Sunehra",
     "themeEmeraldDesc": "Gehra zamurradi, purane sunehre ke saath",
     "themeNavy": "Navy aur Sunehra",
@@ -631,12 +631,12 @@
     "contactLine": "In dastavezaat ke baare mein sawal hai? {email} par email karein.",
     "privacyPolicyTitle": "Privacy policy",
     "termsTitle": "Service ki sharait",
-    "privacyIntro": "Rishta & Rang Pakistan mein baaligh afraad ke liye aik matchmaking app hai. Yeh policy batati hai ke hum aap se kya maloomat lete hain, kyun lete hain, kaun unhein dekh sakta hai, aur aap unhein kaise delete karwa sakte hain.",
-    "termsIntro": "Yeh sharait aap ke aur Rishta & Rang ke darmiyan muahida hain. Account bana kar aap inhein qubool karte hain. Agar aap inhein qubool nahi karte to app istemal na karein.",
+    "privacyIntro": "Matrimonial App Pakistan mein baaligh afraad ke liye aik matchmaking app hai. Yeh policy batati hai ke hum aap se kya maloomat lete hain, kyun lete hain, kaun unhein dekh sakta hai, aur aap unhein kaise delete karwa sakte hain.",
+    "termsIntro": "Yeh sharait aap ke aur Matrimonial App ke darmiyan muahida hain. Account bana kar aap inhein qubool karte hain. Agar aap inhein qubool nahi karte to app istemal na karein.",
     "privacy": {
       "whoWeAre": {
         "title": "1. Hum kaun hain",
-        "body": "Rishta & Rang (\"hum\") is app ko chalate hain aur neeche bayan ki gayi maloomat ke data controller hain. Is policy se mutalliq kisi bhi baat ke liye, bashamool apna data dekhne ya delete karwane ki darkhwast, aap hum se {email} par rabta kar sakte hain."
+        "body": "Matrimonial App (\"hum\") is app ko chalate hain aur neeche bayan ki gayi maloomat ke data controller hain. Is policy se mutalliq kisi bhi baat ke liye, bashamool apna data dekhne ya delete karwane ki darkhwast, aap hum se {email} par rabta kar sakte hain."
       },
       "dataWeCollect": {
         "title": "2. Hum kya jama karte hain",
@@ -668,7 +668,7 @@
       },
       "ageLimit": {
         "title": "9. Sirf baaligh afraad ke liye",
-        "body": "Rishta & Rang 18 saal ya us se zyada umar ke afraad ke liye hai. Hum signup par tareekh-e-paidaish poochte hain aur 18 saal se kam umar ke accounts qubool nahi karte. Agar hamein maloom ho ke koi account nabaligh ka hai to hum use aur us ka data hazf kar dete hain. Agar aap ko lage ke koi nabaligh app istemal kar raha hai to {email} par email karein."
+        "body": "Matrimonial App 18 saal ya us se zyada umar ke afraad ke liye hai. Hum signup par tareekh-e-paidaish poochte hain aur 18 saal se kam umar ke accounts qubool nahi karte. Agar hamein maloom ho ke koi account nabaligh ka hai to hum use aur us ka data hazf kar dete hain. Agar aap ko lage ke koi nabaligh app istemal kar raha hai to {email} par email karein."
       },
       "changes": {
         "title": "10. Is policy mein tabdeeliyan",
@@ -682,7 +682,7 @@
     "terms": {
       "eligibility": {
         "title": "1. Aap ka 18 saal ka hona lazim hai",
-        "body": "Aap Rishta & Rang sirf usi soorat istemal kar sakte hain jab aap 18 saal ya us se zyada umar ke hon aur qanoonan yeh muahida karne ke ahal hon. Aap signup par apni umar ki tasdeeq karte hain. 18 saal se kam umar mein, ya kisi nabaligh ki janib se, account banana in sharait ki khilaf warzi hai aur hum aisa account hazf kar denge."
+        "body": "Aap Matrimonial App sirf usi soorat istemal kar sakte hain jab aap 18 saal ya us se zyada umar ke hon aur qanoonan yeh muahida karne ke ahal hon. Aap signup par apni umar ki tasdeeq karte hain. 18 saal se kam umar mein, ya kisi nabaligh ki janib se, account banana in sharait ki khilaf warzi hai aur hum aisa account hazf kar denge."
       },
       "yourAccount": {
         "title": "2. Aap ka account",
@@ -690,7 +690,7 @@
       },
       "acceptableUse": {
         "title": "3. App kaise istemal karein",
-        "body": "Rishta & Rang dosti, taalluq ya shadi ke liye logon se milne ki jagah hai. Doosre members ke saath waisa sulook karein jaisa aap apne ghar walon ke liye chahte hain. Guftagu usi raftaar se barhayein jo dono ko qubool ho, aur \"nahi\" ka ehtiram pehli hi baar karein."
+        "body": "Matrimonial App dosti, taalluq ya shadi ke liye logon se milne ki jagah hai. Doosre members ke saath waisa sulook karein jaisa aap apne ghar walon ke liye chahte hain. Guftagu usi raftaar se barhayein jo dono ko qubool ho, aur \"nahi\" ka ehtiram pehli hi baar karein."
       },
       "prohibited": {
         "title": "4. Kya mana hai",
@@ -756,7 +756,7 @@
     "myHistory": "My History",
     "learnMore": "Mazeed janein",
     "share": "Share Karein",
-    "shareEventMessage": "{title} — {city}, {date}. Isay Rishta & Rang par dekhein!",
+    "shareEventMessage": "{title} — {city}, {date}. Isay Matrimonial App par dekhein!",
     "historyEmpty": "Aap jo profiles dekhein ge woh yahan dikhengi."
   },
   "explorePlus": {

@@ -1,5 +1,5 @@
 {
-  "appName": "Rishta & Rang",
+  "appName": "Matrimonial App",
   "common": {
     "next": "Next",
     "back": "Back",
@@ -107,7 +107,7 @@
     "submit": "Continue",
     "missingFields": "Please fill in every field.",
     "invalidDob": "Enter a valid date of birth as YYYY-MM-DD.",
-    "tooYoung": "You must be at least 18 to use Rishta & Rang."
+    "tooYoung": "You must be at least 18 to use Matrimonial App."
   },
   "intent": {
     "title": "What brings you here?",
@@ -153,7 +153,7 @@
       "subtitle": "Verified profiles, wali involvement, and privacy controls — built in every step of the way."
     },
     "page2": {
-      "title": "Friends & rang, your way",
+      "title": "Friendship, your way",
       "subtitle": "Chat, connect, and build genuine relationships in a safe, respectful space.",
       "chipSafe": "Safe chat",
       "chipReal": "Real people"
@@ -213,7 +213,7 @@
     "favourited": "Favourited",
     "block": "Block",
     "report": "Report",
-    "shareMessage": "Check out {name}'s profile on Rishta & Rang!",
+    "shareMessage": "Check out {name}'s profile on Matrimonial App!",
     "openToRelocate": "Open to relocate",
     "careerPlansTitle": "Career plans",
     "grewUpIn": "Grew up in {place}",
@@ -472,7 +472,7 @@
     "themesSubtitle": "Pick a colour theme for the whole app. Light and dark mode still apply on top of it.",
     "themeActive": "Active",
     "themeMaroon": "Maroon & Gold",
-    "themeMaroonDesc": "The classic Rishta & Rang look",
+    "themeMaroonDesc": "The classic Matrimonial App look",
     "themeEmerald": "Emerald & Gold",
     "themeEmeraldDesc": "Deep emerald with antique gold",
     "themeNavy": "Navy & Gold",
@@ -631,12 +631,12 @@
     "contactLine": "Questions about either document? Email {email}.",
     "privacyPolicyTitle": "Privacy policy",
     "termsTitle": "Terms of service",
-    "privacyIntro": "Rishta & Rang is a matchmaking app for adults in Pakistan. This policy explains what we collect from you, why we need it, who else can see it, and how you get it deleted.",
-    "termsIntro": "These terms are the agreement between you and Rishta & Rang. By creating an account you accept them. If you do not accept them, do not use the app.",
+    "privacyIntro": "Matrimonial App is a matchmaking app for adults in Pakistan. This policy explains what we collect from you, why we need it, who else can see it, and how you get it deleted.",
+    "termsIntro": "These terms are the agreement between you and Matrimonial App. By creating an account you accept them. If you do not accept them, do not use the app.",
     "privacy": {
       "whoWeAre": {
         "title": "1. Who we are",
-        "body": "Rishta & Rang (\"we\", \"us\") operates this app and is the data controller for the information described below. You can reach us at {email} about anything in this policy, including a request to see or delete your data."
+        "body": "Matrimonial App (\"we\", \"us\") operates this app and is the data controller for the information described below. You can reach us at {email} about anything in this policy, including a request to see or delete your data."
       },
       "dataWeCollect": {
         "title": "2. What we collect",
@@ -668,7 +668,7 @@
       },
       "ageLimit": {
         "title": "9. Adults only",
-        "body": "Rishta & Rang is for people aged 18 and over. We ask for your date of birth at signup and refuse accounts under 18. If we learn that an account belongs to a minor, we delete it and its data. If you believe a minor is using the app, email {email}."
+        "body": "Matrimonial App is for people aged 18 and over. We ask for your date of birth at signup and refuse accounts under 18. If we learn that an account belongs to a minor, we delete it and its data. If you believe a minor is using the app, email {email}."
       },
       "changes": {
         "title": "10. Changes to this policy",
@@ -682,7 +682,7 @@
     "terms": {
       "eligibility": {
         "title": "1. You must be 18",
-        "body": "You may use Rishta & Rang only if you are 18 or older and legally able to enter this agreement. You confirm your age at signup. Creating an account while under 18, or on behalf of someone under 18, is a breach of these terms and we will delete the account."
+        "body": "You may use Matrimonial App only if you are 18 or older and legally able to enter this agreement. You confirm your age at signup. Creating an account while under 18, or on behalf of someone under 18, is a breach of these terms and we will delete the account."
       },
       "yourAccount": {
         "title": "2. Your account",
@@ -690,7 +690,7 @@
       },
       "acceptableUse": {
         "title": "3. How to use the app",
-        "body": "Rishta & Rang is for meeting people for friendship, a relationship, or marriage. Treat other members the way you would want your own family treated. Take conversations at the pace both of you are comfortable with, and respect a \"no\" the first time."
+        "body": "Matrimonial App is for meeting people for friendship, a relationship, or marriage. Treat other members the way you would want your own family treated. Take conversations at the pace both of you are comfortable with, and respect a \"no\" the first time."
       },
       "prohibited": {
         "title": "4. What is not allowed",
@@ -756,7 +756,7 @@
     "myHistory": "My History",
     "learnMore": "Learn more",
     "share": "Share",
-    "shareEventMessage": "{title} — {city}, {date}. Check it out on Rishta & Rang!",
+    "shareEventMessage": "{title} — {city}, {date}. Check it out on Matrimonial App!",
     "historyEmpty": "Profiles you view will show up here."
   },
   "explorePlus": {
