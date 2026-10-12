@@ -6,7 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
-import { TAB_BAR_BASE_HEIGHT, useHideTabBarOnScroll } from '../../store/TabBarVisibilityContext';
+import { TAB_BAR_BASE_HEIGHT } from '../../store/TabBarVisibilityContext';
 import { AccentHeading } from '../../components/common/AccentHeading';
 import { Badge } from '../../components/common/Badge';
 import { Chip } from '../../components/common/Chip';
@@ -51,7 +51,6 @@ export function ProfileScreen() {
   const { unreadCount } = useNotifications();
   const [requestingBureau, setRequestingBureau] = useState(false);
   const insets = useSafeAreaInsets();
-  const onScroll = useHideTabBarOnScroll();
 
   if (!user) return null;
 
@@ -103,8 +102,6 @@ export function ProfileScreen() {
   return (
     <ScreenContainer
       edges={['top']}
-      onScroll={onScroll}
-      scrollEventThrottle={16}
       style={{ paddingBottom: TAB_BAR_BASE_HEIGHT + insets.bottom + spacing.lg }}
     >
       {/* The banner wears the app's colours, like the rest of its chrome. */}
@@ -361,14 +358,6 @@ export function ProfileScreen() {
               />
             </>
           )}
-          <View style={styles.rowDivider} />
-          <SettingsRow
-            icon="people-outline"
-            label={t('profile.wali')}
-            description={user.waliContact ? t('wali.statusInvited', { name: user.waliName ?? '' }) : t('wali.statusNotSet')}
-            right="chevron"
-            onPress={() => router.push('/wali-dashboard')}
-          />
         </View>
       </View>
 

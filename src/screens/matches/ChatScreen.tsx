@@ -498,10 +498,6 @@ export function ChatScreen() {
       <HeaderMenu
         visible={menuOpen}
         onClose={() => setMenuOpen(false)}
-        onVoiceCall={() => router.push({ pathname: '/call', params: { name: match.name, photo: match.photo } })}
-        onVideoCall={() =>
-          router.push({ pathname: '/call', params: { name: match.name, photo: match.photo, video: '1' } })
-        }
         onBlock={isBlocked ? undefined : onBlock}
         onReport={onReport}
         onClearChat={onClearChat}
@@ -740,8 +736,6 @@ export function ChatScreen() {
 function HeaderMenu({
   visible,
   onClose,
-  onVoiceCall,
-  onVideoCall,
   onBlock,
   onReport,
   onClearChat,
@@ -753,8 +747,6 @@ function HeaderMenu({
 }: {
   visible: boolean;
   onClose: () => void;
-  onVoiceCall: () => void;
-  onVideoCall: () => void;
   /** Absent once already blocked — the blocked banner is where unblocking lives. */
   onBlock?: () => void;
   onReport: () => void;
@@ -797,19 +789,6 @@ function HeaderMenu({
             edge instead of the browser window's. */}
         <View style={[styles.menuFrameBounds, framedWidth ? { maxWidth: framedWidth } : null]}>
           <Animated.View entering={ZoomIn.duration(140)} style={styles.menuCard}>
-          <Pressable onPress={() => run(onVoiceCall)} style={styles.menuOptionRow}>
-            <Ionicons name="call-outline" size={16} color={colors.teal} style={styles.menuOptionIcon} />
-            <Text style={styles.menuOptionText} numberOfLines={1}>
-              {t('chat.voiceCall')}
-            </Text>
-          </Pressable>
-          <Pressable onPress={() => run(onVideoCall)} style={styles.menuOptionRow}>
-            <Ionicons name="videocam-outline" size={16} color={colors.teal} style={styles.menuOptionIcon} />
-            <Text style={styles.menuOptionText} numberOfLines={1}>
-              {t('chat.videoCall')}
-            </Text>
-          </Pressable>
-          <View style={styles.menuDivider} />
           {onBlock && (
             <Pressable onPress={() => run(onBlock)} style={styles.menuOptionRow}>
               <Ionicons name="hand-left-outline" size={16} color={colors.textSecondary} style={styles.menuOptionIcon} />

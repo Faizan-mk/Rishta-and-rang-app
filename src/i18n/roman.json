@@ -354,10 +354,8 @@
     "deleteForMe": "Sirf mere liye delete karein",
     "deleteConfirmTitle": "Message delete karein?",
     "clearChat": "Chat clear karein",
-    "voiceCall": "Voice call",
     "replyYou": "Aap",
     "replyingTo": "{name} ko jawab de rahe hain",
-    "videoCall": "Video call",
     "moreOptions": "Mazeed options",
     "clearChatConfirmTitle": "Ye chat clear karein?",
     "clearChatConfirmBody": "Sab messages sirf aap ki taraf se hat jayenge — {name} ke paas unke apne messages rahenge, aur chat uske baad bhi kaam karti rahegi."
@@ -396,10 +394,9 @@
     "prayerHabits": "Namaz ki aadatein",
     "incomeRange": "Aamdani ki range",
     "livingAbroadStatus": "Bairun-e-mulk rehaish ki soorat-e-haal",
-    "verificationSection": "Tasdeeq aur Khandan",
+    "verificationSection": "Tasdeeq",
     "insightsSection": "Mutabiqat aur Tasdeeq",
     "cnic": "CNIC / ID Document",
-    "wali": "Wali Dashboard",
     "bureau": "Bureau-Tasdeeq Shuda Badge",
     "bureauNotVerified": "Bureau Tasdeeq Shuda Nahi",
     "aiScoreValue": "{score}% mutabiqat",
@@ -539,26 +536,6 @@
     "verifiedBody": "Ab aapki profile par bureau tasdeeq shuda badge maujood hai.",
     "alreadyVerifiedBody": "Aap pehle hi bureau tasdeeq shuda hain."
   },
-  "wali": {
-    "title": "Wali Dashboard",
-    "explainer": "Apne rishta-marhala matches ke baare mein aagah rakhne ke liye ek wali (sarparast) ko madoo karein — woh guftagu jo friends se ek sanjeeda, khandani marhale ki taraf barh chuki hain.",
-    "name": "Wali ka Naam",
-    "namePlaceholder": "misaal ke tor par Abu Bakr",
-    "contact": "Wali ka Rabta",
-    "contactPlaceholder": "Phone ya email",
-    "missingFields": "Baraye meherbani dono khane pur karein.",
-    "sendInvite": "Dawat Bhejein",
-    "invitedTitle": "Dawat Bhej Di Gayi",
-    "invitedBody": "{name} ko aapke wali ke tor par shamil kar diya gaya hai.",
-    "removeWali": "Wali ko Hatayein",
-    "removeConfirmTitle": "Apne wali ko hatayein?",
-    "removeConfirmBody": "Woh ab aapki rishta-marhala sargarmi nahi dekh sakenge.",
-    "removeConfirmLabel": "Hatayein",
-    "sharedActivity": "Mushtarka Sargarmi",
-    "sharedActivityEmpty": "Abhi tak koi rishta-marhala match nahi.",
-    "statusInvited": "Madoo kiya gaya — {name}",
-    "statusNotSet": "Abhi Tarteeb Nahi Di Gayi"
-  },
   "report": {
     "subtitle": "Baraye meherbani batayein ke aap is profile ki report kyun kar rahe hain.",
     "reason_fakeProfile": "Jaali Profile",
@@ -611,9 +588,9 @@
     "message": "Paigham",
     "messagePlaceholder": "Masla ya sawal bayan karein...",
     "send": "Paigham Bhejein",
-    "sentTitle": "Paigham Bhej Diya Gaya",
-    "sentBody": "Rabta karne ka shukriya — hamari support team 24 ghanton mein jawab degi.",
-    "missingFields": "Baraye meherbani dono khane pur karein."
+    "missingFields": "Baraye meherbani dono khane pur karein.",
+    "noMailAppTitle": "Email app nahi mili",
+    "noMailAppBody": "Meherbani karke kisi bhi email app se {email} par email karein."
   },
   "legal": {
     "title": "Privacy policy aur sharait",
@@ -787,20 +764,9 @@
     "interestSentTitle": "Dilchaspi Bhej Di Gayi",
     "interestSentBody": "{name} ko muttala kar diya jayega. Agar woh bhi dilchaspi rakhte hain to aap dono Rishta Mode ki taraf barh sakenge.",
     "message": "Paigham",
-    "call": "Call",
     "photosHidden": "Match hone tak tasveerein posheeda hain",
     "messageLockedTitle": "Abhi match nahi hua",
-    "messageLockedBody": "Jab aap dono ek doosre ko pasand kar lenge, tab aap {name} ko message bhej sakenge.",
-    "callLockedTitle": "Abhi match nahi hua",
-    "callLockedBody": "Jab aap dono ek doosre ko pasand kar lenge, tab aap {name} ko call kar sakenge."
-  },
-  "call": {
-    "ringing": "Ring ho rahi hai...",
-    "calling": "{name} ko call ki ja rahi hai...",
-    "connected": "Call jari hai",
-    "end": "Call Khatam Karein",
-    "cameraPermission": "Video calls ke liye camera tak rasai darkar hai.",
-    "grantAccess": "Rasai Dein"
+    "messageLockedBody": "Jab aap dono ek doosre ko pasand kar lenge, tab aap {name} ko message bhej sakenge."
   },
   "favorites": {
     "title": "Pasandeeda",
@@ -1034,5 +1000,8 @@
     "hideEmpty": "Abhi koi connection nahi.",
     "privacySaveFailedTitle": "Save nahi ho saka",
     "privacySaveFailedBody": "Internet check karke dobara koshish karein."
+  },
+  "loader": {
+    "tagline": "Apna humsafar dhoondein"
   }
 }

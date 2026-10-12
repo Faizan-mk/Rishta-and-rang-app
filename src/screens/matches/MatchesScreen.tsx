@@ -5,7 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
-import { TAB_BAR_BASE_HEIGHT, useHideTabBarOnScroll } from '../../store/TabBarVisibilityContext';
+import { TAB_BAR_BASE_HEIGHT } from '../../store/TabBarVisibilityContext';
 import { MatchRow } from '../../components/matches/MatchRow';
 import { HomeStoriesRow, type StoryConnection } from '../../components/discover/HomeStoriesRow';
 import { AccentHeading } from '../../components/common/AccentHeading';
@@ -37,7 +37,6 @@ export function MatchesScreen() {
   const { addStory, posting: postingStory } = useAddStory();
   const [filter, setFilter] = useState<'all' | 'unread' | 'friends' | 'rishta'>('all');
   const insets = useSafeAreaInsets();
-  const onScroll = useHideTabBarOnScroll();
 
   const accent = modeAccent(colors, APP_MODE);
   // Every thread, Friends and Rishta alike, in one list; a moved thread
@@ -169,8 +168,6 @@ export function MatchesScreen() {
         ItemSeparatorComponent={() => <View style={[styles.separator, rtl && styles.separatorRtl]} />}
         ListHeaderComponent={listHeader}
         showsVerticalScrollIndicator={false}
-        onScroll={onScroll}
-        scrollEventThrottle={16}
         contentContainerStyle={[styles.listContent, { paddingBottom: TAB_BAR_BASE_HEIGHT + insets.bottom + spacing.lg }]}
         ListEmptyComponent={
           <View style={styles.emptyState}>

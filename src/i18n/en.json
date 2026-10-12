@@ -354,10 +354,8 @@
     "deleteForMe": "Delete for me",
     "deleteConfirmTitle": "Delete message?",
     "clearChat": "Clear chat",
-    "voiceCall": "Voice call",
     "replyYou": "You",
     "replyingTo": "Replying to {name}",
-    "videoCall": "Video call",
     "moreOptions": "More options",
     "clearChatConfirmTitle": "Clear this chat?",
     "clearChatConfirmBody": "Every message is removed from your side only — {name} keeps theirs, and the chat still works afterwards."
@@ -396,10 +394,9 @@
     "prayerHabits": "Prayer habits",
     "incomeRange": "Income range",
     "livingAbroadStatus": "Living abroad status",
-    "verificationSection": "Verification & family",
+    "verificationSection": "Verification",
     "insightsSection": "Compatibility & verification",
     "cnic": "CNIC / ID document",
-    "wali": "Wali Dashboard",
     "bureau": "Bureau-verified badge",
     "bureauNotVerified": "Not bureau verified",
     "aiScoreValue": "{score}% compatible",
@@ -539,26 +536,6 @@
     "verifiedBody": "You now have a bureau-verified badge on your profile.",
     "alreadyVerifiedBody": "You're already bureau verified."
   },
-  "wali": {
-    "title": "Wali Dashboard",
-    "explainer": "Invite a wali (guardian) to stay in the loop on your rishta-stage matches — the conversations that have moved from friendship to a serious, family-involved stage.",
-    "name": "Wali's name",
-    "namePlaceholder": "e.g. Abu Bakr",
-    "contact": "Wali's contact",
-    "contactPlaceholder": "Phone or email",
-    "missingFields": "Please fill in both fields.",
-    "sendInvite": "Send invite",
-    "invitedTitle": "Invite sent",
-    "invitedBody": "{name} has been added as your wali.",
-    "removeWali": "Remove wali",
-    "removeConfirmTitle": "Remove your wali?",
-    "removeConfirmBody": "They'll no longer see your rishta-stage activity.",
-    "removeConfirmLabel": "Remove",
-    "sharedActivity": "Shared activity",
-    "sharedActivityEmpty": "No rishta-stage matches yet.",
-    "statusInvited": "Invited — {name}",
-    "statusNotSet": "Not set up"
-  },
   "report": {
     "subtitle": "Tell us why you're reporting this profile.",
     "reason_fakeProfile": "Fake profile",
@@ -611,9 +588,9 @@
     "message": "Message",
     "messagePlaceholder": "Describe the issue or question...",
     "send": "Send message",
-    "sentTitle": "Message sent",
-    "sentBody": "Thanks for reaching out — our support team replies within 24 hours.",
-    "missingFields": "Please fill in both fields."
+    "missingFields": "Please fill in both fields.",
+    "noMailAppTitle": "No email app found",
+    "noMailAppBody": "Please email us at {email} from any email app."
   },
   "legal": {
     "title": "Privacy policy & terms",
@@ -787,20 +764,9 @@
     "interestSentTitle": "Interest sent",
     "interestSentBody": "{name} will be notified. If they're interested too, you'll both be able to move to Rishta Mode.",
     "message": "Message",
-    "call": "Call",
     "photosHidden": "Photos hidden until you match",
     "messageLockedTitle": "Not matched yet",
-    "messageLockedBody": "You can message {name} once you both like each other.",
-    "callLockedTitle": "Not matched yet",
-    "callLockedBody": "You can call {name} once you both like each other."
-  },
-  "call": {
-    "ringing": "Ringing...",
-    "calling": "Calling {name}...",
-    "connected": "Call in progress",
-    "end": "End call",
-    "cameraPermission": "Camera access is needed for video calls.",
-    "grantAccess": "Grant access"
+    "messageLockedBody": "You can message {name} once you both like each other."
   },
   "favorites": {
     "title": "Favorites",
@@ -1034,5 +1000,8 @@
     "hideEmpty": "No connections yet.",
     "privacySaveFailedTitle": "Couldn't save",
     "privacySaveFailedBody": "Check your connection and try again."
+  },
+  "loader": {
+    "tagline": "Find your life partner"
   }
 }

@@ -18,7 +18,7 @@ import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInUp } from 'react-native-reanimated';
-import { TAB_BAR_BASE_HEIGHT, useHideTabBarOnScroll } from '../../store/TabBarVisibilityContext';
+import { TAB_BAR_BASE_HEIGHT } from '../../store/TabBarVisibilityContext';
 import { Button } from '../../components/Button';
 import { AccentHeading } from '../../components/common/AccentHeading';
 import { AuroraBackground } from '../../components/common/AuroraBackground';
@@ -99,7 +99,6 @@ export function ExploreScreen() {
   const [loadingLikes, setLoadingLikes] = useState(false);
   const [activeEvent, setActiveEvent] = useState<(typeof mockEvents)[number] | null>(null);
   const insets = useSafeAreaInsets();
-  const onScroll = useHideTabBarOnScroll();
 
   const isPro = Boolean(user?.isExplorePlus);
   const accent = modeAccent(colors, APP_MODE);
@@ -269,8 +268,6 @@ export function ExploreScreen() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        onScroll={onScroll}
-        scrollEventThrottle={16}
         // The grid is paged the same way the swipe deck is; reaching the bottom
         // is what asks for the next page.
         onMomentumScrollEnd={onReachedBottom}

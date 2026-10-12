@@ -10,6 +10,7 @@ import { useLanguage } from '../../store/LanguageContext';
 import { SUPPORT_EMAIL } from '../../constants/Config';
 import { useTheme } from '../../store/ThemeContext';
 import { useDialog } from '../../store/DialogContext';
+import { useAuth } from '../../store/AuthContext';
 import { fonts, radius, spacing, typography } from '../../theme';
 import { cardSurface } from '../../theme/surfaces';
 import type { Palette } from '../../theme/palettes';
@@ -23,6 +24,7 @@ export function HelpSupportScreen() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
   const { notify } = useDialog();
+  const { user } = useAuth();
   const [expanded, setExpanded] = useState<string | null>(null);
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
@@ -30,6 +32,10 @@ export function HelpSupportScreen() {
   const [sending, setSending] = useState(false);
   const safeRamp = flat(colors.teal);
 
+  // Opens the member's own email app with the support address, subject and
+  // message already filled in, so the message really reaches the support
+  // inbox; the app has no mail server of its own to send it through. Who sent
+  // it rides along at the bottom so support can find the account.
   const onSend = async () => {
     if (!subject.trim() || !message.trim()) {
       setError(t('help.missingFields'));
@@ -37,11 +43,21 @@ export function HelpSupportScreen() {
     }
     setError(null);
     setSending(true);
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    setSending(false);
-    setSubject('');
-    setMessage('');
-    await notify({ title: t('help.sentTitle'), message: t('help.sentBody') });
+    const signature = user ? `\n\n---\n${user.fullName}\n${user.email}\nID: ${user.id}` : '';
+    const url =
+      `mailto:${SUPPORT_EMAIL}` +
+      `?subject=${encodeURIComponent(subject.trim())}` +
+      `&body=${encodeURIComponent(message.trim() + signature)}`;
+    try {
+      await Linking.openURL(url);
+      setSubject('');
+      setMessage('');
+    } catch {
+      // No email app on the phone: say where to write instead.
+      await notify({ title: t('help.noMailAppTitle'), message: t('help.noMailAppBody', { email: SUPPORT_EMAIL }) });
+    } finally {
+      setSending(false);
+    }
   };
 
   return (

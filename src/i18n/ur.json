@@ -354,10 +354,8 @@
     "deleteForMe": "صرف میرے لیے ڈیلیٹ کریں",
     "deleteConfirmTitle": "پیغام ڈیلیٹ کریں؟",
     "clearChat": "چیٹ صاف کریں",
-    "voiceCall": "وائس کال",
     "replyYou": "آپ",
     "replyingTo": "{name} کو جواب دے رہے ہیں",
-    "videoCall": "ویڈیو کال",
     "moreOptions": "مزید آپشنز",
     "clearChatConfirmTitle": "یہ چیٹ صاف کریں؟",
     "clearChatConfirmBody": "تمام پیغامات صرف آپ کی طرف سے ہٹیں گے — {name} کے پاس اپنے پیغامات رہیں گے، اور چیٹ اس کے بعد بھی کام کرتی رہے گی۔"
@@ -396,10 +394,9 @@
     "prayerHabits": "نماز کی عادات",
     "incomeRange": "آمدنی کی حد",
     "livingAbroadStatus": "بیرون ملک رہائش کی صورتحال",
-    "verificationSection": "تصدیق اور خاندان",
+    "verificationSection": "تصدیق",
     "insightsSection": "مطابقت اور تصدیق",
     "cnic": "شناختی کارڈ / شناختی دستاویز",
-    "wali": "ولی ڈیش بورڈ",
     "bureau": "بیورو تصدیق شدہ بیج",
     "bureauNotVerified": "بیورو تصدیق شدہ نہیں",
     "aiScoreValue": "{score}% مطابقت",
@@ -539,26 +536,6 @@
     "verifiedBody": "اب آپ کی پروفائل پر بیورو تصدیق شدہ بیج موجود ہے۔",
     "alreadyVerifiedBody": "آپ پہلے ہی بیورو تصدیق شدہ ہیں۔"
   },
-  "wali": {
-    "title": "ولی ڈیش بورڈ",
-    "explainer": "اپنے رشتہ مرحلے کے میچز کے بارے میں آگاہ رکھنے کے لیے ایک ولی (سرپرست) کو مدعو کریں — وہ گفتگو جو دوستی سے ایک سنجیدہ، خاندانی مرحلے کی طرف بڑھ چکی ہیں۔",
-    "name": "ولی کا نام",
-    "namePlaceholder": "مثلاً ابوبکر",
-    "contact": "ولی کا رابطہ",
-    "contactPlaceholder": "فون یا ای میل",
-    "missingFields": "براہ کرم دونوں خانے پُر کریں۔",
-    "sendInvite": "دعوت بھیجیں",
-    "invitedTitle": "دعوت بھیج دی گئی",
-    "invitedBody": "{name} کو آپ کے ولی کے طور پر شامل کر دیا گیا ہے۔",
-    "removeWali": "ولی کو ہٹائیں",
-    "removeConfirmTitle": "اپنے ولی کو ہٹائیں؟",
-    "removeConfirmBody": "وہ اب آپ کی رشتہ مرحلے کی سرگرمی نہیں دیکھ سکیں گے۔",
-    "removeConfirmLabel": "ہٹائیں",
-    "sharedActivity": "مشترکہ سرگرمی",
-    "sharedActivityEmpty": "ابھی تک کوئی رشتہ مرحلے کا میچ نہیں۔",
-    "statusInvited": "مدعو کیا گیا — {name}",
-    "statusNotSet": "ابھی ترتیب نہیں دی گئی"
-  },
   "report": {
     "subtitle": "براہ کرم بتائیں کہ آپ اس پروفائل کی رپورٹ کیوں کر رہے ہیں۔",
     "reason_fakeProfile": "جعلی پروفائل",
@@ -611,9 +588,9 @@
     "message": "پیغام",
     "messagePlaceholder": "مسئلہ یا سوال بیان کریں...",
     "send": "پیغام بھیجیں",
-    "sentTitle": "پیغام بھیج دیا گیا",
-    "sentBody": "رابطہ کرنے کا شکریہ — ہماری سپورٹ ٹیم 24 گھنٹوں میں جواب دے گی۔",
-    "missingFields": "براہ کرم دونوں خانے پُر کریں۔"
+    "missingFields": "براہ کرم دونوں خانے پُر کریں۔",
+    "noMailAppTitle": "ای میل ایپ نہیں ملی",
+    "noMailAppBody": "مہربانی کر کے کسی بھی ای میل ایپ سے {email} پر ای میل کریں۔"
   },
   "legal": {
     "title": "پرائیویسی پالیسی اور شرائط",
@@ -787,20 +764,9 @@
     "interestSentTitle": "دلچسپی بھیج دی گئی",
     "interestSentBody": "{name} کو مطلع کر دیا جائے گا۔ اگر وہ بھی دلچسپی رکھتے ہیں تو آپ دونوں رشتہ موڈ کی طرف بڑھ سکیں گے۔",
     "message": "پیغام",
-    "call": "کال",
     "photosHidden": "میچ ہونے تک تصاویر پوشیدہ ہیں",
     "messageLockedTitle": "ابھی میچ نہیں ہوا",
-    "messageLockedBody": "جب آپ دونوں ایک دوسرے کو پسند کر لیں گے تو آپ {name} کو پیغام بھیج سکیں گے۔",
-    "callLockedTitle": "ابھی میچ نہیں ہوا",
-    "callLockedBody": "جب آپ دونوں ایک دوسرے کو پسند کر لیں گے تو آپ {name} کو کال کر سکیں گے۔"
-  },
-  "call": {
-    "ringing": "رنگ ہو رہی ہے...",
-    "calling": "{name} کو کال کی جا رہی ہے...",
-    "connected": "کال جاری ہے",
-    "end": "کال ختم کریں",
-    "cameraPermission": "ویڈیو کالز کے لیے کیمرے تک رسائی درکار ہے۔",
-    "grantAccess": "رسائی دیں"
+    "messageLockedBody": "جب آپ دونوں ایک دوسرے کو پسند کر لیں گے تو آپ {name} کو پیغام بھیج سکیں گے۔"
   },
   "favorites": {
     "title": "پسندیدہ",
@@ -1034,5 +1000,8 @@
     "hideEmpty": "ابھی کوئی کنکشن نہیں۔",
     "privacySaveFailedTitle": "محفوظ نہیں ہو سکا",
     "privacySaveFailedBody": "انٹرنیٹ چیک کر کے دوبارہ کوشش کریں۔"
+  },
+  "loader": {
+    "tagline": "اپنا ہمسفر ڈھونڈیں"
   }
 }
