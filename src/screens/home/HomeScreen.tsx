@@ -9,7 +9,7 @@ import Animated, {
 import { AuroraBackground } from '../../components/common/AuroraBackground';
 import { EmptyOrb } from '../../components/common/EmptyOrb';
 import { DiscoverProfileCard } from '../../components/discover/DiscoverProfileCard';
-import { TAB_BAR_BASE_HEIGHT, useHideTabBarOnScroll } from '../../store/TabBarVisibilityContext';
+import { TAB_BAR_BASE_HEIGHT } from '../../store/TabBarVisibilityContext';
 import { MatchCelebration } from '../../components/discover/MatchCelebration';
 import { HomeTopBar } from '../../components/discover/HomeTopBar';
 import { HomeStoriesRow, type StoryConnection, type StorySuggestion } from '../../components/discover/HomeStoriesRow';
@@ -105,7 +105,6 @@ export function HomeScreen() {
   const [filtersVisible, setFiltersVisible] = useState(false);
   const [filters, setFilters] = useState<BrowseFilters>(DEFAULT_BROWSE_FILTERS);
   const insets = useSafeAreaInsets();
-  const onScroll = useHideTabBarOnScroll();
 
   const blockedProfileIds = useMemo(
     () => new Set(blockedProfiles.map((b) => b.id)),
@@ -455,8 +454,6 @@ export function HomeScreen() {
               its height (plus the tab bar) at the bottom instead of ending flush. */}
           <ScrollView
             showsVerticalScrollIndicator={false}
-            onScroll={onScroll}
-            scrollEventThrottle={16}
             contentContainerStyle={{ paddingBottom: actionBarBottom + ACTION_BAR_CLEARANCE }}
             refreshControl={
               /* The deck is cached per sign-in, so a pull is how a member picks up

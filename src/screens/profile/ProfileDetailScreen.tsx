@@ -132,17 +132,6 @@ export function ProfileDetailScreen() {
     }
     router.push(`/chat/${match.id}`);
   };
-  const onCall = async () => {
-    // Same rule as messaging: no call channel exists until the like is mutual.
-    if (!getMatchForProfile(profile.id)) {
-      await notify({
-        title: t('profileDetail.callLockedTitle'),
-        message: t('profileDetail.callLockedBody', { name: profile.name }),
-      });
-      return;
-    }
-    router.push({ pathname: '/call', params: { name: profile.name, photo: profile.photos[0] } });
-  };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
@@ -284,10 +273,6 @@ export function ProfileDetailScreen() {
           <Pressable onPress={onMessage} style={styles.contactButton}>
             <Ionicons name="chatbubble-outline" size={17} color={colors.teal} />
             <Text style={styles.contactLabel}>{t('profileDetail.message')}</Text>
-          </Pressable>
-          <Pressable onPress={onCall} style={styles.contactButton}>
-            <Ionicons name="call-outline" size={17} color={colors.teal} />
-            <Text style={styles.contactLabel}>{t('profileDetail.call')}</Text>
           </Pressable>
         </View>
         <View style={styles.primaryRow}>

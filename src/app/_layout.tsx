@@ -104,7 +104,6 @@ function RootNavigator() {
                 <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                 <Stack.Screen name="chat/[id]" options={{ headerShown: false }} />
                 <Stack.Screen name="story/[userId]" options={{ headerShown: false, animation: 'fade', presentation: 'fullScreenModal' }} />
-                <Stack.Screen name="call" options={{ headerShown: false }} />
                 <Stack.Screen name="profile-detail" options={{ headerShown: false }} />
                 <Stack.Screen name="edit-profile" options={{ title: t('editProfile.title') }} />
                 <Stack.Screen name="rishta-profile" options={{ title: t('rishtaProfile.title') }} />
@@ -118,7 +117,6 @@ function RootNavigator() {
                 <Stack.Screen name="story-privacy" options={{ title: t('stories.privacyTitle') }} />
                 <Stack.Screen name="help-support" options={{ title: t('help.title') }} />
                 <Stack.Screen name="cnic-verification" options={{ title: t('cnic.title') }} />
-                <Stack.Screen name="wali-dashboard" options={{ title: t('wali.title') }} />
                 <Stack.Screen name="legal" options={{ title: t('legal.title') }} />
               </Stack.Protected>
             </Stack>

@@ -4,7 +4,7 @@
     "slug": "rishta-and-rang",
     "version": "1.0.10",
     "orientation": "portrait",
-    "icon": "./assets/heart.png",
+    "icon": "./assets/app-icon.png",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
@@ -20,7 +20,7 @@
       "versionCode": 11,
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
-        "foregroundImage": "./assets/heart.png"
+        "foregroundImage": "./assets/adaptive-icon.png"
       },
       "predictiveBackGestureEnabled": false,
       "permissions": [
@@ -31,7 +31,7 @@
       ]
     },
     "web": {
-      "favicon": "./assets/heart.png",
+      "favicon": "./assets/app-icon.png",
       "bundler": "metro"
     },
     "plugins": [
@@ -56,10 +56,10 @@
           "image": "./assets/splash-icon.png",
           "imageWidth": 140,
           "resizeMode": "contain",
-          "backgroundColor": "#FFF8FB",
+          "backgroundColor": "#D81B60",
           "dark": {
             "image": "./assets/splash-icon.png",
-            "backgroundColor": "#141112"
+            "backgroundColor": "#D81B60"
           }
         }
       ],
