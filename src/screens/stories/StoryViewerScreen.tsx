@@ -336,12 +336,6 @@ export function StoryViewerScreen() {
           >
             <Ionicons name="eye-outline" size={16} color="#FFFFFF" />
             <Text style={styles.seenByText}>{seenCounts[story.id] ?? story.viewCount}</Text>
-            {story.likeCount > 0 && (
-              <>
-                <Ionicons name="heart" size={15} color="#FF3B5C" style={styles.seenByHeart} />
-                <Text style={styles.seenByText}>{story.likeCount}</Text>
-              </>
-            )}
           </Pressable>
         )}
 
@@ -506,7 +500,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.45)',
   },
   seenByText: { color: '#FFFFFF', fontFamily: fonts.bodyBold, fontSize: scaleFont(12) },
-  seenByHeart: { marginLeft: 4 },
   // The heart on someone else's story, bottom-right like Instagram.
   likeButton: { position: 'absolute', right: spacing.md, padding: 6 },
   endCard: {
