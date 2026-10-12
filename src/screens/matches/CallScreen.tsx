@@ -19,7 +19,7 @@ import { FadeIn } from '../../components/common/FadeInUp';
 import { useLanguage } from '../../store/LanguageContext';
 import { useTheme } from '../../store/ThemeContext';
 import { radius, spacing, typography } from '../../theme';
-import { glow, withAlpha } from '../../theme/glow';
+import { flat, glow, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 
 function formatDuration(totalSeconds: number): string {
@@ -107,7 +107,7 @@ export function CallScreen() {
             <Button
               label={t('call.grantAccess')}
               onPress={requestPermission}
-              gradient={[colors.brandMain, colors.brandRose]}
+              gradient={flat(colors.brandMain)}
               style={styles.permissionButton}
             />
           </View>

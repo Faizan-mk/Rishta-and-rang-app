@@ -16,7 +16,7 @@ import { digitsToCnicDisplay, isValidCnicFormat, cnicMatchesGender, maskCnic } f
 import { analyzeIdCardPhoto, CNIC_ASPECT } from '../../utils/idCardImageCheck';
 import { fonts, radius, spacing, typography } from '../../theme';
 import { cardSurface } from '../../theme/surfaces';
-import { withAlpha } from '../../theme/glow';
+import { flat, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 
 export function CnicVerificationScreen() {
@@ -176,7 +176,7 @@ export function CnicVerificationScreen() {
                 onPress={onSave}
                 loading={saving}
                 disabled={checkingPhoto}
-                gradient={checkingPhoto ? undefined : [colors.teal, colors.plum]}
+                gradient={checkingPhoto ? undefined : flat(colors.teal)}
                 style={styles.editActionButton}
               />
               <Button label={t('common.cancel')} variant="ghost" onPress={() => setEditing(false)} style={styles.editActionButton} />

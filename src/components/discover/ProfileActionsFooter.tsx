@@ -3,7 +3,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 
 import { LinearGradient } from 'expo-linear-gradient';
 import { spacing, radius, typography } from '../../theme';
 import { scaleFont } from '../../theme/responsive';
-import { glow, withAlpha } from '../../theme/glow';
+import { flat, glow, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
@@ -58,7 +58,7 @@ export function ProfileActionsFooter({ name, onSendCompliment }: ProfileActionsF
       <Pressable onPress={onSubmitCompliment} disabled={!canSubmit}>
         {canSubmit || sending ? (
           <LinearGradient
-            colors={[colors.teal, colors.plum]}
+            colors={flat(colors.teal)}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={[styles.submit, glow(colors.teal, 0.5, 16, 7)]}

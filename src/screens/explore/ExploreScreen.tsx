@@ -46,7 +46,7 @@ import { oppositeGenderProfiles } from '../../utils/genderMatch';
 import { timeAgo } from '../../utils/time';
 import { fonts, radius, spacing, typography } from '../../theme';
 import { scaleFont } from '../../theme/responsive';
-import { glow, modeAccent, withAlpha, type ModeAccent } from '../../theme/glow';
+import { glow, APP_MODE, modeAccent, withAlpha, type ModeAccent } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 
 type ExploreTab = 'forYou' | 'events' | 'history';
@@ -102,9 +102,8 @@ export function ExploreScreen() {
   const onScroll = useHideTabBarOnScroll();
 
   const isPro = Boolean(user?.isExplorePlus);
-  const mode = user?.activeMode ?? 'dating';
-  const accent = modeAccent(colors, mode);
-  const activeFilters = countActiveFilters(filters, mode);
+  const accent = modeAccent(colors, APP_MODE);
+  const activeFilters = countActiveFilters(filters);
 
   // Real data, not a slice of the deck: these are the members who actually
   // liked this profile (mirrored onto users/{me}/likesReceived when they do).
@@ -129,17 +128,20 @@ export function ExploreScreen() {
     [blockedProfiles]
   );
 
-  // One pool, matching the mode the member is browsing in.
+  // One pool for everyone, the same rule as the Home deck: casual members as
+  // Friends, serious and matrimonial members as Rishta, and the Intent filter
+  // narrows it to one kind. A thread that moved to Rishta takes that member out
+  // of the Friends side.
   const pool: ExploreProfile[] = useMemo(() => {
-    const source: (DiscoverProfile | RishtaListingProfile)[] =
-      mode === 'dating' ? datingProfiles : rishtaProfiles;
-    return oppositeGenderProfiles(source, user?.gender)
-      .filter((p) => !blockedProfileIds.has(p.id))
-      // Same rule as the Home deck: a thread that moved to Rishta takes that
-      // member out of the Friends pool.
-      .filter((p) => mode === 'rishta' || !rishtaProfileIds.has(p.id))
-      .map((p) => ({ ...p, kind: mode }));
-  }, [mode, datingProfiles, rishtaProfiles, user?.gender, blockedProfileIds, rishtaProfileIds]);
+    const visible = (p: DiscoverProfile | RishtaListingProfile) => !blockedProfileIds.has(p.id);
+    const dating = oppositeGenderProfiles(datingProfiles, user?.gender)
+      .filter((p) => visible(p) && !rishtaProfileIds.has(p.id) && p.intent === 'casual')
+      .map((p) => ({ ...p, kind: 'dating' as const }));
+    const rishta = oppositeGenderProfiles(rishtaProfiles, user?.gender)
+      .filter((p) => visible(p) && (p.intent === 'serious' || p.intent === 'matrimonial'))
+      .map((p) => ({ ...p, kind: 'rishta' as const }));
+    return [...dating, ...rishta];
+  }, [datingProfiles, rishtaProfiles, user?.gender, blockedProfileIds, rishtaProfileIds]);
 
   const filtered = useMemo(() => {
     let list = pool.filter((p) => p.age >= filters.ageMin && p.age <= filters.ageMax);
@@ -148,14 +150,14 @@ export function ExploreScreen() {
       list = list.filter((p) => p.city?.toLowerCase() === city);
     }
     if (filters.intent) list = list.filter((p) => p.intent === filters.intent);
-    if (mode === 'rishta' && filters.sect) {
+    if (filters.sect) {
       const sect = filters.sect.toLowerCase();
       list = list.filter((p) => p.sect?.toLowerCase() === sect);
     }
-    if (mode === 'rishta' && filters.readiness) list = list.filter((p) => p.readiness === filters.readiness);
+    if (filters.readiness) list = list.filter((p) => p.readiness === filters.readiness);
     if (filters.verifiedOnly) list = list.filter((p) => p.selfieVerified || p.bureauVerified);
     return list;
-  }, [pool, filters, mode]);
+  }, [pool, filters]);
 
   const newMembers = useMemo(
     () => [...filtered].sort((a, b) => timestamp(b.joinedAt) - timestamp(a.joinedAt)).slice(0, ROW_SIZE),
@@ -197,7 +199,7 @@ export function ExploreScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <AuroraBackground colors={colors} mode={mode} />
+      <AuroraBackground colors={colors} mode={APP_MODE} />
 
       <View style={styles.header}>
         <AccentHeading
@@ -524,7 +526,6 @@ export function ExploreScreen() {
       <BrowseFiltersSheet
         visible={filtersVisible}
         filters={filters}
-        mode={mode}
         onChange={setFilters}
         onClose={() => setFiltersVisible(false)}
       />

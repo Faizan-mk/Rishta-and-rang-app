@@ -14,7 +14,7 @@ import { useTheme } from '../../store/ThemeContext';
 import { isValidEmail } from '../../utils/validation';
 import { errorMessage } from '../../utils/appError';
 import { radius, spacing, typography } from '../../theme';
-import { withAlpha } from '../../theme/glow';
+import { flat, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 
 export function LoginScreen() {
@@ -96,7 +96,7 @@ export function LoginScreen() {
           label={t('login.submit')}
           onPress={onSubmit}
           loading={loading}
-          gradient={[colors.teal, colors.plum]}
+          gradient={flat(colors.teal)}
           style={styles.submit}
         />
       </Animated.View>

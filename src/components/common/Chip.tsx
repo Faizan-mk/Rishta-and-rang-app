@@ -4,7 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { radius, spacing, typography } from '../../theme';
-import { glow, withAlpha } from '../../theme/glow';
+import { flat, glow, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 
@@ -31,7 +31,6 @@ export function Chip({ label, selected, onPress, tone = 'neutral', icon }: ChipP
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const toneColor = tone === 'dating' ? colors.dating : tone === 'rishta' ? colors.rishta : colors.teal;
-  const toneEnd = tone === 'dating' ? colors.gold : colors.plum;
   const scale = useSharedValue(1);
   const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
@@ -54,7 +53,7 @@ export function Chip({ label, selected, onPress, tone = 'neutral', icon }: ChipP
       style={[styles.wrap, selected && glow(toneColor, 0.5, 12, 5), animatedStyle]}
     >
       {selected ? (
-        <LinearGradient colors={[toneColor, toneEnd]} start={GRADIENT_START} end={GRADIENT_END} style={styles.chip}>
+        <LinearGradient colors={flat(toneColor)} start={GRADIENT_START} end={GRADIENT_END} style={styles.chip}>
           {body}
         </LinearGradient>
       ) : (

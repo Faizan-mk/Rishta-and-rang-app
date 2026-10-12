@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { Appearance } from 'react-native';
 import { storage } from '../services/storage';
-import { APP_THEMES, AppThemeId, Palette } from '../theme/palettes';
+import { APP_THEMES, AppThemeId, DEFAULT_THEME_ID, Palette } from '../theme/palettes';
 
 export type ThemeMode = 'light' | 'dark' | 'system';
 
@@ -19,13 +19,13 @@ const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [mode, setModeState] = useState<ThemeMode>('system');
-  const [themeId, setThemeIdState] = useState<AppThemeId>('maroon');
+  const [themeId, setThemeIdState] = useState<AppThemeId>(DEFAULT_THEME_ID);
   const [systemScheme, setSystemScheme] = useState(Appearance.getColorScheme() ?? 'light');
 
   useEffect(() => {
     storage.getJSON<ThemeMode>(storage.KEYS.themeMode, 'system').then(setModeState);
     // A stored id from a theme that has since been removed falls back to the default.
-    storage.getJSON<AppThemeId>(storage.KEYS.appTheme, 'maroon').then((id) => {
+    storage.getJSON<AppThemeId>(storage.KEYS.appTheme, DEFAULT_THEME_ID).then((id) => {
       if (id in APP_THEMES) setThemeIdState(id);
     });
   }, []);

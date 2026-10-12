@@ -7,7 +7,6 @@ import Animated, { FadeInUp } from 'react-native-reanimated';
 import { AccentHeading } from '../../components/common/AccentHeading';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { Button } from '../../components/Button';
-import { useBoost } from '../../store/BoostContext';
 import { likesService, type LikeReceived } from '../../services/likesService';
 import {
   fetchExplorePlusPackages,
@@ -27,7 +26,7 @@ import { isoToDisplay } from '../../utils/date';
 import { errorMessage } from '../../utils/appError';
 import { fonts, radius, spacing, typography } from '../../theme';
 import { cardSurface } from '../../theme/surfaces';
-import { glow, withAlpha } from '../../theme/glow';
+import { flat, glow, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 
 type Plan = 'trial' | 'monthly' | 'yearly';
@@ -45,15 +44,11 @@ const GRADIENT_END = { x: 1, y: 1 } as const;
 // always has something dark to shine against. Both come from the palette's
 // brand tokens, so they follow the chosen app theme.
 
-// Profile boosts included with any paid plan.
-const BOOSTS_PER_SUBSCRIPTION = 5;
-
 export function ExplorePlusScreen() {
   const { colors, isDark } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
   const { user, refreshUser } = useAuth();
-  const { addBoosts } = useBoost();
   const { notify } = useDialog();
   const { used, limit } = useLikeLimit();
   const { prefs } = usePrivacy();
@@ -132,9 +127,6 @@ export function ExplorePlusScreen() {
         return;
       }
 
-      // A subscription comes with a pack of profile boosts — this is what the
-      // boost sheet's "Get more Boosts" button sends members here for.
-      addBoosts(BOOSTS_PER_SUBSCRIPTION);
       await notify({
         title: t('explorePlus.upgradeSuccessTitle'),
         message: plan === 'trial' ? t('explorePlus.trialStartedBody') : t('explorePlus.upgradeSuccessBody'),
@@ -168,7 +160,7 @@ export function ExplorePlusScreen() {
     // as Notifications, Settings, Favorites and Edit Profile.
     <ScreenContainer edges={['bottom']}>
       <LinearGradient
-        colors={[colors.brandInk, colors.brandDeep, colors.brandMain]}
+        colors={flat(colors.brandDeep)}
         start={GRADIENT_START}
         end={GRADIENT_END}
         style={[styles.hero, glow(colors.brandMain, 0.35, 24, 10)]}
@@ -285,7 +277,7 @@ export function ExplorePlusScreen() {
             label={plan === 'trial' ? t('explorePlus.startTrial') : t('explorePlus.upgrade')}
             onPress={onUpgrade}
             loading={upgrading}
-            gradient={[colors.metalBright, colors.metal, colors.metalDeep]}
+            gradient={flat(colors.metal)}
             style={styles.upgradeButton}
             labelStyle={styles.upgradeLabel}
           />
@@ -330,14 +322,14 @@ export function ExplorePlusScreen() {
         </Animated.View>
       )}
 
-      <AccentHeading title={t('explorePlus.whoLikedYou')} gradient={[colors.metalBright, colors.metal, colors.metalDeep]} style={styles.sectionHeading} />
+      <AccentHeading title={t('explorePlus.whoLikedYou')} gradient={flat(colors.metal)} style={styles.sectionHeading} />
       {prefs.profileVisible ? (
         <>
           <View style={styles.grid}>
             {admirers.map((profile) => (
               <LinearGradient
                 key={profile.id}
-                colors={[colors.metalBright, colors.metal, colors.metalDeep]}
+                colors={flat(colors.metal)}
                 start={GRADIENT_START}
                 end={GRADIENT_END}
                 style={[styles.admirerRim, glow(colors.gold, 0.2, 12, 4)]}

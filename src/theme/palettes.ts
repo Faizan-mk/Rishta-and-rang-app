@@ -176,7 +176,8 @@ export const darkPalette: Palette = {
 // ---------------------------------------------------------------------------
 // App themes. Each one is a light and a dark palette; the light/dark/system
 // switch in Settings picks between the two, and the Themes screen picks the
-// theme. Maroon & Gold is the original design and stays the default.
+// theme. Maroon & Gold is the original design; Pink & White is the default a
+// new install opens in, until the member picks another.
 //
 // Premium identities are built from one deep anchor, one metal and quiet
 // neutrals, and the anchors that recur across luxury brands are burgundy,
@@ -185,6 +186,7 @@ export const darkPalette: Palette = {
 //   Emerald & Gold  Rolex green #006039 with Rolex gold #A37E2C
 //   Navy & Gold     deep navy #14213D / #1F3A5F with 24k gold #C69B3C
 //   Onyx & Gold     onyx #0A0A0A / #1F1F1F with 24k gold #C69B3C
+//   Pink & White    pink #D81B60 on a blush-white canvas, with rose gold #B76E79
 // Only the anchor and the metal change. The ivory canvas, the charcoal dark
 // mode, the text greys and the status colours are shared with Maroon & Gold,
 // so every theme still reads as the same app. Light-mode primaries carry white
@@ -192,7 +194,7 @@ export const darkPalette: Palette = {
 // palette (about 4.5:1).
 // ---------------------------------------------------------------------------
 
-export type AppThemeId = 'maroon' | 'emerald' | 'navy' | 'onyx';
+export type AppThemeId = 'maroon' | 'emerald' | 'navy' | 'onyx' | 'pink';
 
 export interface AppTheme {
   id: AppThemeId;
@@ -228,6 +230,18 @@ const onyxBrand = {
   metal: '#C69B3C',
   metalBright: '#DDB960',
   metalDeep: '#A47E28',
+};
+
+// Pink is the one theme that also changes the canvas: a blush white in place
+// of ivory, so the page reads pink-and-white rather than pink-on-cream.
+const pinkBrand = {
+  brandInk: '#4A0D2A',
+  brandDeep: '#880E4F',
+  brandMain: '#D81B60',
+  brandRose: '#EC407A',
+  metal: '#B76E79',
+  metalBright: '#D4A0A7',
+  metalDeep: '#9A5560',
 };
 
 export const APP_THEMES: Record<AppThemeId, AppTheme> = {
@@ -343,6 +357,48 @@ export const APP_THEMES: Record<AppThemeId, AppTheme> = {
       rishtaSoft: '#2C2412',
     },
   },
+
+  pink: {
+    id: 'pink',
+    light: {
+      ...lightPalette,
+      ...pinkBrand,
+      background: '#FFF8FB',
+      backgroundAlt: '#FDEFF4',
+      border: '#F3DDE6',
+      borderSoft: '#F9EBF1',
+      skeleton: '#F9EBF1',
+      teal: '#D81B60',
+      tealDark: '#AD1457',
+      tealSoft: '#FCE4EC',
+      gold: '#B76E79',
+      goldSoft: '#F8E8EA',
+      plum: '#EC407A',
+      plumLight: '#FDEBF2',
+      dating: '#B76E79',
+      datingSoft: '#F8E8EA',
+      rishta: '#D81B60',
+      rishtaSoft: '#FCE4EC',
+    },
+    dark: {
+      ...darkPalette,
+      ...pinkBrand,
+      teal: '#D63A75',
+      tealDark: '#AD1457',
+      tealSoft: '#3A1626',
+      gold: '#D4A0A7',
+      goldSoft: '#33222A',
+      plum: '#F06292',
+      plumLight: '#3A1A2A',
+      dating: '#D4A0A7',
+      datingSoft: '#33222A',
+      rishta: '#D63A75',
+      rishtaSoft: '#3A1626',
+    },
+  },
 };
 
-export const APP_THEME_IDS: AppThemeId[] = ['maroon', 'emerald', 'navy', 'onyx'];
+export const DEFAULT_THEME_ID: AppThemeId = 'pink';
+
+// Order of the Themes screen, the default first.
+export const APP_THEME_IDS: AppThemeId[] = ['pink', 'maroon', 'emerald', 'navy', 'onyx'];

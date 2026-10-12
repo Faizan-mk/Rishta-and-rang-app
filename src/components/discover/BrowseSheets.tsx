@@ -1,7 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useMemo } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { BottomSheet } from '../common/BottomSheet';
 import { FilterSheet } from '../common/FilterSheet';
 import { SettingsRow } from '../common/SettingsRow';
 import { SelectField } from '../common/SelectField';
@@ -9,7 +8,6 @@ import { PAKISTAN_CITIES } from '../../data/locations';
 import { SECT_OPTIONS } from '../../data/sects';
 import type { Intent, ProfileMode, RishtaReadiness } from '../../types/user';
 import { fonts, radius, spacing, typography } from '../../theme';
-import { glow } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
@@ -19,16 +17,15 @@ import {
   DEFAULT_BROWSE_FILTERS,
   INTENT_OPTIONS,
   READINESS_OPTIONS,
-  SORT_OPTIONS,
   type BrowseFilters,
-  type BrowseSortKey,
 } from './browseOptions';
 
 interface BrowseFiltersSheetProps {
   visible: boolean;
   filters: BrowseFilters;
-  // Sect and readiness only apply to the matrimonial deck.
-  mode: ProfileMode;
+  // Sect and readiness only apply to the matrimonial deck. Without a mode
+  // (Home's mixed deck) they are always offered.
+  mode?: ProfileMode;
   onChange: (filters: BrowseFilters) => void;
   onClose: () => void;
 }
@@ -83,7 +80,7 @@ export function BrowseFiltersSheet({ visible, filters, mode, onChange, onClose }
         ))}
       </View>
 
-      {mode === 'rishta' && (
+      {mode !== 'dating' && (
         <>
           <SelectField
             label={t('discover.filterSect')}
@@ -214,69 +211,6 @@ function ReadinessChip({
   );
 }
 
-interface BrowseSortSheetProps {
-  visible: boolean;
-  sort: BrowseSortKey;
-  onChange: (sort: BrowseSortKey) => void;
-  onClose: () => void;
-}
-
-// Full-height "Sort by" sheet: pick a row, then Confirm. Closing with the X
-// leaves the deck on whatever sort it already had.
-export function BrowseSortSheet({ visible, sort, onChange, onClose }: BrowseSortSheetProps) {
-  const { colors } = useTheme();
-  const { t, rtl } = useLanguage();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
-  // Draft selection — nothing reaches the deck until Confirm.
-  const [draft, setDraft] = useState<BrowseSortKey>(sort);
-
-  useEffect(() => {
-    if (visible) setDraft(sort);
-  }, [visible, sort]);
-
-  const onConfirm = () => {
-    onChange(draft);
-    onClose();
-  };
-
-  return (
-    <BottomSheet visible={visible} onClose={onClose} height="90%" showHandle={false}>
-      <View style={styles.header}>
-        <Pressable onPress={onClose} hitSlop={10} style={styles.closeButton}>
-          <Ionicons name="close" size={24} color={colors.textPrimary} />
-        </Pressable>
-        <Text style={styles.title}>{t('discover.sortTitle')}</Text>
-        {/* Balances the close button so the title stays centred. */}
-        <View style={styles.closeButton} />
-      </View>
-
-      <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
-        {SORT_OPTIONS.map((option) => {
-          const selected = option.key === draft;
-          return (
-            <Pressable
-              key={option.key}
-              onPress={() => setDraft(option.key)}
-              style={[styles.option, rtl && styles.optionRtl]}
-            >
-              <Text style={[styles.optionLabel, selected && styles.optionLabelSelected, rtl && styles.rtlText]}>
-                {t(option.labelKey)}
-              </Text>
-              {selected && <Ionicons name="checkmark" size={20} color={colors.teal} />}
-            </Pressable>
-          );
-        })}
-      </ScrollView>
-
-      <View style={styles.footer}>
-        <Pressable onPress={onConfirm} style={styles.confirmButton}>
-          <Text style={styles.confirmLabel}>{t('common.confirm')}</Text>
-        </Pressable>
-      </View>
-    </BottomSheet>
-  );
-}
-
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
     // Filters
@@ -319,35 +253,4 @@ const makeStyles = (colors: Palette) =>
     },
     readinessChipText: { ...typography.caption, color: colors.textSecondary, fontFamily: fonts.bodyBold },
     readinessChipTextSelected: { color: colors.teal, fontFamily: fonts.bodyBold },
-
-    // Sort sheet
-    header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.sm },
-    closeButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-    title: { ...typography.h2, color: colors.textPrimary, flex: 1, textAlign: 'center' },
-    list: { paddingBottom: spacing.lg },
-    option: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: spacing.sm,
-      paddingHorizontal: spacing.lg,
-      paddingVertical: spacing.md + 2,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: colors.border,
-    },
-    optionRtl: { flexDirection: 'row-reverse' },
-    optionLabel: { ...typography.bodyBold, color: colors.textPrimary, flexShrink: 1 },
-    optionLabelSelected: { color: colors.teal, fontFamily: fonts.bodyBold },
-    footer: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.lg },
-    confirmButton: {
-      backgroundColor: colors.teal,
-      borderRadius: radius.pill,
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingVertical: spacing.md,
-      minHeight: 52,
-      ...glow(colors.teal, 0.5, 16, 7),
-    },
-    confirmLabel: { ...typography.bodyBold, color: '#FFFFFF', fontFamily: fonts.bodyBold },
-    rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   });

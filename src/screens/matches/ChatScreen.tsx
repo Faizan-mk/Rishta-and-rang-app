@@ -40,7 +40,7 @@ import { discoveryService } from '../../services/discoveryService';
 import { supabase } from '../../services/supabase';
 import { fonts, radius, spacing, typography } from '../../theme';
 import { scaleFont } from '../../theme/responsive';
-import { glow, modeAccent, withAlpha } from '../../theme/glow';
+import { flat, glow, modeAccent, withAlpha } from '../../theme/glow';
 import { ONLINE_GREEN, type Palette } from '../../theme/palettes';
 import type { ChatMessage } from '../../types/content';
 import { previewFor, previewLabel } from '../../utils/messagePreview';
@@ -516,7 +516,7 @@ export function ChatScreen() {
         <FadeIn delay={80}>
           <View style={styles.rishtaBannerWrap}>
             <LinearGradient
-              colors={[colors.rishta, colors.plum]}
+              colors={flat(colors.rishta)}
               start={GRADIENT_START}
               end={GRADIENT_END}
               style={[styles.rishtaBanner, glow(colors.rishta, 0.3, 14, 5)]}
@@ -550,7 +550,7 @@ export function ChatScreen() {
             ]}
           >
             <LinearGradient
-              colors={[colors.rishta, colors.plum]}
+              colors={flat(colors.rishta)}
               start={GRADIENT_START}
               end={GRADIENT_END}
               style={[styles.moveToRishtaBar, glow(colors.rishta, 0.45, 12, 5)]}
@@ -694,7 +694,7 @@ export function ChatScreen() {
             {draft.trim() ? (
               <Pressable onPress={sendMessage}>
                 <LinearGradient
-                  colors={[colors.teal, colors.plum]}
+                  colors={flat(colors.teal)}
                   start={GRADIENT_START}
                   end={GRADIENT_END}
                   style={[styles.sendButton, glow(colors.teal, 0.6, 14, 6)]}

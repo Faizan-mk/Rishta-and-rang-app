@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
   },
   // No flexBasis here (i.e. not the `flex: 1` shorthand): with an explicit `height`
   // prop this still grows to fill it, but flexBasis: 0 would make Yoga collapse it
-  // toward zero for a maxHeight-only, content-hugging sheet (e.g. BoostSheet) instead
+  // toward zero for a maxHeight-only, content-hugging sheet instead
   // of sizing to its content.
   childArea: { flexGrow: 1, flexShrink: 1 },
 });

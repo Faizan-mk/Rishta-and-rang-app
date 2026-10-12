@@ -20,7 +20,7 @@ import { REACTION_EMOJIS } from '../../types/content';
 import type { Translate } from '../../i18n';
 import { fonts, radius, spacing, typography } from '../../theme';
 import { scaleFont } from '../../theme/responsive';
-import { glow, withAlpha } from '../../theme/glow';
+import { flat, glow, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../store/ThemeContext';
@@ -225,6 +225,10 @@ export const MessageBubble = React.memo(function MessageBubble({
   const pills = useMemo(() => groupReactions(reactions, currentUserId), [reactions, currentUserId]);
 
   const textColor = message.fromMe ? styles.textMe : styles.textThem;
+  // A photo stands on its own, a rounded picture with no bubble behind it; a
+  // coloured bubble around it read as a box within a box. With a reply quote
+  // above it the bubble stays, so the quote has something to sit in.
+  const bareImage = message.kind === 'image' && Boolean(message.imageUri) && !replyToMessage;
   const delivery = deliveryOf(message, theirReadAt);
   const timeLabel = formatMessageTime(message.sentAt, t);
 
@@ -277,9 +281,11 @@ export const MessageBubble = React.memo(function MessageBubble({
                 is the GestureDetector above (`longPressGesture`), not this View's
                 own touch handling — see the comment on `bubbleGesture`. */}
             <View accessibilityRole="button" accessibilityLabel={t('reactions.a11yReact')}>
-              {message.fromMe ? (
+              {bareImage ? (
+                <View style={styles.bareImage}>{content}</View>
+              ) : message.fromMe ? (
                 <LinearGradient
-                  colors={[colors.teal, colors.plum]}
+                  colors={flat(colors.teal)}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={[styles.bubble, styles.bubbleMe, glow(colors.teal, 0.35, 10, 4)]}
@@ -782,7 +788,8 @@ export const makeStyles = (colors: Palette) =>
     textMe: { color: colors.textInverse },
     textThem: { color: colors.textPrimary },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },
-    image: { width: 200, height: 200, borderRadius: radius.md },
+    bareImage: { borderRadius: radius.lg, overflow: 'hidden' },
+    image: { width: 240, height: 240, borderRadius: radius.lg },
     imageFallback: {
       backgroundColor: colors.skeleton,
       alignItems: 'center',

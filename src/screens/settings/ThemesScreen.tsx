@@ -8,7 +8,7 @@ import { FadeIn } from '../../components/common/FadeInUp';
 import { useLanguage } from '../../store/LanguageContext';
 import { useTheme } from '../../store/ThemeContext';
 import { fonts, radius, spacing, typography } from '../../theme';
-import { glow, withAlpha } from '../../theme/glow';
+import { flat, glow, withAlpha } from '../../theme/glow';
 import { APP_THEME_IDS, APP_THEMES, type AppThemeId, type Palette } from '../../theme/palettes';
 
 const THEME_LABELS: Record<AppThemeId, { nameKey: string; descKey: string }> = {
@@ -16,6 +16,7 @@ const THEME_LABELS: Record<AppThemeId, { nameKey: string; descKey: string }> = {
   emerald: { nameKey: 'settings.themeEmerald', descKey: 'settings.themeEmeraldDesc' },
   navy: { nameKey: 'settings.themeNavy', descKey: 'settings.themeNavyDesc' },
   onyx: { nameKey: 'settings.themeOnyx', descKey: 'settings.themeOnyxDesc' },
+  pink: { nameKey: 'settings.themePink', descKey: 'settings.themePinkDesc' },
 };
 
 const GRADIENT_START = { x: 0, y: 0 } as const;
@@ -33,7 +34,7 @@ export function ThemesScreen() {
         <AccentHeading
           size="screen"
           title={t('settings.themesTitle')}
-          gradient={[colors.brandMain, colors.brandRose]}
+          gradient={flat(colors.brandMain)}
           style={styles.heading}
         />
         <Text style={[styles.subtitle, rtl && styles.rtlText]}>{t('settings.themesSubtitle')}</Text>
@@ -92,7 +93,7 @@ function ThemePreview({ palette }: { palette: Palette }) {
   return (
     <View style={[previewStyles.canvas, { backgroundColor: palette.background, borderColor: palette.border }]}>
       <LinearGradient
-        colors={[palette.brandDeep, palette.brandMain, palette.brandRose]}
+        colors={flat(palette.brandMain)}
         start={GRADIENT_START}
         end={GRADIENT_END}
         style={previewStyles.hero}

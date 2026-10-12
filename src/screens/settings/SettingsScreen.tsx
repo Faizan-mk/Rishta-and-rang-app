@@ -15,7 +15,7 @@ import { useNotifications } from '../../store/NotificationContext';
 import { useDialog } from '../../store/DialogContext';
 import { fonts, radius, spacing, typography } from '../../theme';
 import { cardSurface } from '../../theme/surfaces';
-import { glow, modeAccent, withAlpha } from '../../theme/glow';
+import { glow, APP_MODE, modeAccent, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 import type { NotificationPrefs } from '../../types/content';
 import type { AppLanguage } from '../../types/user';
@@ -48,8 +48,8 @@ export function SettingsScreen() {
   const { colors, mode, setMode } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl, language, setLanguage } = useLanguage();
-  const { user, logout } = useAuth();
-  const accent = modeAccent(colors, user?.activeMode ?? 'dating');
+  const { logout } = useAuth();
+  const accent = modeAccent(colors, APP_MODE);
   const { prefs, setPref } = useNotifications();
   const { confirm } = useDialog();
 

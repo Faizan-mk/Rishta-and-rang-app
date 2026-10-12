@@ -12,10 +12,9 @@ import Animated, {
 } from 'react-native-reanimated';
 import { SmartImage } from '../common/SmartImage';
 import type { BrowseProfile } from '../../types/content';
-import type { ProfileMode } from '../../types/user';
 import { fonts, radius, spacing, typography } from '../../theme';
 import { scaleFont, scaleSpace } from '../../theme/responsive';
-import { glow, modeAccent, withAlpha } from '../../theme/glow';
+import { APP_MODE, glow, modeAccent, withAlpha } from '../../theme/glow';
 import { ONLINE_GREEN, type Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
@@ -40,8 +39,6 @@ const ACTIVITY_LABEL: Record<ActivityLevel, string> = {
 interface DiscoverProfileCardProps {
   profile: BrowseProfile;
   liked: boolean;
-  // Picks the card's colour world — warm on Friends, cool on Rishta.
-  mode: ProfileMode;
   onPressPhoto?: (uri: string) => void;
 }
 
@@ -51,12 +48,12 @@ interface DiscoverProfileCardProps {
 export const DiscoverProfileCard = React.memo(function DiscoverProfileCard({
   profile,
   liked,
-  mode,
   onPressPhoto,
 }: DiscoverProfileCardProps) {
   const { colors, isDark } = useTheme();
   const { t, rtl } = useLanguage();
-  const accent = modeAccent(colors, mode);
+  // The app's one colour, whichever kind of profile this is.
+  const accent = modeAccent(colors, APP_MODE);
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const photosHidden = Boolean(profile.photosBlurred) && !liked;
   const [activeIndex, setActiveIndex] = useState(0);

@@ -8,7 +8,7 @@ import type { BrowseProfile } from '../../types/content';
 import { fonts, radius, spacing, typography } from '../../theme';
 import { cardSurface } from '../../theme/surfaces';
 import { scaleFont } from '../../theme/responsive';
-import { withAlpha } from '../../theme/glow';
+import { flat, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
@@ -141,7 +141,7 @@ function Section({ title, subtitle, children }: { title: string; subtitle?: stri
   // AccentHeading handles RTL for the title and subtitle itself.
   return (
     <View style={styles.section}>
-      <AccentHeading title={title} subtitle={subtitle} gradient={[colors.brandMain, colors.brandRose]} style={styles.sectionHeading} />
+      <AccentHeading title={title} subtitle={subtitle} gradient={flat(colors.brandMain)} style={styles.sectionHeading} />
       {children}
     </View>
   );

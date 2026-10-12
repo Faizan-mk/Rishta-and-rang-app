@@ -35,7 +35,7 @@ import { FEATURE_BUREAU } from '../../config/features';
 import { fonts, radius, spacing, typography } from '../../theme';
 import { scaleFont } from '../../theme/responsive';
 import { cardSurface } from '../../theme/surfaces';
-import { glow, modeAccent, withAlpha, type Gradient } from '../../theme/glow';
+import { APP_MODE, flat, glow, modeAccent, withAlpha, type Gradient } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 
 const GRADIENT_START = { x: 0, y: 0 } as const;
@@ -67,7 +67,7 @@ export function ProfileScreen() {
   };
   const completion = profileCompletion(user);
   const memberSince = new Date(user.createdAt).getFullYear();
-  const accent = modeAccent(colors, user.activeMode);
+  const accent = modeAccent(colors, APP_MODE);
 
   const onLogout = async () => {
     const confirmed = await confirm({
@@ -107,8 +107,7 @@ export function ProfileScreen() {
       scrollEventThrottle={16}
       style={{ paddingBottom: TAB_BAR_BASE_HEIGHT + insets.bottom + spacing.lg }}
     >
-      {/* The banner wears the member's own mode colours, so the menu opens in the
-          same world their deck is in. */}
+      {/* The banner wears the app's colours, like the rest of its chrome. */}
       <LinearGradient colors={accent.ramp} start={GRADIENT_START} end={GRADIENT_END} style={styles.banner}>
         <View style={styles.bannerGlowA} pointerEvents="none" />
         <View style={styles.bannerGlowB} pointerEvents="none" />
@@ -134,7 +133,7 @@ export function ProfileScreen() {
       <Animated.View entering={FadeInUp.duration(360)} style={styles.headerCard}>
         <View style={styles.avatarWrap}>
           <LinearGradient
-            colors={user.isExplorePlus ? [colors.metalBright, colors.metal, colors.metalDeep] as const : accent.ramp}
+            colors={user.isExplorePlus ? flat(colors.metal) : accent.ramp}
             start={GRADIENT_START}
             end={GRADIENT_END}
             style={[styles.avatarRing, glow(user.isExplorePlus ? colors.gold : accent.primary, 0.5, 18, 8)]}
@@ -295,33 +294,31 @@ export function ProfileScreen() {
         </View>
       ) : null}
 
-      {user.activeMode === 'dating' ? (
+      {user.dating.vibeTags.length > 0 && (
         <View style={styles.section}>
           <AccentHeading title={t('profile.vibeTags')} gradient={accent.duo} style={styles.sectionHeading} />
           <View style={styles.chipRow}>
-            {user.dating.vibeTags.length === 0 ? (
-              <Text style={[styles.body, rtl && styles.rtlText]}>—</Text>
-            ) : (
-              user.dating.vibeTags.map((tag) => <Chip key={tag} label={tag} tone="dating" selected />)
-            )}
-          </View>
-        </View>
-      ) : (
-        <View style={styles.section}>
-          <AccentHeading
-            title={t('profile.rishtaDetails')}
-            gradient={accent.duo}
-            style={styles.sectionHeading}
-            right={<Button label={t('common.edit')} variant="ghost" onPress={() => router.push('/rishta-profile')} />}
-          />
-          <View style={styles.detailCard}>
-            <ProfileRow label={t('profile.religion')} value={user.rishta.religion || '—'} rtl={rtl} />
-            <ProfileRow label={t('profile.sect')} value={user.rishta.sect || '—'} rtl={rtl} />
-            <ProfileRow label={t('profile.familyBackground')} value={user.rishta.familyBackground || '—'} rtl={rtl} />
-            <ProfileRow label={t('profile.education')} value={user.rishta.education || '—'} rtl={rtl} last />
+            {user.dating.vibeTags.map((tag) => (
+              <Chip key={tag} label={tag} tone="dating" selected />
+            ))}
           </View>
         </View>
       )}
+
+      <View style={styles.section}>
+        <AccentHeading
+          title={t('profile.rishtaDetails')}
+          gradient={accent.duo}
+          style={styles.sectionHeading}
+          right={<Button label={t('common.edit')} variant="ghost" onPress={() => router.push('/rishta-profile')} />}
+        />
+        <View style={styles.detailCard}>
+          <ProfileRow label={t('profile.religion')} value={user.rishta.religion || '—'} rtl={rtl} />
+          <ProfileRow label={t('profile.sect')} value={user.rishta.sect || '—'} rtl={rtl} />
+          <ProfileRow label={t('profile.familyBackground')} value={user.rishta.familyBackground || '—'} rtl={rtl} />
+          <ProfileRow label={t('profile.education')} value={user.rishta.education || '—'} rtl={rtl} last />
+        </View>
+      </View>
 
       <View style={styles.section}>
         <IntroMediaSection profile={browseProfile} />
@@ -462,7 +459,7 @@ function QuickLinkRow({
 }
 
 // Gold ring for paying members — the one place the palette's premium colour
-// outranks the member's own mode colour.
+// outranks the app's own colour.
 
 const detailStyles = StyleSheet.create({
   row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.sm + 4 },
