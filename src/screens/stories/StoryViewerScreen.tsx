@@ -9,6 +9,8 @@ import Animated, {
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
+  withSequence,
+  withSpring,
   withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
@@ -49,7 +51,7 @@ export function StoryViewerScreen() {
   const { t } = useLanguage();
   const { user } = useAuth();
   const { confirm, notify } = useDialog();
-  const { mine, others, markSeen, remove, refresh } = useStories();
+  const { mine, others, markSeen, toggleLike, remove, refresh } = useStories();
 
   const isMine = userId === user?.id;
   // Other people's groups are fixed when the viewer opens, so marking a story
@@ -75,6 +77,10 @@ export function StoryViewerScreen() {
   // Seen-by counts read fresh from the list itself, which beat the count the
   // strip loaded with: someone may have watched since.
   const [seenCounts, setSeenCounts] = useState<Record<string, number>>({});
+  // Likes made while the viewer is open. Other people's groups are a snapshot
+  // taken at open (othersAtOpen), so the heart reads from here first.
+  const [likedNow, setLikedNow] = useState<Record<string, boolean>>({});
+  const heartScale = useSharedValue(1);
 
   // The counts on the member's own stories date from when the strip loaded.
   // Re-read them on open so the "seen by" pill is current.
@@ -205,6 +211,17 @@ export function StoryViewerScreen() {
     borderRadius: dragY.value > 0 ? 16 : 0,
   }));
 
+  const liked = story ? likedNow[story.id] ?? story.liked : false;
+
+  const onLike = () => {
+    if (!story || isMine) return;
+    toggleLike({ ...story, liked });
+    setLikedNow((prev) => ({ ...prev, [story.id]: !liked }));
+    if (!liked) heartScale.value = withSequence(withTiming(1.35, { duration: 120 }), withSpring(1));
+  };
+
+  const heartStyle = useAnimatedStyle(() => ({ transform: [{ scale: heartScale.value }] }));
+
   const openViewers = async () => {
     if (!story) return;
     setViewersOpen(true);
@@ -319,6 +336,27 @@ export function StoryViewerScreen() {
           >
             <Ionicons name="eye-outline" size={16} color="#FFFFFF" />
             <Text style={styles.seenByText}>{seenCounts[story.id] ?? story.viewCount}</Text>
+            {story.likeCount > 0 && (
+              <>
+                <Ionicons name="heart" size={15} color="#FF3B5C" style={styles.seenByHeart} />
+                <Text style={styles.seenByText}>{story.likeCount}</Text>
+              </>
+            )}
+          </Pressable>
+        )}
+
+        {!isMine && (
+          <Pressable
+            onPress={onLike}
+            hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel={t(liked ? 'stories.unlike' : 'stories.like')}
+            accessibilityState={{ selected: liked }}
+            style={[styles.likeButton, { bottom: insets.bottom + spacing.md }]}
+          >
+            <Animated.View style={heartStyle}>
+              <Ionicons name={liked ? 'heart' : 'heart-outline'} size={30} color={liked ? '#FF3B5C' : '#FFFFFF'} />
+            </Animated.View>
           </Pressable>
         )}
       </Animated.View>
@@ -355,6 +393,7 @@ export function StoryViewerScreen() {
                 <Text style={[styles.viewerName, { color: colors.textPrimary }]} numberOfLines={1}>
                   {item.name}
                 </Text>
+                {item.liked && <Ionicons name="heart" size={16} color="#FF3B5C" />}
                 <Text style={[styles.viewerTime, { color: colors.textTertiary }]} numberOfLines={1}>
                   {timeAgo(item.viewedAt, t)}
                 </Text>
@@ -467,6 +506,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.45)',
   },
   seenByText: { color: '#FFFFFF', fontFamily: fonts.bodyBold, fontSize: scaleFont(12) },
+  seenByHeart: { marginLeft: 4 },
+  // The heart on someone else's story, bottom-right like Instagram.
+  likeButton: { position: 'absolute', right: spacing.md, padding: 6 },
   endCard: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.7)',

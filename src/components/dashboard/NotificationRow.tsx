@@ -12,6 +12,7 @@ import { timeAgo } from '../../utils/time';
 const ICONS: Record<NotificationType, keyof typeof Ionicons.glyphMap> = {
   match: 'heart',
   like: 'thumbs-up',
+  story_like: 'heart-circle',
   message: 'chatbubble-ellipses',
   rishta_request: 'people',
   system: 'sparkles',

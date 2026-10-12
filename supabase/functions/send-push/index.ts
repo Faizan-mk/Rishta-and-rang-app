@@ -37,6 +37,7 @@ const PREF_COLUMN: Record<string, string> = {
   match: 'new_matches',
   message: 'messages',
   like: 'likes',
+  story_like: 'likes',
   rishta_request: 'rishta_requests',
   rishta_accepted: 'rishta_requests',
   rishta_declined: 'rishta_requests',
@@ -83,6 +84,13 @@ const COPY: Record<string, Record<string, string>> = {
     en: 'liked your profile.',
     ur: 'نے آپ کی پروفائل پسند کی۔',
     roman: 'ne aap ki profile pasand ki.',
+  },
+  // Sent from the database (50_story_like_notifications.sql) on the
+  // service-role path; kept word for word in step with public.story_like_copy.
+  story_like: {
+    en: 'liked your story.',
+    ur: 'نے آپ کی اسٹوری پسند کی۔',
+    roman: 'ne aap ki story pasand ki.',
   },
   rishta_request: {
     en: 'would like to move to Rishta stage.',

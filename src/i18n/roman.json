@@ -986,6 +986,8 @@
     "videoTooLongTitle": "Video bohat lambi hai",
     "videoTooLongBody": "Story ki video zyada se zyada {seconds} second ki ho sakti hai.",
     "watchAgain": "Dobara dekhein",
+    "like": "Story like karein",
+    "unlike": "Like hata dein",
     "privacyTitle": "Story privacy",
     "privacyRowDesc": "Chunein ke aapki stories kaun dekhe",
     "audienceTitle": "Meri stories kaun dekh sakta hai",

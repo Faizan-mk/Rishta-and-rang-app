@@ -18,12 +18,12 @@ interface ThemeContextValue {
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [mode, setModeState] = useState<ThemeMode>('system');
+  const [mode, setModeState] = useState<ThemeMode>('light');
   const [themeId, setThemeIdState] = useState<AppThemeId>(DEFAULT_THEME_ID);
   const [systemScheme, setSystemScheme] = useState(Appearance.getColorScheme() ?? 'light');
 
   useEffect(() => {
-    storage.getJSON<ThemeMode>(storage.KEYS.themeMode, 'system').then(setModeState);
+    storage.getJSON<ThemeMode>(storage.KEYS.themeMode, 'light').then(setModeState);
     // A stored id from a theme that has since been removed falls back to the default.
     storage.getJSON<AppThemeId>(storage.KEYS.appTheme, DEFAULT_THEME_ID).then((id) => {
       if (id in APP_THEMES) setThemeIdState(id);
