@@ -24,6 +24,8 @@ interface FeedRow {
   owner_photo: string;
   seen: boolean;
   view_count: number;
+  liked: boolean;
+  like_count: number;
 }
 
 /**
@@ -50,6 +52,8 @@ async function fetchFeed(myId: string): Promise<{ mine: StoryGroup | null; other
       expiresAt: row.expires_at,
       seen: row.seen,
       viewCount: row.view_count,
+      liked: row.liked,
+      likeCount: row.like_count,
     };
     const group = groups.get(row.user_id);
     if (group) {
@@ -106,14 +110,26 @@ async function markSeen(storyId: string, viewerId: string): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
+// Like or unlike someone else's story (supabase/49_story_likes.sql). Liking
+// twice hits the primary key, which is fine: it already counts.
+async function setLiked(storyId: string, userId: string, liked: boolean): Promise<void> {
+  const { error } = liked
+    ? await supabase
+        .from('story_likes')
+        .upsert({ story_id: storyId, user_id: userId }, { onConflict: 'story_id,user_id', ignoreDuplicates: true })
+    : await supabase.from('story_likes').delete().eq('story_id', storyId).eq('user_id', userId);
+  if (error) throw new Error(error.message);
+}
+
 async function fetchViewers(storyId: string): Promise<StoryViewer[]> {
   const { data, error } = await supabase.rpc('story_viewers', { p_story_id: storyId });
   if (error) throw new Error(error.message);
-  return ((data ?? []) as { viewer_id: string; name: string; photo: string; viewed_at: string }[]).map((r) => ({
+  return ((data ?? []) as { viewer_id: string; name: string; photo: string; viewed_at: string; liked: boolean }[]).map((r) => ({
     id: r.viewer_id,
     name: r.name,
     photo: r.photo,
     viewedAt: r.viewed_at,
+    liked: r.liked,
   }));
 }
 
@@ -168,6 +184,7 @@ export const storiesService = {
   fetchFeed,
   postStory,
   markSeen,
+  setLiked,
   fetchViewers,
   deleteStory,
   purgeExpired,

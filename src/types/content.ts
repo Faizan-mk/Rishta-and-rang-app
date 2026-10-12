@@ -192,7 +192,7 @@ export interface MessageReaction {
 // The emoji offered by the long-press picker on a message bubble.
 export const REACTION_EMOJIS = ['❤️', '😂', '😍', '👍', '😢', '🙏'] as const;
 
-export type NotificationType = 'match' | 'like' | 'message' | 'rishta_request' | 'system';
+export type NotificationType = 'match' | 'like' | 'story_like' | 'message' | 'rishta_request' | 'system';
 
 export interface NotificationItem {
   id: string;
@@ -203,7 +203,7 @@ export interface NotificationItem {
   read: boolean;
   /** Set only for `message` — the thread reading it also marks it read. */
   matchId?: string;
-  /** Set for `like`/`match` — whose profile this notification is about. */
+  /** Set for `like`/`match`/`story_like` — whose profile this notification is about. */
   relatedId?: string;
   /** Which pool `relatedId` opens in on `/profile-detail`. */
   relatedKind?: 'dating' | 'rishta';
@@ -281,6 +281,10 @@ export interface Story {
   seen: boolean;
   // How many people have seen it. Only ever non-zero on the member's own.
   viewCount: number;
+  // Whether the member has liked it (someone else's story).
+  liked: boolean;
+  // How many people have liked it. Only ever non-zero on the member's own.
+  likeCount: number;
 }
 
 // Everything one person currently has up, in the order it plays.
@@ -300,4 +304,5 @@ export interface StoryViewer {
   name: string;
   photo: string;
   viewedAt: string;
+  liked: boolean;
 }

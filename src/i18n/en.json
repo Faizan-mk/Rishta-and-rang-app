@@ -986,6 +986,8 @@
     "videoTooLongTitle": "Video too long",
     "videoTooLongBody": "A story video can be up to {seconds} seconds.",
     "watchAgain": "Watch again",
+    "like": "Like story",
+    "unlike": "Unlike story",
     "privacyTitle": "Story privacy",
     "privacyRowDesc": "Choose who sees your stories",
     "audienceTitle": "Who can see my stories",

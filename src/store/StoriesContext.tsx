@@ -13,6 +13,7 @@ interface StoriesContextValue {
   refresh: () => Promise<void>;
   post: (localUri: string, mediaType: 'image' | 'video', mimeType?: string | null, durationSec?: number) => Promise<void>;
   markSeen: (story: Story) => void;
+  toggleLike: (story: Story) => void;
   remove: (story: Story) => Promise<void>;
 }
 
@@ -82,6 +83,25 @@ export function StoriesProvider({ children }: { children: React.ReactNode }) {
     [user?.id]
   );
 
+  // Optimistic like / unlike, rolled back if the write fails.
+  const toggleLike = useCallback(
+    (story: Story) => {
+      if (!user || story.userId === user.id) return;
+      const apply = (liked: boolean) =>
+        setOthers((prev) =>
+          prev.map((group) =>
+            group.userId !== story.userId
+              ? group
+              : { ...group, stories: group.stories.map((s) => (s.id === story.id ? { ...s, liked } : s)) }
+          )
+        );
+      const next = !story.liked;
+      apply(next);
+      storiesService.setLiked(story.id, user.id, next).catch(() => apply(!next));
+    },
+    [user?.id]
+  );
+
   const remove = useCallback(
     async (story: Story) => {
       await storiesService.deleteStory(story);
@@ -95,8 +115,8 @@ export function StoriesProvider({ children }: { children: React.ReactNode }) {
   );
 
   const value = useMemo(
-    () => ({ mine, others, posting, refresh, post, markSeen, remove }),
-    [mine, others, posting, refresh, post, markSeen, remove]
+    () => ({ mine, others, posting, refresh, post, markSeen, toggleLike, remove }),
+    [mine, others, posting, refresh, post, markSeen, toggleLike, remove]
   );
 
   return <StoriesContext.Provider value={value}>{children}</StoriesContext.Provider>;
