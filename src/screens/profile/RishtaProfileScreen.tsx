@@ -18,7 +18,7 @@ import { useAuth } from '../../store/AuthContext';
 import { useTheme } from '../../store/ThemeContext';
 import { radius, spacing, typography } from '../../theme';
 import { cardSurface } from '../../theme/surfaces';
-import { glow, modeAccent, withAlpha } from '../../theme/glow';
+import { flat, glow, modeAccent, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 
 const READINESS_OPTIONS: { key: RishtaReadiness; labelKey: string }[] = [
@@ -102,7 +102,7 @@ export function RishtaProfileScreen() {
         <View style={styles.lockedSection}>
           <AccentHeading
             title={t('profile.comingInV2')}
-            gradient={[colors.textTertiary, colors.border]}
+            gradient={flat(colors.textTertiary)}
             style={styles.heading}
           />
           <View style={styles.lockedChipRow}>

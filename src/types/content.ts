@@ -266,3 +266,38 @@ export interface BlockedProfile {
   photo: string;
   blockedAt: string;
 }
+
+// One photo or short video a member shared for 24 hours
+// (supabase/46_stories.sql).
+export interface Story {
+  id: string;
+  userId: string;
+  mediaUrl: string;
+  mediaType: 'image' | 'video';
+  // Length of a video in seconds; absent for a photo.
+  durationSec?: number;
+  createdAt: string;
+  expiresAt: string;
+  seen: boolean;
+  // How many people have seen it. Only ever non-zero on the member's own.
+  viewCount: number;
+}
+
+// Everything one person currently has up, in the order it plays.
+export interface StoryGroup {
+  userId: string;
+  name: string;
+  photo: string;
+  stories: Story[];
+  // Whether every story in the group has been seen.
+  allSeen: boolean;
+  // When the newest story went up, for ordering the strip.
+  latestAt: string;
+}
+
+export interface StoryViewer {
+  id: string;
+  name: string;
+  photo: string;
+  viewedAt: string;
+}

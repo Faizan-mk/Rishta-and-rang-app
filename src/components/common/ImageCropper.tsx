@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { Button } from '../Button';
 import { radius, spacing, typography } from '../../theme';
-import { withAlpha } from '../../theme/glow';
+import { flat, withAlpha } from '../../theme/glow';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
 import type { Palette } from '../../theme/palettes';
@@ -54,7 +54,7 @@ export function ImageCropper({ uri, aspect = 3 / 4, round = false, onCancel, onC
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const { width: winWidth, height: winHeight } = useWindowDimensions();
-  const cropRamp = [colors.teal, colors.plum] as const;
+  const cropRamp = flat(colors.teal);
 
   const [source, setSource] = useState<Source | null>(null);
   const [failed, setFailed] = useState(false);

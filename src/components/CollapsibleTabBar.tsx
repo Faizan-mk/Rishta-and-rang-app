@@ -6,11 +6,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useTheme } from '../store/ThemeContext';
-import { useAuth } from '../store/AuthContext';
 import { useTabBarAnimatedStyle, TAB_BAR_BASE_HEIGHT } from '../store/TabBarVisibilityContext';
 import { fonts, radius, typography } from '../theme';
 import { scaleFont } from '../theme/responsive';
-import { glow, modeAccent, type Gradient } from '../theme/glow';
+import { glow, APP_MODE, modeAccent, type Gradient } from '../theme/glow';
 import type { Palette } from '../theme/palettes';
 
 // Keyed by the file names under src/app/(tabs).
@@ -26,13 +25,12 @@ const GRADIENT_END = { x: 1, y: 1 } as const;
 
 export function CollapsibleTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const { colors } = useTheme();
-  const { user } = useAuth();
   const insets = useSafeAreaInsets();
   const animatedStyle = useTabBarAnimatedStyle();
   const styles = makeStyles(colors, insets.bottom);
   // The bar wears whichever deck the member is browsing, so the app's accent is
   // the same colour top to bottom.
-  const accent = modeAccent(colors, user?.activeMode ?? 'dating');
+  const accent = modeAccent(colors, APP_MODE);
 
   return (
     <Animated.View style={[styles.container, animatedStyle]} pointerEvents="box-none">

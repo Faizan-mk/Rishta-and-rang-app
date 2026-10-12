@@ -23,7 +23,7 @@ import { digitsToCnicDisplay, isValidCnicFormat, cnicMatchesGender } from '../..
 import { authService } from '../../services/authService';
 import { AppError, errorMessage } from '../../utils/appError';
 import { radius, spacing, typography } from '../../theme';
-import { withAlpha } from '../../theme/glow';
+import { flat, withAlpha } from '../../theme/glow';
 import { cardSurface } from '../../theme/surfaces';
 import type { Palette } from '../../theme/palettes';
 
@@ -32,7 +32,7 @@ export function SignupScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl, language } = useLanguage();
-  const onboardRamp = [colors.teal, colors.plum] as const;
+  const onboardRamp = flat(colors.teal);
   const { draft, startDraft } = useOnboarding();
 
   const [email, setEmail] = useState('');

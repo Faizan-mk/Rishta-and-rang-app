@@ -17,7 +17,7 @@ import { useOnboarding } from '../../store/onboardingStore';
 import { analyzeIdCardPhoto, CNIC_ASPECT } from '../../utils/idCardImageCheck';
 import { AppError, errorMessage } from '../../utils/appError';
 import { radius, spacing, typography } from '../../theme';
-import { glow, withAlpha } from '../../theme/glow';
+import { flat, glow, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 import { cardSurface } from '../../theme/surfaces';
 
@@ -26,7 +26,7 @@ export function SelfieVerificationScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl, language } = useLanguage();
-  const onboardRamp = [colors.teal, colors.plum] as const;
+  const onboardRamp = flat(colors.teal);
   const { signup } = useAuth();
   const { notify } = useDialog();
   const { draft, patchDraft } = useOnboarding();

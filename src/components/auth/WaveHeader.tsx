@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { fonts, spacing, typography } from '../../theme';
 import { scaleFont, scaleSpace } from '../../theme/responsive';
 import { useTheme } from '../../store/ThemeContext';
+import { flat } from '../../theme/glow';
 
 interface WaveHeaderProps {
   title: string;
@@ -35,7 +36,7 @@ export function WaveHeader({ title, subtitle, badge, onBack, rtl }: WaveHeaderPr
     <View onLayout={onLayout} style={styles.root}>
       <StatusBar style="light" />
       <LinearGradient
-        colors={[colors.tealDark, colors.teal, colors.plum]}
+        colors={flat(colors.teal)}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={[styles.gradient, { paddingTop: insets.top + spacing.md }]}

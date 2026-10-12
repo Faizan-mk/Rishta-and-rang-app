@@ -26,7 +26,7 @@ import { errorMessage } from '../../utils/appError';
 import type { UserProfile } from '../../types/user';
 import { fonts, radius, spacing, typography } from '../../theme';
 import { cardSurface } from '../../theme/surfaces';
-import { glow, modeAccent, withAlpha } from '../../theme/glow';
+import { APP_MODE, flat, glow, modeAccent, withAlpha } from '../../theme/glow';
 import { scaleFont } from '../../theme/responsive';
 import type { Palette } from '../../theme/palettes';
 
@@ -127,9 +127,9 @@ export function EditProfileScreen() {
 
   if (!user) return null;
 
-  const accent = modeAccent(colors, user.activeMode);
+  const accent = modeAccent(colors, APP_MODE);
   // Unselected photo tiles get a hairline rim rather than the member's colours.
-  const idleRim = [colors.border, colors.borderSoft] as const;
+  const idleRim = flat(colors.border);
 
   const startVoiceRecording = async () => {
     const permission = await requestRecordingPermissionsAsync();
@@ -591,7 +591,7 @@ function BooleanRow({
       <Pressable onPress={() => onChange(!value)} hitSlop={6}>
         {value ? (
           <LinearGradient
-            colors={[colors.teal, colors.plum]}
+            colors={flat(colors.teal)}
             start={GRADIENT_START}
             end={GRADIENT_END}
             style={[styles.toggleTrack, glow(colors.teal, 0.6, 10, 4)]}

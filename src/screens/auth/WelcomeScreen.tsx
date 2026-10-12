@@ -9,7 +9,7 @@ import { Pressable } from 'react-native';
 import { Button } from '../../components/Button';
 import { FloatingHearts } from '../../components/common/FloatingHearts';
 import { fonts, spacing, typography, radius } from '../../theme';
-import { glow, withAlpha } from '../../theme/glow';
+import { flat, glow, withAlpha } from '../../theme/glow';
 import { scaleFont, scaleSpace } from '../../theme/responsive';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
@@ -119,7 +119,7 @@ export function WelcomeScreen() {
                   >
                     {selected && (
                       <LinearGradient
-                        colors={[colors.brandMain, colors.brandRose]}
+                        colors={flat(colors.brandMain)}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
                         style={[styles.langOption, glow(colors.brandMain, 0.4, 10, 4)]}
@@ -135,7 +135,7 @@ export function WelcomeScreen() {
             </View>
 
             <View style={styles.actions}>
-              <Button label={t('login.submit')} gradient={[colors.brandDeep, colors.brandMain, colors.brandRose]} onPress={() => router.push('/login')} />
+              <Button label={t('login.submit')} gradient={flat(colors.brandMain)} onPress={() => router.push('/login')} />
               <Button
                 label={t('login.createAccount')}
                 variant="ghost"
@@ -220,13 +220,15 @@ const makeStyles = (colors: Palette, compact: boolean, tiny: boolean) =>
       ...typography.body,
       fontFamily: fonts.displayItalic,
       fontSize: scaleFont(17),
-      color: colors.metal,
+      // White rather than the theme's metal: it sits on the photo, where a
+      // muted metal such as the Pink theme's rose gold all but disappears.
+      color: 'rgba(255,255,255,0.92)',
       textAlign: 'center',
       marginTop: scaleSpace(2),
       paddingHorizontal: spacing.lg,
-      textShadowColor: 'rgba(0,0,0,0.45)',
+      textShadowColor: 'rgba(0,0,0,0.6)',
       textShadowOffset: { width: 0, height: 1 },
-      textShadowRadius: 6,
+      textShadowRadius: 8,
     },
     // Glass card: rounded + clipped so the blur and tint respect the corner
     // radius, with a hairline border to catch the light like real glass.

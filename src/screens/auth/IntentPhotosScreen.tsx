@@ -16,7 +16,7 @@ import { useDialog } from '../../store/DialogContext';
 import { useOnboarding } from '../../store/onboardingStore';
 import { radius, spacing, typography } from '../../theme';
 import { scaleFont } from '../../theme/responsive';
-import { glow, withAlpha } from '../../theme/glow';
+import { flat, glow, withAlpha } from '../../theme/glow';
 import { cardSurface } from '../../theme/surfaces';
 import type { Palette } from '../../theme/palettes';
 
@@ -41,7 +41,7 @@ export function IntentPhotosScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
-  const onboardRamp = [colors.teal, colors.plum] as const;
+  const onboardRamp = flat(colors.teal);
 
   const { notify } = useDialog();
   const { draft, patchDraft } = useOnboarding();

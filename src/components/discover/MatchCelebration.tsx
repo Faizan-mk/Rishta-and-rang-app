@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Button } from '../Button';
 import { FloatingHearts } from '../common/FloatingHearts';
 import { radius, spacing, typography } from '../../theme';
-import { glow } from '../../theme/glow';
+import { flat, glow } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
@@ -43,7 +43,7 @@ export function MatchCelebration({ visible, name, photo, onClose }: MatchCelebra
         {/* A wedding-card moment: rosewood velvet, a gold hairline and gold
             hearts drifting up. Fixed colours, so it reads the same in both themes. */}
         <LinearGradient
-          colors={[colors.brandDeep, colors.brandMain, colors.brandRose]}
+          colors={flat(colors.brandMain)}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={[styles.card, glow(colors.brandMain, 0.5, 30, 14)]}

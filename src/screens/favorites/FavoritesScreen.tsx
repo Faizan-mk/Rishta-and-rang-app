@@ -10,9 +10,8 @@ import { ProfileCard } from '../../components/ProfileCard';
 import { useFavorites, FavoriteProfile } from '../../store/FavoritesContext';
 import { useLanguage } from '../../store/LanguageContext';
 import { useTheme } from '../../store/ThemeContext';
-import { useAuth } from '../../store/AuthContext';
 import { radius, spacing, typography } from '../../theme';
-import { modeAccent, withAlpha } from '../../theme/glow';
+import { APP_MODE, modeAccent, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 
 export function FavoritesScreen() {
@@ -21,8 +20,7 @@ export function FavoritesScreen() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
   const { favorites, removeFavorite } = useFavorites();
-  const { user } = useAuth();
-  const accent = modeAccent(colors, user?.activeMode ?? 'dating');
+  const accent = modeAccent(colors, APP_MODE);
 
   const renderItem = ({ item, index }: { item: FavoriteProfile; index: number }) => (
     <Animated.View entering={FadeInUp.delay(Math.min(index * 60, 300)).duration(360)}>

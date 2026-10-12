@@ -13,6 +13,7 @@ import { useDialog } from '../../store/DialogContext';
 import { fonts, radius, spacing, typography } from '../../theme';
 import { cardSurface } from '../../theme/surfaces';
 import type { Palette } from '../../theme/palettes';
+import { flat } from '../../theme/glow';
 
 const FAQ_KEYS = ['selfie', 'subscription', 'reporting', 'changeDetails', 'deleteAccount', 'safety'];
 
@@ -27,7 +28,7 @@ export function HelpSupportScreen() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
-  const safeRamp = [colors.teal, colors.plum] as const;
+  const safeRamp = flat(colors.teal);
 
   const onSend = async () => {
     if (!subject.trim() || !message.trim()) {

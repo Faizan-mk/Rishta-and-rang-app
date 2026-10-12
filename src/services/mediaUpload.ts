@@ -145,6 +145,8 @@ export const mediaUpload = {
     uploadPublic(userId, uri, `chat/${matchId}`, mimeType),
   uploadChatAudio: (userId: string, matchId: string, uri: string, mimeType?: string | null) =>
     uploadPublic(userId, uri, `chat/${matchId}`, mimeType),
+  uploadStoryMedia: (userId: string, uri: string, mimeType?: string | null) =>
+    uploadPublic(userId, uri, 'stories', mimeType),
   publicUrl: publicMediaUrl,
   verificationUrl,
   removeFiles: async (urls: string[]) => {

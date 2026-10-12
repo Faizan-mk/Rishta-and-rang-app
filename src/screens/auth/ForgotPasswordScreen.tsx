@@ -15,7 +15,7 @@ import { isStrongPassword, isValidEmail } from '../../utils/validation';
 import { AppError, errorMessage } from '../../utils/appError';
 import { authService } from '../../services/authService';
 import { radius, spacing, typography } from '../../theme';
-import { withAlpha } from '../../theme/glow';
+import { flat, withAlpha } from '../../theme/glow';
 import { cardSurface } from '../../theme/surfaces';
 import type { Palette } from '../../theme/palettes';
 
@@ -145,7 +145,7 @@ export function ForgotPasswordScreen() {
               label={t('forgot.submit')}
               onPress={onSendCode}
               loading={loading}
-              gradient={[colors.teal, colors.plum]}
+              gradient={flat(colors.teal)}
               style={styles.submit}
             />
             <Button
@@ -211,7 +211,7 @@ export function ForgotPasswordScreen() {
               label={t('reset.submit')}
               onPress={onSubmitPassword}
               loading={loading}
-              gradient={[colors.teal, colors.plum]}
+              gradient={flat(colors.teal)}
               style={styles.submit}
             />
           </Animated.View>
@@ -227,7 +227,7 @@ export function ForgotPasswordScreen() {
           <Button
             label={t('reset.goToLogin')}
             onPress={() => router.replace('/login')}
-            gradient={[colors.teal, colors.plum]}
+            gradient={flat(colors.teal)}
             style={styles.submit}
           />
         </Animated.View>

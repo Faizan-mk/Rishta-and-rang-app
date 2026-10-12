@@ -33,28 +33,30 @@ export function withAlpha(hex: string, alpha: number): string {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-// Straight blend of two '#RRGGBB' colours, t = 0 is `a` and t = 1 is `b`.
-export function mixHex(a: string, b: string, t: number): string {
-  const pa = parseInt(a.slice(1), 16);
-  const pb = parseInt(b.slice(1), 16);
-  const channel = (shift: number) =>
-    Math.round(((pa >> shift) & 255) + (((pb >> shift) & 255) - ((pa >> shift) & 255)) * t);
-  return `#${[16, 8, 0].map((shift) => channel(shift).toString(16).padStart(2, '0')).join('')}`;
+// The app is flat: every surface that used to blend two or three shades now
+// wears one colour. LinearGradient needs at least two stops, so a flat fill
+// repeats the one colour.
+export function flat(color: string): Gradient {
+  return [color, color] as const;
 }
 
+// One colour per mode. `secondary`, `ramp` and `duo` are kept so callers need
+// no changes, but they all carry the same hue now.
 export function modeAccent(colors: Palette, mode: ProfileMode): ModeAccent {
   const primary = mode === 'dating' ? colors.dating : colors.rishta;
-  const secondary = mode === 'dating' ? colors.gold : colors.plum;
-  const middle = mixHex(primary, secondary, 0.5);
 
   return {
     primary,
-    secondary,
-    ramp: [primary, middle, secondary] as const,
-    duo: [primary, secondary] as const,
-    wash: [withAlpha(primary, 0.16), withAlpha(secondary, 0.08), 'transparent'] as const,
+    secondary: primary,
+    ramp: flat(primary),
+    duo: flat(primary),
+    wash: [withAlpha(primary, 0.16), withAlpha(primary, 0.08), 'transparent'] as const,
   };
 }
+
+// Members no longer switch between Friends and Rishta, so the whole app wears
+// one colour: the Rishta accent, which each theme sets.
+export const APP_MODE: ProfileMode = 'rishta';
 
 // Kept structural rather than typed as ViewStyle: TextStyle narrows some of
 // ViewStyle's fields, so a ViewStyle return would be rejected on a TextInput.
