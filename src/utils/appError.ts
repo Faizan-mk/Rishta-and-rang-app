@@ -23,9 +23,10 @@ export class AppError extends Error {
 /**
  * Turns whatever a `catch` caught into a line to put in front of the member.
  *
- * `AppError` is translated; anything else keeps its own message (Supabase's
- * server strings, which we don't author and can't translate) and an error with
- * nothing to say falls back to `fallbackKey`.
+ * `AppError` is translated; anything else falls back to `fallbackKey`. Raw
+ * errors are Supabase/Postgres server strings ("new row violates row-level
+ * security policy for table …", constraint and column names), which leak the
+ * schema and mean nothing to a member, so they only go to the dev console.
  */
 export function errorMessage(
   error: unknown,
@@ -33,6 +34,9 @@ export function errorMessage(
   fallbackKey = 'common.somethingWentWrong'
 ): string {
   if (error instanceof AppError) return t(error.key, error.params);
-  if (error instanceof Error && error.message) return error.message;
+  // The one server word worth its own line: the database's rate-limit
+  // triggers (supabase/53_rate_limits.sql) raise exactly this.
+  if (error instanceof Error && error.message.includes('rate_limited')) return t('common.tooManyRequests');
+  if (__DEV__) console.warn('[error]', error);
   return t(fallbackKey);
 }

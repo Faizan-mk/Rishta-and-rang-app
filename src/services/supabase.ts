@@ -66,6 +66,8 @@ export const supabase = createClient(supabaseUrl!, supabaseAnonKey!, {
 
 export const PUBLIC_BUCKET = 'public-media';
 export const VERIFICATION_BUCKET = 'private-verification';
+/** Voice notes and voice intros: audio only, 10 MB (supabase/54_voice_limits.sql). */
+export const VOICE_BUCKET = 'voice-media';
 
 /**
  * Public URL for a path inside the public-media bucket. These URLs are what the
@@ -74,4 +76,9 @@ export const VERIFICATION_BUCKET = 'private-verification';
  */
 export function publicMediaUrl(path: string): string {
   return supabase.storage.from(PUBLIC_BUCKET).getPublicUrl(path).data.publicUrl;
+}
+
+/** Public URL for a path inside the voice-media bucket. */
+export function voiceMediaUrl(path: string): string {
+  return supabase.storage.from(VOICE_BUCKET).getPublicUrl(path).data.publicUrl;
 }

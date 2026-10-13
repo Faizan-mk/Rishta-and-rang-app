@@ -1,6 +1,8 @@
 {
   "appName": "Matrimonial App",
   "common": {
+    "maxLengthReached": "Maximum {max} characters.",
+    "tooManyRequests": "You are going a bit fast. Please wait a moment and try again.",
     "next": "Next",
     "back": "Back",
     "continue": "Continue",
@@ -410,6 +412,9 @@
     "savedBody": "Your profile has been updated."
   },
   "editProfile": {
+    "voiceTooLong": "Recording stopped at {minutes} minutes, the longest a voice intro can be.",
+    "tooManyTags": "You can add up to {max} tags. Remove one to add another.",
+    "heightRange": "Height must be between {min} and {max} cm.",
     "title": "Edit profile",
     "bio": "Bio",
     "bioPlaceholder": "Tell people a bit about yourself...",
@@ -856,7 +861,8 @@
     "otpTicketInvalid": "Your email verification has expired. Go back to the first step and verify your email again."
   },
   "media": {
-    "fileUnavailable": "The selected file is no longer available on this device."
+    "fileUnavailable": "The selected file is no longer available on this device.",
+    "fileTooLarge": "This file is too large. The limit is {mb} MB."
   },
   "reactions": {
     "add": "Add a reaction",

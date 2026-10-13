@@ -56,6 +56,11 @@ const ONLINE_POLL_MS = 60 * 1000;
 // chatting will actually notice within a few seconds, not a few minutes.
 const READ_RECEIPT_POLL_MS = 15 * 1000;
 
+
+// Matches the chat_messages.text cap in supabase/52_input_limits.sql.
+const MESSAGE_MAX_LENGTH = 2000;
+// Longest voice note the server keeps (supabase/54_voice_limits.sql).
+const MAX_VOICE_SEC = 300;
 export function ChatScreen() {
   const router = useRouter();
   const { colors } = useTheme();
@@ -322,10 +327,22 @@ export function ChatScreen() {
     await recorder.stop();
     setRecording(false);
     if (recorder.uri && durationSec >= 1) {
-      sendVoiceMessage(matchId, recorder.uri, durationSec, replyTo?.id);
+      // The auto-stop lands a hair past the cap; the server holds it to 300 s.
+      sendVoiceMessage(matchId, recorder.uri, Math.min(durationSec, MAX_VOICE_SEC), replyTo?.id);
       setReplyTo(null);
     }
   };
+
+  // Recording stops itself at the cap rather than letting a note run past what
+  // the server keeps (300 s, supabase/54_voice_limits.sql). A ref, so the timer
+  // calls the stop handler from the render it fires in, not the one it was set in.
+  const stopRecordingRef = useRef(stopRecording);
+  stopRecordingRef.current = stopRecording;
+  useEffect(() => {
+    if (!recording) return;
+    const timer = setTimeout(() => void stopRecordingRef.current(), MAX_VOICE_SEC * 1000);
+    return () => clearTimeout(timer);
+  }, [recording]);
 
   // What the other person would be asked to consider. Without it there is
   // nothing to decide on, so the request cannot be sent — the database refuses
@@ -682,6 +699,8 @@ export function ChatScreen() {
                 placeholderTextColor={colors.textTertiary}
                 style={[styles.input, inputFocused && styles.inputFocused, rtl && styles.rtlInput]}
                 multiline
+                // Matches the chat_messages.text cap in supabase/52_input_limits.sql.
+                maxLength={MESSAGE_MAX_LENGTH}
                 onFocus={() => setInputFocused(true)}
                 onBlur={() => setInputFocused(false)}
               />
@@ -712,6 +731,11 @@ export function ChatScreen() {
               </Pressable>
             )}
             </View>
+            {draft.length >= MESSAGE_MAX_LENGTH ? (
+              <Text style={[styles.limitText, rtl && styles.rtlInput]}>
+                {t('common.maxLengthReached', { max: MESSAGE_MAX_LENGTH })}
+              </Text>
+            ) : null}
           </>
         )}
       </KeyboardAvoidingView>
@@ -1041,6 +1065,7 @@ const makeStyles = (colors: Palette) =>
     },
     inputFocused: { borderColor: colors.gold, backgroundColor: colors.surface },
     rtlInput: { textAlign: 'right', writingDirection: 'rtl' },
+    limitText: { ...typography.caption, color: colors.danger, paddingHorizontal: spacing.md, paddingBottom: spacing.xs },
     attachButton: { width: 40, height: 46, alignItems: 'center', justifyContent: 'center' },
     recordingRow: {
       flex: 1,
