@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Matrimonial App",
+    "name": "Lovebirds",
     "slug": "rishta-and-rang",
     "version": "1.0.12",
     "orientation": "portrait",
@@ -11,7 +11,7 @@
       "bundleIdentifier": "com.rishtaandrang.app",
       "buildNumber": "4",
       "infoPlist": {
-        "NSPhotoLibraryUsageDescription": "Allow Matrimonial App to access your photos so you can add profile pictures, stories and share photos in chat."
+        "NSPhotoLibraryUsageDescription": "Allow Lovebirds to access your photos so you can add profile pictures, stories and share photos in chat."
       }
     },
     "android": {

@@ -1,4 +1,4 @@
-# Matrimonial App
+# Lovebirds
 
 A  matchmaking app built with Expo (React Native) and Supabase, supporting English, Roman  and Urdu.
 

@@ -10,6 +10,8 @@ import { Button } from '../../components/Button';
 import { FloatingHearts } from '../../components/common/FloatingHearts';
 import { fonts, spacing, typography, radius } from '../../theme';
 import { flat, glow, withAlpha } from '../../theme/glow';
+import { BRAND_GOLD_BRIGHT, splitBrandName } from '../../utils/brandName';
+
 import { scaleFont, scaleSpace } from '../../theme/responsive';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
@@ -64,6 +66,7 @@ export function WelcomeScreen() {
   const tiny = height < 620;
   const compact = height < 720;
   const styles = useMemo(() => makeStyles(colors, compact, tiny), [colors, compact, tiny]);
+  const brandSegments = splitBrandName(t('appName'));
 
   return (
     <View style={styles.root} onLayout={handleLayout}>
@@ -84,7 +87,15 @@ export function WelcomeScreen() {
             <View style={styles.flourishLine} />
           </Animated.View>
           <Animated.Text entering={FadeInDown.delay(200).duration(500)} style={styles.brandTitle}>
-            {t('appName')}
+            {brandSegments.map((segment, i) =>
+              segment.accent ? (
+                <Text key={i} style={styles.brandAccent}>
+                  {segment.text}
+                </Text>
+              ) : (
+                segment.text
+              )
+            )}
           </Animated.Text>
           <Animated.Text
             entering={FadeInDown.delay(320).duration(500)}
@@ -216,6 +227,8 @@ const makeStyles = (colors: Palette, compact: boolean, tiny: boolean) =>
       textShadowOffset: { width: 0, height: 2 },
       textShadowRadius: 10,
     },
+    // The wordmark's gold letters, in the bright gold: it sits on a photo.
+    brandAccent: { color: BRAND_GOLD_BRIGHT },
     tagline: {
       ...typography.body,
       fontFamily: fonts.displayItalic,
