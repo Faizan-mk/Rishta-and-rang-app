@@ -201,18 +201,35 @@ function deviceInfo(): Record<string, unknown> {
  * token is unique table-wide, so a device that changes hands has to move to the
  * new account, and the client cannot write over a row it does not own.
  */
+// The token this device last stored, so sign-out can drop it while the
+// session that owns the row still exists.
+let registeredToken: string | null = null;
+
 export async function registerPushToken(token: string): Promise<void> {
   const { error } = await supabase.rpc('register_push_token', {
     p_token: token,
     p_device_info: deviceInfo(),
   });
   if (error) throw new Error(error.message);
+  registeredToken = token;
 }
 
 /** Drops this device on sign-out, so the next person here is not sent their mail. */
 export async function unregisterPushToken(token: string): Promise<void> {
   const { error } = await supabase.rpc('unregister_push_token', { p_token: token });
   if (error) throw new Error(error.message);
+  if (registeredToken === token) registeredToken = null;
+}
+
+/**
+ * Drops this device's token for the member still signed in. Must run *before*
+ * signOut: `unregister_push_token` only deletes the caller's own row, and once
+ * the session is gone there is no caller — the row stayed behind and the
+ * device kept receiving the previous account's message previews.
+ */
+export async function unregisterCurrentDevice(): Promise<void> {
+  if (!registeredToken) return;
+  await unregisterPushToken(registeredToken);
 }
 
 /**
@@ -268,6 +285,7 @@ export const pushService = {
   requestPushToken,
   registerPushToken,
   unregisterPushToken,
+  unregisterCurrentDevice,
   onNotificationTap,
   initialNotificationTap,
   notifyMessage,

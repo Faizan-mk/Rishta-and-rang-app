@@ -67,6 +67,9 @@ export function CalendarModal({ visible, initialIso, maxDateIso, onSelect, onClo
 
   const selectYear = (year: number) => {
     setViewYear(year);
+    // Picking the newest allowed year while looking at a later month would
+    // land on a page of nothing but disabled days, so pull the month back.
+    if (new Date(year, viewMonth, 1) > maxDate) setViewMonth(maxDate.getMonth());
     setYearPicker(false);
   };
 
@@ -116,83 +119,88 @@ export function CalendarModal({ visible, initialIso, maxDateIso, onSelect, onClo
 
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
-      <Pressable style={styles.overlay} onPress={onClose}>
+      {/* The backdrop is a sibling behind the sheet, not its parent. Wrapped in
+          a Pressable (with stopPropagation to keep taps from closing it), the
+          sheet lost its touches on Android: the year list would not scroll and
+          taps on years and days went nowhere. */}
+      <View style={styles.overlay}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityRole="button" />
         <Animated.View entering={SlideInDown.duration(500).springify().damping(22).stiffness(120)} style={styles.sheet}>
-          <Pressable onPress={(e) => e.stopPropagation()}>
-            <View style={styles.sheetHandle} />
-            <View style={styles.header}>
-              <Pressable onPress={goPrev} style={styles.navButton} hitSlop={8}>
-                <Ionicons name={rtl ? 'chevron-forward' : 'chevron-back'} size={20} color={colors.textPrimary} />
-              </Pressable>
-              <Pressable onPress={onHeaderPress} style={styles.monthLabelWrap} hitSlop={8}>
-                <Text style={styles.monthLabel}>{monthLabel}</Text>
-                <Ionicons
-                  name={rtl ? 'chevron-up' : 'chevron-down'}
-                  size={14}
-                  color={colors.teal}
-                  style={{ transform: [{ rotate: yearPicker ? (rtl ? '-180deg' : '180deg') : '0deg' }] }}
-                />
-              </Pressable>
-              <Pressable onPress={goNext} disabled={!canGoNext} style={styles.navButton} hitSlop={8}>
-                <Ionicons name={rtl ? 'chevron-back' : 'chevron-forward'} size={20} color={canGoNext ? colors.textPrimary : colors.textTertiary} />
-              </Pressable>
+          <View style={styles.sheetHandle} />
+          <View style={styles.header}>
+            <Pressable onPress={goPrev} style={styles.navButton} hitSlop={8}>
+              <Ionicons name={rtl ? 'chevron-forward' : 'chevron-back'} size={20} color={colors.textPrimary} />
+            </Pressable>
+            <Pressable onPress={onHeaderPress} style={styles.monthLabelWrap} hitSlop={8}>
+              <Text style={styles.monthLabel}>{monthLabel}</Text>
+              <Ionicons
+                name={rtl ? 'chevron-up' : 'chevron-down'}
+                size={14}
+                color={colors.teal}
+                style={{ transform: [{ rotate: yearPicker ? (rtl ? '-180deg' : '180deg') : '0deg' }] }}
+              />
+            </Pressable>
+            <Pressable onPress={goNext} disabled={!canGoNext} style={styles.navButton} hitSlop={8}>
+              <Ionicons name={rtl ? 'chevron-back' : 'chevron-forward'} size={20} color={canGoNext ? colors.textPrimary : colors.textTertiary} />
+            </Pressable>
+          </View>
+
+          {yearPicker ? (
+            <View style={styles.yearPanel}>
+              <ScrollView
+                ref={listRef}
+                nestedScrollEnabled
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.yearList}
+              >
+                {years.map((year) => {
+                  const selected = year === viewYear;
+                  return (
+                    <Pressable
+                      key={year}
+                      onPress={() => selectYear(year)}
+                      style={[styles.yearRow, selected && styles.yearRowSelected]}
+                    >
+                      <Text style={[styles.yearText, selected && styles.yearTextSelected]}>{year}</Text>
+                      {selected && <Ionicons name="checkmark" size={16} color={colors.teal} />}
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
             </View>
-
-            {yearPicker ? (
-              <View style={styles.yearPanel}>
-                <ScrollView
-                  ref={listRef}
-                  showsVerticalScrollIndicator={false}
-                  contentContainerStyle={styles.yearList}
-                >
-                  {years.map((year) => {
-                    const selected = year === viewYear;
-                    return (
-                      <Pressable
-                        key={year}
-                        onPress={() => selectYear(year)}
-                        style={[styles.yearRow, selected && styles.yearRowSelected]}
-                      >
-                        <Text style={[styles.yearText, selected && styles.yearTextSelected]}>{year}</Text>
-                        {selected && <Ionicons name="checkmark" size={16} color={colors.teal} />}
-                      </Pressable>
-                    );
-                  })}
-                </ScrollView>
+          ) : (
+            <>
+              <View style={styles.weekRow}>
+                {WEEKDAY_KEYS.map((key, index) => (
+                  <Text key={`${key}-${index}`} style={styles.weekday}>{t(key)}</Text>
+                ))}
               </View>
-            ) : (
-              <>
-                <View style={styles.weekRow}>
-                  {WEEKDAY_KEYS.map((key, index) => (
-                    <Text key={`${key}-${index}`} style={styles.weekday}>{t(key)}</Text>
-                  ))}
-                </View>
 
-                <View style={styles.grid}>
-                  {cells.map((day, index) => {
-                    if (day === null) return <View key={`empty-${index}`} style={styles.cell} />;
-                    const iso = toIso(viewYear, viewMonth, day);
-                    const disabled = new Date(viewYear, viewMonth, day) > maxDate;
-                    const isSelected = initialIso === iso;
-                    return (
-                      <Pressable
-                        key={day}
-                        disabled={disabled}
-                        onPress={() => onSelect(iso)}
-                        style={[styles.cell, isSelected && styles.cellSelected]}
-                      >
-                        <Text style={[styles.cellText, disabled && styles.cellTextDisabled, isSelected && styles.cellTextSelected]}>
-                          {day}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              </>
-            )}
-          </Pressable>
+              <View style={styles.grid}>
+                {cells.map((day, index) => {
+                  if (day === null) return <View key={`empty-${index}`} style={styles.cell} />;
+                  const iso = toIso(viewYear, viewMonth, day);
+                  const disabled = new Date(viewYear, viewMonth, day) > maxDate;
+                  const isSelected = initialIso === iso;
+                  return (
+                    <Pressable
+                      key={day}
+                      disabled={disabled}
+                      onPress={() => onSelect(iso)}
+                      style={[styles.cell, isSelected && styles.cellSelected]}
+                    >
+                      <Text style={[styles.cellText, disabled && styles.cellTextDisabled, isSelected && styles.cellTextSelected]}>
+                        {day}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </>
+          )}
         </Animated.View>
-      </Pressable>
+      </View>
     </Modal>
   );
 }

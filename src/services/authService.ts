@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { mediaUpload } from './mediaUpload';
+import { pushService } from './pushService';
 import { AppError } from '../utils/appError';
 import type { AppLanguage, Intent, ProfileMode, UserProfile } from '../types/user';
 
@@ -687,6 +688,9 @@ async function touchOffline(userId: string): Promise<void> {
 }
 
 async function logout(): Promise<void> {
+  // Before signOut, while the session that owns the token row still exists.
+  // A failure here (offline) must not keep the member signed in.
+  await pushService.unregisterCurrentDevice().catch(() => undefined);
   await supabase.auth.signOut();
 }
 
@@ -823,12 +827,30 @@ async function deleteAccount(userId: string): Promise<void> {
 
   // Public media on the card is stored outside Postgres, so it has to go first
   // (while the session is still valid for the storage policies).
+  // The voice and video intros too: they are the member's own voice and face,
+  // and were left behind in storage when only the photos were removed.
   const profile = await fetchProfileRow(userId);
-  const photos: string[] = profile?.photos ?? [];
-  if (photos.length) await mediaUpload.removeFiles(photos);
+  const media = [
+    ...(profile?.photos ?? []),
+    profile?.voiceIntroUrl ?? '',
+    profile?.videoIntroUrl ?? '',
+  ].filter(Boolean);
+  if (media.length) await mediaUpload.removeFiles(media);
+
+  // The CNIC card photo and the verification selfie are the most sensitive
+  // files the app holds; the rows cascade away with the account, the files
+  // in private storage do not.
+  const verification = await fetchVerificationRow(userId).catch(() => null);
+  await mediaUpload.removeVerificationFiles([
+    verification?.cnicPhotoPath ?? '',
+    verification?.selfiePhotoPath ?? '',
+  ]);
 
   const { error } = await supabase.rpc('delete_account');
   if (error) throw new Error(error.message);
+  // The auth user is gone, but this device still holds its session. Drop it
+  // locally (the server has nothing left to revoke).
+  await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
 }
 
 /**

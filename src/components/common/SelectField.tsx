@@ -97,6 +97,7 @@ export function SelectField({
             placeholder={placeholder ?? t('common.enterAnswer')}
             placeholderTextColor={colors.textTertiary}
             style={[styles.customInput, rtl && styles.rtlText]}
+            maxLength={100}
             autoCapitalize="words"
             autoCorrect={false}
           />
@@ -120,6 +121,7 @@ export function SelectField({
               placeholder={t('common.search')}
               placeholderTextColor={colors.textTertiary}
               style={[styles.searchInput, rtl && styles.rtlText]}
+              maxLength={100}
               onFocus={() => setSearchFocused(true)}
               onBlur={() => setSearchFocused(false)}
               autoCapitalize="words"

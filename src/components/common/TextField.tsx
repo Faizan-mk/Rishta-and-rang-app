@@ -12,10 +12,26 @@ interface TextFieldProps extends TextInputProps {
   error?: string;
 }
 
+// Default caps on what a member can type, so every field has one without each
+// screen remembering to pass it. The database enforces its own limits on the
+// columns these feed (supabase/52_input_limits.sql); these sit at or under them.
+const SINGLE_LINE_MAX = 200;
+const MULTILINE_MAX = 1000;
+
 export function TextField({ label, error, style, secureTextEntry, ...inputProps }: TextFieldProps) {
   const { colors } = useTheme();
-  const { rtl } = useLanguage();
+  const { rtl, t } = useLanguage();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const maxLength = inputProps.maxLength ?? (inputProps.multiline ? MULTILINE_MAX : SINGLE_LINE_MAX);
+  const length = typeof inputProps.value === 'string' ? inputProps.value.length : 0;
+  // A multiline field is where someone writes enough to hit the cap, so it
+  // shows a running count, and says so plainly once the cap is reached rather
+  // than just ignoring keystrokes.
+  const showCounter = Boolean(inputProps.multiline);
+  const atLimit = length >= maxLength;
+  // A caller's own short cap (a CNIC's 15 characters) is a format, not a
+  // limit worth announcing: a complete CNIC is not "too long".
+  const announceLimit = atLimit && (showCounter || inputProps.maxLength === undefined);
   const [focused, setFocused] = useState(false);
   // A secure field gets a reveal toggle so the password isn't a blind guess.
   const [revealed, setRevealed] = useState(false);
@@ -28,6 +44,7 @@ export function TextField({ label, error, style, secureTextEntry, ...inputProps 
           rest, so focusing never shifts the layout. */}
       <View style={[styles.fieldWrap, focused && !error && styles.fieldWrapFocused]}>
         <TextInput
+          maxLength={maxLength}
           placeholderTextColor={colors.textTertiary}
           secureTextEntry={isSecure && !revealed}
           style={[
@@ -58,7 +75,16 @@ export function TextField({ label, error, style, secureTextEntry, ...inputProps 
           </Pressable>
         )}
       </View>
-      {error ? <Text style={[styles.error, rtl && styles.rtlText]}>{error}</Text> : null}
+      {error ? (
+        <Text style={[styles.error, rtl && styles.rtlText]}>{error}</Text>
+      ) : announceLimit ? (
+        <Text style={[styles.error, rtl && styles.rtlText]}>{t('common.maxLengthReached', { max: maxLength })}</Text>
+      ) : null}
+      {showCounter ? (
+        <Text style={[styles.counter, atLimit && styles.counterAtLimit, rtl && styles.counterRtl]}>
+          {length} / {maxLength}
+        </Text>
+      ) : null}
     </View>
   );
 }
@@ -100,5 +126,8 @@ const makeStyles = (colors: Palette) =>
     inputFocused: { borderColor: colors.gold },
     inputError: { borderColor: colors.danger },
     error: { ...typography.caption, color: colors.danger, marginTop: spacing.xs },
+    counter: { ...typography.caption, color: colors.textTertiary, marginTop: spacing.xs, textAlign: 'right' },
+    counterAtLimit: { color: colors.danger },
+    counterRtl: { textAlign: 'left' },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   });

@@ -1,6 +1,8 @@
 {
   "appName": "Matrimonial App",
   "common": {
+    "maxLengthReached": "Zyada se zyada {max} characters.",
+    "tooManyRequests": "Aap thora tez chal rahe hain. Zara ruk kar dobara koshish karein.",
     "next": "Aage",
     "back": "Peeche",
     "continue": "Jari Rakhein",
@@ -410,6 +412,9 @@
     "savedBody": "Aapki profile update ho gayi hai."
   },
   "editProfile": {
+    "voiceTooLong": "Recording {minutes} minute par ruk gayi, voice intro is se lamba nahi ho sakta.",
+    "tooManyTags": "Aap zyada se zyada {max} tags laga sakte hain. Naya lagane ke liye koi ek hatayein.",
+    "heightRange": "Height {min} aur {max} cm ke darmiyan honi chahiye.",
     "title": "Profile Edit Karein",
     "bio": "Bio",
     "bioPlaceholder": "Apne baare mein kuch batayein...",
@@ -856,7 +861,8 @@
     "otpTicketInvalid": "Aap ki email tasdeeq ki muddat khatam ho gayi. Pehle qadam par wapas ja kar dobara tasdeeq karein."
   },
   "media": {
-    "fileUnavailable": "Muntakhib karda file is device par mazeed dastyab nahi."
+    "fileUnavailable": "Muntakhib karda file is device par mazeed dastyab nahi.",
+    "fileTooLarge": "Yeh file bohat bari hai. Had {mb} MB hai."
   },
   "reactions": {
     "add": "Radd-e-amal shamil karein",

@@ -99,7 +99,8 @@ Deno.serve(async (req: Request) => {
   try {
     state = await fetchEntitlementState(callerId, revenueCatSecret);
   } catch (e) {
-    return json({ error: 'revenuecat_lookup_failed', detail: e instanceof Error ? e.message : String(e) }, 502);
+    console.error('sync-entitlement: RevenueCat lookup failed', e instanceof Error ? e.message : String(e));
+    return json({ error: 'revenuecat_lookup_failed' }, 502);
   }
 
   // Service role from here: grant/revoke_explore_plus are not callable by the
@@ -108,7 +109,8 @@ Deno.serve(async (req: Request) => {
   try {
     await applyEntitlementState(supabase, callerId, state);
   } catch (e) {
-    return json({ error: 'grant_failed', detail: e instanceof Error ? e.message : String(e) }, 500);
+    console.error('sync-entitlement: grant failed', e instanceof Error ? e.message : String(e));
+    return json({ error: 'grant_failed' }, 500);
   }
 
   return json({ active: state.active });

@@ -249,6 +249,21 @@ Deno.serve(async (req: Request) => {
   };
   const ticketHash = (purpose: Purpose, ticket: string) => hmac(secret, `ticket:${purpose}:${email}:${ticket}`);
 
+  // Per-address limits live in otp_issue / otp_verify. These sit on top, per
+  // client IP, so one machine can't walk the endpoint across thousands of
+  // addresses. Limits: public.rate_limit_config (53_rate_limits.sql).
+  const clientIp =
+    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('cf-connecting-ip') || null;
+  const ipLimit = body.action === 'request' ? 'otp_request_ip' : 'otp_verify_ip';
+  if (clientIp) {
+    const { data: wait, error: limitError } = await admin.rpc('rate_limit_check', {
+      p_name: ipLimit,
+      p_subject: clientIp,
+    });
+    if (limitError) console.error('auth-otp: rate limit check failed', limitError.message);
+    if (typeof wait === 'number' && wait > 0) return json({ error: 'rate_limited', retryAfter: wait }, 429);
+  }
+
   try {
     switch (body.action) {
       case 'request': {
@@ -285,7 +300,9 @@ Deno.serve(async (req: Request) => {
         const sent = await sendEmail(email, purpose, code, body.language ?? 'en');
         if (!sent.ok) {
           await admin.rpc('otp_release_cooldown', { p_email: email, p_purpose: purpose });
-          return json({ error: 'send_failed', detail: sent.detail }, 502);
+          // sendEmail has already logged the provider's reason; the caller is
+          // unauthenticated, so it only learns that sending failed.
+          return json({ error: 'send_failed' }, 502);
         }
         return json({ ok: true, resendIn: RESEND_COOLDOWN_SECONDS, expiresIn: CODE_TTL_SECONDS });
       }

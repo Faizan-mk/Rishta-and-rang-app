@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
@@ -34,6 +34,13 @@ const GRADIENT_START = { x: 0, y: 0 } as const;
 const GRADIENT_END = { x: 1, y: 1 } as const;
 
 const MAX_PHOTOS = 4;
+const MIN_HEIGHT_CM = 100;
+const MAX_HEIGHT_CM = 250;
+// The rest of the caps supabase/52_input_limits.sql holds the profile to.
+const MAX_VIBE_TAGS = 20;
+const MAX_TAG_LENGTH = 30;
+const MAX_LANGUAGES = 20;
+const MAX_VOICE_SEC = 300;
 const MARITAL_OPTIONS: NonNullable<UserProfile['maritalStatus']>[] = ['single', 'divorced', 'widowed'];
 const OTHER_OPTION = 'Other';
 const EDUCATION_LEVEL_OPTIONS = ['Matric / O-Level', 'Intermediate / A-Level', 'Bachelor\'s', 'Master\'s', 'MPhil', 'PhD', 'Diploma', 'Religious education', OTHER_OPTION];
@@ -152,9 +159,28 @@ export function EditProfileScreen() {
     setRecording(false);
     if (recorder.uri && durationSec >= 1) {
       setVoiceUri(recorder.uri);
-      setVoiceDuration(durationSec);
+      // The auto-stop below lands a hair past the cap; keep the stored length
+      // inside it so the profile row's check (52_input_limits.sql) accepts it.
+      setVoiceDuration(Math.min(durationSec, MAX_VOICE_SEC));
+      if (durationSec >= MAX_VOICE_SEC) {
+        await notify({
+          title: t('editProfile.recordVoiceIntro'),
+          message: t('editProfile.voiceTooLong', { minutes: MAX_VOICE_SEC / 60 }),
+        });
+      }
     }
   };
+
+  // Recording stops itself at the cap rather than letting a note run past what
+  // the server keeps (300 s, supabase/54_voice_limits.sql). A ref, so the timer
+  // calls the stop handler from the render it fires in, not the one it was set in.
+  const stopVoiceRecordingRef = useRef(stopVoiceRecording);
+  stopVoiceRecordingRef.current = stopVoiceRecording;
+  useEffect(() => {
+    if (!recording) return;
+    const timer = setTimeout(() => void stopVoiceRecordingRef.current(), MAX_VOICE_SEC * 1000);
+    return () => clearTimeout(timer);
+  }, [recording]);
 
   const removeVoiceIntro = () => {
     setVoiceUri(undefined);
@@ -217,13 +243,28 @@ export function EditProfileScreen() {
   const addTag = () => {
     const trimmed = tagInput.trim();
     if (!trimmed || vibeTags.includes(trimmed)) return;
+    if (vibeTags.length >= MAX_VIBE_TAGS) {
+      void notify({ title: t('profile.vibeTags'), message: t('editProfile.tooManyTags', { max: MAX_VIBE_TAGS }) });
+      return;
+    }
     setVibeTags((prev) => [...prev, trimmed]);
     setTagInput('');
   };
 
   const removeTag = (tag: string) => setVibeTags((prev) => prev.filter((t2) => t2 !== tag));
 
+  // Same range the database holds height_cm to (supabase/52_input_limits.sql).
+  const heightValue = Number(details.heightCm);
+  const heightError =
+    details.heightCm && (heightValue < MIN_HEIGHT_CM || heightValue > MAX_HEIGHT_CM)
+      ? t('editProfile.heightRange', { min: MIN_HEIGHT_CM, max: MAX_HEIGHT_CM })
+      : undefined;
+
   const onSave = async () => {
+    if (heightError) {
+      await notify({ title: t('editProfile.height'), message: heightError });
+      return;
+    }
     setSaving(true);
     try {
       const heightParsed = Number(details.heightCm);
@@ -253,7 +294,8 @@ export function EditProfileScreen() {
         languages: details.languagesText
           .split(',')
           .map((l) => l.trim())
-          .filter(Boolean),
+          .filter(Boolean)
+          .slice(0, MAX_LANGUAGES),
         nationality: details.nationality.trim() || undefined,
         grewUpIn: details.grewUpIn.trim() || undefined,
         country: details.country.trim() || undefined,
@@ -434,6 +476,7 @@ export function EditProfileScreen() {
               label={t('editProfile.addVibeTag')}
               value={tagInput}
               onChangeText={setTagInput}
+              maxLength={MAX_TAG_LENGTH}
               onSubmitEditing={addTag}
               returnKeyType="done"
             />
@@ -449,6 +492,8 @@ export function EditProfileScreen() {
           value={details.heightCm}
           onChangeText={(v) => setField('heightCm', v.replace(/\D/g, ''))}
           keyboardType="number-pad"
+          maxLength={3}
+          error={heightError}
           placeholder="170"
         />
         <Text style={[styles.fieldLabel, rtl && styles.rtlText]}>{t('editProfile.maritalStatus')}</Text>
