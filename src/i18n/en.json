@@ -221,7 +221,7 @@
     "careerPlansTitle": "Career plans",
     "grewUpIn": "Grew up in {place}",
     "filtersTitle": "Filters",
-    "filterVerifiedOnly": "Profiles with verification badges",
+    "filterVerifiedOnly": "Only profiles with a selfie",
     "filterActiveToday": "Active today only",
     "filtersEmpty": "No profiles match your filters right now. Try loosening them.",
     "filtersReset": "Clear filters",

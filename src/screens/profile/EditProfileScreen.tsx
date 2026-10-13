@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import { canOpenPhotoLibrary } from '../../utils/photoLibraryAccess';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -193,8 +194,7 @@ export function EditProfileScreen() {
   };
 
   const pickVideoIntro = async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
+    if (!(await canOpenPhotoLibrary())) {
       await notify({ title: t('permissions.photoLibraryTitle'), message: t('permissions.photoLibraryBody') });
       return;
     }
@@ -216,8 +216,7 @@ export function EditProfileScreen() {
 
   const addPhoto = async () => {
     if (photos.length >= MAX_PHOTOS) return;
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
+    if (!(await canOpenPhotoLibrary())) {
       await notify({ title: t('permissions.photoLibraryTitle'), message: t('permissions.photoLibraryBody') });
       return;
     }

@@ -11,7 +11,7 @@
       "bundleIdentifier": "com.rishtaandrang.app",
       "buildNumber": "4",
       "infoPlist": {
-        "NSPhotoLibraryUsageDescription": "Allow Matrimonial App to access your photos so you can add profile pictures, verification documents, and share photos in chat."
+        "NSPhotoLibraryUsageDescription": "Allow Matrimonial App to access your photos so you can add profile pictures, stories and share photos in chat."
       }
     },
     "android": {
@@ -24,10 +24,15 @@
       },
       "predictiveBackGestureEnabled": false,
       "permissions": [
-        "android.permission.READ_MEDIA_IMAGES",
         "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS",
         "android.permission.CAMERA"
+      ],
+      "blockedPermissions": [
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.READ_MEDIA_AUDIO",
+        "android.permission.READ_MEDIA_VISUAL_USER_SELECTED"
       ]
     },
     "web": {
@@ -40,8 +45,8 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera for video calls and verification.",
-          "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone for video calls."
+          "cameraPermission": "Allow $(PRODUCT_NAME) to use your camera for your verification selfie and ID card photo.",
+          "microphonePermission": "Allow $(PRODUCT_NAME) to use your microphone to record voice notes and your voice intro."
         }
       ],
       [
