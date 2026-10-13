@@ -65,7 +65,7 @@ export interface Palette {
  */
 export const ONLINE_GREEN = '#22C55E';
 
-// "Matrimonial App" design system: deep Maroon (Rishta, primary CTA) and Gold
+// "Lovebirds" design system: deep Maroon (Rishta, primary CTA) and Gold
 // (premium, verified) on warm ivory, with a maroon-to-rose gradient for
 // highlights. Token names predate the redesign and are kept so every screen
 // picks the new colours up unchanged: `teal` is the brand primary (Maroon),
@@ -182,7 +182,7 @@ export const darkPalette: Palette = {
 // Premium identities are built from one deep anchor, one metal and quiet
 // neutrals, and the anchors that recur across luxury brands are burgundy,
 // emerald, navy and onyx. Each theme is one of those anchors with a gold:
-//   Maroon & Gold   the original Matrimonial App palette
+//   Maroon & Gold   the original Lovebirds palette
 //   Emerald & Gold  Rolex green #006039 with Rolex gold #A37E2C
 //   Navy & Gold     deep navy #14213D / #1F3A5F with 24k gold #C69B3C
 //   Onyx & Gold     onyx #0A0A0A / #1F1F1F with 24k gold #C69B3C

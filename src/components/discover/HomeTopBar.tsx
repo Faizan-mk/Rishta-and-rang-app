@@ -13,6 +13,7 @@ import Animated, {
 import { fonts, radius, spacing } from '../../theme';
 import { scaleFont } from '../../theme/responsive';
 import { APP_MODE, glow, modeAccent, withAlpha, type Gradient } from '../../theme/glow';
+
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
@@ -132,6 +133,7 @@ const makeStyles = (colors: Palette, accentColor: string) =>
       flex: 1,
       fontFamily: fonts.display,
       fontSize: scaleFont(26),
+      // The whole name in the app colour; Home keeps the wordmark one tone.
       color: accentColor,
     },
     // Round icon button: a white disc with a hairline, lit in the accent while
