@@ -20,6 +20,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useKeyboardAvoidingEnabled } from '../../hooks/useKeyboardAvoidingEnabled';
 import Animated, { FadeInUp, ZoomIn } from 'react-native-reanimated';
 import * as ImagePicker from 'expo-image-picker';
+import { canOpenPhotoLibrary } from '../../utils/photoLibraryAccess';
 import { useAudioRecorder, RecordingPresets, requestRecordingPermissionsAsync, setAudioModeAsync } from 'expo-audio';
 import { MessageBubble } from '../../components/matches/MessageBubble';
 import { Badge } from '../../components/common/Badge';
@@ -289,8 +290,7 @@ export function ChatScreen() {
   const onDeleteForMe = (message: ChatMessage) => hideMessage(matchId, message);
 
   const pickImage = async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
+    if (!(await canOpenPhotoLibrary())) {
       await notify({ title: t('permissions.photoLibraryTitle'), message: t('permissions.photoLibraryBody') });
       return;
     }

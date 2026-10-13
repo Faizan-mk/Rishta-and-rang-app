@@ -3,6 +3,7 @@ import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { canOpenPhotoLibrary } from '../../utils/photoLibraryAccess';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import type { Intent } from '../../types/user';
 import { AccentHeading } from '../../components/common/AccentHeading';
@@ -51,8 +52,7 @@ export function IntentPhotosScreen() {
   const [pending, setPending] = useState<string | null>(null);
 
   const pickPhoto = async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
+    if (!(await canOpenPhotoLibrary())) {
       await notify({ title: t('permissions.photoLibraryTitle'), message: t('permissions.photoLibraryBody') });
       return;
     }

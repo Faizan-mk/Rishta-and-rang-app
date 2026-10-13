@@ -112,8 +112,10 @@ export function BrowseFiltersSheet({ visible, filters, mode, onChange, onClose }
         </>
       )}
 
+      {/* A selfie taken at signup, not a check of anyone's identity — so the
+          row says what it filters on and does not wear a "verified" shield. */}
       <SettingsRow
-        icon="shield-checkmark-outline"
+        icon="camera-outline"
         label={t('discover.filterVerifiedOnly')}
         right="switch"
         switchValue={filters.verifiedOnly}
