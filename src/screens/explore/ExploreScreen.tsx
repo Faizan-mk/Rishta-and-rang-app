@@ -18,7 +18,7 @@ import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInUp } from 'react-native-reanimated';
-import { TAB_BAR_BASE_HEIGHT, useHideTabBarOnScroll } from '../../store/TabBarVisibilityContext';
+import { TAB_BAR_BASE_HEIGHT } from '../../store/TabBarVisibilityContext';
 import { Button } from '../../components/Button';
 import { AccentHeading } from '../../components/common/AccentHeading';
 import { AuroraBackground } from '../../components/common/AuroraBackground';
@@ -46,7 +46,7 @@ import { oppositeGenderProfiles } from '../../utils/genderMatch';
 import { timeAgo } from '../../utils/time';
 import { fonts, radius, spacing, typography } from '../../theme';
 import { scaleFont } from '../../theme/responsive';
-import { glow, modeAccent, withAlpha, type ModeAccent } from '../../theme/glow';
+import { glow, APP_MODE, modeAccent, withAlpha, type ModeAccent } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 
 type ExploreTab = 'forYou' | 'events' | 'history';
@@ -99,12 +99,10 @@ export function ExploreScreen() {
   const [loadingLikes, setLoadingLikes] = useState(false);
   const [activeEvent, setActiveEvent] = useState<(typeof mockEvents)[number] | null>(null);
   const insets = useSafeAreaInsets();
-  const onScroll = useHideTabBarOnScroll();
 
   const isPro = Boolean(user?.isExplorePlus);
-  const mode = user?.activeMode ?? 'dating';
-  const accent = modeAccent(colors, mode);
-  const activeFilters = countActiveFilters(filters, mode);
+  const accent = modeAccent(colors, APP_MODE);
+  const activeFilters = countActiveFilters(filters);
 
   // Real data, not a slice of the deck: these are the members who actually
   // liked this profile (mirrored onto users/{me}/likesReceived when they do).
@@ -129,17 +127,20 @@ export function ExploreScreen() {
     [blockedProfiles]
   );
 
-  // One pool, matching the mode the member is browsing in.
+  // One pool for everyone, the same rule as the Home deck: casual members as
+  // Friends, serious and matrimonial members as Rishta, and the Intent filter
+  // narrows it to one kind. A thread that moved to Rishta takes that member out
+  // of the Friends side.
   const pool: ExploreProfile[] = useMemo(() => {
-    const source: (DiscoverProfile | RishtaListingProfile)[] =
-      mode === 'dating' ? datingProfiles : rishtaProfiles;
-    return oppositeGenderProfiles(source, user?.gender)
-      .filter((p) => !blockedProfileIds.has(p.id))
-      // Same rule as the Home deck: a thread that moved to Rishta takes that
-      // member out of the Friends pool.
-      .filter((p) => mode === 'rishta' || !rishtaProfileIds.has(p.id))
-      .map((p) => ({ ...p, kind: mode }));
-  }, [mode, datingProfiles, rishtaProfiles, user?.gender, blockedProfileIds, rishtaProfileIds]);
+    const visible = (p: DiscoverProfile | RishtaListingProfile) => !blockedProfileIds.has(p.id);
+    const dating = oppositeGenderProfiles(datingProfiles, user?.gender)
+      .filter((p) => visible(p) && !rishtaProfileIds.has(p.id) && p.intent === 'casual')
+      .map((p) => ({ ...p, kind: 'dating' as const }));
+    const rishta = oppositeGenderProfiles(rishtaProfiles, user?.gender)
+      .filter((p) => visible(p) && (p.intent === 'serious' || p.intent === 'matrimonial'))
+      .map((p) => ({ ...p, kind: 'rishta' as const }));
+    return [...dating, ...rishta];
+  }, [datingProfiles, rishtaProfiles, user?.gender, blockedProfileIds, rishtaProfileIds]);
 
   const filtered = useMemo(() => {
     let list = pool.filter((p) => p.age >= filters.ageMin && p.age <= filters.ageMax);
@@ -148,14 +149,14 @@ export function ExploreScreen() {
       list = list.filter((p) => p.city?.toLowerCase() === city);
     }
     if (filters.intent) list = list.filter((p) => p.intent === filters.intent);
-    if (mode === 'rishta' && filters.sect) {
+    if (filters.sect) {
       const sect = filters.sect.toLowerCase();
       list = list.filter((p) => p.sect?.toLowerCase() === sect);
     }
-    if (mode === 'rishta' && filters.readiness) list = list.filter((p) => p.readiness === filters.readiness);
+    if (filters.readiness) list = list.filter((p) => p.readiness === filters.readiness);
     if (filters.verifiedOnly) list = list.filter((p) => p.selfieVerified || p.bureauVerified);
     return list;
-  }, [pool, filters, mode]);
+  }, [pool, filters]);
 
   const newMembers = useMemo(
     () => [...filtered].sort((a, b) => timestamp(b.joinedAt) - timestamp(a.joinedAt)).slice(0, ROW_SIZE),
@@ -197,7 +198,7 @@ export function ExploreScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <AuroraBackground colors={colors} mode={mode} />
+      <AuroraBackground colors={colors} mode={APP_MODE} />
 
       <View style={styles.header}>
         <AccentHeading
@@ -267,8 +268,6 @@ export function ExploreScreen() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        onScroll={onScroll}
-        scrollEventThrottle={16}
         // The grid is paged the same way the swipe deck is; reaching the bottom
         // is what asks for the next page.
         onMomentumScrollEnd={onReachedBottom}
@@ -401,11 +400,11 @@ export function ExploreScreen() {
                 <View style={styles.eventBody}>
                   <View style={[styles.eventMetaRow, rtl && styles.rowRtl]}>
                     <View style={[styles.eventTag, { backgroundColor: withAlpha(colors.teal, 0.12) }]}>
-                      <Ionicons name="location" size={12} color={colors.teal} />
+                      <Ionicons name="location-outline" size={12} color={colors.teal} />
                       <Text style={[styles.eventTagText, { color: colors.teal }]}>{vocabularyLabel(event.city, t)}</Text>
                     </View>
                     <View style={[styles.eventTag, { backgroundColor: withAlpha(colors.gold, 0.14) }]}>
-                      <Ionicons name="calendar" size={12} color={colors.gold} />
+                      <Ionicons name="calendar-outline" size={12} color={colors.gold} />
                       <Text style={[styles.eventTagText, { color: colors.gold }]}>{event.dateLabel}</Text>
                     </View>
                   </View>
@@ -501,11 +500,11 @@ export function ExploreScreen() {
               <View style={styles.eventModalBody}>
                 <View style={styles.eventMetaRow}>
                   <View style={[styles.eventTag, { backgroundColor: withAlpha(colors.teal, 0.12) }]}>
-                    <Ionicons name="location" size={12} color={colors.teal} />
+                    <Ionicons name="location-outline" size={12} color={colors.teal} />
                     <Text style={[styles.eventTagText, { color: colors.teal }]}>{vocabularyLabel(activeEvent.city, t)}</Text>
                   </View>
                   <View style={[styles.eventTag, { backgroundColor: withAlpha(colors.gold, 0.14) }]}>
-                    <Ionicons name="calendar" size={12} color={colors.gold} />
+                    <Ionicons name="calendar-outline" size={12} color={colors.gold} />
                     <Text style={[styles.eventTagText, { color: colors.gold }]}>{activeEvent.dateLabel}</Text>
                   </View>
                 </View>
@@ -524,7 +523,6 @@ export function ExploreScreen() {
       <BrowseFiltersSheet
         visible={filtersVisible}
         filters={filters}
-        mode={mode}
         onChange={setFilters}
         onClose={() => setFiltersVisible(false)}
       />
@@ -563,7 +561,7 @@ function PhotoTile({
         <View style={styles.tileInner}>
           <SmartImage uri={uri} name={name} style={styles.gridPhoto} size={30} />
           <LinearGradient
-            colors={['transparent', 'rgba(20,11,16,0.15)', 'rgba(20,11,16,0.85)']}
+            colors={['transparent', 'rgba(36,31,33,0.15)', 'rgba(36,31,33,0.85)']}
             start={SCRIM_START}
             end={SCRIM_END}
             style={styles.tileScrim}
@@ -650,7 +648,7 @@ const makeStyles = (colors: Palette) =>
       backgroundColor: colors.surface,
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
-      shadowColor: '#2A1720',
+      shadowColor: '#241F21',
       shadowOpacity: 0.06,
       shadowRadius: 12,
       shadowOffset: { width: 0, height: 4 },
@@ -679,7 +677,7 @@ const makeStyles = (colors: Palette) =>
       backgroundColor: colors.surface,
       borderWidth: 1,
       borderColor: colors.border,
-      shadowColor: '#8E1B45',
+      shadowColor: colors.brandMain,
       shadowOpacity: 0.1,
       shadowRadius: 16,
       shadowOffset: { width: 0, height: 8 },
@@ -846,7 +844,7 @@ const makeStyles = (colors: Palette) =>
       paddingHorizontal: spacing.sm + 4,
       paddingVertical: spacing.sm + 2,
       marginBottom: spacing.sm,
-      shadowColor: '#2A1720',
+      shadowColor: '#241F21',
       shadowOpacity: 0.06,
       shadowRadius: 12,
       shadowOffset: { width: 0, height: 4 },

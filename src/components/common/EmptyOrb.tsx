@@ -28,7 +28,7 @@ interface EmptyOrbProps {
 // The disc that heads an empty list: the page's gradient with a pale icon on
 // it, in a soft shadow of its own colour. Deliberately a plain circle rather
 // than the design system's arch — the arch is reserved for the two places that
-// want to decorate something (the login crest and the boost illustration), and
+// want to decorate something (the login crest), and
 // repeated six times as a "nothing here" mark it read as a mihrab rather than
 // as information.
 export function EmptyOrb({ ramp, icon, size = ORB, iconSize = ICON }: EmptyOrbProps) {

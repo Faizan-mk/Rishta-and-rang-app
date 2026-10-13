@@ -14,7 +14,7 @@ import { usePrivacy } from '../../store/PrivacyContext';
 import { useMatches } from '../../store/MatchesContext';
 import { radius, spacing, typography } from '../../theme';
 import { cardSurface } from '../../theme/surfaces';
-import { withAlpha } from '../../theme/glow';
+import { flat, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 
 export function PrivacySafetyScreen() {
@@ -26,7 +26,7 @@ export function PrivacySafetyScreen() {
   const { confirm, notify } = useDialog();
   const { prefs, setPref } = usePrivacy();
   const { blockedProfiles } = useMatches();
-  const safeRamp = [colors.teal, colors.dating] as const;
+  const safeRamp = flat(colors.teal);
 
   const onDeleteAccount = async () => {
     const confirmed = await confirm({
@@ -102,6 +102,14 @@ export function PrivacySafetyScreen() {
             right="chevron"
             onPress={() => router.push('/blocked-users')}
           />
+          <View style={styles.divider} />
+          <SettingsRow
+            icon="albums-outline"
+            label={t('stories.privacyTitle')}
+            description={t('stories.privacyRowDesc')}
+            right="chevron"
+            onPress={() => router.push('/story-privacy')}
+          />
         </View>
 
         <View style={styles.tipsCard}>
@@ -123,7 +131,7 @@ export function PrivacySafetyScreen() {
       <FadeIn delay={160}>
         <AccentHeading
           title={t('privacy.accountSection')}
-          gradient={[colors.danger, colors.plum]}
+          gradient={flat(colors.danger)}
           style={styles.sectionHeading}
         />
         <View style={[styles.card, styles.dangerCard]}>

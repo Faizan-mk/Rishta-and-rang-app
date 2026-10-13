@@ -10,7 +10,7 @@ import { useDialog } from '../../store/DialogContext';
 import { LEGAL_URLS, SUPPORT_EMAIL } from '../../constants/Config';
 import { fonts, radius, spacing, typography } from '../../theme';
 import { cardSurface } from '../../theme/surfaces';
-import { withAlpha } from '../../theme/glow';
+import { flat, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 
 // Section ids, in reading order. The copy lives in the dictionaries under
@@ -50,7 +50,7 @@ export function LegalScreen() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
   const { notify } = useDialog();
-  const legalRamp = [colors.teal, colors.plum] as const;
+  const legalRamp = flat(colors.teal);
 
   const openUrl = async (url: string) => {
     // The hosted copies are configured per build; without one, say so rather

@@ -7,7 +7,6 @@ import Animated, { FadeInUp } from 'react-native-reanimated';
 import { AccentHeading } from '../../components/common/AccentHeading';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { Button } from '../../components/Button';
-import { useBoost } from '../../store/BoostContext';
 import { likesService, type LikeReceived } from '../../services/likesService';
 import {
   fetchExplorePlusPackages,
@@ -27,7 +26,7 @@ import { isoToDisplay } from '../../utils/date';
 import { errorMessage } from '../../utils/appError';
 import { fonts, radius, spacing, typography } from '../../theme';
 import { cardSurface } from '../../theme/surfaces';
-import { glow, withAlpha } from '../../theme/glow';
+import { flat, glow, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 
 type Plan = 'trial' | 'monthly' | 'yearly';
@@ -40,24 +39,16 @@ const PLAY_SUBSCRIPTIONS_URL = 'https://play.google.com/store/account/subscripti
 
 const GRADIENT_START = { x: 0, y: 0 } as const;
 const GRADIENT_END = { x: 1, y: 1 } as const;
-// Explore+ has its own colour identity — gold through ember into rose — so the
-// paid surface never reads as just another mode-tinted screen.
-const PLUS_RAMP = ['#F3D99B', '#D4A857', '#B8893A'] as const;
-// The premium room: deep maroon velvet under champagne gold, fixed in both
-// themes so the gold always has something dark to shine against.
-const VELVET_RAMP = ['#3F0A1F', '#5E0F2E', '#8E1B45'] as const;
-const CHAMPAGNE = '#F3D99B';
-const MAROON_INK = '#3F0A1F';
-
-// Profile boosts included with any paid plan.
-const BOOSTS_PER_SUBSCRIPTION = 5;
+// Explore+ has its own colour identity — the theme's metal ramp (gold on
+// Maroon) over its deep velvet — fixed across light and dark so the metal
+// always has something dark to shine against. Both come from the palette's
+// brand tokens, so they follow the chosen app theme.
 
 export function ExplorePlusScreen() {
   const { colors, isDark } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
   const { user, refreshUser } = useAuth();
-  const { addBoosts } = useBoost();
   const { notify } = useDialog();
   const { used, limit } = useLikeLimit();
   const { prefs } = usePrivacy();
@@ -136,9 +127,6 @@ export function ExplorePlusScreen() {
         return;
       }
 
-      // A subscription comes with a pack of profile boosts — this is what the
-      // boost sheet's "Get more Boosts" button sends members here for.
-      addBoosts(BOOSTS_PER_SUBSCRIPTION);
       await notify({
         title: t('explorePlus.upgradeSuccessTitle'),
         message: plan === 'trial' ? t('explorePlus.trialStartedBody') : t('explorePlus.upgradeSuccessBody'),
@@ -172,15 +160,15 @@ export function ExplorePlusScreen() {
     // as Notifications, Settings, Favorites and Edit Profile.
     <ScreenContainer edges={['bottom']}>
       <LinearGradient
-        colors={VELVET_RAMP}
+        colors={flat(colors.brandDeep)}
         start={GRADIENT_START}
         end={GRADIENT_END}
-        style={[styles.hero, glow('#8E1B45', 0.35, 24, 10)]}
+        style={[styles.hero, glow(colors.brandMain, 0.35, 24, 10)]}
       >
         <View style={styles.heroGlowA} pointerEvents="none" />
         <View style={styles.heroGlowB} pointerEvents="none" />
         <View style={styles.heroIcon}>
-          <Ionicons name="sparkles" size={26} color={CHAMPAGNE} />
+          <Ionicons name="sparkles" size={26} color={colors.metalBright} />
         </View>
         <Text style={styles.heroTitle}>{t('explorePlus.title')}</Text>
         <Text style={styles.heroSubtitle}>{t('explorePlus.subtitle')}</Text>
@@ -289,7 +277,7 @@ export function ExplorePlusScreen() {
             label={plan === 'trial' ? t('explorePlus.startTrial') : t('explorePlus.upgrade')}
             onPress={onUpgrade}
             loading={upgrading}
-            gradient={PLUS_RAMP}
+            gradient={flat(colors.metal)}
             style={styles.upgradeButton}
             labelStyle={styles.upgradeLabel}
           />
@@ -334,14 +322,14 @@ export function ExplorePlusScreen() {
         </Animated.View>
       )}
 
-      <AccentHeading title={t('explorePlus.whoLikedYou')} gradient={PLUS_RAMP} style={styles.sectionHeading} />
+      <AccentHeading title={t('explorePlus.whoLikedYou')} gradient={flat(colors.metal)} style={styles.sectionHeading} />
       {prefs.profileVisible ? (
         <>
           <View style={styles.grid}>
             {admirers.map((profile) => (
               <LinearGradient
                 key={profile.id}
-                colors={PLUS_RAMP}
+                colors={flat(colors.metal)}
                 start={GRADIENT_START}
                 end={GRADIENT_END}
                 style={[styles.admirerRim, glow(colors.gold, 0.2, 12, 4)]}
@@ -393,7 +381,7 @@ const makeStyles = (colors: Palette) =>
       marginBottom: spacing.lg,
       overflow: 'hidden',
       borderWidth: 1.5,
-      borderColor: CHAMPAGNE,
+      borderColor: colors.metalBright,
     },
     // Blown-out highlights inside the hero, so the ramp reads as lit rather
     // than as a flat sweep of three colours.
@@ -404,7 +392,7 @@ const makeStyles = (colors: Palette) =>
       width: 180,
       height: 180,
       borderRadius: 90,
-      backgroundColor: 'rgba(243,217,155,0.14)',
+      backgroundColor: 'rgba(217,184,114,0.14)',
     },
     heroGlowB: {
       position: 'absolute',
@@ -419,13 +407,13 @@ const makeStyles = (colors: Palette) =>
       width: 60,
       height: 60,
       borderRadius: 30,
-      backgroundColor: 'rgba(20,11,16,0.3)',
+      backgroundColor: 'rgba(36,31,33,0.3)',
       borderWidth: 1.5,
-      borderColor: CHAMPAGNE,
+      borderColor: colors.metalBright,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    heroTitle: { ...typography.h1, fontSize: 34, lineHeight: 42, color: CHAMPAGNE, marginTop: spacing.sm },
+    heroTitle: { ...typography.h1, fontSize: 34, lineHeight: 42, color: colors.metalBright, marginTop: spacing.sm },
     heroSubtitle: { ...typography.body, color: 'rgba(255,255,255,0.92)', textAlign: 'center', marginTop: spacing.xs },
     rowRtl: { flexDirection: 'row-reverse' },
     priceCard: {
@@ -505,8 +493,8 @@ const makeStyles = (colors: Palette) =>
       marginBottom: spacing.sm,
     },
     limitText: { ...typography.caption, color: colors.teal, fontFamily: fonts.bodyBold, flexShrink: 1 },
-    upgradeButton: { marginTop: spacing.sm, borderWidth: 1, borderColor: '#B8893A' },
-    upgradeLabel: { color: MAROON_INK },
+    upgradeButton: { marginTop: spacing.sm, borderWidth: 1, borderColor: colors.metalDeep },
+    upgradeLabel: { color: colors.brandInk },
     manageCard: {
       ...cardSurface(colors),
       borderColor: withAlpha(colors.gold, 0.5),

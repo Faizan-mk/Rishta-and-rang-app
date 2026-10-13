@@ -38,6 +38,18 @@ export interface Palette {
   // when the Friends or Rishta accents do.
   readReceipt: string;
 
+  // The theme's fixed "velvet" brand shades, the same in light and dark: the
+  // deep hero cards (match celebration, Explore+, the call screen), the
+  // welcome gradient and the premium metal trim. `metal` is gold on the
+  // Maroon theme and the theme's own trim (silver, rose gold) elsewhere.
+  brandInk: string;
+  brandDeep: string;
+  brandMain: string;
+  brandRose: string;
+  metal: string;
+  metalBright: string;
+  metalDeep: string;
+
   overlay: string;
   shadow: string;
   skeleton: string;
@@ -53,94 +65,340 @@ export interface Palette {
  */
 export const ONLINE_GREEN = '#22C55E';
 
-// "Noor & Nisa" design system: Rosewood (Rishta), Warm Coral (Friends/Rang) and
-// Champagne Gold (verification, premium) on warm ivory. Token names predate the
-// redesign and are kept so every screen picks the new colours up unchanged:
-// `teal` is the brand primary (Rosewood), `sage` is the verified/success
-// Emerald, `plum` is a rose mid-tone used between the two mode colours.
+// "Matrimonial App" design system: deep Maroon (Rishta, primary CTA) and Gold
+// (premium, verified) on warm ivory, with a maroon-to-rose gradient for
+// highlights. Token names predate the redesign and are kept so every screen
+// picks the new colours up unchanged: `teal` is the brand primary (Maroon),
+// `sage` is the success green, `plum` is the rose end of the primary gradient.
 export const lightPalette: Palette = {
-  background: '#FFFAF6',
-  backgroundAlt: '#FFF0F4',
+  background: '#FCF9F5',
+  backgroundAlt: '#F6F0EA',
   surface: '#FFFFFF',
   surfaceElevated: '#FFFFFF',
-  border: '#F0E4E0',
-  borderSoft: '#F7EEEA',
+  border: '#E9E1DB',
+  borderSoft: '#F2ECE6',
 
-  textPrimary: '#2A1720',
-  textSecondary: '#7A6670',
-  textTertiary: '#A8959D',
+  textPrimary: '#241F21',
+  textSecondary: '#756E70',
+  textTertiary: '#A39C9E',
   textInverse: '#FFFFFF',
 
-  teal: '#8E1B45',
-  tealDark: '#5E0F2E',
-  tealSoft: '#F7E1E7',
-  gold: '#D4A857',
-  goldSoft: '#FBF1DC',
-  sage: '#1F8A5B',
-  sageLight: '#E3F3EA',
-  plum: '#A83158',
-  plumLight: '#FFE8F0',
+  teal: '#7A1F35',
+  tealDark: '#4B1020',
+  tealSoft: '#F5E6EA',
+  gold: '#C9A45C',
+  goldSoft: '#F7EEDC',
+  sage: '#198754',
+  sageLight: '#E2F3EA',
+  plum: '#9B3A56',
+  plumLight: '#F8E9EE',
 
-  dating: '#F2715E',
-  datingSoft: '#FDE8E4',
-  rishta: '#8E1B45',
-  rishtaSoft: '#F7E1E7',
+  dating: '#B08A45',
+  datingSoft: '#F7EEDC',
+  rishta: '#7A1F35',
+  rishtaSoft: '#F5E6EA',
 
-  success: '#1F8A5B',
-  successSoft: '#E3F3EA',
-  danger: '#D0393E',
-  dangerSoft: '#FCE6E6',
-  warning: '#D4A857',
-  warningSoft: '#FBF1DC',
+  success: '#198754',
+  successSoft: '#E2F3EA',
+  danger: '#C43D4B',
+  dangerSoft: '#F9E5E7',
+  warning: '#C9A45C',
+  warningSoft: '#F7EEDC',
 
   readReceipt: '#2B7FB8',
 
-  overlay: 'rgba(20, 11, 16, 0.65)',
-  shadow: 'rgba(42, 23, 32, 0.10)',
-  skeleton: '#F7E9EC',
+  brandInk: '#3A0C18',
+  brandDeep: '#4B1020',
+  brandMain: '#7A1F35',
+  brandRose: '#9B3A56',
+  metal: '#C9A45C',
+  metalBright: '#D9B872',
+  metalDeep: '#B8893A',
+
+  overlay: 'rgba(18, 15, 16, 0.65)',
+  shadow: 'rgba(36, 31, 33, 0.10)',
+  skeleton: '#F2ECE6',
 };
 
-// Dark variant: aubergine-tinted black with night-plum surfaces, the rose and
-// gold brightened so they still read on the dark canvas.
+// Dark variant: warm charcoal canvas with the maroon and gold brightened so
+// they still read on the dark surfaces.
 export const darkPalette: Palette = {
-  background: '#140B10',
-  backgroundAlt: '#0C0609',
-  surface: '#1F141A',
-  surfaceElevated: '#2A1C23',
-  border: '#3A2830',
-  borderSoft: '#26191F',
+  background: '#141112',
+  backgroundAlt: '#0D0B0C',
+  surface: '#1E1A1C',
+  surfaceElevated: '#282325',
+  border: '#3A3336',
+  borderSoft: '#252022',
 
-  textPrimary: '#F8EEF1',
-  textSecondary: '#B8A4AD',
-  textTertiary: '#85727B',
+  textPrimary: '#F5F0EE',
+  textSecondary: '#B5ADAF',
+  textTertiary: '#857D80',
   textInverse: '#FFFFFF',
 
-  teal: '#E0577F',
-  tealDark: '#8E1B45',
-  tealSoft: '#3A1624',
-  gold: '#E9C27A',
-  goldSoft: '#33270F',
-  sage: '#4CC38A',
+  teal: '#C2516E',
+  tealDark: '#7A1F35',
+  tealSoft: '#3A1A23',
+  gold: '#D9B872',
+  goldSoft: '#332914',
+  sage: '#3DBE7F',
   sageLight: '#12301F',
-  plum: '#F08BA6',
-  plumLight: '#3A1A26',
+  plum: '#D16F8B',
+  plumLight: '#3A1D27',
 
-  dating: '#FF8A78',
-  datingSoft: '#3A1A16',
-  rishta: '#E0577F',
-  rishtaSoft: '#3A1624',
+  dating: '#D9B872',
+  datingSoft: '#332914',
+  rishta: '#C2516E',
+  rishtaSoft: '#3A1A23',
 
-  success: '#4CC38A',
+  success: '#3DBE7F',
   successSoft: '#12301F',
-  danger: '#F1767A',
+  danger: '#E0646F',
   dangerSoft: '#3A1718',
-  warning: '#E9C27A',
-  warningSoft: '#33270F',
+  warning: '#D9B872',
+  warningSoft: '#332914',
 
   // Brighter against near-black, the same way the other dark accents are.
   readReceipt: '#5AB6E8',
 
+  brandInk: '#3A0C18',
+  brandDeep: '#4B1020',
+  brandMain: '#7A1F35',
+  brandRose: '#9B3A56',
+  metal: '#C9A45C',
+  metalBright: '#D9B872',
+  metalDeep: '#B8893A',
+
   overlay: 'rgba(0, 0, 0, 0.75)',
   shadow: 'rgba(0, 0, 0, 0.7)',
-  skeleton: '#2A1C23',
+  skeleton: '#282325',
 };
+
+// ---------------------------------------------------------------------------
+// App themes. Each one is a light and a dark palette; the light/dark/system
+// switch in Settings picks between the two, and the Themes screen picks the
+// theme. Maroon & Gold is the original design; Pink & White is the default a
+// new install opens in, until the member picks another.
+//
+// Premium identities are built from one deep anchor, one metal and quiet
+// neutrals, and the anchors that recur across luxury brands are burgundy,
+// emerald, navy and onyx. Each theme is one of those anchors with a gold:
+//   Maroon & Gold   the original Matrimonial App palette
+//   Emerald & Gold  Rolex green #006039 with Rolex gold #A37E2C
+//   Navy & Gold     deep navy #14213D / #1F3A5F with 24k gold #C69B3C
+//   Onyx & Gold     onyx #0A0A0A / #1F1F1F with 24k gold #C69B3C
+//   Pink & White    pink #D81B60 on a blush-white canvas, with rose gold #B76E79
+// Only the anchor and the metal change. The ivory canvas, the charcoal dark
+// mode, the text greys and the status colours are shared with Maroon & Gold,
+// so every theme still reads as the same app. Light-mode primaries carry white
+// button text at 7:1 or better; dark-mode primaries match the Maroon dark
+// palette (about 4.5:1).
+// ---------------------------------------------------------------------------
+
+export type AppThemeId = 'maroon' | 'emerald' | 'navy' | 'onyx' | 'pink';
+
+export interface AppTheme {
+  id: AppThemeId;
+  light: Palette;
+  dark: Palette;
+}
+
+const emeraldBrand = {
+  brandInk: '#00261A',
+  brandDeep: '#003D25',
+  brandMain: '#006039',
+  brandRose: '#1F7A55',
+  metal: '#A37E2C',
+  metalBright: '#C9A452',
+  metalDeep: '#86661F',
+};
+
+const navyBrand = {
+  brandInk: '#0A1222',
+  brandDeep: '#14213D',
+  brandMain: '#1F3A5F',
+  brandRose: '#35507F',
+  metal: '#C69B3C',
+  metalBright: '#DDB960',
+  metalDeep: '#A47E28',
+};
+
+const onyxBrand = {
+  brandInk: '#050505',
+  brandDeep: '#0A0A0A',
+  brandMain: '#1F1F1F',
+  brandRose: '#3A3A3A',
+  metal: '#C69B3C',
+  metalBright: '#DDB960',
+  metalDeep: '#A47E28',
+};
+
+// Pink is the one theme that also changes the canvas: a blush white in place
+// of ivory, so the page reads pink-and-white rather than pink-on-cream.
+const pinkBrand = {
+  brandInk: '#4A0D2A',
+  brandDeep: '#880E4F',
+  brandMain: '#D81B60',
+  brandRose: '#EC407A',
+  metal: '#B76E79',
+  metalBright: '#D4A0A7',
+  metalDeep: '#9A5560',
+};
+
+export const APP_THEMES: Record<AppThemeId, AppTheme> = {
+  maroon: { id: 'maroon', light: lightPalette, dark: darkPalette },
+
+  emerald: {
+    id: 'emerald',
+    light: {
+      ...lightPalette,
+      ...emeraldBrand,
+      teal: '#006039',
+      tealDark: '#003D25',
+      tealSoft: '#E3F0EA',
+      gold: '#A37E2C',
+      goldSoft: '#F5EDDB',
+      plum: '#1F7A55',
+      plumLight: '#E8F3EE',
+      dating: '#A37E2C',
+      datingSoft: '#F5EDDB',
+      rishta: '#006039',
+      rishtaSoft: '#E3F0EA',
+    },
+    dark: {
+      ...darkPalette,
+      ...emeraldBrand,
+      teal: '#1F8A5F',
+      tealDark: '#006039',
+      tealSoft: '#12291F',
+      gold: '#C9A452',
+      goldSoft: '#302712',
+      plum: '#3FA67A',
+      plumLight: '#15301F',
+      dating: '#C9A452',
+      datingSoft: '#302712',
+      rishta: '#1F8A5F',
+      rishtaSoft: '#12291F',
+    },
+  },
+
+  navy: {
+    id: 'navy',
+    light: {
+      ...lightPalette,
+      ...navyBrand,
+      teal: '#1F3A5F',
+      tealDark: '#14213D',
+      tealSoft: '#E5EAF2',
+      gold: '#C69B3C',
+      goldSoft: '#F6EEDB',
+      plum: '#35507F',
+      plumLight: '#EAEEF5',
+      dating: '#A47E28',
+      datingSoft: '#F6EEDB',
+      rishta: '#1F3A5F',
+      rishtaSoft: '#E5EAF2',
+    },
+    dark: {
+      ...darkPalette,
+      ...navyBrand,
+      teal: '#4A6FA5',
+      tealDark: '#1F3A5F',
+      tealSoft: '#18233A',
+      gold: '#DDB960',
+      goldSoft: '#312814',
+      plum: '#6F8FC2',
+      plumLight: '#1C2842',
+      dating: '#DDB960',
+      datingSoft: '#312814',
+      rishta: '#4A6FA5',
+      rishtaSoft: '#18233A',
+    },
+  },
+
+  onyx: {
+    id: 'onyx',
+    light: {
+      ...lightPalette,
+      ...onyxBrand,
+      teal: '#1F1F1F',
+      tealDark: '#0A0A0A',
+      tealSoft: '#ECEAE6',
+      gold: '#C69B3C',
+      goldSoft: '#F6EEDB',
+      plum: '#3A3A3A',
+      plumLight: '#F1EFEB',
+      dating: '#A47E28',
+      datingSoft: '#F6EEDB',
+      rishta: '#1F1F1F',
+      rishtaSoft: '#ECEAE6',
+    },
+    // On a black canvas the onyx anchor would vanish, so dark mode leads with
+    // the gold itself, deepened until white text still reads on it.
+    dark: {
+      ...darkPalette,
+      ...onyxBrand,
+      background: '#0E0E0E',
+      backgroundAlt: '#080808',
+      surface: '#1A1A1A',
+      surfaceElevated: '#242424',
+      border: '#363636',
+      borderSoft: '#202020',
+      skeleton: '#242424',
+      teal: '#8C6A1F',
+      tealDark: '#5E4714',
+      tealSoft: '#2C2412',
+      gold: '#DDB960',
+      goldSoft: '#312814',
+      plum: '#A47E28',
+      plumLight: '#33291A',
+      dating: '#DDB960',
+      datingSoft: '#312814',
+      rishta: '#8C6A1F',
+      rishtaSoft: '#2C2412',
+    },
+  },
+
+  pink: {
+    id: 'pink',
+    light: {
+      ...lightPalette,
+      ...pinkBrand,
+      background: '#FFF8FB',
+      backgroundAlt: '#FDEFF4',
+      border: '#F3DDE6',
+      borderSoft: '#F9EBF1',
+      skeleton: '#F9EBF1',
+      teal: '#D81B60',
+      tealDark: '#AD1457',
+      tealSoft: '#FCE4EC',
+      gold: '#B76E79',
+      goldSoft: '#F8E8EA',
+      plum: '#EC407A',
+      plumLight: '#FDEBF2',
+      dating: '#B76E79',
+      datingSoft: '#F8E8EA',
+      rishta: '#D81B60',
+      rishtaSoft: '#FCE4EC',
+    },
+    dark: {
+      ...darkPalette,
+      ...pinkBrand,
+      teal: '#D63A75',
+      tealDark: '#AD1457',
+      tealSoft: '#3A1626',
+      gold: '#D4A0A7',
+      goldSoft: '#33222A',
+      plum: '#F06292',
+      plumLight: '#3A1A2A',
+      dating: '#D4A0A7',
+      datingSoft: '#33222A',
+      rishta: '#D63A75',
+      rishtaSoft: '#3A1626',
+    },
+  },
+};
+
+export const DEFAULT_THEME_ID: AppThemeId = 'pink';
+
+// Order of the Themes screen, the default first.
+export const APP_THEME_IDS: AppThemeId[] = ['pink', 'maroon', 'emerald', 'navy', 'onyx'];

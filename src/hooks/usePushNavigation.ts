@@ -43,7 +43,7 @@ export function usePushNavigation(): void {
       // recipient from the like, not from a match row), so the list is the
       // honest destination. A like belongs to the notifications feed.
       if (routing.event === 'match') router.push('/(tabs)/messages');
-      else if (routing.event === 'like') router.push('/notifications');
+      else if (routing.event === 'like' || routing.event === 'story_like') router.push('/notifications');
     };
 
     if (!launchTapHandled) {

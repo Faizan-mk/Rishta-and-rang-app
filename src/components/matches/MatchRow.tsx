@@ -8,7 +8,7 @@ import { fonts, radius, spacing, typography } from '../../theme';
 import { scaleFont, scaleSpace } from '../../theme/responsive';
 // `glow` still lights the unread dot — a 10pt circle, where the halo is the
 // point. It is the card-sized one that had to go.
-import { glow, modeAccent, withAlpha } from '../../theme/glow';
+import { APP_MODE, glow, modeAccent, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
@@ -24,16 +24,28 @@ const GRADIENT_END = { x: 1, y: 1 } as const;
 const AVATAR = scaleSpace(56);
 const RING_PADDING = 2;
 
-// One line of the conversation card: the avatar sits in a gradient ring in the
-// thread's own mode colour, and an unread thread is tinted and lifts on a
-// glowing dot so the list can be read at a glance.
-export const MatchRow = React.memo(function MatchRow({ match, onPress }: { match: Match; onPress: () => void }) {
+// One line of the conversation card: the avatar sits in a ring in the app's
+// colour, and an unread thread is tinted and lifts on a glowing dot so the
+// list can be read at a glance.
+export const MatchRow = React.memo(function MatchRow({
+  match,
+  onPress,
+  story,
+  onPressStory,
+}: {
+  match: Match;
+  onPress: () => void;
+  // Set when this person has a story up, WhatsApp-style: the avatar gets a
+  // story ring and tapping it opens the story instead of the chat.
+  story?: 'unseen' | 'seen';
+  onPressStory?: () => void;
+}) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
-  // Same rule the Messages list sorts by — an accepted Move to Rishta decides
-  // which world the thread belongs to, and so which colours it wears.
-  const accent = modeAccent(colors, match.movedToRishta ? 'rishta' : match.mode);
+  // Every thread wears the app's one colour; the "Rishta" badge is what tells
+  // a moved thread apart.
+  const accent = modeAccent(colors, APP_MODE);
 
   return (
     <Pressable
@@ -48,9 +60,22 @@ export const MatchRow = React.memo(function MatchRow({ match, onPress }: { match
         match.unread && { backgroundColor: withAlpha(accent.primary, 0.06) },
       ]}
     >
-      <LinearGradient colors={accent.ramp} start={GRADIENT_START} end={GRADIENT_END} style={styles.avatarRing}>
-        <Image source={{ uri: match.photo }} style={styles.avatar} />
-      </LinearGradient>
+      {story ? (
+        <Pressable
+          onPress={onPressStory}
+          hitSlop={4}
+          style={[
+            styles.storyRing,
+            { borderColor: story === 'unseen' ? accent.primary : colors.border },
+          ]}
+        >
+          <Image source={{ uri: match.photo }} style={styles.storyAvatar} />
+        </Pressable>
+      ) : (
+        <LinearGradient colors={accent.ramp} start={GRADIENT_START} end={GRADIENT_END} style={styles.avatarRing}>
+          <Image source={{ uri: match.photo }} style={styles.avatar} />
+        </LinearGradient>
+      )}
 
       <View style={styles.textWrap}>
         <View style={[styles.nameRow, rtl && styles.rowRtl]}>
@@ -113,6 +138,16 @@ const makeStyles = (colors: Palette) =>
     },
     rowRtl: { flexDirection: 'row-reverse' },
     avatarRing: { width: AVATAR, height: AVATAR, borderRadius: AVATAR / 2, padding: RING_PADDING },
+    // Same footprint as the plain ring, with a thicker border and a gap so it
+    // reads as a story ring.
+    storyRing: {
+      width: AVATAR,
+      height: AVATAR,
+      borderRadius: AVATAR / 2,
+      borderWidth: 2.5,
+      padding: 2,
+    },
+    storyAvatar: { width: '100%', height: '100%', borderRadius: AVATAR / 2, backgroundColor: colors.skeleton },
     avatar: {
       width: '100%',
       height: '100%',

@@ -1,8 +1,7 @@
-import React, { useMemo } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { Pressable, SectionList, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import Animated, { FadeInUp } from 'react-native-reanimated';
 import { AccentHeading } from '../../components/common/AccentHeading';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { EmptyOrb } from '../../components/common/EmptyOrb';
@@ -12,9 +11,12 @@ import { useLanguage } from '../../store/LanguageContext';
 import { useDialog } from '../../store/DialogContext';
 import { useTheme } from '../../store/ThemeContext';
 import { useNotifications } from '../../store/NotificationContext';
-import { useAuth } from '../../store/AuthContext';
+import { useMatches } from '../../store/MatchesContext';
+import { useDiscovery } from '../../store/DiscoveryContext';
 import { fonts, radius, spacing, typography } from '../../theme';
-import { modeAccent, withAlpha } from '../../theme/glow';
+import { dayKey } from '../../utils/time';
+import type { NotificationItem } from '../../types/content';
+import { APP_MODE, modeAccent } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 
 export function NotificationsScreen() {
@@ -22,10 +24,48 @@ export function NotificationsScreen() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
   const { feed, unreadCount, markAllRead, markRead, clearAll } = useNotifications();
-  const { user } = useAuth();
   const router = useRouter();
   const { confirm, notify } = useDialog();
-  const accent = modeAccent(colors, user?.activeMode ?? 'dating');
+  const accent = modeAccent(colors, APP_MODE);
+  const [filter, setFilter] = useState<'all' | 'unread'>('all');
+  const { matches } = useMatches();
+  const { datingProfiles, rishtaProfiles } = useDiscovery();
+
+  // Whose photo goes on each row: a message is about the person in that
+  // thread, a like or match about the profile it names. Looked up in what the
+  // app already holds (matches, then the deck); a row with no one found keeps
+  // its icon.
+  const photoFor = useMemo(() => {
+    const byMatch = new Map(matches.map((m) => [m.id, m.photo]));
+    const byPerson = new Map<string, string>();
+    [...datingProfiles, ...rishtaProfiles].forEach((p) => {
+      if (p.photos[0]) byPerson.set(p.id, p.photos[0]);
+    });
+    matches.forEach((m) => {
+      if (m.sourceProfileId && m.photo) byPerson.set(m.sourceProfileId, m.photo);
+    });
+    return (item: NotificationItem) =>
+      (item.matchId && byMatch.get(item.matchId)) || (item.relatedId && byPerson.get(item.relatedId)) || undefined;
+  }, [matches, datingProfiles, rishtaProfiles]);
+
+  // Today, Yesterday, then everything older, newest first within each.
+  const sections = useMemo(() => {
+    const items = filter === 'unread' ? feed.filter((n) => !n.read) : feed;
+    const today = dayKey(new Date().toISOString());
+    const yesterdayDate = new Date();
+    yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+    const yesterday = dayKey(yesterdayDate.toISOString());
+    const groups: { key: string; title: string; data: NotificationItem[] }[] = [
+      { key: 'today', title: t('chat.today'), data: [] },
+      { key: 'yesterday', title: t('chat.yesterday'), data: [] },
+      { key: 'earlier', title: t('notificationsScreen.earlier'), data: [] },
+    ];
+    for (const item of items) {
+      const key = dayKey(item.createdAt);
+      groups[key === today ? 0 : key === yesterday ? 1 : 2].data.push(item);
+    }
+    return groups.filter((g) => g.data.length > 0);
+  }, [feed, filter, t]);
 
   // A message (or a Rishta step) happened inside a thread ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â the thread is
   // the honest destination for that tap, same as a tapped push
@@ -77,36 +117,53 @@ export function NotificationsScreen() {
           size="screen"
           title={t('notificationsScreen.title')}
           gradient={accent.ramp}
-          right={
-            unreadCount > 0 ? (
-              <Pressable onPress={markAllRead} style={styles.markAllPill}>
-                <Ionicons name="checkmark-done" size={14} color={colors.teal} />
-                <Text style={styles.markAllRead}>{t('notificationsScreen.markAllRead')}</Text>
-              </Pressable>
-            ) : undefined
-          }
         />
+
+        <View style={[styles.toolbar, rtl && styles.rowRtl]}>
+          {(['all', 'unread'] as const).map((key) => {
+            const selected = filter === key;
+            const label =
+              key === 'all'
+                ? t('notificationsScreen.filterAll')
+                : unreadCount > 0
+                  ? `${t('notificationsScreen.filterUnread')} ${unreadCount}`
+                  : t('notificationsScreen.filterUnread');
+            return (
+              <Pressable
+                key={key}
+                onPress={() => setFilter(key)}
+                accessibilityRole="button"
+                accessibilityState={{ selected }}
+                style={[styles.chip, selected && { backgroundColor: accent.primary, borderColor: accent.primary }]}
+              >
+                <Text style={[styles.chipLabel, selected && styles.chipLabelSelected]}>{label}</Text>
+              </Pressable>
+            );
+          })}
+          <View style={styles.spacer} />
+          {unreadCount > 0 && (
+            <Pressable onPress={markAllRead} hitSlop={8} style={[styles.markAll, rtl && styles.rowRtl]}>
+              <Ionicons name="checkmark-done" size={16} color={accent.primary} />
+              <Text style={[styles.markAllRead, { color: accent.primary }]}>{t('notificationsScreen.markAllRead')}</Text>
+            </Pressable>
+          )}
+        </View>
       </FadeIn>
 
-      <FlatList
-        data={feed}
+      <SectionList
+        sections={sections}
         keyExtractor={(item) => item.id}
-        renderItem={({ item, index }) => (
-          <Animated.View
-            entering={FadeInUp.delay(Math.min(index * 60, 300)).duration(320)}
-            style={[styles.cell, index === 0 && styles.cellFirst, index === feed.length - 1 && styles.cellLast]}
-          >
-            <NotificationRow item={item} onPress={() => onPressNotification(item)} />
-          </Animated.View>
+        stickySectionHeadersEnabled={false}
+        renderSectionHeader={({ section }) => (
+          <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{section.title}</Text>
         )}
-        ItemSeparatorComponent={() => (
-          <View style={styles.cell}>
-            <View style={[styles.separator, rtl && styles.separatorRtl]} />
-          </View>
+        renderItem={({ item }) => (
+          <NotificationRow item={item} photo={photoFor(item)} onPress={() => onPressNotification(item)} />
         )}
+        ItemSeparatorComponent={() => <View style={[styles.separator, rtl && styles.separatorRtl]} />}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
-        // Under the feed rather than in the heading, where "Mark all read"
+        // Under the feed rather than in the toolbar, where "Mark all read"
         // already sits: this is a last-resort tidy-up for a long list, not a
         // control you reach for while scrolling.
         ListFooterComponent={
@@ -119,8 +176,10 @@ export function NotificationsScreen() {
         }
         ListEmptyComponent={
           <View style={styles.emptyState}>
-              <EmptyOrb ramp={accent.ramp} icon="notifications-off" />
-            <Text style={[styles.emptyText, rtl && styles.rtlText]}>{t('notificationsScreen.empty')}</Text>
+            <EmptyOrb ramp={accent.ramp} icon={filter === 'unread' ? 'checkmark-done' : 'notifications-off'} />
+            <Text style={[styles.emptyText, rtl && styles.rtlText]}>
+              {filter === 'unread' ? t('notificationsScreen.noUnread') : t('notificationsScreen.empty')}
+            </Text>
           </View>
         }
       />
@@ -130,19 +189,31 @@ export function NotificationsScreen() {
 
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
-    header: { marginBottom: spacing.md },
-    markAllPill: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 4,
+    header: { marginBottom: spacing.sm },
+    toolbar: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.md },
+    rowRtl: { flexDirection: 'row-reverse' },
+    spacer: { flex: 1 },
+    chip: {
       borderRadius: radius.pill,
       borderWidth: 1,
-      borderColor: withAlpha(colors.gold, 0.6),
+      borderColor: colors.border,
       backgroundColor: colors.surface,
-      paddingHorizontal: spacing.sm + 2,
+      paddingHorizontal: spacing.md,
       paddingVertical: 6,
     },
-    markAllRead: { ...typography.caption, color: colors.teal, fontFamily: fonts.bodyBold },
+    chipLabel: { ...typography.label, color: colors.textSecondary, fontFamily: fonts.bodyBold },
+    chipLabelSelected: { color: '#FFFFFF' },
+    markAll: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    markAllRead: { ...typography.caption, fontFamily: fonts.bodyBold },
+    sectionTitle: {
+      ...typography.label,
+      color: colors.textTertiary,
+      fontFamily: fonts.bodyBold,
+      textTransform: 'uppercase',
+      letterSpacing: 0.6,
+      marginTop: spacing.md,
+      marginBottom: spacing.xs,
+    },
     clearAll: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -152,34 +223,14 @@ const makeStyles = (colors: Palette) =>
       paddingVertical: spacing.sm,
     },
     clearAllText: { ...typography.caption, color: colors.danger, fontFamily: fonts.bodyBold },
-    // One white card for the whole feed: each row is a cell of it, the first
-    // and last carrying its rounded ends, hairlines inset past the icon.
-    cell: {
-      backgroundColor: colors.surface,
-      borderLeftWidth: 1,
-      borderRightWidth: 1,
-      borderColor: colors.border,
-      paddingHorizontal: spacing.xs,
-    },
-    cellFirst: {
-      borderTopWidth: 1,
-      borderTopLeftRadius: radius.lg,
-      borderTopRightRadius: radius.lg,
-      paddingTop: spacing.xs,
-    },
-    cellLast: {
-      borderBottomWidth: 1,
-      borderBottomLeftRadius: radius.lg,
-      borderBottomRightRadius: radius.lg,
-      paddingBottom: spacing.xs,
-    },
+    // A plain list: hairlines between rows, inset past the icon.
     separator: {
       height: StyleSheet.hairlineWidth,
       backgroundColor: colors.border,
-      marginLeft: 40 + spacing.md + spacing.sm,
+      marginLeft: 44 + spacing.md + spacing.sm,
       marginRight: spacing.sm,
     },
-    separatorRtl: { marginLeft: spacing.sm, marginRight: 40 + spacing.md + spacing.sm },
+    separatorRtl: { marginLeft: spacing.sm, marginRight: 44 + spacing.md + spacing.sm },
     listContent: { paddingBottom: spacing.xl },
     emptyState: { alignItems: 'center', justifyContent: 'center', paddingTop: spacing.xxl, gap: spacing.md },
     emptyText: { ...typography.body, color: colors.textSecondary, textAlign: 'center' },

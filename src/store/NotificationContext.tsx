@@ -23,6 +23,7 @@ interface NotificationContextValue {
 const PREF_KEY_BY_TYPE: Record<NotificationItem['type'], keyof NotificationPrefs> = {
   match: 'newMatches',
   like: 'likes',
+  story_like: 'likes',
   message: 'messages',
   rishta_request: 'rishtaRequests',
   system: 'productUpdates',

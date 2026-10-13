@@ -2,7 +2,6 @@
 // one they need from here instead of reaching for each module by name.
 export { authService } from './authService';
 export type { SignupInput, ProfileDoc } from './authService';
-export { boostService } from './boostService';
 export { discoveryService } from './discoveryService';
 export { favoritesService } from './favoritesService';
 export { likeLimitService } from './likeLimitService';

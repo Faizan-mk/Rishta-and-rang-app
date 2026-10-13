@@ -11,9 +11,8 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { radius, spacing, typography } from '../../theme';
-import { glow, modeAccent, withAlpha, type Gradient } from '../../theme/glow';
+import { APP_MODE, glow, modeAccent, withAlpha, type Gradient } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
-import type { ProfileMode } from '../../types/user';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
 
@@ -28,17 +27,15 @@ interface SwipeActionBarProps {
   onLike: () => void;
   // Extra bottom offset so the dock floats above the app's tab bar.
   bottomInset: number;
-  // Tints the like button with the deck being browsed.
-  mode: ProfileMode;
 }
 
 // One floating dock holding the three deck actions, labelled so the meaning is
 // obvious in every language rather than relying on icon convention alone. Like
 // is the lit one — it's the decision the whole screen is built around.
-export function SwipeActionBar({ canUndo, liked, locked, onUndo, onPass, onLike, bottomInset, mode }: SwipeActionBarProps) {
+export function SwipeActionBar({ canUndo, liked, locked, onUndo, onPass, onLike, bottomInset }: SwipeActionBarProps) {
   const { colors } = useTheme();
   const { t } = useLanguage();
-  const accent = modeAccent(colors, mode);
+  const accent = modeAccent(colors, APP_MODE);
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   return (

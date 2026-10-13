@@ -10,9 +10,8 @@ import { ProfileCard } from '../../components/ProfileCard';
 import { useFavorites, FavoriteProfile } from '../../store/FavoritesContext';
 import { useLanguage } from '../../store/LanguageContext';
 import { useTheme } from '../../store/ThemeContext';
-import { useAuth } from '../../store/AuthContext';
 import { radius, spacing, typography } from '../../theme';
-import { modeAccent, withAlpha } from '../../theme/glow';
+import { APP_MODE, modeAccent, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 
 export function FavoritesScreen() {
@@ -21,8 +20,7 @@ export function FavoritesScreen() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
   const { favorites, removeFavorite } = useFavorites();
-  const { user } = useAuth();
-  const accent = modeAccent(colors, user?.activeMode ?? 'dating');
+  const accent = modeAccent(colors, APP_MODE);
 
   const renderItem = ({ item, index }: { item: FavoriteProfile; index: number }) => (
     <Animated.View entering={FadeInUp.delay(Math.min(index * 60, 300)).duration(360)}>
@@ -35,7 +33,7 @@ export function FavoritesScreen() {
         onPress={() => router.push({ pathname: '/profile-detail', params: { kind: item.kind, id: item.id } })}
         action={
           <Pressable onPress={() => removeFavorite(item.id)} hitSlop={8} style={styles.removeButton}>
-            <Ionicons name="heart" size={20} color={colors.dating} />
+            <Ionicons name="star" size={20} color={colors.gold} />
           </Pressable>
         }
       />
@@ -64,7 +62,7 @@ export function FavoritesScreen() {
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-              <EmptyOrb ramp={accent.ramp} icon="heart" />
+              <EmptyOrb ramp={accent.ramp} icon="star-outline" />
             <Text style={[styles.emptyText, rtl && styles.rtlText]}>{t('favorites.empty')}</Text>
           </View>
         }
@@ -82,9 +80,9 @@ const makeStyles = (colors: Palette) =>
       borderRadius: radius.pill,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: withAlpha(colors.dating, 0.1),
+      backgroundColor: withAlpha(colors.gold, 0.12),
       borderWidth: 1,
-      borderColor: withAlpha(colors.dating, 0.3),
+      borderColor: withAlpha(colors.gold, 0.4),
     },
       listContent: { paddingBottom: spacing.xl },
       emptyState: { alignItems: 'center', justifyContent: 'center', paddingTop: spacing.xxl, gap: spacing.md },

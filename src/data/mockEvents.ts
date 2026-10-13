@@ -5,7 +5,7 @@ import type { CommunityEvent } from '../types/content';
 export const mockEvents: CommunityEvent[] = [
   {
     id: 'e1',
-    title: 'Rishta & Rang Meetup — Lahore',
+    title: 'Matrimonial App Meetup — Lahore',
     city: 'Lahore',
     dateLabel: '12 September, 6:00 PM',
     description:

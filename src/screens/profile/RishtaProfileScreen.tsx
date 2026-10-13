@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { RishtaReadiness } from '../../types/user';
 import { AccentHeading } from '../../components/common/AccentHeading';
@@ -18,7 +18,7 @@ import { useAuth } from '../../store/AuthContext';
 import { useTheme } from '../../store/ThemeContext';
 import { radius, spacing, typography } from '../../theme';
 import { cardSurface } from '../../theme/surfaces';
-import { glow, modeAccent, withAlpha } from '../../theme/glow';
+import { flat, glow, modeAccent, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 
 const READINESS_OPTIONS: { key: RishtaReadiness; labelKey: string }[] = [
@@ -66,7 +66,7 @@ export function RishtaProfileScreen() {
         >
           <View style={styles.heroGlow} pointerEvents="none" />
           <View style={styles.heroIcon}>
-            <Ionicons name="moon" size={20} color="#F3D99B" />
+            <MaterialCommunityIcons name="ring" size={20} color={colors.metalBright} />
           </View>
           <Text style={[styles.heroTitle, rtl && styles.rtlText]}>{t('rishtaProfile.title')}</Text>
         </LinearGradient>
@@ -102,7 +102,7 @@ export function RishtaProfileScreen() {
         <View style={styles.lockedSection}>
           <AccentHeading
             title={t('profile.comingInV2')}
-            gradient={[colors.textTertiary, colors.border]}
+            gradient={flat(colors.textTertiary)}
             style={styles.heading}
           />
           <View style={styles.lockedChipRow}>
@@ -150,9 +150,9 @@ const makeStyles = (colors: Palette) =>
       width: 40,
       height: 40,
       borderRadius: 20,
-      backgroundColor: 'rgba(20,11,16,0.25)',
+      backgroundColor: 'rgba(36,31,33,0.25)',
       borderWidth: 1.5,
-      borderColor: '#F3D99B',
+      borderColor: colors.metalBright,
       alignItems: 'center',
       justifyContent: 'center',
     },

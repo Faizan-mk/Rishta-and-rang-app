@@ -14,7 +14,7 @@ import {
   View,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useKeyboardAvoidingEnabled } from '../../hooks/useKeyboardAvoidingEnabled';
@@ -40,7 +40,7 @@ import { discoveryService } from '../../services/discoveryService';
 import { supabase } from '../../services/supabase';
 import { fonts, radius, spacing, typography } from '../../theme';
 import { scaleFont } from '../../theme/responsive';
-import { glow, modeAccent, withAlpha } from '../../theme/glow';
+import { flat, glow, modeAccent, withAlpha } from '../../theme/glow';
 import { ONLINE_GREEN, type Palette } from '../../theme/palettes';
 import type { ChatMessage } from '../../types/content';
 import { previewFor, previewLabel } from '../../utils/messagePreview';
@@ -491,17 +491,13 @@ export function ChatScreen() {
           style={styles.headerIconButton}
           accessibilityLabel={t('chat.moreOptions')}
         >
-          <Ionicons name="ellipsis-vertical" size={20} color={colors.textSecondary} />
+          <Ionicons name="ellipsis-horizontal" size={20} color={colors.textSecondary} />
         </Pressable>
       </FadeIn>
 
       <HeaderMenu
         visible={menuOpen}
         onClose={() => setMenuOpen(false)}
-        onVoiceCall={() => router.push({ pathname: '/call', params: { name: match.name, photo: match.photo } })}
-        onVideoCall={() =>
-          router.push({ pathname: '/call', params: { name: match.name, photo: match.photo, video: '1' } })
-        }
         onBlock={isBlocked ? undefined : onBlock}
         onReport={onReport}
         onClearChat={onClearChat}
@@ -516,12 +512,12 @@ export function ChatScreen() {
         <FadeIn delay={80}>
           <View style={styles.rishtaBannerWrap}>
             <LinearGradient
-              colors={[colors.rishta, colors.plum]}
+              colors={flat(colors.rishta)}
               start={GRADIENT_START}
               end={GRADIENT_END}
               style={[styles.rishtaBanner, glow(colors.rishta, 0.3, 14, 5)]}
             >
-              <Ionicons name="moon" size={18} color={RISHTA_GOLD} />
+              <MaterialCommunityIcons name="ring" size={18} color={colors.metalBright} />
               <Text style={styles.rishtaBannerText}>{t('chat.rishtaIncoming', { name: match.name })}</Text>
               <View style={styles.rishtaBannerActions}>
                 <Pressable onPress={() => onRespondRishta(false)} style={styles.rishtaDeclineButton}>
@@ -550,7 +546,7 @@ export function ChatScreen() {
             ]}
           >
             <LinearGradient
-              colors={[colors.rishta, colors.plum]}
+              colors={flat(colors.rishta)}
               start={GRADIENT_START}
               end={GRADIENT_END}
               style={[styles.moveToRishtaBar, glow(colors.rishta, 0.45, 12, 5)]}
@@ -670,7 +666,7 @@ export function ChatScreen() {
             )}
             <View style={[styles.inputRow, rtl && styles.inputRowRtl]}>
             <Pressable onPress={pickImage} style={styles.attachButton} disabled={recording}>
-              <Ionicons name="image-outline" size={22} color={recording ? colors.textTertiary : colors.textSecondary} />
+              <Ionicons name="attach-outline" size={24} color={recording ? colors.textTertiary : colors.textSecondary} />
             </Pressable>
 
             {recording ? (
@@ -694,7 +690,7 @@ export function ChatScreen() {
             {draft.trim() ? (
               <Pressable onPress={sendMessage}>
                 <LinearGradient
-                  colors={[colors.teal, colors.dating]}
+                  colors={flat(colors.teal)}
                   start={GRADIENT_START}
                   end={GRADIENT_END}
                   style={[styles.sendButton, glow(colors.teal, 0.6, 14, 6)]}
@@ -740,8 +736,6 @@ export function ChatScreen() {
 function HeaderMenu({
   visible,
   onClose,
-  onVoiceCall,
-  onVideoCall,
   onBlock,
   onReport,
   onClearChat,
@@ -753,8 +747,6 @@ function HeaderMenu({
 }: {
   visible: boolean;
   onClose: () => void;
-  onVoiceCall: () => void;
-  onVideoCall: () => void;
   /** Absent once already blocked — the blocked banner is where unblocking lives. */
   onBlock?: () => void;
   onReport: () => void;
@@ -797,19 +789,6 @@ function HeaderMenu({
             edge instead of the browser window's. */}
         <View style={[styles.menuFrameBounds, framedWidth ? { maxWidth: framedWidth } : null]}>
           <Animated.View entering={ZoomIn.duration(140)} style={styles.menuCard}>
-          <Pressable onPress={() => run(onVoiceCall)} style={styles.menuOptionRow}>
-            <Ionicons name="call-outline" size={16} color={colors.teal} style={styles.menuOptionIcon} />
-            <Text style={styles.menuOptionText} numberOfLines={1}>
-              {t('chat.voiceCall')}
-            </Text>
-          </Pressable>
-          <Pressable onPress={() => run(onVideoCall)} style={styles.menuOptionRow}>
-            <Ionicons name="videocam-outline" size={16} color={colors.teal} style={styles.menuOptionIcon} />
-            <Text style={styles.menuOptionText} numberOfLines={1}>
-              {t('chat.videoCall')}
-            </Text>
-          </Pressable>
-          <View style={styles.menuDivider} />
           {onBlock && (
             <Pressable onPress={() => run(onBlock)} style={styles.menuOptionRow}>
               <Ionicons name="hand-left-outline" size={16} color={colors.textSecondary} style={styles.menuOptionIcon} />
@@ -837,9 +816,6 @@ function HeaderMenu({
     </Modal>
   );
 }
-
-// Pale champagne that reads on the rosewood Rishta cards in both themes.
-const RISHTA_GOLD = '#F3D99B';
 
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
@@ -910,7 +886,7 @@ const makeStyles = (colors: Palette) =>
       borderWidth: 1,
       borderColor: colors.border,
       paddingVertical: spacing.xs,
-      shadowColor: '#2A1720',
+      shadowColor: '#241F21',
       shadowOpacity: 0.12,
       shadowRadius: 24,
       shadowOffset: { width: 0, height: 10 },
@@ -931,7 +907,7 @@ const makeStyles = (colors: Palette) =>
     rishtaBanner: {
       borderRadius: radius.lg,
       borderWidth: 1,
-      borderColor: withAlpha(RISHTA_GOLD, 0.6),
+      borderColor: withAlpha(colors.metalBright, 0.6),
       padding: spacing.md,
       gap: spacing.sm,
     },
@@ -951,7 +927,7 @@ const makeStyles = (colors: Palette) =>
       paddingVertical: spacing.sm + 2,
       borderRadius: radius.pill,
       borderWidth: 1.5,
-      borderColor: withAlpha(RISHTA_GOLD, 0.8),
+      borderColor: withAlpha(colors.metalBright, 0.8),
     },
     rishtaDeclineText: { ...typography.label, color: '#FFFFFF', fontFamily: fonts.bodyBold },
     moveToRishtaWrap: { paddingHorizontal: spacing.md, paddingTop: spacing.sm },
@@ -962,7 +938,7 @@ const makeStyles = (colors: Palette) =>
       gap: spacing.xs,
       borderRadius: radius.pill,
       borderWidth: 1,
-      borderColor: withAlpha(RISHTA_GOLD, 0.6),
+      borderColor: withAlpha(colors.metalBright, 0.6),
       paddingVertical: spacing.sm + 2,
     },
     moveToRishtaBarPending: { opacity: 0.6 },
@@ -999,7 +975,7 @@ const makeStyles = (colors: Palette) =>
     },
     inputRow: {
       flexDirection: 'row',
-      alignItems: 'flex-end',
+      alignItems: 'center',
       padding: spacing.sm,
       gap: spacing.sm,
       borderTopWidth: 1,
@@ -1043,21 +1019,29 @@ const makeStyles = (colors: Palette) =>
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },
     input: {
       flex: 1,
+      // Same height as the send button so the row lines up, and a radius of
+      // half that rather than a pill: a pill radius on a box taller than one
+      // line curves the top edge away and the border looks cut in half.
+      minHeight: 46,
       maxHeight: 100,
       borderWidth: 1,
       borderColor: colors.border,
       backgroundColor: colors.background,
-      borderRadius: radius.pill,
+      borderRadius: 23,
       paddingHorizontal: spacing.md,
-      paddingVertical: spacing.sm,
+      paddingTop: 12,
+      paddingBottom: 12,
+      textAlignVertical: 'center',
       color: colors.textPrimary,
       fontSize: typography.body.fontSize,
       fontFamily: typography.body.fontFamily,
       outlineWidth: 0,
+      // The browser's own focus ring drew a black edge round the box on web.
+      outlineColor: 'transparent',
     },
     inputFocused: { borderColor: colors.gold, backgroundColor: colors.surface },
     rtlInput: { textAlign: 'right', writingDirection: 'rtl' },
-    attachButton: { padding: spacing.xs, marginBottom: 4 },
+    attachButton: { width: 40, height: 46, alignItems: 'center', justifyContent: 'center' },
     recordingRow: {
       flex: 1,
       flexDirection: 'row',

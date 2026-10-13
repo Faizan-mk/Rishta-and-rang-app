@@ -9,19 +9,17 @@ import { Pressable } from 'react-native';
 import { Button } from '../../components/Button';
 import { FloatingHearts } from '../../components/common/FloatingHearts';
 import { fonts, spacing, typography, radius } from '../../theme';
-import { glow, withAlpha } from '../../theme/glow';
+import { flat, glow, withAlpha } from '../../theme/glow';
 import { scaleFont, scaleSpace } from '../../theme/responsive';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
 import { useOnboardingGate } from '../../store/OnboardingGateContext';
 
-// The signature Rosewood-to-Coral ramp. It is the app's front door, so it does
+// The signature Maroon-to-Rose ramp. It is the app's front door, so it does
 // not follow a deck mode.
-const BRAND_RAMP = ['#5E0F2E', '#8E1B45', '#F2715E'] as const;
-// Champagne gold, fixed rather than themed: this screen always sits on a dark
+// Brand gold, fixed rather than themed: this screen always sits on a dark
 // photo, so it wants the bright gold in both themes.
-const GOLD = '#E9C27A';
 // Darkens the top of the photo for the title and the bottom for the sheet,
 // leaving the couple untouched. Measured on this asset, the couple's heads
 // sit in the 10-20% band: a 10x20 luminance grid puts the brightest cells in
@@ -31,11 +29,11 @@ const GOLD = '#E9C27A';
 // the screen. The top scrim therefore hands over at 0.2, which is above the
 // faces: the title in the first ~16% stays legible and the couple keeps its
 // light.
-const SCRIM_RAMP = ['rgba(20,11,16,0.78)', 'rgba(20,11,16,0)', 'rgba(20,11,16,0)', 'rgba(20,11,16,0.85)'] as const;
+const SCRIM_RAMP = ['rgba(36,31,33,0.78)', 'rgba(36,31,33,0)', 'rgba(36,31,33,0)', 'rgba(36,31,33,0.85)'] as const;
 const SCRIM_STOPS = [0, 0.2, 0.5, 1] as const;
 const HERO_IMAGE = require('../../../assets/images/welcome-wedding.png');
-// Aubergine black: shows only if the photo is still loading.
-const PLUM_DEEP = '#140B10';
+// Charcoal: shows only if the photo is still loading.
+const PLUM_DEEP = '#241F21';
 
 const LANGUAGES = [
   { key: 'en', labelKey: 'language.english' },
@@ -121,10 +119,10 @@ export function WelcomeScreen() {
                   >
                     {selected && (
                       <LinearGradient
-                        colors={['#8E1B45', '#F2715E']}
+                        colors={flat(colors.brandMain)}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
-                        style={[styles.langOption, glow('#8E1B45', 0.4, 10, 4)]}
+                        style={[styles.langOption, glow(colors.brandMain, 0.4, 10, 4)]}
                         pointerEvents="none"
                       />
                     )}
@@ -137,7 +135,7 @@ export function WelcomeScreen() {
             </View>
 
             <View style={styles.actions}>
-              <Button label={t('login.submit')} gradient={BRAND_RAMP} onPress={() => router.push('/login')} />
+              <Button label={t('login.submit')} gradient={flat(colors.brandMain)} onPress={() => router.push('/login')} />
               <Button
                 label={t('login.createAccount')}
                 variant="ghost"
@@ -198,11 +196,11 @@ const makeStyles = (colors: Palette, compact: boolean, tiny: boolean) =>
       gap: spacing.sm,
       marginTop: tiny ? scaleSpace(2) : compact ? scaleSpace(4) : scaleSpace(8),
     },
-    flourishLine: { width: scaleSpace(36), height: 1, backgroundColor: GOLD },
+    flourishLine: { width: scaleSpace(36), height: 1, backgroundColor: colors.metal },
     flourishDiamond: {
       width: scaleSpace(7),
       height: scaleSpace(7),
-      backgroundColor: GOLD,
+      backgroundColor: colors.metal,
       transform: [{ rotate: '45deg' }],
     },
     brandTitle: {
@@ -222,13 +220,15 @@ const makeStyles = (colors: Palette, compact: boolean, tiny: boolean) =>
       ...typography.body,
       fontFamily: fonts.displayItalic,
       fontSize: scaleFont(17),
-      color: GOLD,
+      // White rather than the theme's metal: it sits on the photo, where a
+      // muted metal such as the Pink theme's rose gold all but disappears.
+      color: 'rgba(255,255,255,0.92)',
       textAlign: 'center',
       marginTop: scaleSpace(2),
       paddingHorizontal: spacing.lg,
-      textShadowColor: 'rgba(0,0,0,0.45)',
+      textShadowColor: 'rgba(0,0,0,0.6)',
       textShadowOffset: { width: 0, height: 1 },
-      textShadowRadius: 6,
+      textShadowRadius: 8,
     },
     // Glass card: rounded + clipped so the blur and tint respect the corner
     // radius, with a hairline border to catch the light like real glass.
@@ -236,7 +236,7 @@ const makeStyles = (colors: Palette, compact: boolean, tiny: boolean) =>
       borderRadius: scaleSpace(32),
       overflow: 'hidden',
       borderWidth: 1,
-      borderColor: withAlpha(GOLD, 0.35),
+      borderColor: withAlpha(colors.metal, 0.35),
       shadowColor: '#000',
       shadowOpacity: 0.3,
       shadowRadius: 24,
@@ -245,7 +245,7 @@ const makeStyles = (colors: Palette, compact: boolean, tiny: boolean) =>
     },
     cardTint: {
       ...StyleSheet.absoluteFillObject,
-      backgroundColor: 'rgba(20,11,16,0.35)',
+      backgroundColor: 'rgba(36,31,33,0.35)',
     },
     cardContent: {
       padding: tiny ? scaleSpace(12) : compact ? scaleSpace(16) : spacing.lg,
@@ -291,8 +291,8 @@ const makeStyles = (colors: Palette, compact: boolean, tiny: boolean) =>
       textShadowRadius: 4,
     },
     actions: { gap: spacing.sm },
-    // Secondary action per the design system: an outlined champagne-gold pill.
-    outlineButton: { borderWidth: 1.5, borderColor: GOLD, backgroundColor: 'rgba(255,255,255,0.1)' },
+    // Secondary action per the design system: an outlined gold pill.
+    outlineButton: { borderWidth: 1.5, borderColor: colors.metal, backgroundColor: 'rgba(255,255,255,0.1)' },
     outlineLabel: { color: '#FFFFFF', fontFamily: fonts.bodyBold },
     devReset: {
       alignSelf: 'center',

@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Image, Modal, Pressable, RefreshControl, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   FadeIn as ReanimatedFadeIn,
@@ -9,21 +9,18 @@ import Animated, {
 import { AuroraBackground } from '../../components/common/AuroraBackground';
 import { EmptyOrb } from '../../components/common/EmptyOrb';
 import { DiscoverProfileCard } from '../../components/discover/DiscoverProfileCard';
-import { TAB_BAR_BASE_HEIGHT, useHideTabBarOnScroll } from '../../store/TabBarVisibilityContext';
+import { TAB_BAR_BASE_HEIGHT } from '../../store/TabBarVisibilityContext';
 import { MatchCelebration } from '../../components/discover/MatchCelebration';
 import { HomeTopBar } from '../../components/discover/HomeTopBar';
-import { ModeToggle } from '../../components/profile/ModeToggle';
+import { HomeStoriesRow, type StoryConnection, type StorySuggestion } from '../../components/discover/HomeStoriesRow';
 import { MatchScoreCard } from '../../components/discover/MatchScoreCard';
 import { SwipeableCard } from '../../components/discover/SwipeableCard';
 import { SwipeActionBar } from '../../components/discover/SwipeActionBar';
-import { BrowseFiltersSheet, BrowseSortSheet } from '../../components/discover/BrowseSheets';
-import { BoostSheet } from '../../components/discover/BoostSheet';
+import { BrowseFiltersSheet } from '../../components/discover/BrowseSheets';
 import {
   DEFAULT_BROWSE_FILTERS,
-  DEFAULT_BROWSE_SORT,
   countActiveFilters,
   type BrowseFilters,
-  type BrowseSortKey,
 } from '../../components/discover/browseOptions';
 import {
   AboutMeSection,
@@ -47,7 +44,7 @@ import { reportsService } from '../../services/reportsService';
 import { profileNotesService } from '../../services/profileNotesService';
 import { prefetchImages } from '../../services/imageCache';
 import type { BrowseProfile, DiscoverProfile, RishtaListingProfile } from '../../types/content';
-import type { ProfileMode, UserProfile } from '../../types/user';
+import type { ProfileMode } from '../../types/user';
 import { useDiscovery } from '../../store/DiscoveryContext';
 import { useLanguage } from '../../store/LanguageContext';
 import { useTheme } from '../../store/ThemeContext';
@@ -55,15 +52,16 @@ import { useAuth } from '../../store/AuthContext';
 import { useFavorites } from '../../store/FavoritesContext';
 import { useDialog } from '../../store/DialogContext';
 import { useLikeLimit } from '../../store/LikeLimitContext';
-import { useBoost } from '../../store/BoostContext';
 import { useMatches } from '../../store/MatchesContext';
+import { useStories } from '../../store/StoriesContext';
+import { useAddStory } from '../../hooks/useAddStory';
 import { useNotifications } from '../../store/NotificationContext';
 import { useViewHistory } from '../../store/ViewHistoryContext';
 import { oppositeGenderProfiles } from '../../utils/genderMatch';
 import { datingCompatibility, rishtaCompatibility } from '../../utils/compatibility';
 import { isActiveToday } from '../../utils/time';
 import { radius, spacing, typography } from '../../theme';
-import { glow, modeAccent } from '../../theme/glow';
+import { APP_MODE, glow, modeAccent } from '../../theme/glow';
 import { scaleFont } from '../../theme/responsive';
 import type { Palette } from '../../theme/palettes';
 
@@ -75,124 +73,97 @@ const ACTION_BAR_CLEARANCE = 92;
 // that a fast swiper never reaches the end of the deck while it loads.
 const DECK_LOW_WATER = 5;
 
-interface SortContext {
-  user: UserProfile | null;
-  mode: ProfileMode;
-  // Profiles the member already has a chat thread with.
-  chattingWith: Set<string>;
-}
-
-function timestamp(iso?: string): number {
-  return iso ? new Date(iso).getTime() : 0;
-}
-
-function sortProfiles<T extends BrowseProfile>(profiles: T[], sort: BrowseSortKey, ctx: SortContext): T[] {
-  if (sort === 'recommended') return profiles;
-  const { user, mode, chattingWith } = ctx;
-  const sorted = [...profiles];
-
-  switch (sort) {
-    case 'bestMatch': {
-      if (!user) return profiles;
-      const score = (p: T) =>
-        mode === 'dating'
-          ? datingCompatibility(user, p as unknown as DiscoverProfile)
-          : rishtaCompatibility(user, p as unknown as RishtaListingProfile);
-      return sorted.sort((a, b) => score(b) - score(a));
-    }
-    case 'ageAsc':
-      return sorted.sort((a, b) => a.age - b.age);
-    case 'ageDesc':
-      return sorted.sort((a, b) => b.age - a.age);
-    case 'active':
-      return sorted.sort((a, b) => timestamp(b.lastActiveAt) - timestamp(a.lastActiveAt));
-    case 'justJoined':
-      return sorted.sort((a, b) => timestamp(b.joinedAt) - timestamp(a.joinedAt));
-    case 'freeToChat':
-      // Anyone there's no thread with yet comes first â€” they can still take a chat.
-      return sorted.sort((a, b) => Number(chattingWith.has(a.id)) - Number(chattingWith.has(b.id)));
-    case 'verified': {
-      const badges = (p: T) => Number(Boolean(p.selfieVerified)) + Number(Boolean(p.bureauVerified));
-      return sorted.sort((a, b) => badges(b) - badges(a));
-    }
-    case 'completeBio': {
-      const depth = (p: T) => (p.bio?.trim().length ?? 0) + (p.familyBackground?.trim().length ?? 0);
-      return sorted.sort((a, b) => depth(b) - depth(a));
-    }
-    case 'nearest':
-    default: {
-      // Real distances first, then anyone sharing the member's city, then the rest.
-      const rank = (p: T) => {
-        if (p.distanceKm !== undefined) return p.distanceKm;
-        if (user?.city && p.city?.toLowerCase() === user.city.toLowerCase()) return 1_000;
-        return 1_000_000;
-      };
-      return sorted.sort((a, b) => rank(a) - rank(b));
-    }
-  }
-}
+// How many deck profiles fill out the end of the story strip.
+const STORY_SUGGESTION_COUNT = 12;
 
 export function HomeScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
-  const { user, setActiveMode } = useAuth();
+  const { user } = useAuth();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { confirm, notify } = useDialog();
   const { recordLike, applyServerCount } = useLikeLimit();
-  const { isBoostActive } = useBoost();
   const { datingProfiles, rishtaProfiles, loading, loadMore, reload } = useDiscovery();
   const { matches, rishtaProfileIds, blockedProfiles, blockProfile } = useMatches();
+  const { mine: myStories, others: storyGroups, refresh: refreshStories } = useStories();
+  // Coming back to Home (from a chat, or from watching stories) picks up new
+  // stories, fresh seen-rings and seen-by counts.
+  useFocusEffect(
+    useCallback(() => {
+      refreshStories();
+    }, [refreshStories])
+  );
+  const { addStory, posting: postingStory } = useAddStory();
   const { addNotification, unreadCount } = useNotifications();
   const { recordView } = useViewHistory();
   const [celebration, setCelebration] = useState<{ name: string; photo: string } | null>(null);
-  const [datingCursor, setDatingCursor] = useState(0);
-  const [rishtaCursor, setRishtaCursor] = useState(0);
+  const [cursor, setCursor] = useState(0);
   const [previewUri, setPreviewUri] = useState<string | null>(null);
   const [reportVisible, setReportVisible] = useState(false);
   const [filtersVisible, setFiltersVisible] = useState(false);
-  const [sortVisible, setSortVisible] = useState(false);
-  const [boostVisible, setBoostVisible] = useState(false);
   const [filters, setFilters] = useState<BrowseFilters>(DEFAULT_BROWSE_FILTERS);
-  const [sort, setSort] = useState<BrowseSortKey>(DEFAULT_BROWSE_SORT);
   const insets = useSafeAreaInsets();
-  const onScroll = useHideTabBarOnScroll();
-
-  const mode: ProfileMode = user?.activeMode ?? 'dating';
-  const accent = modeAccent(colors, mode);
-
-  const chattingWith = useMemo(
-    () => new Set(matches.map((m) => m.sourceProfileId).filter((id): id is string => Boolean(id))),
-    [matches]
-  );
 
   const blockedProfileIds = useMemo(
     () => new Set(blockedProfiles.map((b) => b.id)),
     [blockedProfiles]
   );
 
-  // Anyone whose thread moved to Rishta is off the Friends deck for good â€” they
-  // only come round again on the Rishta side. Casual intent belongs on Friends;
-  // serious/matrimonial intent belongs on Rishta.
-  const visibleDatingProfiles = useMemo(
-    () =>
-      oppositeGenderProfiles(datingProfiles, user?.gender).filter(
-        (p) => !blockedProfileIds.has(p.id) && !rishtaProfileIds.has(p.id) && p.intent === 'casual'
-      ),
-    [datingProfiles, user?.gender, blockedProfileIds, rishtaProfileIds]
-  );
-  const visibleRishtaProfiles = useMemo(
-    () =>
-      oppositeGenderProfiles(rishtaProfiles, user?.gender).filter(
-        (p) => !blockedProfileIds.has(p.id) && (p.intent === 'serious' || p.intent === 'matrimonial')
-      ),
-    [rishtaProfiles, user?.gender, blockedProfileIds]
-  );
+  // Connections without a story up, most recent chat first, for the end of
+  // the story strip. Anyone with a story already has a circle further left.
+  const storyConnections = useMemo<StoryConnection[]>(() => {
+    const withStory = new Set(storyGroups.map((g) => g.userId));
+    return matches
+      .filter((m) => !m.sourceProfileId || (!blockedProfileIds.has(m.sourceProfileId) && !withStory.has(m.sourceProfileId)))
+      .map((m) => ({ matchId: m.id, name: m.name, photo: m.photo }));
+  }, [matches, storyGroups, blockedProfileIds]);
 
-  const deck: (DiscoverProfile | RishtaListingProfile)[] = mode === 'dating' ? visibleDatingProfiles : visibleRishtaProfiles;
+  // One deck for everyone: casual members show as Friends cards, serious and
+  // matrimonial members as Rishta cards. The Intent filter is how a member
+  // narrows it to one kind. Anyone casual whose thread moved to Rishta stays off
+  // the deck for good.
+  const deck = useMemo(() => {
+    const visible = (p: BrowseProfile) => !blockedProfileIds.has(p.id);
+    const dating = oppositeGenderProfiles(datingProfiles, user?.gender).filter(
+      (p) => visible(p) && !rishtaProfileIds.has(p.id) && p.intent === 'casual'
+    );
+    const rishta = oppositeGenderProfiles(rishtaProfiles, user?.gender).filter(
+      (p) => visible(p) && (p.intent === 'serious' || p.intent === 'matrimonial')
+    );
+    // Both lists read the same rows in the same order, so walking the dating
+    // order keeps the server's ranking across the two kinds.
+    const byId = new Map<string, DiscoverProfile | RishtaListingProfile>();
+    rishta.forEach((p) => byId.set(p.id, p));
+    dating.forEach((p) => byId.set(p.id, p));
+    const order = [...datingProfiles.map((p) => p.id), ...rishtaProfiles.map((p) => p.id)];
+    const seen = new Set<string>();
+    const list: (DiscoverProfile | RishtaListingProfile)[] = [];
+    order.forEach((id) => {
+      const p = byId.get(id);
+      if (!p || seen.has(id)) return;
+      seen.add(id);
+      list.push(p);
+    });
+    return list;
+  }, [datingProfiles, rishtaProfiles, user?.gender, blockedProfileIds, rishtaProfileIds]);
 
-  // The browse bar's filters and sort are applied on top of the mode's own deck.
+  // The browse bar's filters are applied on top of the deck.
+  // Deck profiles for the end of the story strip, after the member's own
+  // connections, so a member with few matches still sees a full strip. Anyone
+  // already in the strip, or already matched, is left out.
+  const storySuggestions = useMemo<StorySuggestion[]>(() => {
+    const inStrip = new Set<string>([
+      ...storyGroups.map((g) => g.userId),
+      ...matches.map((m) => m.sourceProfileId).filter((id): id is string => Boolean(id)),
+    ]);
+    return deck
+      .filter((p) => !inStrip.has(p.id) && p.photos[0])
+      .slice(0, STORY_SUGGESTION_COUNT)
+      .map((p) => ({ id: p.id, name: p.name, photo: p.photos[0], kind: p.intent === 'casual' ? 'dating' : 'rishta' }));
+  }, [deck, storyGroups, matches]);
+
   const visibleProfiles = useMemo(() => {
     let list = deck.filter((p) => p.age >= filters.ageMin && p.age <= filters.ageMax);
     if (filters.city) {
@@ -200,21 +171,24 @@ export function HomeScreen() {
       list = list.filter((p) => p.city?.toLowerCase() === city);
     }
     if (filters.intent) list = list.filter((p) => p.intent === filters.intent);
-    if (mode === 'rishta' && filters.sect) {
+    if (filters.sect) {
       const sect = filters.sect.toLowerCase();
       list = list.filter((p) => p.sect?.toLowerCase() === sect);
     }
-    if (mode === 'rishta' && filters.readiness) list = list.filter((p) => p.readiness === filters.readiness);
+    if (filters.readiness) list = list.filter((p) => p.readiness === filters.readiness);
     if (filters.verifiedOnly) list = list.filter((p) => p.selfieVerified || p.bureauVerified);
     if (filters.activeToday) list = list.filter((p) => isActiveToday(p.lastActiveAt));
-    return sortProfiles(list, sort, { user: user ?? null, mode, chattingWith });
-  }, [deck, filters, sort, user, mode, chattingWith]);
-
-  const cursor = mode === 'dating' ? datingCursor : rishtaCursor;
-  const setCursor = mode === 'dating' ? setDatingCursor : setRishtaCursor;
+    return list;
+  }, [deck, filters]);
 
   const safeCursor = Math.min(cursor, visibleProfiles.length);
   const currentProfile = visibleProfiles[safeCursor];
+
+  // Which kind of card is on screen: casual members are Friends, everyone else
+  // is Rishta. It decides what a like does and which details count, not the
+  // colours: the whole screen wears the app's one colour.
+  const mode: ProfileMode = currentProfile?.intent === 'casual' ? 'dating' : 'rishta';
+  const accent = modeAccent(colors, APP_MODE);
 
   // The deck arrives a page at a time now, so the next page is fetched while
   // there are still cards left to swipe â€” not when the member hits the end and
@@ -225,9 +199,9 @@ export function HomeScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [safeCursor, visibleProfiles.length]);
   const canUndo = safeCursor > 0;
-  const filtersActive = countActiveFilters(filters, mode);
+  const filtersActive = countActiveFilters(filters);
 
-  // Warm the photo caches up front so a mode or profile change never sits on
+  // Warm the photo caches up front so a profile change never sits on
   // a blank card while the new profile's image downloads from the network.
   useEffect(() => {
     const warm = (p: BrowseProfile | undefined) => {
@@ -241,19 +215,16 @@ export function HomeScreen() {
       prefetchImages(p.photos);
     };
     warm(currentProfile);
-    warm(visibleDatingProfiles[0]);
-    warm(visibleRishtaProfiles[0]);
     // The card after this one, so a swipe never lands on a blank photo.
     warm(visibleProfiles[safeCursor + 1]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, currentProfile?.id]);
+  }, [currentProfile?.id]);
 
-  // A re-filtered or re-sorted deck is a different deck â€” start it from the top
+  // A re-filtered deck is a different deck, so start it from the top
   // instead of landing mid-way through it.
   useEffect(() => {
-    setDatingCursor(0);
-    setRishtaCursor(0);
-  }, [filters, sort]);
+    setCursor(0);
+  }, [filters]);
 
   useEffect(() => {
     if (!currentProfile) return;
@@ -453,31 +424,29 @@ export function HomeScreen() {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       {/* Drifting colour behind everything, repainted per mode. Decorative only. */}
-      <AuroraBackground colors={colors} mode={mode} />
+      <AuroraBackground colors={colors} mode={APP_MODE} />
 
       <HomeTopBar
         activeFilterCount={filtersActive}
         onOpenFilters={() => setFiltersVisible(true)}
-        onOpenSort={() => setSortVisible(true)}
         filtersOpen={filtersVisible}
-        sortOpen={sortVisible}
-        onBoost={() => setBoostVisible(true)}
-        boostActive={isBoostActive}
         notificationCount={unreadCount}
         onNotifications={() => router.push('/notifications')}
-        mode={mode}
       />
 
-      {/* Friends / Rishta decks are separate â€” this is how a member switches
-          between them without leaving Home. */}
-      <View style={styles.toggleWrap}>
-        <ModeToggle
-          mode={mode}
-          onChange={setActiveMode}
-          datingLabel={t('profile.datingMode')}
-          rishtaLabel={t('profile.rishtaMode')}
-        />
-      </View>
+      <HomeStoriesRow
+        myPhoto={user.photos[0]}
+        hasMyStory={Boolean(myStories)}
+        posting={postingStory}
+        onPressMine={() => router.push({ pathname: '/story/[userId]', params: { userId: user.id } })}
+        onAddStory={addStory}
+        groups={storyGroups}
+        onPressGroup={(id) => router.push({ pathname: '/story/[userId]', params: { userId: id } })}
+        connections={storyConnections}
+        onPressConnection={(matchId) => router.push(`/chat/${matchId}`)}
+        suggestions={storySuggestions}
+        onPressSuggestion={(p) => router.push({ pathname: '/profile-detail', params: { kind: p.kind, id: p.id } })}
+      />
 
       {currentProfile ? (
         <Animated.View key={`${mode}-${currentProfile.id}`} entering={ReanimatedFadeIn.duration(120)} style={styles.flex}>
@@ -485,8 +454,6 @@ export function HomeScreen() {
               its height (plus the tab bar) at the bottom instead of ending flush. */}
           <ScrollView
             showsVerticalScrollIndicator={false}
-            onScroll={onScroll}
-            scrollEventThrottle={16}
             contentContainerStyle={{ paddingBottom: actionBarBottom + ACTION_BAR_CLEARANCE }}
             refreshControl={
               /* The deck is cached per sign-in, so a pull is how a member picks up
@@ -498,7 +465,6 @@ export function HomeScreen() {
               <DiscoverProfileCard
                 profile={currentProfile}
                 liked={isFavorite(currentProfile.id)}
-                mode={mode}
                 onPressPhoto={setPreviewUri}
               />
             </SwipeableCard>
@@ -507,7 +473,6 @@ export function HomeScreen() {
               name={currentProfile.name}
               score={compatibilityScore}
               bureauVerified={Boolean(currentProfile.bureauVerified)}
-              mode={mode}
               onPress={onOpenMatchScore}
             />
 
@@ -549,7 +514,6 @@ export function HomeScreen() {
             onPass={onPass}
             onLike={onLike}
             bottomInset={actionBarBottom}
-            mode={mode}
           />
         </Animated.View>
       ) : (
@@ -576,20 +540,8 @@ export function HomeScreen() {
       <BrowseFiltersSheet
         visible={filtersVisible}
         filters={filters}
-        mode={mode}
         onChange={setFilters}
         onClose={() => setFiltersVisible(false)}
-      />
-
-      <BrowseSortSheet visible={sortVisible} sort={sort} onChange={setSort} onClose={() => setSortVisible(false)} />
-
-      <BoostSheet
-        visible={boostVisible}
-        onClose={() => setBoostVisible(false)}
-        onGetMore={() => {
-          setBoostVisible(false);
-          router.push('/explore-plus');
-        }}
       />
 
       <Modal visible={Boolean(previewUri)} transparent animationType="fade" onRequestClose={() => setPreviewUri(null)}>
@@ -620,7 +572,6 @@ const makeStyles = (colors: Palette) =>
     safeArea: { flex: 1, backgroundColor: colors.background },
     flex: { flex: 1 },
     content: { paddingHorizontal: spacing.md, paddingTop: spacing.xs },
-    toggleWrap: { paddingHorizontal: spacing.lg, paddingBottom: spacing.md },
     emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, paddingHorizontal: spacing.xl },
     emptyText: { ...typography.body, color: colors.textSecondary, textAlign: 'center' },
     emptyResetButton: {

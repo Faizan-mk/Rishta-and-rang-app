@@ -14,9 +14,8 @@ import Animated, {
 import { Badge } from '../common/Badge';
 import { fonts, radius, spacing, typography } from '../../theme';
 import { scaleFont } from '../../theme/responsive';
-import { glow, modeAccent, withAlpha } from '../../theme/glow';
+import { APP_MODE, glow, modeAccent, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
-import type { ProfileMode } from '../../types/user';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
 import { FEATURE_BUREAU } from '../../config/features';
@@ -28,18 +27,16 @@ interface MatchScoreCardProps {
   // 0-100 compatibility score from utils/compatibility.
   score: number;
   bureauVerified: boolean;
-  // Colours the card with the deck the score was computed against.
-  mode: ProfileMode;
   onPress: () => void;
 }
 
 // Sits directly under the photo: this app's own compatibility score, with the
 // bureau badge alongside it, instead of a generic "upgrade" strip. The bar fills
 // on arrival so the number lands as a result rather than as static furniture.
-export function MatchScoreCard({ name, score, bureauVerified, mode, onPress }: MatchScoreCardProps) {
+export function MatchScoreCard({ name, score, bureauVerified, onPress }: MatchScoreCardProps) {
   const { colors } = useTheme();
   const { t, rtl } = useLanguage();
-  const accent = modeAccent(colors, mode);
+  const accent = modeAccent(colors, APP_MODE);
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const clamped = Math.max(0, Math.min(100, Math.round(score)));
 

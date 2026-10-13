@@ -99,8 +99,8 @@ export function SwipeableCard({ profileId, onSwipeRight, onSwipeLeft, children }
         {children}
 
         <Animated.View style={[styles.stamp, styles.stampLike, likeStyle]} pointerEvents="none">
-          <Ionicons name="heart" size={16} color={colors.dating} />
-          <Text style={[styles.stampText, { color: colors.dating }]}>{t('discover.swipeHintLike')}</Text>
+          <Ionicons name="heart" size={16} color={colors.teal} />
+          <Text style={[styles.stampText, { color: colors.teal }]}>{t('discover.swipeHintLike')}</Text>
         </Animated.View>
 
         <Animated.View style={[styles.stamp, styles.stampPass, passStyle]} pointerEvents="none">
@@ -126,7 +126,7 @@ const makeStyles = (colors: Palette) =>
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.xs + 2,
     },
-    stampLike: { right: spacing.xl, borderColor: colors.dating, transform: [{ rotate: '-8deg' }] },
+    stampLike: { right: spacing.xl, borderColor: colors.teal, transform: [{ rotate: '-8deg' }] },
     stampPass: { left: spacing.xl, borderColor: colors.border, transform: [{ rotate: '8deg' }] },
     stampText: { ...typography.label, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1 },
   });

@@ -1,67 +1,130 @@
-import React, { useMemo } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
-import { TAB_BAR_BASE_HEIGHT, useHideTabBarOnScroll } from '../../store/TabBarVisibilityContext';
+import { TAB_BAR_BASE_HEIGHT } from '../../store/TabBarVisibilityContext';
 import { MatchRow } from '../../components/matches/MatchRow';
-import { ModeToggle } from '../../components/profile/ModeToggle';
+import { HomeStoriesRow, type StoryConnection } from '../../components/discover/HomeStoriesRow';
 import { AccentHeading } from '../../components/common/AccentHeading';
 import { AuroraBackground } from '../../components/common/AuroraBackground';
 import { EmptyOrb } from '../../components/common/EmptyOrb';
 import { FadeIn } from '../../components/common/FadeInUp';
-import { useAuth } from '../../store/AuthContext';
 import { useLanguage } from '../../store/LanguageContext';
 import { useTheme } from '../../store/ThemeContext';
 import { useMatches } from '../../store/MatchesContext';
-import type { Match } from '../../types/content';
-import type { ProfileMode } from '../../types/user';
+import { useStories } from '../../store/StoriesContext';
+import { useAuth } from '../../store/AuthContext';
+import { useAddStory } from '../../hooks/useAddStory';
 import { fonts, radius, spacing, typography } from '../../theme';
 import { scaleSpace } from '../../theme/responsive';
-import { glow, modeAccent } from '../../theme/glow';
+import { APP_MODE, glow, modeAccent } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 
 const GRADIENT_START = { x: 0, y: 0 } as const;
 const GRADIENT_END = { x: 1, y: 1 } as const;
-
-// An accepted Move to Rishta is what decides the side a thread sits on. The flag
-// is the source of truth rather than `mode` alone, so threads moved before the
-// mode field started being flipped still land under Rishta.
-function threadMode(match: Match): ProfileMode {
-  return match.movedToRishta ? 'rishta' : match.mode;
-}
 
 export function MatchesScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
-  const { user, setActiveMode } = useAuth();
-  const { matches } = useMatches();
+  const { user } = useAuth();
+  const { matches, blockedProfiles } = useMatches();
+  const { mine: myStories, others: storyGroups } = useStories();
+  const { addStory, posting: postingStory } = useAddStory();
+  const [filter, setFilter] = useState<'all' | 'unread' | 'friends' | 'rishta'>('all');
   const insets = useSafeAreaInsets();
-  const onScroll = useHideTabBarOnScroll();
 
-  // Threads live in the same two modes as the decks: a match stays in Friends
-  // until both sides accept a Move to Rishta, which flips it over to Rishta.
-  const mode: ProfileMode = user?.activeMode ?? 'dating';
-  const accent = modeAccent(colors, mode);
+  const accent = modeAccent(colors, APP_MODE);
+  // Every thread, Friends and Rishta alike, in one list; a moved thread
+  // carries a "Rishta" badge (see MatchRow).
   // Blocking keeps the thread (supabase/35_block_keeps_thread.sql) and keeps
   // it right here too, rather than stepping it out of the list Ã¢â‚¬â€ the chat
   // itself is what shows the blocked state and the way to undo it.
-  const friendsMatches = useMemo(() => matches.filter((m) => threadMode(m) === 'dating'), [matches]);
-  const rishtaMatches = useMemo(() => matches.filter((m) => threadMode(m) === 'rishta'), [matches]);
-  const visibleMatches = mode === 'dating' ? friendsMatches : rishtaMatches;
+  // An accepted Move to Rishta is what puts a thread on the Rishta side; the
+  // flag is checked as well as `mode` so threads moved before the mode started
+  // being flipped still count.
+  const isRishta = (m: (typeof matches)[number]) => m.movedToRishta || m.mode === 'rishta';
+  const visibleMatches = matches.filter((m) => {
+    if (filter === 'unread') return m.unread;
+    if (filter === 'friends') return !isRishta(m);
+    if (filter === 'rishta') return isRishta(m);
+    return true;
+  });
+  // Whose stories are up, by user id, so each row can show a story ring.
+  const storyByUser = useMemo(
+    () => new Map(storyGroups.map((g) => [g.userId, g.allSeen ? ('seen' as const) : ('unseen' as const)])),
+    [storyGroups]
+  );
+  const unreadCount = matches.filter((m) => m.unread).length;
 
-  const otherMode: ProfileMode = mode === 'dating' ? 'rishta' : 'dating';
-  const otherCount = otherMode === 'dating' ? friendsMatches.length : rishtaMatches.length;
-  const otherModeLabel = t(otherMode === 'dating' ? 'profile.datingMode' : 'profile.rishtaMode');
-  const unreadCount = visibleMatches.filter((m) => m.unread).length;
+  // The status strip across the top, WhatsApp-style: the member's own story,
+  // then connections with a story up, then the rest of their connections.
+  const storyConnections = useMemo<StoryConnection[]>(() => {
+    const blocked = new Set(blockedProfiles.map((b) => b.id));
+    const withStory = new Set(storyGroups.map((g) => g.userId));
+    return matches
+      .filter((m) => !m.sourceProfileId || (!blocked.has(m.sourceProfileId) && !withStory.has(m.sourceProfileId)))
+      .map((m) => ({ matchId: m.id, name: m.name, photo: m.photo }));
+  }, [matches, storyGroups, blockedProfiles]);
+
+  const filters: { key: typeof filter; label: string }[] = [
+    { key: 'all', label: t('matches.filterAll') },
+    { key: 'unread', label: unreadCount > 0 ? `${t('matches.filterUnread')} ${unreadCount}` : t('matches.filterUnread') },
+    { key: 'friends', label: t('profile.datingMode') },
+    { key: 'rishta', label: t('profile.rishtaMode') },
+  ];
+
+  const listHeader = (
+    <View>
+      {/* Full-bleed, past the screen's side padding, so the strip scrolls edge
+          to edge. */}
+      <View style={styles.storiesBleed}>
+        <HomeStoriesRow
+          myPhoto={user?.photos[0]}
+          hasMyStory={Boolean(myStories)}
+          posting={postingStory}
+          onPressMine={() => user && router.push({ pathname: '/story/[userId]', params: { userId: user.id } })}
+          onAddStory={addStory}
+          groups={storyGroups}
+          onPressGroup={(id) => router.push({ pathname: '/story/[userId]', params: { userId: id } })}
+          connections={storyConnections}
+          onPressConnection={(matchId) => router.push(`/chat/${matchId}`)}
+          suggestions={[]}
+          onPressSuggestion={() => undefined}
+        />
+      </View>
+
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.chipsScroll}
+        contentContainerStyle={[styles.chips, rtl && styles.chipsRtl]}
+      >
+        {filters.map((f) => {
+          const selected = f.key === filter;
+          return (
+            <Pressable
+              key={f.key}
+              onPress={() => setFilter(f.key)}
+              accessibilityRole="button"
+              accessibilityState={{ selected }}
+              style={[styles.chip, selected && { backgroundColor: accent.primary, borderColor: accent.primary }]}
+            >
+              <Text style={[styles.chipLabel, selected && styles.chipLabelSelected]}>{f.label}</Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+    </View>
+  );
 
   return (
     <ScreenContainer scroll={false} edges={['top']}>
-      <AuroraBackground colors={colors} mode={mode} bleed={spacing.lg} />
+      <AuroraBackground colors={colors} mode={APP_MODE} bleed={spacing.lg} />
 
       <FadeIn>
         <AccentHeading
@@ -85,66 +148,39 @@ export function MatchesScreen() {
         />
       </FadeIn>
 
-      <View style={styles.toggleWrap}>
-        <ModeToggle
-          mode={mode}
-          onChange={setActiveMode}
-          datingLabel={t('profile.datingMode')}
-          rishtaLabel={t('profile.rishtaMode')}
-          datingCount={friendsMatches.length}
-          rishtaCount={rishtaMatches.length}
-        />
-      </View>
-
       <FlatList
+        style={styles.list}
         data={visibleMatches}
         keyExtractor={(item) => item.id}
         renderItem={({ item, index }) => (
-          <Animated.View
-            entering={FadeInUp.delay(Math.min(index * 60, 300)).duration(320)}
-            style={[
-              styles.cell,
-              index === 0 && styles.cellFirst,
-              index === visibleMatches.length - 1 && styles.cellLast,
-            ]}
-          >
-            <MatchRow match={item} onPress={() => router.push(`/chat/${item.id}`)} />
+          <Animated.View entering={FadeInUp.delay(Math.min(index * 60, 300)).duration(320)}>
+            <MatchRow
+              match={item}
+              onPress={() => router.push(`/chat/${item.id}`)}
+              story={item.sourceProfileId ? storyByUser.get(item.sourceProfileId) : undefined}
+              onPressStory={() =>
+                item.sourceProfileId &&
+                router.push({ pathname: '/story/[userId]', params: { userId: item.sourceProfileId } })
+              }
+            />
           </Animated.View>
         )}
-        ItemSeparatorComponent={() => (
-          <View style={styles.cell}>
-            <View style={[styles.separator, rtl && styles.separatorRtl]} />
-          </View>
-        )}
+        ItemSeparatorComponent={() => <View style={[styles.separator, rtl && styles.separatorRtl]} />}
+        ListHeaderComponent={listHeader}
         showsVerticalScrollIndicator={false}
-        onScroll={onScroll}
-        scrollEventThrottle={16}
         contentContainerStyle={[styles.listContent, { paddingBottom: TAB_BAR_BASE_HEIGHT + insets.bottom + spacing.lg }]}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-              <EmptyOrb ramp={accent.ramp} icon="chatbubbles" />
+              <EmptyOrb ramp={accent.ramp} icon="chatbubble-ellipses-outline" />
             <Text style={[styles.emptyText, rtl && styles.rtlText]}>
-              {t(mode === 'dating' ? 'matches.emptyFriends' : 'matches.emptyRishta')}
+              {filter === 'unread'
+                ? t('matches.noUnread')
+                : filter === 'friends'
+                  ? t('matches.noFriends')
+                  : filter === 'rishta'
+                    ? t('matches.noRishta')
+                    : t('matches.empty')}
             </Text>
-            {/* Filtering by mode can otherwise read as "my chats disappeared", so
-                the other side's tally is spelled out with a way to get there. */}
-            {otherCount > 0 && (
-              <>
-                <Text style={[styles.emptyHint, rtl && styles.rtlText]}>
-                  {t('matches.otherModeHint', { count: otherCount, mode: otherModeLabel })}
-                </Text>
-                <Pressable onPress={() => setActiveMode(otherMode)}>
-                  <LinearGradient
-                    colors={modeAccent(colors, otherMode).duo}
-                    start={GRADIENT_START}
-                    end={GRADIENT_END}
-                    style={[styles.switchButton, glow(modeAccent(colors, otherMode).primary, 0.5, 14, 6)]}
-                  >
-                    <Text style={styles.switchLabel}>{t('matches.switchTo', { mode: otherModeLabel })}</Text>
-                  </LinearGradient>
-                </Pressable>
-              </>
-            )}
           </View>
         }
       />
@@ -165,28 +201,24 @@ const makeStyles = (colors: Palette) =>
     },
     unreadDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#FFFFFF' },
     unreadPillText: { ...typography.caption, color: '#FFFFFF', fontFamily: fonts.bodyBold },
-    toggleWrap: { paddingBottom: spacing.md },
-    // The whole list is one white card: every row is a cell of it, the first
-    // and last carrying its rounded ends, with hairlines inset past the avatar.
-    cell: {
-      backgroundColor: colors.surface,
-      borderLeftWidth: 1,
-      borderRightWidth: 1,
+    storiesBleed: { marginHorizontal: -spacing.lg },
+    // Bleeds to the screen edges like the story strip, so a fifth chip on a
+    // narrow phone scrolls instead of wrapping.
+    chipsScroll: { flexGrow: 0, marginHorizontal: -spacing.lg, marginBottom: spacing.sm },
+    chips: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.lg },
+    chipsRtl: { flexDirection: 'row-reverse' },
+    chip: {
+      borderRadius: radius.pill,
+      borderWidth: 1,
       borderColor: colors.border,
-      paddingHorizontal: spacing.xs,
+      backgroundColor: colors.surface,
+      paddingHorizontal: spacing.md,
+      paddingVertical: 6,
     },
-    cellFirst: {
-      borderTopWidth: 1,
-      borderTopLeftRadius: radius.lg,
-      borderTopRightRadius: radius.lg,
-      paddingTop: spacing.xs,
-    },
-    cellLast: {
-      borderBottomWidth: 1,
-      borderBottomLeftRadius: radius.lg,
-      borderBottomRightRadius: radius.lg,
-      paddingBottom: spacing.xs,
-    },
+    chipLabel: { ...typography.label, color: colors.textSecondary, fontFamily: fonts.bodyBold },
+    chipLabelSelected: { color: '#FFFFFF' },
+    // A plain list, WhatsApp-style: no card around it, just hairlines between
+    // rows, inset past the avatar.
     separator: {
       height: StyleSheet.hairlineWidth,
       backgroundColor: colors.border,
@@ -194,15 +226,12 @@ const makeStyles = (colors: Palette) =>
       marginRight: spacing.sm,
     },
     separatorRtl: { marginLeft: spacing.sm, marginRight: scaleSpace(56) + spacing.md + spacing.sm },
-    listContent: { paddingBottom: spacing.xl },
+    // The list spans the full screen width and puts the screen's side padding
+    // back inside, so the story strip and chips can reach the edges without
+    // being clipped by the list's own bounds.
+    list: { marginHorizontal: -spacing.lg },
+    listContent: { paddingBottom: spacing.xl, paddingHorizontal: spacing.lg },
     emptyState: { alignItems: 'center', justifyContent: 'center', paddingTop: spacing.xxl, gap: spacing.md },
     emptyText: { ...typography.body, color: colors.textSecondary, textAlign: 'center', paddingHorizontal: spacing.xl },
-    emptyHint: { ...typography.caption, color: colors.textTertiary, textAlign: 'center', paddingHorizontal: spacing.xl },
-    switchButton: {
-      borderRadius: radius.pill,
-      paddingHorizontal: spacing.lg,
-      paddingVertical: spacing.sm + 2,
-    },
-    switchLabel: { ...typography.label, color: '#FFFFFF', fontFamily: fonts.bodyBold },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   });

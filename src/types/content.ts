@@ -192,7 +192,7 @@ export interface MessageReaction {
 // The emoji offered by the long-press picker on a message bubble.
 export const REACTION_EMOJIS = ['❤️', '😂', '😍', '👍', '😢', '🙏'] as const;
 
-export type NotificationType = 'match' | 'like' | 'message' | 'rishta_request' | 'system';
+export type NotificationType = 'match' | 'like' | 'story_like' | 'message' | 'rishta_request' | 'system';
 
 export interface NotificationItem {
   id: string;
@@ -203,7 +203,7 @@ export interface NotificationItem {
   read: boolean;
   /** Set only for `message` — the thread reading it also marks it read. */
   matchId?: string;
-  /** Set for `like`/`match` — whose profile this notification is about. */
+  /** Set for `like`/`match`/`story_like` — whose profile this notification is about. */
   relatedId?: string;
   /** Which pool `relatedId` opens in on `/profile-detail`. */
   relatedKind?: 'dating' | 'rishta';
@@ -265,4 +265,44 @@ export interface BlockedProfile {
   name: string;
   photo: string;
   blockedAt: string;
+}
+
+// One photo or short video a member shared for 24 hours
+// (supabase/46_stories.sql).
+export interface Story {
+  id: string;
+  userId: string;
+  mediaUrl: string;
+  mediaType: 'image' | 'video';
+  // Length of a video in seconds; absent for a photo.
+  durationSec?: number;
+  createdAt: string;
+  expiresAt: string;
+  seen: boolean;
+  // How many people have seen it. Only ever non-zero on the member's own.
+  viewCount: number;
+  // Whether the member has liked it (someone else's story).
+  liked: boolean;
+  // How many people have liked it. Only ever non-zero on the member's own.
+  likeCount: number;
+}
+
+// Everything one person currently has up, in the order it plays.
+export interface StoryGroup {
+  userId: string;
+  name: string;
+  photo: string;
+  stories: Story[];
+  // Whether every story in the group has been seen.
+  allSeen: boolean;
+  // When the newest story went up, for ordering the strip.
+  latestAt: string;
+}
+
+export interface StoryViewer {
+  id: string;
+  name: string;
+  photo: string;
+  viewedAt: string;
+  liked: boolean;
 }

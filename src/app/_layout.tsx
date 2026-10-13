@@ -15,9 +15,9 @@ import { MatchesProvider } from '../store/MatchesContext';
 import { FavoritesProvider } from '../store/FavoritesContext';
 import { ViewHistoryProvider } from '../store/ViewHistoryContext';
 import { LikeLimitProvider } from '../store/LikeLimitContext';
-import { BoostProvider } from '../store/BoostContext';
 import { PrivacyProvider } from '../store/PrivacyContext';
 import { DiscoveryProvider }  from '../store/DiscoveryContext';
+import { StoriesProvider } from '../store/StoriesContext';
 import { DialogProvider } from '../store/DialogContext';
 import { ToastProvider } from '../store/ToastContext';
 import { OnboardingProvider } from '../store/onboardingStore';
@@ -60,7 +60,7 @@ function RootNavigator() {
         card: colors.surface,
         text: colors.textPrimary,
         border: colors.border,
-        notification: colors.dating,
+        notification: colors.teal,
       },
     };
   }, [colors, isDark]);
@@ -103,19 +103,20 @@ function RootNavigator() {
               <Stack.Protected guard={!!user}>
                 <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                 <Stack.Screen name="chat/[id]" options={{ headerShown: false }} />
-                <Stack.Screen name="call" options={{ headerShown: false }} />
+                <Stack.Screen name="story/[userId]" options={{ headerShown: false, animation: 'fade', presentation: 'fullScreenModal' }} />
                 <Stack.Screen name="profile-detail" options={{ headerShown: false }} />
                 <Stack.Screen name="edit-profile" options={{ title: t('editProfile.title') }} />
                 <Stack.Screen name="rishta-profile" options={{ title: t('rishtaProfile.title') }} />
                 <Stack.Screen name="settings" options={{ title: t('settings.title') }} />
+                <Stack.Screen name="themes" options={{ title: t('settings.themesTitle') }} />
                 <Stack.Screen name="notifications" options={{ title: t('notificationsScreen.title') }} />
                 <Stack.Screen name="explore-plus" options={{ title: t('explorePlus.title') }} />
                 <Stack.Screen name="favorites" options={{ title: t('favorites.title') }} />
                 <Stack.Screen name="privacy-safety" options={{ title: t('privacy.title') }} />
                 <Stack.Screen name="blocked-users" options={{ title: t('privacy.blockedUsers') }} />
+                <Stack.Screen name="story-privacy" options={{ title: t('stories.privacyTitle') }} />
                 <Stack.Screen name="help-support" options={{ title: t('help.title') }} />
                 <Stack.Screen name="cnic-verification" options={{ title: t('cnic.title') }} />
-                <Stack.Screen name="wali-dashboard" options={{ title: t('wali.title') }} />
                 <Stack.Screen name="legal" options={{ title: t('legal.title') }} />
               </Stack.Protected>
             </Stack>
@@ -145,15 +146,15 @@ export default function RootLayout() {
                       <FavoritesProvider>
                         <ViewHistoryProvider>
                           <LikeLimitProvider>
-                            <BoostProvider>
-                              <PrivacyProvider>
-                                <DiscoveryProvider>
+                            <PrivacyProvider>
+                              <DiscoveryProvider>
+                                <StoriesProvider>
                                   <DialogProvider>
                                     <RootNavigator />
                                   </DialogProvider>
-                                </DiscoveryProvider>
-                              </PrivacyProvider>
-                            </BoostProvider>
+                                </StoriesProvider>
+                              </DiscoveryProvider>
+                            </PrivacyProvider>
                           </LikeLimitProvider>
                         </ViewHistoryProvider>
                       </FavoritesProvider>
