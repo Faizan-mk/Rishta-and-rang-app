@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
@@ -7,15 +7,14 @@ import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { TextField } from '../../components/common/TextField';
 import { Button } from '../../components/Button';
 import { SwingingLogo } from '../../components/common/SwingingLogo';
+import { WaveHeader } from '../../components/auth/WaveHeader';
 import { useLanguage } from '../../store/LanguageContext';
 import { useAuth } from '../../store/AuthContext';
 import { useTheme } from '../../store/ThemeContext';
 import { isValidEmail } from '../../utils/validation';
 import { errorMessage } from '../../utils/appError';
 import { radius, spacing, typography } from '../../theme';
-import { withAlpha } from '../../theme/glow';
-import { scaleFont, scaleSpace } from '../../theme/responsive';
-import { cardSurface } from '../../theme/surfaces';
+import { flat, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 
 export function LoginScreen() {
@@ -51,22 +50,18 @@ export function LoginScreen() {
   };
 
   return (
-    <ScreenContainer>
-      <Animated.View entering={FadeInDown.duration(420)} style={styles.header}>
-        {/* The logo sits in a blush Mughal arch, the design system's frame. */}
-        <View style={styles.arch}>
-          <SwingingLogo size={64} color={colors.teal} ringColor={colors.surface} />
-        </View>
-        <View style={styles.flourish}>
-          <View style={styles.flourishLine} />
-          <View style={styles.flourishDiamond} />
-          <View style={styles.flourishLine} />
-        </View>
-        <Text style={[styles.title, rtl && styles.rtlText]}>{t('login.title')}</Text>
-        <Text style={[styles.subtitle, rtl && styles.rtlText]}>{t('login.subtitle')}</Text>
+    <ScreenContainer edges={['bottom']} style={styles.container}>
+      <Animated.View entering={FadeInDown.duration(420)}>
+        <WaveHeader
+          title={t('login.title')}
+          subtitle={t('login.subtitle')}
+          badge={<SwingingLogo size={40} color={colors.teal} ringColor="#FFFFFF" />}
+          rtl={rtl}
+        />
       </Animated.View>
 
-      <Animated.View entering={FadeInUp.delay(150).duration(420)} style={styles.formCard}>
+      <View style={styles.body}>
+      <Animated.View entering={FadeInUp.delay(150).duration(420)}>
         <TextField
           label={t('login.email')}
           placeholder={t('login.emailPlaceholder')}
@@ -82,10 +77,17 @@ export function LoginScreen() {
           onChangeText={setPassword}
           secureTextEntry
         />
+        <Pressable
+          onPress={() => router.push('/forgot-password')}
+          hitSlop={8}
+          style={[styles.forgotLink, rtl && styles.forgotLinkRtl]}
+        >
+          <Text style={styles.forgotLabel}>{t('login.forgotPassword')}</Text>
+        </Pressable>
 
         {error ? (
           <View style={styles.errorCard}>
-            <Ionicons name="alert-circle" size={16} color={colors.danger} />
+            <Ionicons name="alert-circle-outline" size={16} color={colors.danger} />
             <Text style={[styles.errorText, rtl && styles.rtlText]}>{error}</Text>
           </View>
         ) : null}
@@ -94,14 +96,8 @@ export function LoginScreen() {
           label={t('login.submit')}
           onPress={onSubmit}
           loading={loading}
-          gradient={[colors.teal, colors.dating]}
+          gradient={flat(colors.teal)}
           style={styles.submit}
-        />
-        <Button
-          label={t('login.forgotPassword')}
-          variant="ghost"
-          onPress={() => router.push('/forgot-password')}
-          labelStyle={styles.forgotLabel}
         />
       </Animated.View>
 
@@ -119,46 +115,20 @@ export function LoginScreen() {
           labelStyle={styles.createLabel}
         />
       </View>
+      </View>
     </ScreenContainer>
   );
 }
 
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
-    header: { alignItems: 'center', marginBottom: spacing.lg, marginTop: spacing.sm },
-    arch: {
-      width: scaleSpace(116),
-      height: scaleSpace(136),
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: colors.tealSoft,
-      borderWidth: 1,
-      borderColor: withAlpha(colors.gold, 0.6),
-      borderTopLeftRadius: 1000,
-      borderTopRightRadius: 1000,
-      borderBottomLeftRadius: radius.lg,
-      borderBottomRightRadius: radius.lg,
-      paddingTop: spacing.md,
-    },
-    flourish: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.md },
-    flourishLine: { width: scaleSpace(28), height: 1, backgroundColor: colors.gold },
-    flourishDiamond: {
-      width: scaleSpace(6),
-      height: scaleSpace(6),
-      backgroundColor: colors.gold,
-      transform: [{ rotate: '45deg' }],
-    },
-    title: {
-      ...typography.h1,
-      fontSize: scaleFont(30),
-      lineHeight: scaleFont(38),
-      color: colors.textPrimary,
-      marginTop: spacing.sm,
-      textAlign: 'center',
-    },
-    subtitle: { ...typography.body, color: colors.textSecondary, marginTop: spacing.xs, textAlign: 'center' },
-    formCard: cardSurface(colors),
+    // The wave header runs edge to edge, so the screen drops its own padding
+    // and the form below carries it instead.
+    container: { padding: 0, paddingBottom: spacing.lg },
+    body: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
     submit: { marginTop: spacing.sm },
+    forgotLink: { alignSelf: 'flex-end', marginTop: -spacing.xs, marginBottom: spacing.md },
+    forgotLinkRtl: { alignSelf: 'flex-start' },
     forgotLabel: { ...typography.label, color: colors.teal },
     errorCard: {
       flexDirection: 'row',

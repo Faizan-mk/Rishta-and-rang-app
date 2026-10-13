@@ -6,7 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
-import { TAB_BAR_BASE_HEIGHT, useHideTabBarOnScroll } from '../../store/TabBarVisibilityContext';
+import { TAB_BAR_BASE_HEIGHT } from '../../store/TabBarVisibilityContext';
 import { AccentHeading } from '../../components/common/AccentHeading';
 import { Badge } from '../../components/common/Badge';
 import { Chip } from '../../components/common/Chip';
@@ -35,7 +35,7 @@ import { FEATURE_BUREAU } from '../../config/features';
 import { fonts, radius, spacing, typography } from '../../theme';
 import { scaleFont } from '../../theme/responsive';
 import { cardSurface } from '../../theme/surfaces';
-import { glow, modeAccent, withAlpha, type Gradient } from '../../theme/glow';
+import { APP_MODE, flat, glow, modeAccent, withAlpha, type Gradient } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 
 const GRADIENT_START = { x: 0, y: 0 } as const;
@@ -51,7 +51,6 @@ export function ProfileScreen() {
   const { unreadCount } = useNotifications();
   const [requestingBureau, setRequestingBureau] = useState(false);
   const insets = useSafeAreaInsets();
-  const onScroll = useHideTabBarOnScroll();
 
   if (!user) return null;
 
@@ -67,7 +66,7 @@ export function ProfileScreen() {
   };
   const completion = profileCompletion(user);
   const memberSince = new Date(user.createdAt).getFullYear();
-  const accent = modeAccent(colors, user.activeMode);
+  const accent = modeAccent(colors, APP_MODE);
 
   const onLogout = async () => {
     const confirmed = await confirm({
@@ -103,12 +102,9 @@ export function ProfileScreen() {
   return (
     <ScreenContainer
       edges={['top']}
-      onScroll={onScroll}
-      scrollEventThrottle={16}
       style={{ paddingBottom: TAB_BAR_BASE_HEIGHT + insets.bottom + spacing.lg }}
     >
-      {/* The banner wears the member's own mode colours, so the menu opens in the
-          same world their deck is in. */}
+      {/* The banner wears the app's colours, like the rest of its chrome. */}
       <LinearGradient colors={accent.ramp} start={GRADIENT_START} end={GRADIENT_END} style={styles.banner}>
         <View style={styles.bannerGlowA} pointerEvents="none" />
         <View style={styles.bannerGlowB} pointerEvents="none" />
@@ -134,7 +130,7 @@ export function ProfileScreen() {
       <Animated.View entering={FadeInUp.duration(360)} style={styles.headerCard}>
         <View style={styles.avatarWrap}>
           <LinearGradient
-            colors={user.isExplorePlus ? PREMIUM_RING : accent.ramp}
+            colors={user.isExplorePlus ? flat(colors.metal) : accent.ramp}
             start={GRADIENT_START}
             end={GRADIENT_END}
             style={[styles.avatarRing, glow(user.isExplorePlus ? colors.gold : accent.primary, 0.5, 18, 8)]}
@@ -162,7 +158,7 @@ export function ProfileScreen() {
           <Text style={[styles.name, rtl && styles.rtlText]}>{user.fullName}</Text>
         </View>
         <View style={[styles.metaRow, rtl && styles.rowRtl]}>
-          <Ionicons name="location" size={13} color={accent.primary} />
+          <Ionicons name="location-outline" size={13} color={accent.primary} />
           <Text style={[styles.meta, { color: accent.primary }, rtl && styles.rtlText]}>{vocabularyLabel(user.city, t)}</Text>
         </View>
 
@@ -191,21 +187,21 @@ export function ProfileScreen() {
 
       <View style={styles.statsRow}>
         <StatTile
-          icon="pie-chart"
+          icon="pie-chart-outline"
           tint={colors.teal}
           value={`${completion}%`}
           label={t('profile.completion')}
           colors={colors}
         />
         <StatTile
-          icon="images"
+          icon="images-outline"
           tint={colors.plum}
           value={String(user.photos.length)}
           label={t('photos.title')}
           colors={colors}
         />
         <StatTile
-          icon="ribbon"
+          icon="ribbon-outline"
           tint={colors.gold}
           value={String(memberSince)}
           label={t('profile.memberSince')}
@@ -295,33 +291,31 @@ export function ProfileScreen() {
         </View>
       ) : null}
 
-      {user.activeMode === 'dating' ? (
+      {user.dating.vibeTags.length > 0 && (
         <View style={styles.section}>
           <AccentHeading title={t('profile.vibeTags')} gradient={accent.duo} style={styles.sectionHeading} />
           <View style={styles.chipRow}>
-            {user.dating.vibeTags.length === 0 ? (
-              <Text style={[styles.body, rtl && styles.rtlText]}>—</Text>
-            ) : (
-              user.dating.vibeTags.map((tag) => <Chip key={tag} label={tag} tone="dating" selected />)
-            )}
-          </View>
-        </View>
-      ) : (
-        <View style={styles.section}>
-          <AccentHeading
-            title={t('profile.rishtaDetails')}
-            gradient={accent.duo}
-            style={styles.sectionHeading}
-            right={<Button label={t('common.edit')} variant="ghost" onPress={() => router.push('/rishta-profile')} />}
-          />
-          <View style={styles.detailCard}>
-            <ProfileRow label={t('profile.religion')} value={user.rishta.religion || '—'} rtl={rtl} />
-            <ProfileRow label={t('profile.sect')} value={user.rishta.sect || '—'} rtl={rtl} />
-            <ProfileRow label={t('profile.familyBackground')} value={user.rishta.familyBackground || '—'} rtl={rtl} />
-            <ProfileRow label={t('profile.education')} value={user.rishta.education || '—'} rtl={rtl} last />
+            {user.dating.vibeTags.map((tag) => (
+              <Chip key={tag} label={tag} tone="dating" selected />
+            ))}
           </View>
         </View>
       )}
+
+      <View style={styles.section}>
+        <AccentHeading
+          title={t('profile.rishtaDetails')}
+          gradient={accent.duo}
+          style={styles.sectionHeading}
+          right={<Button label={t('common.edit')} variant="ghost" onPress={() => router.push('/rishta-profile')} />}
+        />
+        <View style={styles.detailCard}>
+          <ProfileRow label={t('profile.religion')} value={user.rishta.religion || '—'} rtl={rtl} />
+          <ProfileRow label={t('profile.sect')} value={user.rishta.sect || '—'} rtl={rtl} />
+          <ProfileRow label={t('profile.familyBackground')} value={user.rishta.familyBackground || '—'} rtl={rtl} />
+          <ProfileRow label={t('profile.education')} value={user.rishta.education || '—'} rtl={rtl} last />
+        </View>
+      </View>
 
       <View style={styles.section}>
         <IntroMediaSection profile={browseProfile} />
@@ -335,10 +329,10 @@ export function ProfileScreen() {
 
       <View style={styles.section}>
         <View style={styles.quickLinks}>
-          <QuickLinkRow icon="heart" tint={colors.dating} label={t('profile.favorites')} onPress={() => router.push('/favorites')} rtl={rtl} />
-          <QuickLinkRow icon="sparkles" tint={colors.gold} label={t('profile.subscription')} onPress={() => router.push('/explore-plus')} rtl={rtl} />
-          <QuickLinkRow icon="notifications" tint={colors.plum} label={t('profile.notifications')} onPress={() => router.push('/notifications')} rtl={rtl} />
-          <QuickLinkRow icon="settings" tint={colors.teal} label={t('profile.settings')} onPress={() => router.push('/settings')} rtl={rtl} last />
+          <QuickLinkRow icon="star-outline" tint={colors.gold} label={t('profile.favorites')} onPress={() => router.push('/favorites')} rtl={rtl} />
+          <QuickLinkRow icon="sparkles-outline" tint={colors.gold} label={t('profile.subscription')} onPress={() => router.push('/explore-plus')} rtl={rtl} />
+          <QuickLinkRow icon="notifications-outline" tint={colors.plum} label={t('profile.notifications')} onPress={() => router.push('/notifications')} rtl={rtl} />
+          <QuickLinkRow icon="settings-outline" tint={colors.teal} label={t('profile.settings')} onPress={() => router.push('/settings')} rtl={rtl} last />
         </View>
       </View>
 
@@ -364,14 +358,6 @@ export function ProfileScreen() {
               />
             </>
           )}
-          <View style={styles.rowDivider} />
-          <SettingsRow
-            icon="people-outline"
-            label={t('profile.wali')}
-            description={user.waliContact ? t('wali.statusInvited', { name: user.waliName ?? '' }) : t('wali.statusNotSet')}
-            right="chevron"
-            onPress={() => router.push('/wali-dashboard')}
-          />
         </View>
       </View>
 
@@ -462,8 +448,7 @@ function QuickLinkRow({
 }
 
 // Gold ring for paying members — the one place the palette's premium colour
-// outranks the member's own mode colour.
-const PREMIUM_RING: Gradient = ['#F3D99B', '#D4A857', '#B8893A'];
+// outranks the app's own colour.
 
 const detailStyles = StyleSheet.create({
   row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.sm + 4 },

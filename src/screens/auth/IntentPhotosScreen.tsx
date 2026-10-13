@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import type { Intent } from '../../types/user';
@@ -16,7 +16,7 @@ import { useDialog } from '../../store/DialogContext';
 import { useOnboarding } from '../../store/onboardingStore';
 import { radius, spacing, typography } from '../../theme';
 import { scaleFont } from '../../theme/responsive';
-import { glow, withAlpha } from '../../theme/glow';
+import { flat, glow, withAlpha } from '../../theme/glow';
 import { cardSurface } from '../../theme/surfaces';
 import type { Palette } from '../../theme/palettes';
 
@@ -24,10 +24,10 @@ const MAX_PHOTOS = 4;
 const MIN_PHOTOS = 2;
 
 // Purely decorative: one icon per intent card.
-const INTENT_ICONS: Record<Intent, keyof typeof Ionicons.glyphMap> = {
-  casual: 'cafe-outline',
-  serious: 'heart-outline',
-  matrimonial: 'diamond-outline',
+const INTENT_ICONS: Record<Intent, keyof typeof MaterialCommunityIcons.glyphMap> = {
+  casual: 'account-group-outline',
+  serious: 'heart-multiple-outline',
+  matrimonial: 'ring',
 };
 
 const OPTIONS: { key: Intent; titleKey: string; descKey: string }[] = [
@@ -41,7 +41,7 @@ export function IntentPhotosScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
-  const onboardRamp = [colors.teal, colors.dating] as const;
+  const onboardRamp = flat(colors.teal);
 
   const { notify } = useDialog();
   const { draft, patchDraft } = useOnboarding();
@@ -105,7 +105,7 @@ export function IntentPhotosScreen() {
               style={[styles.card, isSelected && styles.cardSelected, rtl && styles.rowRtl]}
             >
               <View style={[styles.iconDisc, isSelected && styles.iconDiscSelected]}>
-                <Ionicons
+                <MaterialCommunityIcons
                   name={INTENT_ICONS[option.key]}
                   size={22}
                   color={isSelected ? colors.textInverse : colors.teal}
@@ -276,7 +276,7 @@ const makeStyles = (colors: Palette) =>
       alignSelf: 'center',
       flexDirection: 'row',
       gap: 4,
-      backgroundColor: 'rgba(20,11,16,0.6)',
+      backgroundColor: 'rgba(36,31,33,0.6)',
       borderRadius: radius.pill,
       paddingVertical: 4,
       paddingHorizontal: 10,
@@ -286,12 +286,12 @@ const makeStyles = (colors: Palette) =>
     badgeText: { ...typography.label, color: '#FFFFFF', fontSize: scaleFont(10), lineHeight: scaleFont(13) },
     removeBadge: {
       position: 'absolute',
-      top: '22%',
+      top: 8,
       right: 8,
       width: 26,
       height: 26,
       borderRadius: 13,
-      backgroundColor: 'rgba(20,11,16,0.6)',
+      backgroundColor: 'rgba(36,31,33,0.6)',
       alignItems: 'center',
       justifyContent: 'center',
     },

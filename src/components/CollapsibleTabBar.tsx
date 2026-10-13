@@ -6,18 +6,17 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useTheme } from '../store/ThemeContext';
-import { useAuth } from '../store/AuthContext';
-import { useTabBarAnimatedStyle, TAB_BAR_BASE_HEIGHT } from '../store/TabBarVisibilityContext';
+import { TAB_BAR_BASE_HEIGHT } from '../store/TabBarVisibilityContext';
 import { fonts, radius, typography } from '../theme';
 import { scaleFont } from '../theme/responsive';
-import { glow, modeAccent, type Gradient } from '../theme/glow';
+import { glow, APP_MODE, modeAccent, type Gradient } from '../theme/glow';
 import type { Palette } from '../theme/palettes';
 
 // Keyed by the file names under src/app/(tabs).
 const ICONS: Record<string, { active: keyof typeof Ionicons.glyphMap; inactive: keyof typeof Ionicons.glyphMap }> = {
-  home: { active: 'flame', inactive: 'flame-outline' },
-  explore: { active: 'compass', inactive: 'compass-outline' },
-  messages: { active: 'chatbubbles', inactive: 'chatbubbles-outline' },
+  home: { active: 'home', inactive: 'home-outline' },
+  explore: { active: 'search', inactive: 'search-outline' },
+  messages: { active: 'chatbubble-ellipses', inactive: 'chatbubble-ellipses-outline' },
   profile: { active: 'menu', inactive: 'menu-outline' },
 };
 
@@ -26,16 +25,14 @@ const GRADIENT_END = { x: 1, y: 1 } as const;
 
 export function CollapsibleTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const { colors } = useTheme();
-  const { user } = useAuth();
   const insets = useSafeAreaInsets();
-  const animatedStyle = useTabBarAnimatedStyle();
   const styles = makeStyles(colors, insets.bottom);
   // The bar wears whichever deck the member is browsing, so the app's accent is
   // the same colour top to bottom.
-  const accent = modeAccent(colors, user?.activeMode ?? 'dating');
+  const accent = modeAccent(colors, APP_MODE);
 
   return (
-    <Animated.View style={[styles.container, animatedStyle]} pointerEvents="box-none">
+    <View style={styles.container} pointerEvents="box-none">
       <View style={styles.row}>
         {state.routes.map((route, index) => {
           const { options } = descriptors[route.key];
@@ -67,7 +64,7 @@ export function CollapsibleTabBar({ state, descriptors, navigation }: BottomTabB
           );
         })}
       </View>
-    </Animated.View>
+    </View>
   );
 }
 
@@ -159,7 +156,7 @@ const makeStyles = (colors: Palette, bottomInset: number) =>
       borderWidth: 1,
       borderBottomWidth: 0,
       borderColor: colors.border,
-      shadowColor: '#2A1720',
+      shadowColor: '#241F21',
       shadowOpacity: 0.1,
       shadowRadius: 20,
       shadowOffset: { width: 0, height: -6 },

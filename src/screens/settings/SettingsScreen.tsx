@@ -15,7 +15,7 @@ import { useNotifications } from '../../store/NotificationContext';
 import { useDialog } from '../../store/DialogContext';
 import { fonts, radius, spacing, typography } from '../../theme';
 import { cardSurface } from '../../theme/surfaces';
-import { glow, modeAccent, withAlpha } from '../../theme/glow';
+import { glow, APP_MODE, modeAccent, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 import type { NotificationPrefs } from '../../types/content';
 import type { AppLanguage } from '../../types/user';
@@ -48,8 +48,8 @@ export function SettingsScreen() {
   const { colors, mode, setMode } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl, language, setLanguage } = useLanguage();
-  const { user, logout } = useAuth();
-  const accent = modeAccent(colors, user?.activeMode ?? 'dating');
+  const { logout } = useAuth();
+  const accent = modeAccent(colors, APP_MODE);
   const { prefs, setPref } = useNotifications();
   const { confirm } = useDialog();
 
@@ -105,6 +105,9 @@ export function SettingsScreen() {
               </Pressable>
             );
           })}
+        </View>
+        <View style={[styles.card, styles.themesCard]}>
+          <SettingsRow icon="color-palette-outline" label={t('settings.appTheme')} right="chevron" onPress={() => router.push('/themes')} />
         </View>
       </FadeIn>
 
@@ -198,6 +201,7 @@ const makeStyles = (colors: Palette) =>
     themeLabel: { ...typography.label, color: colors.textSecondary },
     themeLabelSelected: { color: '#FFFFFF', fontFamily: fonts.bodyBold },
     card: { ...cardSurface(colors), paddingVertical: 0, paddingBottom: 0, paddingHorizontal: spacing.md },
+    themesCard: { marginTop: spacing.md },
     divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border },
     logout: { marginTop: spacing.xl },
     version: { ...typography.caption, color: colors.textTertiary, textAlign: 'center', marginTop: spacing.md, marginBottom: spacing.lg },

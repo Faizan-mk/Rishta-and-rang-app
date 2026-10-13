@@ -1,4 +1,4 @@
-# Rishta & Rang
+# Matrimonial App
 
 A  matchmaking app built with Expo (React Native) and Supabase, supporting English, Roman  and Urdu.
 

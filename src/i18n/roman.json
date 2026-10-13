@@ -1,5 +1,5 @@
 {
-  "appName": "Rishta & Rang",
+  "appName": "Matrimonial App",
   "common": {
     "next": "Aage",
     "back": "Peeche",
@@ -107,7 +107,7 @@
     "submit": "Jari Rakhein",
     "missingFields": "Baraye meherbani tamam khane pur karein.",
     "invalidDob": "Tareekh-e-paidaish sahi format YYYY-MM-DD mein darj karein.",
-    "tooYoung": "Rishta & Rang istemal karne ke liye umar 18 saal ya us se zyada honi chahiye."
+    "tooYoung": "Matrimonial App istemal karne ke liye umar 18 saal ya us se zyada honi chahiye."
   },
   "intent": {
     "title": "Aap Yahan Kyun Aaye Hain?",
@@ -153,7 +153,7 @@
       "subtitle": "Verified profiles, wali ki shumooliyat, aur privacy controls — har qadam par aapke saath."
     },
     "page2": {
-      "title": "Dosti aur rang, apne andaaz mein",
+      "title": "Dosti, apne andaaz mein",
       "subtitle": "Ek mehfooz aur ba-waqar mahol mein baat cheet karein aur haqeeqi taalluqaat banayein.",
       "chipSafe": "Mehfooz baat cheet",
       "chipReal": "Haqeeqi log"
@@ -213,15 +213,10 @@
     "favourited": "Pasandeeda mein shamil",
     "block": "Block Karein",
     "report": "Report Karein",
-    "shareMessage": "{name} ki profile Rishta & Rang par dekhein!",
+    "shareMessage": "{name} ki profile Matrimonial App par dekhein!",
     "openToRelocate": "Muntaqli ke liye tayyar",
     "careerPlansTitle": "Career ke mansooby",
     "grewUpIn": "{place} mein parwarish payi",
-    "sort": "Sort",
-    "sortTitle": "Sort by",
-    "sortRecommended": "Tajweez karda",
-    "sortNearest": "Fasla: qareeb tareen pehle",
-    "sortActiveFirst": "Haal hi mein active",
     "filtersTitle": "Filters",
     "filterVerifiedOnly": "Verification badges wali profiles",
     "filterActiveToday": "Sirf aaj active",
@@ -241,13 +236,6 @@
     "shareProfile": "Profile share karein",
     "activeYesterday": "Kal active thay",
     "activeThisWeek": "Is hafte active",
-    "sortBestMatch": "Behtareen match pehle",
-    "sortAgeAsc": "Umar: kam se zyada",
-    "sortAgeDesc": "Umar: zyada se kam",
-    "sortFreeToChat": "Jin se abhi baat cheet nahi",
-    "sortJustJoined": "Naye shamil hone wale",
-    "sortVerified": "Sab se zyada verification badges",
-    "sortCompleteBio": "Mukammal taaruf",
     "filterAge": "Umar",
     "filterAgeRange": "{min}–{max} saal",
     "filterAgeMin": "Se",
@@ -273,7 +261,8 @@
     "swipeHintLike": "Pasand",
     "swipeHintPass": "Nazar andaz",
     "filterIntent": "Kis maqsad se",
-    "filterAnyIntent": "Koi bhi"
+    "filterAnyIntent": "Koi bhi",
+    "myStory": "Meri Story"
   },
   "attributes": {
     "heightValue": "{height} cm",
@@ -302,21 +291,22 @@
     "empty": "Abhi koi profile in filters se mutabiqat nahi rakhti. Talaash ko wasee karein."
   },
   "matches": {
-    "title": "Matches",
+    "title": "Messages",
     "empty": "Abhi tak koi match nahi — swiping shuru karein.",
     "movedToRishta": "Rishtay ki Taraf Muntaqil",
     "rishtaBadge": "Rishta",
-    "emptyFriends": "Abhi koi Friends chat nahi — swipe karke apne log dhoondein.",
-    "emptyRishta": "Abhi koi Rishta chat nahi — kisi friendship chat se 'Move to Rishta' bhejein, ya Rishta mode mein swipe karein.",
-    "otherModeHint": "{mode} mein {count} maujood hain.",
-    "switchTo": "{mode} par jayen",
     "typeMessage": "Paigham likhein...",
     "itsAMatch": "Yeh Ek Match Hai!",
     "youAndLikedEachOther": "Aap aur {name} ne ek doosre ko pasand kiya.",
     "previewPhoto": "Tasveer",
     "previewVoice": "Voice paigham",
     "previewReacted": "Ek message par react kiya",
-    "matchedBody": "Aap aur {name} ne ek doosre ko pasand kiya."
+    "matchedBody": "Aap aur {name} ne ek doosre ko pasand kiya.",
+    "filterAll": "Sab",
+    "filterUnread": "Unread",
+    "noUnread": "Koi unread chat nahi.",
+    "noFriends": "Abhi koi Friends chat nahi.",
+    "noRishta": "Abhi koi Rishta chat nahi."
   },
   "chat": {
     "moveToRishta": "Rishtay ki Taraf Barhein",
@@ -364,10 +354,8 @@
     "deleteForMe": "Sirf mere liye delete karein",
     "deleteConfirmTitle": "Message delete karein?",
     "clearChat": "Chat clear karein",
-    "voiceCall": "Voice call",
     "replyYou": "Aap",
     "replyingTo": "{name} ko jawab de rahe hain",
-    "videoCall": "Video call",
     "moreOptions": "Mazeed options",
     "clearChatConfirmTitle": "Ye chat clear karein?",
     "clearChatConfirmBody": "Sab messages sirf aap ki taraf se hat jayenge — {name} ke paas unke apne messages rahenge, aur chat uske baad bhi kaam karti rahegi."
@@ -406,10 +394,9 @@
     "prayerHabits": "Namaz ki aadatein",
     "incomeRange": "Aamdani ki range",
     "livingAbroadStatus": "Bairun-e-mulk rehaish ki soorat-e-haal",
-    "verificationSection": "Tasdeeq aur Khandan",
+    "verificationSection": "Tasdeeq",
     "insightsSection": "Mutabiqat aur Tasdeeq",
     "cnic": "CNIC / ID Document",
-    "wali": "Wali Dashboard",
     "bureau": "Bureau-Tasdeeq Shuda Badge",
     "bureauNotVerified": "Bureau Tasdeeq Shuda Nahi",
     "aiScoreValue": "{score}% mutabiqat",
@@ -467,6 +454,20 @@
   "settings": {
     "title": "Settings",
     "appearance": "Zahiri Shakal",
+    "appTheme": "App Theme",
+    "themesTitle": "Themes",
+    "themesSubtitle": "Poori app ke liye rangon ki theme chunein. Roshan aur tareek mode is ke saath bhi chalte hain.",
+    "themeActive": "Faal",
+    "themeMaroon": "Maroon aur Sunehra",
+    "themeMaroonDesc": "Matrimonial App ka classic andaaz",
+    "themeEmerald": "Zamurradi aur Sunehra",
+    "themeEmeraldDesc": "Gehra zamurradi, purane sunehre ke saath",
+    "themeNavy": "Navy aur Sunehra",
+    "themeNavyDesc": "Gehra neela, khalis sunehre ke saath",
+    "themeOnyx": "Siyah aur Sunehra",
+    "themeOnyxDesc": "Siyah aur sunehra, sada bahar shaan",
+    "themePink": "Gulabi aur Safaid",
+    "themePinkDesc": "Safaid par gulabi, taaza aur narm",
     "light": "Roshan",
     "dark": "Tareek",
     "system": "System",
@@ -535,26 +536,6 @@
     "verifiedBody": "Ab aapki profile par bureau tasdeeq shuda badge maujood hai.",
     "alreadyVerifiedBody": "Aap pehle hi bureau tasdeeq shuda hain."
   },
-  "wali": {
-    "title": "Wali Dashboard",
-    "explainer": "Apne rishta-marhala matches ke baare mein aagah rakhne ke liye ek wali (sarparast) ko madoo karein — woh guftagu jo friends se ek sanjeeda, khandani marhale ki taraf barh chuki hain.",
-    "name": "Wali ka Naam",
-    "namePlaceholder": "misaal ke tor par Abu Bakr",
-    "contact": "Wali ka Rabta",
-    "contactPlaceholder": "Phone ya email",
-    "missingFields": "Baraye meherbani dono khane pur karein.",
-    "sendInvite": "Dawat Bhejein",
-    "invitedTitle": "Dawat Bhej Di Gayi",
-    "invitedBody": "{name} ko aapke wali ke tor par shamil kar diya gaya hai.",
-    "removeWali": "Wali ko Hatayein",
-    "removeConfirmTitle": "Apne wali ko hatayein?",
-    "removeConfirmBody": "Woh ab aapki rishta-marhala sargarmi nahi dekh sakenge.",
-    "removeConfirmLabel": "Hatayein",
-    "sharedActivity": "Mushtarka Sargarmi",
-    "sharedActivityEmpty": "Abhi tak koi rishta-marhala match nahi.",
-    "statusInvited": "Madoo kiya gaya — {name}",
-    "statusNotSet": "Abhi Tarteeb Nahi Di Gayi"
-  },
   "report": {
     "subtitle": "Baraye meherbani batayein ke aap is profile ki report kyun kar rahe hain.",
     "reason_fakeProfile": "Jaali Profile",
@@ -607,9 +588,9 @@
     "message": "Paigham",
     "messagePlaceholder": "Masla ya sawal bayan karein...",
     "send": "Paigham Bhejein",
-    "sentTitle": "Paigham Bhej Diya Gaya",
-    "sentBody": "Rabta karne ka shukriya — hamari support team 24 ghanton mein jawab degi.",
-    "missingFields": "Baraye meherbani dono khane pur karein."
+    "missingFields": "Baraye meherbani dono khane pur karein.",
+    "noMailAppTitle": "Email app nahi mili",
+    "noMailAppBody": "Meherbani karke kisi bhi email app se {email} par email karein."
   },
   "legal": {
     "title": "Privacy policy aur sharait",
@@ -619,12 +600,12 @@
     "contactLine": "In dastavezaat ke baare mein sawal hai? {email} par email karein.",
     "privacyPolicyTitle": "Privacy policy",
     "termsTitle": "Service ki sharait",
-    "privacyIntro": "Rishta & Rang Pakistan mein baaligh afraad ke liye aik matchmaking app hai. Yeh policy batati hai ke hum aap se kya maloomat lete hain, kyun lete hain, kaun unhein dekh sakta hai, aur aap unhein kaise delete karwa sakte hain.",
-    "termsIntro": "Yeh sharait aap ke aur Rishta & Rang ke darmiyan muahida hain. Account bana kar aap inhein qubool karte hain. Agar aap inhein qubool nahi karte to app istemal na karein.",
+    "privacyIntro": "Matrimonial App Pakistan mein baaligh afraad ke liye aik matchmaking app hai. Yeh policy batati hai ke hum aap se kya maloomat lete hain, kyun lete hain, kaun unhein dekh sakta hai, aur aap unhein kaise delete karwa sakte hain.",
+    "termsIntro": "Yeh sharait aap ke aur Matrimonial App ke darmiyan muahida hain. Account bana kar aap inhein qubool karte hain. Agar aap inhein qubool nahi karte to app istemal na karein.",
     "privacy": {
       "whoWeAre": {
         "title": "1. Hum kaun hain",
-        "body": "Rishta & Rang (\"hum\") is app ko chalate hain aur neeche bayan ki gayi maloomat ke data controller hain. Is policy se mutalliq kisi bhi baat ke liye, bashamool apna data dekhne ya delete karwane ki darkhwast, aap hum se {email} par rabta kar sakte hain."
+        "body": "Matrimonial App (\"hum\") is app ko chalate hain aur neeche bayan ki gayi maloomat ke data controller hain. Is policy se mutalliq kisi bhi baat ke liye, bashamool apna data dekhne ya delete karwane ki darkhwast, aap hum se {email} par rabta kar sakte hain."
       },
       "dataWeCollect": {
         "title": "2. Hum kya jama karte hain",
@@ -656,7 +637,7 @@
       },
       "ageLimit": {
         "title": "9. Sirf baaligh afraad ke liye",
-        "body": "Rishta & Rang 18 saal ya us se zyada umar ke afraad ke liye hai. Hum signup par tareekh-e-paidaish poochte hain aur 18 saal se kam umar ke accounts qubool nahi karte. Agar hamein maloom ho ke koi account nabaligh ka hai to hum use aur us ka data hazf kar dete hain. Agar aap ko lage ke koi nabaligh app istemal kar raha hai to {email} par email karein."
+        "body": "Matrimonial App 18 saal ya us se zyada umar ke afraad ke liye hai. Hum signup par tareekh-e-paidaish poochte hain aur 18 saal se kam umar ke accounts qubool nahi karte. Agar hamein maloom ho ke koi account nabaligh ka hai to hum use aur us ka data hazf kar dete hain. Agar aap ko lage ke koi nabaligh app istemal kar raha hai to {email} par email karein."
       },
       "changes": {
         "title": "10. Is policy mein tabdeeliyan",
@@ -670,7 +651,7 @@
     "terms": {
       "eligibility": {
         "title": "1. Aap ka 18 saal ka hona lazim hai",
-        "body": "Aap Rishta & Rang sirf usi soorat istemal kar sakte hain jab aap 18 saal ya us se zyada umar ke hon aur qanoonan yeh muahida karne ke ahal hon. Aap signup par apni umar ki tasdeeq karte hain. 18 saal se kam umar mein, ya kisi nabaligh ki janib se, account banana in sharait ki khilaf warzi hai aur hum aisa account hazf kar denge."
+        "body": "Aap Matrimonial App sirf usi soorat istemal kar sakte hain jab aap 18 saal ya us se zyada umar ke hon aur qanoonan yeh muahida karne ke ahal hon. Aap signup par apni umar ki tasdeeq karte hain. 18 saal se kam umar mein, ya kisi nabaligh ki janib se, account banana in sharait ki khilaf warzi hai aur hum aisa account hazf kar denge."
       },
       "yourAccount": {
         "title": "2. Aap ka account",
@@ -678,7 +659,7 @@
       },
       "acceptableUse": {
         "title": "3. App kaise istemal karein",
-        "body": "Rishta & Rang dosti, taalluq ya shadi ke liye logon se milne ki jagah hai. Doosre members ke saath waisa sulook karein jaisa aap apne ghar walon ke liye chahte hain. Guftagu usi raftaar se barhayein jo dono ko qubool ho, aur \"nahi\" ka ehtiram pehli hi baar karein."
+        "body": "Matrimonial App dosti, taalluq ya shadi ke liye logon se milne ki jagah hai. Doosre members ke saath waisa sulook karein jaisa aap apne ghar walon ke liye chahte hain. Guftagu usi raftaar se barhayein jo dono ko qubool ho, aur \"nahi\" ka ehtiram pehli hi baar karein."
       },
       "prohibited": {
         "title": "4. Kya mana hai",
@@ -744,7 +725,7 @@
     "myHistory": "My History",
     "learnMore": "Mazeed janein",
     "share": "Share Karein",
-    "shareEventMessage": "{title} — {city}, {date}. Isay Rishta & Rang par dekhein!",
+    "shareEventMessage": "{title} — {city}, {date}. Isay Matrimonial App par dekhein!",
     "historyEmpty": "Aap jo profiles dekhein ge woh yahan dikhengi."
   },
   "explorePlus": {
@@ -783,20 +764,9 @@
     "interestSentTitle": "Dilchaspi Bhej Di Gayi",
     "interestSentBody": "{name} ko muttala kar diya jayega. Agar woh bhi dilchaspi rakhte hain to aap dono Rishta Mode ki taraf barh sakenge.",
     "message": "Paigham",
-    "call": "Call",
     "photosHidden": "Match hone tak tasveerein posheeda hain",
     "messageLockedTitle": "Abhi match nahi hua",
-    "messageLockedBody": "Jab aap dono ek doosre ko pasand kar lenge, tab aap {name} ko message bhej sakenge.",
-    "callLockedTitle": "Abhi match nahi hua",
-    "callLockedBody": "Jab aap dono ek doosre ko pasand kar lenge, tab aap {name} ko call kar sakenge."
-  },
-  "call": {
-    "ringing": "Ring ho rahi hai...",
-    "calling": "{name} ko call ki ja rahi hai...",
-    "connected": "Call jari hai",
-    "end": "Call Khatam Karein",
-    "cameraPermission": "Video calls ke liye camera tak rasai darkar hai.",
-    "grantAccess": "Rasai Dein"
+    "messageLockedBody": "Jab aap dono ek doosre ko pasand kar lenge, tab aap {name} ko message bhej sakenge."
   },
   "favorites": {
     "title": "Pasandeeda",
@@ -812,25 +782,16 @@
   },
   "notificationsScreen": {
     "title": "Ittelaat",
-    "markAllRead": "Sab ko Parha Hua Nishan Zad Karein",
+    "markAllRead": "Sab parh liye",
     "clearAll": "Sab saaf karein",
     "clearAllTitle": "Sab ittelaat saaf karein?",
     "clearAllBody": "Is se aap ki sab ittelaat delete ho jayengi. Ye wapas nahi ho sakta.",
     "clearAllFailed": "Hum aap ki ittelaat saaf nahi kar sake. Apna connection dekh kar dobara koshish karein.",
-    "empty": "Aapke pass koi nayi ittela nahi."
-  },
-  "boost": {
-    "title": "Boost",
-    "activeTitle": "Aapki profile pehle se boost par hai!",
-    "activeSubtitle": "Aap ko {multiplier} guna zyada log dekh rahe hain.",
-    "runsOutIn": "Aapka boost khatam hone mein",
-    "idleTitle": "Apni profile boost karein",
-    "idleSubtitle": "Agle {hours} ghante tak {multiplier} guna zyada logon tak pohnchein.",
-    "emptyTitle": "Aapke Boosts khatam ho gaye",
-    "emptySubtitle": "Dobara sab se aage aane ke liye mazeed Boosts hasil karein.",
-    "boostsLeft": "Ab aapke paas {count} Boosts baaqi hain.",
-    "start": "Abhi boost karein",
-    "getMore": "Mazeed Boosts hasil karein"
+    "empty": "Aapke pass koi nayi ittela nahi.",
+    "filterAll": "Sab",
+    "filterUnread": "Unread",
+    "earlier": "Pehle",
+    "noUnread": "Koi unread ittela nahi."
   },
   "time": {
     "justNow": "abhi abhi",
@@ -1009,5 +970,40 @@
     "unitedStates": "America",
     "canada": "Canada",
     "australia": "Australia"
+  },
+  "stories": {
+    "add": "Story lagayen",
+    "seenBy": "{count} ne dekha",
+    "viewersTitle": "Kis ne dekha",
+    "noViewers": "Abhi kisi ne nahi dekha.",
+    "deleteTitle": "Yeh story delete karein?",
+    "deleteBody": "Yeh sab ke liye hat jayegi.",
+    "delete": "Delete",
+    "deleteFailedTitle": "Delete nahi ho saki",
+    "deleteFailedBody": "Internet check karke dobara koshish karein.",
+    "postFailedTitle": "Story nahi lag saki",
+    "postFailedBody": "Internet check karke dobara koshish karein.",
+    "videoTooLongTitle": "Video bohat lambi hai",
+    "videoTooLongBody": "Story ki video zyada se zyada {seconds} second ki ho sakti hai.",
+    "watchAgain": "Dobara dekhein",
+    "like": "Story like karein",
+    "unlike": "Like hata dein",
+    "privacyTitle": "Story privacy",
+    "privacyRowDesc": "Chunein ke aapki stories kaun dekhe",
+    "audienceTitle": "Meri stories kaun dekh sakta hai",
+    "audienceAll": "Friends aur Rishta",
+    "audienceAllDesc": "Aapke saare matches",
+    "audienceFriends": "Sirf Friends",
+    "audienceFriendsDesc": "Sirf aapke Friends connections",
+    "audienceRishta": "Sirf Rishta",
+    "audienceRishtaDesc": "Sirf aapke Rishta connections",
+    "hideTitle": "In se meri stories chhupayen",
+    "hideHint": "Yeh aapki stories nahi dekhenge aur inhein bataya bhi nahi jayega.",
+    "hideEmpty": "Abhi koi connection nahi.",
+    "privacySaveFailedTitle": "Save nahi ho saka",
+    "privacySaveFailedBody": "Internet check karke dobara koshish karein."
+  },
+  "loader": {
+    "tagline": "Apna humsafar dhoondein"
   }
 }

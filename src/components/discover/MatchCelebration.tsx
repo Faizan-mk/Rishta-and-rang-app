@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Button } from '../Button';
 import { FloatingHearts } from '../common/FloatingHearts';
 import { radius, spacing, typography } from '../../theme';
-import { glow } from '../../theme/glow';
+import { flat, glow } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
@@ -43,16 +43,16 @@ export function MatchCelebration({ visible, name, photo, onClose }: MatchCelebra
         {/* A wedding-card moment: rosewood velvet, a gold hairline and gold
             hearts drifting up. Fixed colours, so it reads the same in both themes. */}
         <LinearGradient
-          colors={VELVET}
+          colors={flat(colors.brandMain)}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={[styles.card, glow('#8E1B45', 0.5, 30, 14)]}
+          style={[styles.card, glow(colors.brandMain, 0.5, 30, 14)]}
         >
           <View style={styles.glowA} pointerEvents="none" />
           <View style={styles.glowB} pointerEvents="none" />
-          {visible && <FloatingHearts colors={[GOLD, 'rgba(255,255,255,0.6)', GOLD]} />}
+          {visible && <FloatingHearts colors={[colors.metalBright, 'rgba(255,255,255,0.6)', colors.metalBright]} />}
           <Animated.View style={[styles.heartSeal, heartStyle]}>
-            <Ionicons name="heart" size={34} color={GOLD} />
+            <Ionicons name="heart" size={34} color={colors.metalBright} />
           </Animated.View>
           <View style={styles.flourish}>
             <View style={styles.flourishLine} />
@@ -77,8 +77,6 @@ export function MatchCelebration({ visible, name, photo, onClose }: MatchCelebra
   );
 }
 
-const GOLD = '#F3D99B';
-const VELVET = ['#3F0A1F', '#8E1B45', '#F2715E'] as const;
 
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
@@ -87,7 +85,7 @@ const makeStyles = (colors: Palette) =>
       width: '100%',
       borderRadius: radius.lg + 8,
       borderWidth: 1.5,
-      borderColor: GOLD,
+      borderColor: colors.metalBright,
       padding: spacing.xl,
       alignItems: 'center',
       overflow: 'hidden',
@@ -99,7 +97,7 @@ const makeStyles = (colors: Palette) =>
       width: 200,
       height: 200,
       borderRadius: 100,
-      backgroundColor: 'rgba(243,217,155,0.16)',
+      backgroundColor: 'rgba(217,184,114,0.16)',
     },
     glowB: {
       position: 'absolute',
@@ -115,22 +113,22 @@ const makeStyles = (colors: Palette) =>
       height: 68,
       borderRadius: 34,
       borderWidth: 1.5,
-      borderColor: GOLD,
-      backgroundColor: 'rgba(20,11,16,0.25)',
+      borderColor: colors.metalBright,
+      backgroundColor: 'rgba(36,31,33,0.25)',
       alignItems: 'center',
       justifyContent: 'center',
     },
     flourish: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.md },
-    flourishLine: { width: 28, height: 1, backgroundColor: GOLD },
-    flourishDiamond: { width: 6, height: 6, backgroundColor: GOLD, transform: [{ rotate: '45deg' }] },
-    title: { ...typography.h1, fontSize: 34, lineHeight: 42, color: GOLD, marginTop: spacing.sm, textAlign: 'center' },
+    flourishLine: { width: 28, height: 1, backgroundColor: colors.metalBright },
+    flourishDiamond: { width: 6, height: 6, backgroundColor: colors.metalBright, transform: [{ rotate: '45deg' }] },
+    title: { ...typography.h1, fontSize: 34, lineHeight: 42, color: colors.metalBright, marginTop: spacing.sm, textAlign: 'center' },
     subtitle: { ...typography.body, color: 'rgba(255,255,255,0.92)', marginTop: spacing.xs, textAlign: 'center' },
     // Their portrait in a gold-framed rectangle.
     photoFrame: {
       marginTop: spacing.lg,
       padding: 4,
       borderWidth: 1.5,
-      borderColor: GOLD,
+      borderColor: colors.metalBright,
       borderRadius: radius.md + 4,
       ...glow('#000000', 0.3, 14, 10),
     },
@@ -141,6 +139,6 @@ const makeStyles = (colors: Palette) =>
       backgroundColor: 'rgba(255,255,255,0.1)',
     },
     // A white pill with maroon ink on the velvet card.
-    button: { marginTop: spacing.xl, width: '100%', borderColor: GOLD, backgroundColor: '#FFFFFF' },
-    buttonLabel: { color: '#3F0A1F' },
+    button: { marginTop: spacing.xl, width: '100%', borderColor: colors.metalBright, backgroundColor: '#FFFFFF' },
+    buttonLabel: { color: colors.brandDeep },
   });

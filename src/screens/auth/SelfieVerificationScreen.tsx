@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { AccentHeading } from '../../components/common/AccentHeading';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { ImageCropper } from '../../components/common/ImageCropper';
@@ -17,7 +17,7 @@ import { useOnboarding } from '../../store/onboardingStore';
 import { analyzeIdCardPhoto, CNIC_ASPECT } from '../../utils/idCardImageCheck';
 import { AppError, errorMessage } from '../../utils/appError';
 import { radius, spacing, typography } from '../../theme';
-import { glow, withAlpha } from '../../theme/glow';
+import { flat, glow, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 import { cardSurface } from '../../theme/surfaces';
 
@@ -26,7 +26,7 @@ export function SelfieVerificationScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl, language } = useLanguage();
-  const onboardRamp = [colors.teal, colors.dating] as const;
+  const onboardRamp = flat(colors.teal);
   const { signup } = useAuth();
   const { notify } = useDialog();
   const { draft, patchDraft } = useOnboarding();
@@ -143,13 +143,13 @@ export function SelfieVerificationScreen() {
                 <Image source={{ uri: selfieUri }} style={styles.preview} />
               ) : (
                 <View style={[styles.preview, styles.previewEmpty]}>
-                  <Ionicons name="happy-outline" size={64} color={colors.teal} />
+                  <MaterialCommunityIcons name="face-recognition" size={60} color={colors.teal} />
                 </View>
               )}
             </View>
             {selfieUri && (
               <View style={styles.doneBadge}>
-                <Ionicons name="checkmark" size={16} color="#FFFFFF" />
+                <MaterialCommunityIcons name="check-bold" size={15} color="#FFFFFF" />
               </View>
             )}
           </View>
@@ -158,7 +158,7 @@ export function SelfieVerificationScreen() {
             label={selfieUri ? t('common.retake') : t('selfie.takeSelfie')}
             variant="secondary"
             onPress={takeSelfie}
-            icon={<Ionicons name="camera-outline" size={18} color={colors.textPrimary} />}
+            icon={<MaterialCommunityIcons name="camera-front-variant" size={19} color={colors.textPrimary} />}
             style={styles.outlineButton}
             labelStyle={styles.outlineLabel}
           />
@@ -178,13 +178,13 @@ export function SelfieVerificationScreen() {
                 {checkingCnicPhoto ? (
                   <ActivityIndicator color={colors.teal} />
                 ) : (
-                  <Ionicons name="card-outline" size={56} color={colors.teal} />
+                  <MaterialCommunityIcons name="card-account-details-outline" size={58} color={colors.teal} />
                 )}
               </View>
             )}
             {cnicPhotoUri && (
               <View style={[styles.doneBadge, styles.cnicDoneBadge]}>
-                <Ionicons name="checkmark" size={16} color="#FFFFFF" />
+                <MaterialCommunityIcons name="check-bold" size={15} color="#FFFFFF" />
               </View>
             )}
           </View>
@@ -194,7 +194,7 @@ export function SelfieVerificationScreen() {
             variant="secondary"
             onPress={pickCnicPhoto}
             loading={checkingCnicPhoto}
-            icon={<Ionicons name="scan-outline" size={18} color={colors.textPrimary} />}
+            icon={<MaterialCommunityIcons name="credit-card-scan-outline" size={19} color={colors.textPrimary} />}
             style={styles.outlineButton}
             labelStyle={styles.outlineLabel}
           />
@@ -203,14 +203,14 @@ export function SelfieVerificationScreen() {
 
       {cnicPhotoError ? (
         <View style={styles.errorCard}>
-          <Ionicons name="alert-circle" size={16} color={colors.danger} />
+          <Ionicons name="alert-circle-outline" size={16} color={colors.danger} />
           <Text style={[styles.errorText, rtl && styles.rtlText]}>{cnicPhotoError}</Text>
         </View>
       ) : null}
 
       {error ? (
         <View style={styles.errorCard}>
-          <Ionicons name="alert-circle" size={16} color={colors.danger} />
+          <Ionicons name="alert-circle-outline" size={16} color={colors.danger} />
           <Text style={[styles.errorText, rtl && styles.rtlText]}>{error}</Text>
         </View>
       ) : null}

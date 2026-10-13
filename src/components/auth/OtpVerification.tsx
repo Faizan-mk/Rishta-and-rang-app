@@ -8,7 +8,7 @@ import { useTheme } from '../../store/ThemeContext';
 import { authService, type OtpPurpose } from '../../services/authService';
 import { AppError, errorMessage } from '../../utils/appError';
 import { radius, spacing, typography } from '../../theme';
-import { withAlpha } from '../../theme/glow';
+import { flat, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 
 const CODE_LENGTH = 6;
@@ -114,13 +114,13 @@ export function OtpVerification({ email, purpose, initialCooldown = 60, onVerifi
 
       {error ? (
         <View style={[styles.noticeCard, styles.errorCard]}>
-          <Ionicons name="alert-circle" size={16} color={colors.danger} />
+          <Ionicons name="alert-circle-outline" size={16} color={colors.danger} />
           <Text style={[styles.errorText, rtl && styles.rtlText]}>{error}</Text>
         </View>
       ) : null}
       {notice ? (
         <View style={[styles.noticeCard, styles.sentCard]}>
-          <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+          <Ionicons name="checkmark-circle-outline" size={16} color={colors.success} />
           <Text style={[styles.sentText, rtl && styles.rtlText]}>{notice}</Text>
         </View>
       ) : null}
@@ -131,7 +131,7 @@ export function OtpVerification({ email, purpose, initialCooldown = 60, onVerifi
           onPress={() => verify()}
           loading={verifying}
           disabled={code.length !== CODE_LENGTH}
-          gradient={[colors.teal, colors.dating]}
+          gradient={flat(colors.teal)}
           style={styles.submit}
         />
       )}

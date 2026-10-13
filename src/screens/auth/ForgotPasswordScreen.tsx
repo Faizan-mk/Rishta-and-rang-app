@@ -8,15 +8,14 @@ import { TextField } from '../../components/common/TextField';
 import { PasswordRequirements } from '../../components/common/PasswordRequirements';
 import { OtpVerification } from '../../components/auth/OtpVerification';
 import { Button } from '../../components/Button';
-import { Header } from '../../components/Header';
-import { ArchBadge } from '../../components/common/ArchBadge';
+import { WaveHeader } from '../../components/auth/WaveHeader';
 import { useLanguage } from '../../store/LanguageContext';
 import { useTheme } from '../../store/ThemeContext';
 import { isStrongPassword, isValidEmail } from '../../utils/validation';
 import { AppError, errorMessage } from '../../utils/appError';
 import { authService } from '../../services/authService';
 import { radius, spacing, typography } from '../../theme';
-import { withAlpha } from '../../theme/glow';
+import { flat, withAlpha } from '../../theme/glow';
 import { cardSurface } from '../../theme/surfaces';
 import type { Palette } from '../../theme/palettes';
 
@@ -100,24 +99,36 @@ export function ForgotPasswordScreen() {
   };
 
   const title = phase === 'code' ? t('otp.enterCodeTitle') : phase === 'email' ? t('forgot.title') : t('reset.title');
+  const subtitle = phase === 'email' ? t('forgot.subtitle') : phase === 'password' ? t('reset.subtitle') : undefined;
+  const headerIcon =
+    phase === 'email'
+      ? 'mail-open-outline'
+      : phase === 'code'
+        ? 'keypad-outline'
+        : phase === 'password'
+          ? 'lock-closed-outline'
+          : 'checkmark-done';
 
   const errorCard = error ? (
     <View style={[styles.noticeCard, styles.errorCard]}>
-      <Ionicons name="alert-circle" size={16} color={colors.danger} />
+      <Ionicons name="alert-circle-outline" size={16} color={colors.danger} />
       <Text style={[styles.errorText, rtl && styles.rtlText]}>{error}</Text>
     </View>
   ) : null;
 
   return (
-    <ScreenContainer>
-      <Header title={title} onBack={phase === 'done' ? undefined : onBack} />
+    <ScreenContainer edges={['bottom']} style={styles.container}>
+      <WaveHeader
+        title={title}
+        subtitle={subtitle}
+        badge={<Ionicons name={headerIcon} size={26} color="#FFFFFF" />}
+        onBack={phase === 'done' ? undefined : onBack}
+        rtl={rtl}
+      />
+      <View style={styles.body}>
 
       {phase === 'email' && (
         <>
-          <Animated.View entering={FadeInDown.duration(420)}>
-            <ArchBadge icon="mail-open-outline" style={styles.badge} />
-            <Text style={[styles.subtitle, rtl && styles.rtlText]}>{t('forgot.subtitle')}</Text>
-          </Animated.View>
           <Animated.View entering={FadeInUp.delay(120).duration(420)} style={styles.formCard}>
             <TextField
               label={t('login.email')}
@@ -134,7 +145,7 @@ export function ForgotPasswordScreen() {
               label={t('forgot.submit')}
               onPress={onSendCode}
               loading={loading}
-              gradient={[colors.teal, colors.dating]}
+              gradient={flat(colors.teal)}
               style={styles.submit}
             />
             <Button
@@ -149,7 +160,6 @@ export function ForgotPasswordScreen() {
 
       {phase === 'code' && (
         <Animated.View entering={FadeInUp.duration(420)}>
-          <ArchBadge icon="keypad-outline" style={styles.badge} />
           <View style={styles.formCard}>
           <OtpVerification
             email={email.trim().toLowerCase()}
@@ -167,10 +177,6 @@ export function ForgotPasswordScreen() {
 
       {phase === 'password' && (
         <>
-          <Animated.View entering={FadeInDown.duration(420)}>
-            <ArchBadge icon="lock-closed-outline" style={styles.badge} />
-            <Text style={[styles.subtitle, rtl && styles.rtlText]}>{t('reset.subtitle')}</Text>
-          </Animated.View>
           <Animated.View entering={FadeInUp.delay(120).duration(420)} style={styles.formCard}>
             <TextField
               label={t('reset.newPassword')}
@@ -205,7 +211,7 @@ export function ForgotPasswordScreen() {
               label={t('reset.submit')}
               onPress={onSubmitPassword}
               loading={loading}
-              gradient={[colors.teal, colors.dating]}
+              gradient={flat(colors.teal)}
               style={styles.submit}
             />
           </Animated.View>
@@ -214,7 +220,6 @@ export function ForgotPasswordScreen() {
 
       {phase === 'done' && (
         <Animated.View entering={FadeInDown.duration(420)}>
-          <ArchBadge icon="checkmark-done" tone="success" style={styles.badge} />
           <View style={[styles.noticeCard, styles.sentCard]}>
             <Ionicons name="checkmark-circle" size={16} color={colors.success} />
             <Text style={[styles.sentText, rtl && styles.rtlText]}>{t('reset.doneBody')}</Text>
@@ -222,19 +227,22 @@ export function ForgotPasswordScreen() {
           <Button
             label={t('reset.goToLogin')}
             onPress={() => router.replace('/login')}
-            gradient={[colors.teal, colors.dating]}
+            gradient={flat(colors.teal)}
             style={styles.submit}
           />
         </Animated.View>
       )}
+      </View>
     </ScreenContainer>
   );
 }
 
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
-    badge: { marginBottom: spacing.md },
-    subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg, textAlign: 'center' },
+    // The wave header runs edge to edge, so the screen drops its own padding
+    // and the content below carries it instead.
+    container: { padding: 0, paddingBottom: spacing.lg },
+    body: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
     formCard: cardSurface(colors),
     submit: { marginTop: spacing.sm },
     linkLabel: { ...typography.label, color: colors.teal },

@@ -1,5 +1,5 @@
 {
-  "appName": "Rishta & Rang",
+  "appName": "Matrimonial App",
   "common": {
     "next": "Next",
     "back": "Back",
@@ -107,7 +107,7 @@
     "submit": "Continue",
     "missingFields": "Please fill in every field.",
     "invalidDob": "Enter a valid date of birth as YYYY-MM-DD.",
-    "tooYoung": "You must be at least 18 to use Rishta & Rang."
+    "tooYoung": "You must be at least 18 to use Matrimonial App."
   },
   "intent": {
     "title": "What brings you here?",
@@ -153,7 +153,7 @@
       "subtitle": "Verified profiles, wali involvement, and privacy controls — built in every step of the way."
     },
     "page2": {
-      "title": "Friends & rang, your way",
+      "title": "Friendship, your way",
       "subtitle": "Chat, connect, and build genuine relationships in a safe, respectful space.",
       "chipSafe": "Safe chat",
       "chipReal": "Real people"
@@ -213,15 +213,10 @@
     "favourited": "Favourited",
     "block": "Block",
     "report": "Report",
-    "shareMessage": "Check out {name}'s profile on Rishta & Rang!",
+    "shareMessage": "Check out {name}'s profile on Matrimonial App!",
     "openToRelocate": "Open to relocate",
     "careerPlansTitle": "Career plans",
     "grewUpIn": "Grew up in {place}",
-    "sort": "Sort",
-    "sortTitle": "Sort by",
-    "sortRecommended": "Recommended",
-    "sortNearest": "Distance: closest first",
-    "sortActiveFirst": "Recently active",
     "filtersTitle": "Filters",
     "filterVerifiedOnly": "Profiles with verification badges",
     "filterActiveToday": "Active today only",
@@ -241,13 +236,6 @@
     "shareProfile": "Share profile",
     "activeYesterday": "Active yesterday",
     "activeThisWeek": "Active this week",
-    "sortBestMatch": "Best match first",
-    "sortAgeAsc": "Age: youngest to oldest",
-    "sortAgeDesc": "Age: oldest to youngest",
-    "sortFreeToChat": "Not chatting with me yet",
-    "sortJustJoined": "Just joined",
-    "sortVerified": "Most verification badges",
-    "sortCompleteBio": "Complete bio",
     "filterAge": "Age",
     "filterAgeRange": "{min}–{max} years",
     "filterAgeMin": "From",
@@ -273,7 +261,8 @@
     "swipeHintLike": "Like",
     "swipeHintPass": "Pass",
     "filterIntent": "Here for",
-    "filterAnyIntent": "Any"
+    "filterAnyIntent": "Any",
+    "myStory": "My Story"
   },
   "attributes": {
     "heightValue": "{height} cm",
@@ -302,21 +291,22 @@
     "empty": "No profiles match these filters yet. Try widening your search."
   },
   "matches": {
-    "title": "Matches",
+    "title": "Messages",
     "empty": "No matches yet — start swiping to find your people.",
     "movedToRishta": "Moved to Rishta",
     "rishtaBadge": "Rishta",
-    "emptyFriends": "No Friends chats yet — start swiping to find your people.",
-    "emptyRishta": "No Rishta chats yet — send a 'Move to Rishta' from a friendship chat, or swipe in Rishta mode.",
-    "otherModeHint": "{count} waiting in {mode}.",
-    "switchTo": "Go to {mode}",
     "typeMessage": "Type a message...",
     "itsAMatch": "It's a Match!",
     "youAndLikedEachOther": "You and {name} liked each other.",
     "previewPhoto": "Photo",
     "previewVoice": "Voice message",
     "previewReacted": "Reacted to a message",
-    "matchedBody": "You and {name} liked each other."
+    "matchedBody": "You and {name} liked each other.",
+    "filterAll": "All",
+    "filterUnread": "Unread",
+    "noUnread": "No unread chats.",
+    "noFriends": "No Friends chats yet.",
+    "noRishta": "No Rishta chats yet."
   },
   "chat": {
     "moveToRishta": "Move to Rishta",
@@ -364,10 +354,8 @@
     "deleteForMe": "Delete for me",
     "deleteConfirmTitle": "Delete message?",
     "clearChat": "Clear chat",
-    "voiceCall": "Voice call",
     "replyYou": "You",
     "replyingTo": "Replying to {name}",
-    "videoCall": "Video call",
     "moreOptions": "More options",
     "clearChatConfirmTitle": "Clear this chat?",
     "clearChatConfirmBody": "Every message is removed from your side only — {name} keeps theirs, and the chat still works afterwards."
@@ -406,10 +394,9 @@
     "prayerHabits": "Prayer habits",
     "incomeRange": "Income range",
     "livingAbroadStatus": "Living abroad status",
-    "verificationSection": "Verification & family",
+    "verificationSection": "Verification",
     "insightsSection": "Compatibility & verification",
     "cnic": "CNIC / ID document",
-    "wali": "Wali Dashboard",
     "bureau": "Bureau-verified badge",
     "bureauNotVerified": "Not bureau verified",
     "aiScoreValue": "{score}% compatible",
@@ -467,6 +454,20 @@
   "settings": {
     "title": "Settings",
     "appearance": "Appearance",
+    "appTheme": "App theme",
+    "themesTitle": "Themes",
+    "themesSubtitle": "Pick a colour theme for the whole app. Light and dark mode still apply on top of it.",
+    "themeActive": "Active",
+    "themeMaroon": "Maroon & Gold",
+    "themeMaroonDesc": "The classic Matrimonial App look",
+    "themeEmerald": "Emerald & Gold",
+    "themeEmeraldDesc": "Deep emerald with antique gold",
+    "themeNavy": "Navy & Gold",
+    "themeNavyDesc": "Midnight navy with 24k gold",
+    "themeOnyx": "Onyx & Gold",
+    "themeOnyxDesc": "Black and gold, timeless luxury",
+    "themePink": "Pink & White",
+    "themePinkDesc": "Soft pink on white, fresh and gentle",
     "light": "Light",
     "dark": "Dark",
     "system": "System",
@@ -535,26 +536,6 @@
     "verifiedBody": "You now have a bureau-verified badge on your profile.",
     "alreadyVerifiedBody": "You're already bureau verified."
   },
-  "wali": {
-    "title": "Wali Dashboard",
-    "explainer": "Invite a wali (guardian) to stay in the loop on your rishta-stage matches — the conversations that have moved from friendship to a serious, family-involved stage.",
-    "name": "Wali's name",
-    "namePlaceholder": "e.g. Abu Bakr",
-    "contact": "Wali's contact",
-    "contactPlaceholder": "Phone or email",
-    "missingFields": "Please fill in both fields.",
-    "sendInvite": "Send invite",
-    "invitedTitle": "Invite sent",
-    "invitedBody": "{name} has been added as your wali.",
-    "removeWali": "Remove wali",
-    "removeConfirmTitle": "Remove your wali?",
-    "removeConfirmBody": "They'll no longer see your rishta-stage activity.",
-    "removeConfirmLabel": "Remove",
-    "sharedActivity": "Shared activity",
-    "sharedActivityEmpty": "No rishta-stage matches yet.",
-    "statusInvited": "Invited — {name}",
-    "statusNotSet": "Not set up"
-  },
   "report": {
     "subtitle": "Tell us why you're reporting this profile.",
     "reason_fakeProfile": "Fake profile",
@@ -607,9 +588,9 @@
     "message": "Message",
     "messagePlaceholder": "Describe the issue or question...",
     "send": "Send message",
-    "sentTitle": "Message sent",
-    "sentBody": "Thanks for reaching out — our support team replies within 24 hours.",
-    "missingFields": "Please fill in both fields."
+    "missingFields": "Please fill in both fields.",
+    "noMailAppTitle": "No email app found",
+    "noMailAppBody": "Please email us at {email} from any email app."
   },
   "legal": {
     "title": "Privacy policy & terms",
@@ -619,12 +600,12 @@
     "contactLine": "Questions about either document? Email {email}.",
     "privacyPolicyTitle": "Privacy policy",
     "termsTitle": "Terms of service",
-    "privacyIntro": "Rishta & Rang is a matchmaking app for adults in Pakistan. This policy explains what we collect from you, why we need it, who else can see it, and how you get it deleted.",
-    "termsIntro": "These terms are the agreement between you and Rishta & Rang. By creating an account you accept them. If you do not accept them, do not use the app.",
+    "privacyIntro": "Matrimonial App is a matchmaking app for adults in Pakistan. This policy explains what we collect from you, why we need it, who else can see it, and how you get it deleted.",
+    "termsIntro": "These terms are the agreement between you and Matrimonial App. By creating an account you accept them. If you do not accept them, do not use the app.",
     "privacy": {
       "whoWeAre": {
         "title": "1. Who we are",
-        "body": "Rishta & Rang (\"we\", \"us\") operates this app and is the data controller for the information described below. You can reach us at {email} about anything in this policy, including a request to see or delete your data."
+        "body": "Matrimonial App (\"we\", \"us\") operates this app and is the data controller for the information described below. You can reach us at {email} about anything in this policy, including a request to see or delete your data."
       },
       "dataWeCollect": {
         "title": "2. What we collect",
@@ -656,7 +637,7 @@
       },
       "ageLimit": {
         "title": "9. Adults only",
-        "body": "Rishta & Rang is for people aged 18 and over. We ask for your date of birth at signup and refuse accounts under 18. If we learn that an account belongs to a minor, we delete it and its data. If you believe a minor is using the app, email {email}."
+        "body": "Matrimonial App is for people aged 18 and over. We ask for your date of birth at signup and refuse accounts under 18. If we learn that an account belongs to a minor, we delete it and its data. If you believe a minor is using the app, email {email}."
       },
       "changes": {
         "title": "10. Changes to this policy",
@@ -670,7 +651,7 @@
     "terms": {
       "eligibility": {
         "title": "1. You must be 18",
-        "body": "You may use Rishta & Rang only if you are 18 or older and legally able to enter this agreement. You confirm your age at signup. Creating an account while under 18, or on behalf of someone under 18, is a breach of these terms and we will delete the account."
+        "body": "You may use Matrimonial App only if you are 18 or older and legally able to enter this agreement. You confirm your age at signup. Creating an account while under 18, or on behalf of someone under 18, is a breach of these terms and we will delete the account."
       },
       "yourAccount": {
         "title": "2. Your account",
@@ -678,7 +659,7 @@
       },
       "acceptableUse": {
         "title": "3. How to use the app",
-        "body": "Rishta & Rang is for meeting people for friendship, a relationship, or marriage. Treat other members the way you would want your own family treated. Take conversations at the pace both of you are comfortable with, and respect a \"no\" the first time."
+        "body": "Matrimonial App is for meeting people for friendship, a relationship, or marriage. Treat other members the way you would want your own family treated. Take conversations at the pace both of you are comfortable with, and respect a \"no\" the first time."
       },
       "prohibited": {
         "title": "4. What is not allowed",
@@ -744,7 +725,7 @@
     "myHistory": "My History",
     "learnMore": "Learn more",
     "share": "Share",
-    "shareEventMessage": "{title} — {city}, {date}. Check it out on Rishta & Rang!",
+    "shareEventMessage": "{title} — {city}, {date}. Check it out on Matrimonial App!",
     "historyEmpty": "Profiles you view will show up here."
   },
   "explorePlus": {
@@ -783,20 +764,9 @@
     "interestSentTitle": "Interest sent",
     "interestSentBody": "{name} will be notified. If they're interested too, you'll both be able to move to Rishta Mode.",
     "message": "Message",
-    "call": "Call",
     "photosHidden": "Photos hidden until you match",
     "messageLockedTitle": "Not matched yet",
-    "messageLockedBody": "You can message {name} once you both like each other.",
-    "callLockedTitle": "Not matched yet",
-    "callLockedBody": "You can call {name} once you both like each other."
-  },
-  "call": {
-    "ringing": "Ringing...",
-    "calling": "Calling {name}...",
-    "connected": "Call in progress",
-    "end": "End call",
-    "cameraPermission": "Camera access is needed for video calls.",
-    "grantAccess": "Grant access"
+    "messageLockedBody": "You can message {name} once you both like each other."
   },
   "favorites": {
     "title": "Favorites",
@@ -817,20 +787,11 @@
     "clearAllTitle": "Clear all notifications?",
     "clearAllBody": "This deletes all your notifications. It can't be undone.",
     "clearAllFailed": "We couldn't clear your notifications. Check your connection and try again.",
-    "empty": "You're all caught up."
-  },
-  "boost": {
-    "title": "Boost",
-    "activeTitle": "We're already boosting you!",
-    "activeSubtitle": "You're being seen by {multiplier}x more people.",
-    "runsOutIn": "Your boost will run out in",
-    "idleTitle": "Boost your profile",
-    "idleSubtitle": "Be seen by up to {multiplier}x more people for the next {hours} hours.",
-    "emptyTitle": "You're out of Boosts",
-    "emptySubtitle": "Get more Boosts to jump to the front of the queue again.",
-    "boostsLeft": "You now have {count} Boosts left.",
-    "start": "Boost me now",
-    "getMore": "Get more Boosts"
+    "empty": "You're all caught up.",
+    "filterAll": "All",
+    "filterUnread": "Unread",
+    "earlier": "Earlier",
+    "noUnread": "No unread notifications."
   },
   "time": {
     "justNow": "just now",
@@ -1009,5 +970,40 @@
     "unitedStates": "United States",
     "canada": "Canada",
     "australia": "Australia"
+  },
+  "stories": {
+    "add": "Add a story",
+    "seenBy": "Seen by {count}",
+    "viewersTitle": "Seen by",
+    "noViewers": "No one has seen this yet.",
+    "deleteTitle": "Delete this story?",
+    "deleteBody": "It will be removed for everyone.",
+    "delete": "Delete",
+    "deleteFailedTitle": "Couldn't delete",
+    "deleteFailedBody": "Check your connection and try again.",
+    "postFailedTitle": "Couldn't post your story",
+    "postFailedBody": "Check your connection and try again.",
+    "videoTooLongTitle": "Video too long",
+    "videoTooLongBody": "A story video can be up to {seconds} seconds.",
+    "watchAgain": "Watch again",
+    "like": "Like story",
+    "unlike": "Unlike story",
+    "privacyTitle": "Story privacy",
+    "privacyRowDesc": "Choose who sees your stories",
+    "audienceTitle": "Who can see my stories",
+    "audienceAll": "Friends and Rishta",
+    "audienceAllDesc": "Everyone you're matched with",
+    "audienceFriends": "Friends only",
+    "audienceFriendsDesc": "Only your Friends connections",
+    "audienceRishta": "Rishta only",
+    "audienceRishtaDesc": "Only your Rishta connections",
+    "hideTitle": "Hide my stories from",
+    "hideHint": "They won't see your stories and won't be told.",
+    "hideEmpty": "No connections yet.",
+    "privacySaveFailedTitle": "Couldn't save",
+    "privacySaveFailedBody": "Check your connection and try again."
+  },
+  "loader": {
+    "tagline": "Find your life partner"
   }
 }

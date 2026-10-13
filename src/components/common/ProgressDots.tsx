@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { spacing } from '../../theme';
-import { glow } from '../../theme/glow';
+import { flat, glow } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 
@@ -19,7 +19,7 @@ export function ProgressDots({ total, current }: { total: number; current: numbe
           return (
             <LinearGradient
               key={index}
-              colors={[colors.teal, colors.dating]}
+              colors={flat(colors.teal)}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={[styles.dot, glow(colors.teal, 0.7, 8, 4)]}
