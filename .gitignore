@@ -42,3 +42,6 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# generated legal PDFs (uploaded to the Supabase legal bucket, not kept in git)
+docs/legal/*.pdf
