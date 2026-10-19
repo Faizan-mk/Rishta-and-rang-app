@@ -2,7 +2,7 @@
   "expo": {
     "name": "Lovebirds",
     "slug": "rishta-and-rang",
-    "version": "1.0.13",
+    "version": "1.0.14",
     "orientation": "portrait",
     "icon": "./assets/app-icon.png",
     "userInterfaceStyle": "automatic",
@@ -17,7 +17,7 @@
     "android": {
       "googleServicesFile": "./google-services.json",
       "package": "com.rishtaandrang.app",
-      "versionCode": 14,
+      "versionCode": 15,
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/adaptive-icon.png"
