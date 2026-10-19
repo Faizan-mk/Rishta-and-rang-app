@@ -126,13 +126,16 @@ function TabItem({
         )}
         {badge !== undefined && (
           <View style={styles.badge}>
-            <Text style={styles.badgeText}>{typeof badge === 'number' && badge > 9 ? '9+' : String(badge)}</Text>
+            <Text style={styles.badgeText} maxFontSizeMultiplier={1.1}>{typeof badge === 'number' && badge > 9 ? '9+' : String(badge)}</Text>
           </View>
         )}
       </Animated.View>
       <Text
         style={[styles.label, { color: focused ? accentColor : colors.textTertiary }, focused && styles.labelFocused]}
         numberOfLines={1}
+        // The bar's height is fixed, so a large system font size would clip
+        // the label against the bottom inset instead of growing the bar.
+        maxFontSizeMultiplier={1.2}
       >
         {label}
       </Text>
