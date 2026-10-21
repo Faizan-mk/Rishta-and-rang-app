@@ -862,7 +862,7 @@
     "otpRateLimited": "Too many codes requested. Try again in {minutes} min.",
     "otpSendFailed": "We could not send the code. Try again in a moment.",
     "otpTicketInvalid": "Your email verification has expired. Go back to the first step and verify your email again.",
-    "cnicTaken": "This CNIC is already registered with another account. Each CNIC can be used for one account only."
+    "cnicTaken": "CNIC already registered"
   },
   "media": {
     "fileUnavailable": "The selected file is no longer available on this device.",

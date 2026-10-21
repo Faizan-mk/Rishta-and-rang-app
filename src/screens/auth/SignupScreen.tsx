@@ -103,7 +103,7 @@ export function SignupScreen() {
         await authService.checkCnic(cnicNumber);
       } catch (e) {
         if (e instanceof AppError && e.key === 'authErrors.cnicTaken') {
-          await notify({ title: t('cnic.title'), message: t('authErrors.cnicTaken') });
+          await notify({ title: t('authErrors.cnicTaken') });
           return;
         }
         throw e;

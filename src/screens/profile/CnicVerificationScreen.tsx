@@ -118,7 +118,7 @@ export function CnicVerificationScreen() {
     } catch (e) {
       setSaving(false);
       if (e instanceof AppError && e.key === 'authErrors.cnicTaken') {
-        await notify({ title: t('cnic.title'), message: t('authErrors.cnicTaken') });
+        await notify({ title: t('authErrors.cnicTaken') });
       } else {
         setNumberError(errorMessage(e, t));
       }
