@@ -526,15 +526,12 @@
     "invalidFormat": "Enter a valid 13-digit CNIC number (12345-1234567-1).",
     "genderMismatch": "This CNIC number doesn't match the gender you selected — security check failed.",
     "verified": "ID photo submitted",
-    "update": "Update CNIC",
-    "updateSuccess": "Your CNIC details have been updated.",
     "notVerifiedInfo": "Your ID photo is collected during account creation, so this isn't available here.",
     "imageCheckFailed_tooSmall": "That image couldn't be read. Try a clearer photo.",
     "imageCheckFailed_wrongShape": "That doesn't look like an ID card photo — make sure the whole card fills the frame.",
     "imageCheckFailed_notCardColored": "That doesn't look like a Pakistani CNIC. Upload a clear, well-lit photo of the green ID card.",
     "photoMismatch": "CNIC number and photo don't match",
-    "photoUnreadable": "We could not read the CNIC number. Take a clear image.",
-    "photoRequired": "Take a new photo of this CNIC"
+    "photoUnreadable": "We could not read the CNIC number. Take a clear image."
   },
   "bureau": {
     "confirmTitle": "Request bureau verification?",

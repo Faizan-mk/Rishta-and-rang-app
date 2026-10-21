@@ -1,131 +1,28 @@
 import React, { useMemo, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
-import { Button } from '../../components/Button';
 import { ArchBadge } from '../../components/common/ArchBadge';
-import { TextField } from '../../components/common/TextField';
 import { FadeIn } from '../../components/common/FadeInUp';
-import { ImageCropper } from '../../components/common/ImageCropper';
 import { useLanguage } from '../../store/LanguageContext';
 import { useAuth } from '../../store/AuthContext';
 import { useTheme } from '../../store/ThemeContext';
-import { useDialog } from '../../store/DialogContext';
-import { authService } from '../../services/authService';
-import { AppError, errorMessage } from '../../utils/appError';
-import { digitsToCnicDisplay, isValidCnicFormat, cnicMatchesGender, maskCnic } from '../../utils/cnic';
-import { analyzeIdCardPhoto, CNIC_ASPECT } from '../../utils/idCardImageCheck';
-import { matchCnicPhoto } from '../../utils/cnicPhotoMatch';
-import { mediaUpload } from '../../services/mediaUpload';
+import { maskCnic } from '../../utils/cnic';
 import { fonts, radius, spacing, typography } from '../../theme';
 import { cardSurface } from '../../theme/surfaces';
-import { flat, withAlpha } from '../../theme/glow';
+import { withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 
+// Read-only. The CNIC number and card photo are fixed once signup has written
+// them (supabase/57_cnic_photo_lock.sql); a change goes through the team.
 export function CnicVerificationScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
-  const { user, updateUser } = useAuth();
-  const { notify } = useDialog();
-
-  const [editing, setEditing] = useState(false);
-  const [cnicNumber, setCnicNumber] = useState('');
-  const [cnicPhotoUri, setCnicPhotoUri] = useState<string | null>(null);
-  const [pendingCnicPhoto, setPendingCnicPhoto] = useState<string | null>(null);
-  const [checkingPhoto, setCheckingPhoto] = useState(false);
-  const [photoError, setPhotoError] = useState<string | null>(null);
-  const [numberError, setNumberError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
+  const { user } = useAuth();
   const [revealed, setRevealed] = useState(false);
 
   if (!user) return null;
-
-  const startEditing = () => {
-    setCnicNumber(user.cnicNumber ?? '');
-    setCnicPhotoUri(user.cnicPhotoUri ?? null);
-    setPhotoError(null);
-    setNumberError(null);
-    setEditing(true);
-  };
-
-  const onCnicChange = (input: string) => {
-    setNumberError(null);
-    setCnicNumber(digitsToCnicDisplay(input.replace(/\D/g, '')));
-  };
-
-  const pickCnicPhoto = async () => {
-    const permission = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permission.granted) {
-      await notify({ title: t('permissions.cameraTitle'), message: t('permissions.cameraBody') });
-      return;
-    }
-    const result = await ImagePicker.launchCameraAsync({
-      quality: 0.7,
-    });
-    if (result.canceled || !result.assets[0]) return;
-
-    setPhotoError(null);
-    setCnicPhotoUri(null);
-    setPendingCnicPhoto(result.assets[0].uri);
-  };
-
-  const onCnicPhotoCropped = async (uri: string) => {
-    setPendingCnicPhoto(null);
-    setCheckingPhoto(true);
-    const check = await analyzeIdCardPhoto(uri);
-    setCheckingPhoto(false);
-
-    if (!check.looksValid) {
-      setPhotoError(t(`cnic.imageCheckFailed_${check.reason ?? 'notCardColored'}`));
-      return;
-    }
-    setCnicPhotoUri(uri);
-  };
-
-  const onSave = async () => {
-    if (!isValidCnicFormat(cnicNumber)) {
-      setNumberError(t('cnic.invalidFormat'));
-      return;
-    }
-    if (!cnicMatchesGender(cnicNumber, user.gender)) {
-      setNumberError(t('cnic.genderMismatch'));
-      return;
-    }
-    // The number on the card has to be the number typed. A new photo is read
-    // here; a changed number with the old photo needs a fresh one.
-    const newPhoto = Boolean(cnicPhotoUri && mediaUpload.isLocalUri(cnicPhotoUri));
-    if (!newPhoto && cnicNumber !== user.cnicNumber) {
-      await notify({ title: t('cnic.photoRequired') });
-      return;
-    }
-    setSaving(true);
-    if (newPhoto) {
-      const match = await matchCnicPhoto(cnicPhotoUri as string, cnicNumber);
-      if (match !== 'match') {
-        setSaving(false);
-        await notify({ title: t(match === 'mismatch' ? 'cnic.photoMismatch' : 'cnic.photoUnreadable') });
-        return;
-      }
-    }
-    try {
-      // Claimed first: if another account holds this CNIC nothing else is saved.
-      if (cnicNumber !== user.cnicNumber) await authService.claimCnic(cnicNumber);
-    } catch (e) {
-      setSaving(false);
-      if (e instanceof AppError && e.key === 'authErrors.cnicTaken') {
-        await notify({ title: t('authErrors.cnicTaken') });
-      } else {
-        setNumberError(errorMessage(e, t));
-      }
-      return;
-    }
-    await updateUser({ ...user, cnicNumber, cnicPhotoUri: cnicPhotoUri ?? undefined, cnicVerified: true });
-    setSaving(false);
-    setEditing(false);
-    await notify({ title: t('cnic.title'), message: t('cnic.updateSuccess') });
-  };
 
   return (
     <ScreenContainer>
@@ -133,7 +30,7 @@ export function CnicVerificationScreen() {
         <ArchBadge icon="card-outline" style={styles.badge} />
         <Text style={[styles.title, rtl && styles.rtlText]}>{t('cnic.title')}</Text>
 
-        {user.cnicVerified && !editing && (
+        {user.cnicVerified && (
           <>
             <Text style={[styles.subtitle, rtl && styles.rtlText]}>{t('cnic.detailSubtitle')}</Text>
 
@@ -153,65 +50,6 @@ export function CnicVerificationScreen() {
               <Ionicons name="checkmark-circle" size={20} color={colors.success} />
               <Text style={styles.verifiedText}>{t('cnic.verified')}</Text>
             </View>
-
-            <Button
-              label={t('cnic.update')}
-              variant="secondary"
-              onPress={startEditing}
-              style={styles.updateButton}
-              labelStyle={styles.outlineLabel}
-            />
-          </>
-        )}
-
-        {user.cnicVerified && editing && (
-          <>
-            <Text style={[styles.subtitle, rtl && styles.rtlText]}>{t('cnic.subtitle')}</Text>
-
-            <TextField
-              label={t('cnic.number')}
-              value={cnicNumber}
-              onChangeText={onCnicChange}
-              placeholder={t('cnic.numberPlaceholder')}
-              keyboardType="number-pad"
-              maxLength={15}
-              error={numberError ?? undefined}
-            />
-
-            {cnicPhotoUri ? (
-              <Image source={{ uri: cnicPhotoUri }} style={styles.preview} />
-            ) : (
-              <View style={[styles.preview, styles.previewEmpty]}>
-                {checkingPhoto ? (
-                  <ActivityIndicator color={colors.teal} />
-                ) : (
-                  <Ionicons name="card-outline" size={52} color={colors.teal} />
-                )}
-              </View>
-            )}
-            {photoError ? <Text style={styles.errorText}>{photoError}</Text> : null}
-
-            <Button
-              label={cnicPhotoUri ? t('common.retake') : t('cnic.uploadId')}
-              variant="secondary"
-              onPress={pickCnicPhoto}
-              loading={checkingPhoto}
-              icon={<Ionicons name="scan-outline" size={18} color={colors.textPrimary} />}
-              style={styles.outlineButton}
-              labelStyle={styles.outlineLabel}
-            />
-
-            <View style={styles.editActions}>
-              <Button
-                label={t('common.save')}
-                onPress={onSave}
-                loading={saving}
-                disabled={checkingPhoto}
-                gradient={checkingPhoto ? undefined : flat(colors.teal)}
-                style={styles.editActionButton}
-              />
-              <Button label={t('common.cancel')} variant="ghost" onPress={() => setEditing(false)} style={styles.editActionButton} />
-            </View>
           </>
         )}
 
@@ -222,13 +60,6 @@ export function CnicVerificationScreen() {
           </View>
         )}
       </FadeIn>
-
-      <ImageCropper
-        uri={pendingCnicPhoto}
-        aspect={CNIC_ASPECT}
-        onCancel={() => setPendingCnicPhoto(null)}
-        onCropped={onCnicPhotoCropped}
-      />
     </ScreenContainer>
   );
 }
@@ -247,7 +78,6 @@ const makeStyles = (colors: Palette) =>
       borderWidth: 1.5,
       borderColor: withAlpha(colors.gold, 0.7),
     },
-    previewEmpty: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.tealSoft },
     card: { ...cardSurface(colors), paddingBottom: spacing.lg, marginBottom: spacing.md },
     cardHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
     label: { ...typography.label, color: colors.textSecondary, marginBottom: 0 },
@@ -265,12 +95,6 @@ const makeStyles = (colors: Palette) =>
     },
     rowRtl: { flexDirection: 'row-reverse' },
     verifiedText: { ...typography.label, color: colors.success, fontFamily: fonts.bodyBold },
-    updateButton: { marginTop: spacing.lg, borderColor: colors.gold, backgroundColor: 'transparent' },
-    outlineButton: { borderColor: colors.gold, backgroundColor: 'transparent' },
-    outlineLabel: { color: colors.textPrimary },
-    editActions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.lg },
-    editActionButton: { flex: 1 },
-    errorText: { ...typography.caption, color: colors.danger, marginTop: spacing.xs, marginBottom: spacing.sm },
     notVerifiedCard: {
       flexDirection: 'row',
       alignItems: 'flex-start',

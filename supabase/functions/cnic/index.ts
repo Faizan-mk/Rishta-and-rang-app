@@ -2,9 +2,10 @@
 //
 //   check     { cnic }  → { ok: true } or 409 cnic_taken. Signed-out; signup's
 //                         first step asks before sending an email code.
-//   claim     { cnic }  → { ok: true } or 409 cnic_taken. Signed-in; makes the
-//                         CNIC the caller's own (signup, and changing it later
-//                         from the profile). The only way cnic_number moves.
+//   claim     { cnic }  → { ok: true } or 409 cnic_taken / cnic_locked.
+//                         Signed-in; makes the CNIC the caller's own at signup.
+//                         An account that already holds a different CNIC is
+//                         locked to it (57_cnic_photo_lock.sql).
 //   backfill  {}        → service role only. Hashes the CNICs stored before
 //                         this existed into cnic_registry, once, and lists the
 //                         accounts whose CNIC another account already holds.
@@ -111,6 +112,7 @@ Deno.serve(async (req: Request) => {
           p_cnic_number: cnicDisplay(digits),
         });
         if (error) throw error;
+        if (status === 'locked') return json({ error: 'cnic_locked' }, 409);
         return status === 'ok' ? json({ ok: true }) : json({ error: 'cnic_taken' }, 409);
       }
 

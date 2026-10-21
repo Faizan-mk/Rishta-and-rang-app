@@ -526,15 +526,12 @@
     "invalidFormat": "Sahi 13 hindson ka CNIC number darj karein (12345-1234567-1).",
     "genderMismatch": "Yeh CNIC number muntakhib kardah jins se mutabiqat nahi rakhta — security check nakam.",
     "verified": "ID photo submit ho gayi",
-    "update": "CNIC update karein",
-    "updateSuccess": "Aapki CNIC tafseelat update ho gayi hain.",
     "notVerifiedInfo": "Aapki ID photo account banate waqt jama ki jaati hai, is liye yeh yahan dastyaab nahi.",
     "imageCheckFailed_tooSmall": "Yeh tasveer parhi nahi ja saki. Ek saaf tasveer azmayein.",
     "imageCheckFailed_wrongShape": "Yeh ID card ki tasveer nahi lagti — yaqeeni banayein ke pura card frame mein aaye.",
     "imageCheckFailed_notCardColored": "Yeh Pakistani CNIC nahi lagta. Sabz ID card ki saaf aur roshan tasveer upload karein.",
     "photoMismatch": "CNIC number aur tasveer match nahi karte",
-    "photoUnreadable": "CNIC number parha nahi ja saka. Saaf tasveer lein.",
-    "photoRequired": "Is CNIC ki nayi tasveer lein"
+    "photoUnreadable": "CNIC number parha nahi ja saka. Saaf tasveer lein."
   },
   "bureau": {
     "confirmTitle": "Bureau Tasdeeq ki Darkhwast Karein?",

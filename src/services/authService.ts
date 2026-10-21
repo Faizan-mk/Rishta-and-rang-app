@@ -796,8 +796,9 @@ async function updateUser(updated: UserProfile): Promise<UserProfile> {
         ? await mediaUpload.uploadCnicPhoto(userId, updated.cnicPhotoUri)
         : undefined;
 
-    // cnic_number is absent: it changes only through claimCnic, which the CNIC
-    // screen calls first, and is pinned for member sessions anyway.
+    // cnic_number is absent: it is written only by claimCnic at signup, and
+    // both it and cnic_photo_path are pinned for member sessions once set
+    // (56_cnic_unique.sql, 57_cnic_photo_lock.sql).
     const verificationPatch: Record<string, unknown> = {
       id: userId,
       cnic_verified: updated.cnicVerified ?? true,
@@ -999,8 +1000,9 @@ async function checkCnic(cnic: string): Promise<void> {
 }
 
 /**
- * Makes the CNIC the signed-in member's own, the only way cnic_number is
- * written. Throws `authErrors.cnicTaken` when another account holds it.
+ * Makes the CNIC the signed-in member's own at signup, the only way
+ * cnic_number is written. Throws `authErrors.cnicTaken` when another account
+ * holds it; an account that already has a different CNIC can't move off it.
  */
 async function claimCnic(cnic: string): Promise<void> {
   await callAuthOtp({ action: 'claim', cnic }, 'cnic');
