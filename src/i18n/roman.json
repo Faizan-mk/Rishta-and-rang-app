@@ -1013,7 +1013,8 @@
     "hideHint": "Yeh aapki stories nahi dekhenge aur inhein bataya bhi nahi jayega.",
     "hideEmpty": "Abhi koi connection nahi.",
     "privacySaveFailedTitle": "Save nahi ho saka",
-    "privacySaveFailedBody": "Internet check karke dobara koshish karein."
+    "privacySaveFailedBody": "Internet check karke dobara koshish karein.",
+    "moreOptions": "Mazeed options"
   },
   "loader": {
     "tagline": "Apna humsafar dhoondein"

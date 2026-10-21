@@ -1013,7 +1013,8 @@
     "hideHint": "یہ آپ کی اسٹوریز نہیں دیکھیں گے اور انہیں بتایا بھی نہیں جائے گا۔",
     "hideEmpty": "ابھی کوئی کنکشن نہیں۔",
     "privacySaveFailedTitle": "محفوظ نہیں ہو سکا",
-    "privacySaveFailedBody": "انٹرنیٹ چیک کر کے دوبارہ کوشش کریں۔"
+    "privacySaveFailedBody": "انٹرنیٹ چیک کر کے دوبارہ کوشش کریں۔",
+    "moreOptions": "مزید آپشنز"
   },
   "loader": {
     "tagline": "اپنا ہمسفر ڈھونڈیں"

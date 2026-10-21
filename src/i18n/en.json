@@ -1013,7 +1013,8 @@
     "hideHint": "They won't see your stories and won't be told.",
     "hideEmpty": "No connections yet.",
     "privacySaveFailedTitle": "Couldn't save",
-    "privacySaveFailedBody": "Check your connection and try again."
+    "privacySaveFailedBody": "Check your connection and try again.",
+    "moreOptions": "More options"
   },
   "loader": {
     "tagline": "Find your life partner"

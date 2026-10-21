@@ -2,7 +2,7 @@ import { supabase } from './supabase';
 import type { ReportReasonKey } from '../components/common/ReportDialog';
 
 /** Where the report was raised from — kept with the row so a moderator has context. */
-export type ReportContext = 'chat' | 'discover' | 'profile';
+export type ReportContext = 'chat' | 'discover' | 'profile' | 'story';
 
 export interface ReportInput {
   targetId: string;

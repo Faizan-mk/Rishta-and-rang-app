@@ -15,13 +15,16 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 import { BottomSheet } from '../../components/common/BottomSheet';
+import { ReportDialog, type ReportSubmission } from '../../components/common/ReportDialog';
 import { fonts, spacing, typography } from '../../theme';
 import { scaleFont } from '../../theme/responsive';
 import { useAuth } from '../../store/AuthContext';
 import { useDialog } from '../../store/DialogContext';
 import { useLanguage } from '../../store/LanguageContext';
+import { useMatches } from '../../store/MatchesContext';
 import { useStories } from '../../store/StoriesContext';
 import { useTheme } from '../../store/ThemeContext';
+import { reportsService } from '../../services/reportsService';
 import { MAX_STORY_VIDEO_SEC, storiesService } from '../../services/storiesService';
 import { timeAgo } from '../../utils/time';
 import type { StoryGroup, StoryViewer } from '../../types/content';
@@ -52,6 +55,7 @@ export function StoryViewerScreen() {
   const { user } = useAuth();
   const { confirm, notify } = useDialog();
   const { mine, others, markSeen, toggleLike, remove, refresh } = useStories();
+  const { matches, blockMatch, blockProfile } = useMatches();
 
   const isMine = userId === user?.id;
   // Other people's groups are fixed when the viewer opens, so marking a story
@@ -80,6 +84,9 @@ export function StoryViewerScreen() {
   // Likes made while the viewer is open. Other people's groups are a snapshot
   // taken at open (othersAtOpen), so the heart reads from here first.
   const [likedNow, setLikedNow] = useState<Record<string, boolean>>({});
+  // The ⋯ menu on someone else's story (Report / Block), and the report form.
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [reportVisible, setReportVisible] = useState(false);
   const heartScale = useSharedValue(1);
 
   // The counts on the member's own stories date from when the strip loaded.
@@ -91,7 +98,7 @@ export function StoryViewerScreen() {
 
   const group = groups[groupIndex];
   const story = group?.stories[Math.min(storyIndex, group.stories.length - 1)];
-  const paused = held || viewersOpen || finished;
+  const paused = held || viewersOpen || finished || menuOpen || reportVisible;
 
   const progress = useSharedValue(0);
   const elapsed = useRef(0);
@@ -235,6 +242,52 @@ export function StoryViewerScreen() {
     }
   };
 
+  // Report and Block sit behind the ⋯ on someone else's story, as on Instagram
+  // and WhatsApp: Play asks for a way to report user content where it is shown.
+  const onReport = () => {
+    setMenuOpen(false);
+    setReportVisible(true);
+  };
+
+  const onSubmitReport = async (submission: ReportSubmission) => {
+    setReportVisible(false);
+    if (!user || !group) return;
+    try {
+      await reportsService.submitReport(user.id, {
+        targetId: group.userId,
+        reason: submission.reason,
+        details: submission.details,
+        context: 'story',
+      });
+    } catch {
+      await notify({ title: t('report.failedTitle'), message: t('report.failedBody') });
+      return;
+    }
+    await notify({ title: t('chat.reportSentTitle'), message: t('chat.reportSentBody') });
+  };
+
+  const onBlock = async () => {
+    setMenuOpen(false);
+    if (!group) return;
+    const confirmed = await confirm({
+      title: t('chat.blockConfirmTitle', { name: group.name }),
+      message: t('chat.blockConfirmBody'),
+      confirmLabel: t('chat.block'),
+      cancelLabel: t('common.cancel'),
+      destructive: true,
+    });
+    if (!confirmed) return;
+    // With a thread between them this is the chat's own block, which keeps the
+    // thread (hidden) so unblocking brings it back; without one, a plain block.
+    const match = matches.find((m) => m.sourceProfileId === group.userId);
+    if (match) blockMatch(match.id);
+    else blockProfile({ id: group.userId, name: group.name, photo: group.photo, mode: 'dating' });
+    // Their stories stop being served once the block lands; the strip reloads
+    // without them and the viewer closes rather than play on.
+    refresh();
+    close();
+  };
+
   const onDelete = async () => {
     if (!story) return;
     setHeld(true);
@@ -320,6 +373,17 @@ export function StoryViewerScreen() {
                 <Ionicons name="trash-outline" size={22} color="#FFFFFF" />
               </Pressable>
             )}
+            {!isMine && (
+              <Pressable
+                onPress={() => setMenuOpen(true)}
+                hitSlop={10}
+                accessibilityRole="button"
+                accessibilityLabel={t('stories.moreOptions')}
+                style={styles.headerButton}
+              >
+                <Ionicons name="ellipsis-horizontal" size={24} color="#FFFFFF" />
+              </Pressable>
+            )}
             <Pressable onPress={close} hitSlop={10} style={styles.headerButton}>
               <Ionicons name="close" size={28} color="#FFFFFF" />
             </Pressable>
@@ -396,6 +460,26 @@ export function StoryViewerScreen() {
           />
         )}
       </BottomSheet>
+
+      <BottomSheet visible={menuOpen} onClose={() => setMenuOpen(false)} maxHeight="40%">
+        <Pressable onPress={onReport} accessibilityRole="button" style={styles.menuRow}>
+          <Ionicons name="flag-outline" size={22} color={colors.textPrimary} />
+          <Text style={[styles.menuLabel, { color: colors.textPrimary }]}>{t('chat.report')}</Text>
+        </Pressable>
+        <Pressable onPress={onBlock} accessibilityRole="button" style={styles.menuRow}>
+          <Ionicons name="ban-outline" size={22} color={colors.danger} />
+          <Text style={[styles.menuLabel, { color: colors.danger }]}>{t('chat.block')}</Text>
+        </Pressable>
+      </BottomSheet>
+
+      {group && (
+        <ReportDialog
+          visible={reportVisible}
+          name={group.name}
+          onCancel={() => setReportVisible(false)}
+          onSubmit={onSubmitReport}
+        />
+      )}
     </View>
   );
 }
@@ -527,4 +611,6 @@ const styles = StyleSheet.create({
   viewerAvatar: { width: 40, height: 40, borderRadius: 20 },
   viewerName: { ...typography.bodyBold, flex: 1 },
   viewerTime: { ...typography.caption, flexShrink: 0 },
+  menuRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
+  menuLabel: { ...typography.bodyBold },
 });
