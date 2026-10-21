@@ -24,6 +24,7 @@ const PRIVACY_SECTIONS = [
   'sharing',
   'retention',
   'yourRights',
+  'deleteAccount',
   'security',
   'ageLimit',
   'changes',

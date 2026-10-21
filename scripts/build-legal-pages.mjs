@@ -6,14 +6,19 @@
 // Output lands in docs/legal/ as .html and, when a Chrome or Edge binary can be
 // found, .pdf rendered from that same html.
 //
-// Upload the **PDFs** to the `legal` storage bucket: Supabase serves an .html
-// object from a public bucket as text/plain with nosniff, so an .html URL shows
-// raw source rather than a page (see supabase/19_legal_docs.sql). The .html is
-// what you deploy instead if you move to a real static host, where it is the
-// better artefact — it reflows on a phone and a PDF does not.
+// The .html pages are what the app and Play Console link to (Play wants a web
+// page, not a PDF). They are hosted on Vercel as the `lovebirds-legal` project:
+// copy the two .html files into a folder with a vercel.json of
+//   { "cleanUrls": true,
+//     "redirects": [{ "source": "/", "destination": "/privacy-policy", "permanent": false }] }
+// and run `vercel deploy --prod` there. They are then served at
+//   https://lovebirds-legal.vercel.app/privacy-policy  (#deleteAccount for Play's
+//   account-deletion URL) and https://lovebirds-legal.vercel.app/terms-of-service
+// which is what EXPO_PUBLIC_PRIVACY_POLICY_URL / EXPO_PUBLIC_TERMS_URL hold.
 //
-// Then point EXPO_PUBLIC_PRIVACY_POLICY_URL / EXPO_PUBLIC_TERMS_URL at whatever
-// you uploaded.
+// The PDFs also go to the `legal` storage bucket, for builds that still link
+// there. Supabase serves an .html object as text/plain with nosniff, so only
+// the PDFs can live in that bucket (see supabase/19_legal_docs.sql).
 
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
@@ -26,7 +31,7 @@ const SUPPORT_EMAIL = 'support@rishtaandrang.app';
 
 const PRIVACY_SECTIONS = [
   'whoWeAre', 'dataWeCollect', 'howWeUse', 'legalBasis', 'sharing', 'retention',
-  'yourRights', 'security', 'ageLimit', 'changes', 'contact',
+  'yourRights', 'deleteAccount', 'security', 'ageLimit', 'changes', 'contact',
 ];
 const TERMS_SECTIONS = [
   'eligibility', 'yourAccount', 'acceptableUse', 'prohibited', 'contentLicence',
@@ -84,7 +89,9 @@ function page({ file, title, intro, sections, group }) {
   const body = sections
     .map((id) => {
       const clause = dict.legal[group][id];
-      return `    <section>\n      <h2>${fill(clause.title)}</h2>\n${paragraphs(clause.body)}\n    </section>`;
+      // The id is what a link to one clause targets — Play Console's
+      // account-deletion URL points at #deleteAccount.
+      return `    <section id="${id}">\n      <h2>${fill(clause.title)}</h2>\n${paragraphs(clause.body)}\n    </section>`;
     })
     .join('\n');
 

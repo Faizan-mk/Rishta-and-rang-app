@@ -31,65 +31,72 @@
     <header>
       <p class="brand">L<span class="gold">o</span>ve<span class="gold">b</span>irds</p>
       <h1>Privacy policy</h1>
-      <p class="updated">Lovebirds · Last updated 2 September 2026</p>
+      <p class="updated">Lovebirds · Last updated 21 October 2026</p>
     </header>
     <p class="intro">Lovebirds is a matchmaking app for adults in Pakistan. This policy explains what we collect from you, why we need it, who else can see it, and how you get it deleted.</p>
-    <section>
+    <section id="whoWeAre">
       <h2>1. Who we are</h2>
       <p>Lovebirds (&quot;we&quot;, &quot;us&quot;) operates this app and is the data controller for the information described below. You can reach us at <a href="mailto:support@rishtaandrang.app">support@rishtaandrang.app</a> about anything in this policy, including a request to see or delete your data.</p>
     </section>
-    <section>
+    <section id="dataWeCollect">
       <h2>2. What we collect</h2>
       <p>Account details: your email address and password (stored only as a salted hash — we never see it).</p>
       <p>Profile details: your name, date of birth, gender, city, bio, what you are looking for, and the matrimonial fields you choose to fill in (religion, sect, education, family background, readiness).</p>
-      <p>Photos: the profile photos you upload.</p>
+      <p>Photos, video and voice: the profile photos you upload, and the video intro and voice intro if you add them.</p>
       <p>Verification selfie: the selfie taken during signup, used to check a real person is behind the profile. It is never shown on your profile or to other members.</p>
-      <p>CNIC / ID: your CNIC number and, if you upload one, a photo of the card. Used only to check the format and to support a future identity review. Never shown to other members.</p>
-      <p>Location: the city you select. If you allow it, an approximate distance so nearby profiles can be ranked first. We do not track or store your precise location history.</p>
+      <p>CNIC: your CNIC number and a photo of your CNIC card, both required at signup. When you take the card photo, the app reads the number printed on it on your phone (using Google ML Kit, which runs on the device and does not send the photo anywhere) and checks that it matches the number you typed. We also keep a one-way, keyed fingerprint (hash) of your CNIC number so that one CNIC can be used for only one account; the fingerprint cannot be turned back into the number. Your CNIC number and card photo are never shown to other members, and they cannot be changed after signup — email <a href="mailto:support@rishtaandrang.app">support@rishtaandrang.app</a> if they need correcting.</p>
+      <p>Location: only the city you select. We do not collect your device's location.</p>
       <p>Chat: the messages, voice notes, and photos you send in the app, and who you sent them to.</p>
-      <p>Usage: when you last opened the app, who you liked, who you blocked, and what you reported — the record safety review runs on.</p>
+      <p>Purchases: whether you have an Explore+ subscription, its plan and its renewal date. The payment itself is handled by Google Play; we never see your card details.</p>
+      <p>Usage and device: when you last opened the app, who you liked, who you blocked, and what you reported — the record safety review runs on — and a push-notification token for your device.</p>
     </section>
-    <section>
+    <section id="howWeUse">
       <h2>3. Why we use it</h2>
-      <p>To create and run your account, show your profile to other members, suggest matches, deliver your messages, apply your daily like limit and Explore+ entitlements, review reports and keep the community safe, and meet legal obligations.</p>
+      <p>To create and run your account, check that your CNIC photo matches your CNIC number and that each CNIC is used for only one account, show your profile to other members, suggest matches, deliver your messages and notifications, apply your daily like limit and Explore+ subscription, review reports and keep the community safe, and meet legal obligations.</p>
       <p>We do not sell your data. We do not use your photos, selfie, CNIC, or messages for advertising, and we do not use them to train machine-learning models.</p>
     </section>
-    <section>
+    <section id="legalBasis">
       <h2>4. Your consent</h2>
       <p>You give us your profile, photos, selfie, and CNIC voluntarily, to be matched. You can withdraw that consent at any time by deleting your account. We keep a small amount of data after deletion only where the law or a live safety investigation requires it — see Retention.</p>
     </section>
-    <section>
+    <section id="sharing">
       <h2>5. Who else sees it</h2>
       <p>Other members see your profile: name, age, city, photos, bio, and the profile fields you filled in. They do not see your email, password, CNIC, verification selfie, or exact location.</p>
-      <p>Supabase is our data processor. Your account, profile, messages, and uploaded files are stored on Supabase infrastructure under a processing agreement; Supabase processes this data on our instructions and does not use it for its own purposes.</p>
+      <p>We use these service providers to run the app. Each one processes data only on our instructions and only for the purpose listed:<br>• Supabase — stores your account, profile, messages, and uploaded files.<br>• RevenueCat — keeps track of your Explore+ subscription (your account ID and purchase status). Google Play handles the payment.<br>• Expo and Google Firebase Cloud Messaging — deliver push notifications (your device's push token and the notification text).<br>• Brevo or Resend — send the one-time verification codes to your email address.</p>
+      <p>Google ML Kit reads the number on your CNIC photo on your phone only; nothing is sent to Google for it.</p>
       <p>We disclose data to law enforcement only where we are legally required to, or where it is necessary to investigate a credible threat to someone's safety.</p>
     </section>
-    <section>
+    <section id="retention">
       <h2>6. How long we keep it</h2>
-      <p>Your account data stays while your account is open. When you delete your account, your profile, photos, matches, and messages are deleted from our live systems, and encrypted backups roll off within 30 days.</p>
+      <p>Your account data stays while your account is open. When you delete your account, your profile, photos, CNIC details, matches, and messages are deleted from our live systems, and encrypted backups roll off within 30 days.</p>
       <p>Two exceptions: records connected to an open safety report or an account we banned are kept for up to 12 months so the same person cannot immediately return; and records the law requires us to retain are kept for the period the law specifies.</p>
     </section>
-    <section>
+    <section id="yourRights">
       <h2>7. Your rights</h2>
-      <p>You can see and correct your profile data at any time from Edit profile.</p>
-      <p>You can delete your account, and everything above with it, from Settings → Privacy &amp; safety → Delete account. It takes effect immediately and cannot be undone.</p>
+      <p>You can see and correct most of your profile data at any time from Edit profile. Your CNIC number and CNIC photo are fixed after signup; email <a href="mailto:support@rishtaandrang.app">support@rishtaandrang.app</a> if they need correcting.</p>
       <p>You can also ask us for a copy of your data, ask us to correct it, or object to a specific use, by emailing <a href="mailto:support@rishtaandrang.app">support@rishtaandrang.app</a>. We answer within 30 days.</p>
     </section>
-    <section>
-      <h2>8. How we protect it</h2>
-      <p>Data is encrypted in transit. Passwords are hashed and never stored in readable form. Verification documents live in a private storage bucket that only you and our review process can read; profile photos live in a bucket that only signed-in members can read. Access is enforced by row-level security rules on every table, so one account cannot read another's messages or documents.</p>
+    <section id="deleteAccount">
+      <h2>8. Deleting your account</h2>
+      <p>In the app: go to Settings → Privacy &amp; safety → Delete account. It takes effect immediately and cannot be undone.</p>
+      <p>Without the app: email <a href="mailto:support@rishtaandrang.app">support@rishtaandrang.app</a> from the email address you signed up with, with the subject &quot;Delete my account&quot;. We confirm the request and delete the account within 7 days.</p>
+      <p>What is deleted: your account, profile, photos, video and voice intros, verification selfie, CNIC number, CNIC photo and CNIC fingerprint, matches, likes, and messages. Encrypted backups roll off within 30 days. The only records that may be kept are the ones listed under &quot;How long we keep it&quot;.</p>
+    </section>
+    <section id="security">
+      <h2>9. How we protect it</h2>
+      <p>Data is encrypted in transit. Passwords are hashed and never stored in readable form. Your CNIC photo and verification selfie live in a private storage bucket that only you and our review process can read. Profile photos, intros, voice notes, and the photos you send in chat are stored at long, unguessable web links so the app can show them; they are not listed or searchable, but anyone who has the exact link can open the file. Everything else is protected by row-level security rules on every table, so one account cannot read another's messages or documents.</p>
       <p>No system is perfectly secure. If a breach affects your data, we will tell you and the relevant authority as required by law.</p>
     </section>
-    <section>
-      <h2>9. Adults only</h2>
+    <section id="ageLimit">
+      <h2>10. Adults only</h2>
       <p>Lovebirds is for people aged 18 and over. We ask for your date of birth at signup and refuse accounts under 18. If we learn that an account belongs to a minor, we delete it and its data. If you believe a minor is using the app, email <a href="mailto:support@rishtaandrang.app">support@rishtaandrang.app</a>.</p>
     </section>
-    <section>
-      <h2>10. Changes to this policy</h2>
+    <section id="changes">
+      <h2>11. Changes to this policy</h2>
       <p>If we change this policy in a way that materially affects you, we will tell you in the app before the change takes effect. The date at the top is always the version you are reading.</p>
     </section>
-    <section>
-      <h2>11. Contact us</h2>
+    <section id="contact">
+      <h2>12. Contact us</h2>
       <p>Email <a href="mailto:support@rishtaandrang.app">support@rishtaandrang.app</a> with any privacy question, data request, or complaint. If you are not satisfied with our answer, you may complain to your local data-protection authority.</p>
     </section>
     <footer>Questions about either document? Email <a href="mailto:support@rishtaandrang.app">support@rishtaandrang.app</a>.</footer>

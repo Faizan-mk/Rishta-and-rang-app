@@ -600,7 +600,7 @@
   },
   "legal": {
     "title": "Privacy policy & terms",
-    "lastUpdated": "Last updated 2 September 2026",
+    "lastUpdated": "Last updated 21 October 2026",
     "readPrivacyOnline": "Open the privacy policy in your browser",
     "readTermsOnline": "Open the terms of service in your browser",
     "contactLine": "Questions about either document? Email {email}.",
@@ -615,11 +615,11 @@
       },
       "dataWeCollect": {
         "title": "2. What we collect",
-        "body": "Account details: your email address and password (stored only as a salted hash — we never see it).\n\nProfile details: your name, date of birth, gender, city, bio, what you are looking for, and the matrimonial fields you choose to fill in (religion, sect, education, family background, readiness).\n\nPhotos: the profile photos you upload.\n\nVerification selfie: the selfie taken during signup, used to check a real person is behind the profile. It is never shown on your profile or to other members.\n\nCNIC / ID: your CNIC number and, if you upload one, a photo of the card. Used only to check the format and to support a future identity review. Never shown to other members.\n\nLocation: the city you select. If you allow it, an approximate distance so nearby profiles can be ranked first. We do not track or store your precise location history.\n\nChat: the messages, voice notes, and photos you send in the app, and who you sent them to.\n\nUsage: when you last opened the app, who you liked, who you blocked, and what you reported — the record safety review runs on."
+        "body": "Account details: your email address and password (stored only as a salted hash — we never see it).\n\nProfile details: your name, date of birth, gender, city, bio, what you are looking for, and the matrimonial fields you choose to fill in (religion, sect, education, family background, readiness).\n\nPhotos, video and voice: the profile photos you upload, and the video intro and voice intro if you add them.\n\nVerification selfie: the selfie taken during signup, used to check a real person is behind the profile. It is never shown on your profile or to other members.\n\nCNIC: your CNIC number and a photo of your CNIC card, both required at signup. When you take the card photo, the app reads the number printed on it on your phone (using Google ML Kit, which runs on the device and does not send the photo anywhere) and checks that it matches the number you typed. We also keep a one-way, keyed fingerprint (hash) of your CNIC number so that one CNIC can be used for only one account; the fingerprint cannot be turned back into the number. Your CNIC number and card photo are never shown to other members, and they cannot be changed after signup — email {email} if they need correcting.\n\nLocation: only the city you select. We do not collect your device's location.\n\nChat: the messages, voice notes, and photos you send in the app, and who you sent them to.\n\nPurchases: whether you have an Explore+ subscription, its plan and its renewal date. The payment itself is handled by Google Play; we never see your card details.\n\nUsage and device: when you last opened the app, who you liked, who you blocked, and what you reported — the record safety review runs on — and a push-notification token for your device."
       },
       "howWeUse": {
         "title": "3. Why we use it",
-        "body": "To create and run your account, show your profile to other members, suggest matches, deliver your messages, apply your daily like limit and Explore+ entitlements, review reports and keep the community safe, and meet legal obligations.\n\nWe do not sell your data. We do not use your photos, selfie, CNIC, or messages for advertising, and we do not use them to train machine-learning models."
+        "body": "To create and run your account, check that your CNIC photo matches your CNIC number and that each CNIC is used for only one account, show your profile to other members, suggest matches, deliver your messages and notifications, apply your daily like limit and Explore+ subscription, review reports and keep the community safe, and meet legal obligations.\n\nWe do not sell your data. We do not use your photos, selfie, CNIC, or messages for advertising, and we do not use them to train machine-learning models."
       },
       "legalBasis": {
         "title": "4. Your consent",
@@ -627,30 +627,34 @@
       },
       "sharing": {
         "title": "5. Who else sees it",
-        "body": "Other members see your profile: name, age, city, photos, bio, and the profile fields you filled in. They do not see your email, password, CNIC, verification selfie, or exact location.\n\nSupabase is our data processor. Your account, profile, messages, and uploaded files are stored on Supabase infrastructure under a processing agreement; Supabase processes this data on our instructions and does not use it for its own purposes.\n\nWe disclose data to law enforcement only where we are legally required to, or where it is necessary to investigate a credible threat to someone's safety."
+        "body": "Other members see your profile: name, age, city, photos, bio, and the profile fields you filled in. They do not see your email, password, CNIC, verification selfie, or exact location.\n\nWe use these service providers to run the app. Each one processes data only on our instructions and only for the purpose listed:\n• Supabase — stores your account, profile, messages, and uploaded files.\n• RevenueCat — keeps track of your Explore+ subscription (your account ID and purchase status). Google Play handles the payment.\n• Expo and Google Firebase Cloud Messaging — deliver push notifications (your device's push token and the notification text).\n• Brevo or Resend — send the one-time verification codes to your email address.\n\nGoogle ML Kit reads the number on your CNIC photo on your phone only; nothing is sent to Google for it.\n\nWe disclose data to law enforcement only where we are legally required to, or where it is necessary to investigate a credible threat to someone's safety."
       },
       "retention": {
         "title": "6. How long we keep it",
-        "body": "Your account data stays while your account is open. When you delete your account, your profile, photos, matches, and messages are deleted from our live systems, and encrypted backups roll off within 30 days.\n\nTwo exceptions: records connected to an open safety report or an account we banned are kept for up to 12 months so the same person cannot immediately return; and records the law requires us to retain are kept for the period the law specifies."
+        "body": "Your account data stays while your account is open. When you delete your account, your profile, photos, CNIC details, matches, and messages are deleted from our live systems, and encrypted backups roll off within 30 days.\n\nTwo exceptions: records connected to an open safety report or an account we banned are kept for up to 12 months so the same person cannot immediately return; and records the law requires us to retain are kept for the period the law specifies."
       },
       "yourRights": {
         "title": "7. Your rights",
-        "body": "You can see and correct your profile data at any time from Edit profile.\n\nYou can delete your account, and everything above with it, from Settings → Privacy & safety → Delete account. It takes effect immediately and cannot be undone.\n\nYou can also ask us for a copy of your data, ask us to correct it, or object to a specific use, by emailing {email}. We answer within 30 days."
+        "body": "You can see and correct most of your profile data at any time from Edit profile. Your CNIC number and CNIC photo are fixed after signup; email {email} if they need correcting.\n\nYou can also ask us for a copy of your data, ask us to correct it, or object to a specific use, by emailing {email}. We answer within 30 days."
+      },
+      "deleteAccount": {
+        "title": "8. Deleting your account",
+        "body": "In the app: go to Settings → Privacy & safety → Delete account. It takes effect immediately and cannot be undone.\n\nWithout the app: email {email} from the email address you signed up with, with the subject \"Delete my account\". We confirm the request and delete the account within 7 days.\n\nWhat is deleted: your account, profile, photos, video and voice intros, verification selfie, CNIC number, CNIC photo and CNIC fingerprint, matches, likes, and messages. Encrypted backups roll off within 30 days. The only records that may be kept are the ones listed under \"How long we keep it\"."
       },
       "security": {
-        "title": "8. How we protect it",
-        "body": "Data is encrypted in transit. Passwords are hashed and never stored in readable form. Verification documents live in a private storage bucket that only you and our review process can read; profile photos live in a bucket that only signed-in members can read. Access is enforced by row-level security rules on every table, so one account cannot read another's messages or documents.\n\nNo system is perfectly secure. If a breach affects your data, we will tell you and the relevant authority as required by law."
+        "title": "9. How we protect it",
+        "body": "Data is encrypted in transit. Passwords are hashed and never stored in readable form. Your CNIC photo and verification selfie live in a private storage bucket that only you and our review process can read. Profile photos, intros, voice notes, and the photos you send in chat are stored at long, unguessable web links so the app can show them; they are not listed or searchable, but anyone who has the exact link can open the file. Everything else is protected by row-level security rules on every table, so one account cannot read another's messages or documents.\n\nNo system is perfectly secure. If a breach affects your data, we will tell you and the relevant authority as required by law."
       },
       "ageLimit": {
-        "title": "9. Adults only",
+        "title": "10. Adults only",
         "body": "Lovebirds is for people aged 18 and over. We ask for your date of birth at signup and refuse accounts under 18. If we learn that an account belongs to a minor, we delete it and its data. If you believe a minor is using the app, email {email}."
       },
       "changes": {
-        "title": "10. Changes to this policy",
+        "title": "11. Changes to this policy",
         "body": "If we change this policy in a way that materially affects you, we will tell you in the app before the change takes effect. The date at the top is always the version you are reading."
       },
       "contact": {
-        "title": "11. Contact us",
+        "title": "12. Contact us",
         "body": "Email {email} with any privacy question, data request, or complaint. If you are not satisfied with our answer, you may complain to your local data-protection authority."
       }
     },
