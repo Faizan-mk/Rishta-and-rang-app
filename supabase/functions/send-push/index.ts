@@ -174,6 +174,12 @@ Deno.serve(async (req: Request) => {
     const callerId = auth?.user?.id;
     if (!callerId) return json({ error: 'not_authenticated' }, 401);
 
+    // A member can only push to people they are matched with or have liked,
+    // but without a cap they could do it as fast as a script runs. The limit
+    // itself lives in public.rate_limit_config (53_rate_limits.sql).
+    const { data: wait } = await supabase.rpc('rate_limit_check', { p_name: 'push', p_subject: callerId });
+    if (typeof wait === 'number' && wait > 0) return json({ error: 'rate_limited', retryAfter: wait }, 429);
+
     // Their own name is the only title they may send under.
     const { data: sender } = await supabase
       .from('profiles')
@@ -290,7 +296,10 @@ Deno.serve(async (req: Request) => {
       .eq('id', userId)
       .maybeSingle();
 
-    if (error) return json({ error: 'prefs_lookup_failed', detail: error.message }, 500);
+    if (error) {
+      console.error('send-push: prefs lookup failed', error.message);
+      return json({ error: 'prefs_lookup_failed' }, 500);
+    }
 
     // No prefs row means the member never opened Settings. The table's own
     // defaults are the answer then — everything on except product updates.
@@ -307,7 +316,10 @@ Deno.serve(async (req: Request) => {
     .select('expo_push_token')
     .eq('user_id', userId);
 
-  if (tokenError) return json({ error: 'token_lookup_failed', detail: tokenError.message }, 500);
+  if (tokenError) {
+    console.error('send-push: token lookup failed', tokenError.message);
+    return json({ error: 'token_lookup_failed' }, 500);
+  }
   if (!tokens?.length) return json({ skipped: 'no_devices', userId }, 200);
 
   // 3. Hand it to Expo. One request carries every device this member has.
@@ -331,7 +343,8 @@ Deno.serve(async (req: Request) => {
 
   const result = await expoResponse.json().catch(() => null);
   if (!expoResponse.ok) {
-    return json({ error: 'expo_rejected', status: expoResponse.status, detail: result }, 502);
+    console.error('send-push: Expo rejected the batch', expoResponse.status, JSON.stringify(result));
+    return json({ error: 'expo_rejected' }, 502);
   }
 
   // Expo reports per-message errors inside a 200. DeviceNotRegistered means the

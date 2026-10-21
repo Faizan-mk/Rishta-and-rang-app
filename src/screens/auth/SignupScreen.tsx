@@ -17,6 +17,7 @@ import { PAKISTAN_CITIES } from '../../data/locations';
 import { useLanguage } from '../../store/LanguageContext';
 import { useTheme } from '../../store/ThemeContext';
 import { useOnboarding } from '../../store/onboardingStore';
+import { useDialog } from '../../store/DialogContext';
 import { isValidEmail, isStrongPassword } from '../../utils/validation';
 import { ageFromDob, isValidDobFormat } from '../../utils/date';
 import { digitsToCnicDisplay, isValidCnicFormat, cnicMatchesGender } from '../../utils/cnic';
@@ -34,6 +35,7 @@ export function SignupScreen() {
   const { t, rtl, language } = useLanguage();
   const onboardRamp = flat(colors.teal);
   const { draft, startDraft } = useOnboarding();
+  const { notify } = useDialog();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -97,6 +99,16 @@ export function SignupScreen() {
     setError(null);
     setChecking(true);
     try {
+      try {
+        await authService.checkCnic(cnicNumber);
+      } catch (e) {
+        if (e instanceof AppError && e.key === 'authErrors.cnicTaken') {
+          await notify({ title: t('cnic.title'), message: t('authErrors.cnicTaken') });
+          return;
+        }
+        throw e;
+      }
+
       // 'resume' means this address is their own signup that died before the
       // profile rows were written — that one gets waved through, so the flow can
       // finish the account instead of walling them out of it forever. The

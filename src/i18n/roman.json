@@ -1,6 +1,8 @@
 {
-  "appName": "Matrimonial App",
+  "appName": "Lovebirds",
   "common": {
+    "maxLengthReached": "Zyada se zyada {max} characters.",
+    "tooManyRequests": "Aap thora tez chal rahe hain. Zara ruk kar dobara koshish karein.",
     "next": "Aage",
     "back": "Peeche",
     "continue": "Jari Rakhein",
@@ -107,7 +109,7 @@
     "submit": "Jari Rakhein",
     "missingFields": "Baraye meherbani tamam khane pur karein.",
     "invalidDob": "Tareekh-e-paidaish sahi format YYYY-MM-DD mein darj karein.",
-    "tooYoung": "Matrimonial App istemal karne ke liye umar 18 saal ya us se zyada honi chahiye."
+    "tooYoung": "Lovebirds istemal karne ke liye umar 18 saal ya us se zyada honi chahiye."
   },
   "intent": {
     "title": "Aap Yahan Kyun Aaye Hain?",
@@ -147,6 +149,7 @@
     "roman": "Roman English"
   },
   "onboarding": {
+    "skip": "Skip",
     "getStarted": "Shuru Karein",
     "page1": {
       "title": "Sanjeeda rishtay, asaan tareeqay se",
@@ -213,12 +216,12 @@
     "favourited": "Pasandeeda mein shamil",
     "block": "Block Karein",
     "report": "Report Karein",
-    "shareMessage": "{name} ki profile Matrimonial App par dekhein!",
+    "shareMessage": "{name} ki profile Lovebirds par dekhein!",
     "openToRelocate": "Muntaqli ke liye tayyar",
     "careerPlansTitle": "Career ke mansooby",
     "grewUpIn": "{place} mein parwarish payi",
     "filtersTitle": "Filters",
-    "filterVerifiedOnly": "Verification badges wali profiles",
+    "filterVerifiedOnly": "Sirf selfie wali profiles",
     "filterActiveToday": "Sirf aaj active",
     "filtersEmpty": "In filters ke mutabiq filhaal koi profile nahi. Filters kam kar ke dekhein.",
     "filtersReset": "Filters hatayein",
@@ -409,6 +412,9 @@
     "savedBody": "Aapki profile update ho gayi hai."
   },
   "editProfile": {
+    "voiceTooLong": "Recording {minutes} minute par ruk gayi, voice intro is se lamba nahi ho sakta.",
+    "tooManyTags": "Aap zyada se zyada {max} tags laga sakte hain. Naya lagane ke liye koi ek hatayein.",
+    "heightRange": "Height {min} aur {max} cm ke darmiyan honi chahiye.",
     "title": "Profile Edit Karein",
     "bio": "Bio",
     "bioPlaceholder": "Apne baare mein kuch batayein...",
@@ -459,7 +465,7 @@
     "themesSubtitle": "Poori app ke liye rangon ki theme chunein. Roshan aur tareek mode is ke saath bhi chalte hain.",
     "themeActive": "Faal",
     "themeMaroon": "Maroon aur Sunehra",
-    "themeMaroonDesc": "Matrimonial App ka classic andaaz",
+    "themeMaroonDesc": "Lovebirds ka classic andaaz",
     "themeEmerald": "Zamurradi aur Sunehra",
     "themeEmeraldDesc": "Gehra zamurradi, purane sunehre ke saath",
     "themeNavy": "Navy aur Sunehra",
@@ -600,12 +606,12 @@
     "contactLine": "In dastavezaat ke baare mein sawal hai? {email} par email karein.",
     "privacyPolicyTitle": "Privacy policy",
     "termsTitle": "Service ki sharait",
-    "privacyIntro": "Matrimonial App Pakistan mein baaligh afraad ke liye aik matchmaking app hai. Yeh policy batati hai ke hum aap se kya maloomat lete hain, kyun lete hain, kaun unhein dekh sakta hai, aur aap unhein kaise delete karwa sakte hain.",
-    "termsIntro": "Yeh sharait aap ke aur Matrimonial App ke darmiyan muahida hain. Account bana kar aap inhein qubool karte hain. Agar aap inhein qubool nahi karte to app istemal na karein.",
+    "privacyIntro": "Lovebirds Pakistan mein baaligh afraad ke liye aik matchmaking app hai. Yeh policy batati hai ke hum aap se kya maloomat lete hain, kyun lete hain, kaun unhein dekh sakta hai, aur aap unhein kaise delete karwa sakte hain.",
+    "termsIntro": "Yeh sharait aap ke aur Lovebirds ke darmiyan muahida hain. Account bana kar aap inhein qubool karte hain. Agar aap inhein qubool nahi karte to app istemal na karein.",
     "privacy": {
       "whoWeAre": {
         "title": "1. Hum kaun hain",
-        "body": "Matrimonial App (\"hum\") is app ko chalate hain aur neeche bayan ki gayi maloomat ke data controller hain. Is policy se mutalliq kisi bhi baat ke liye, bashamool apna data dekhne ya delete karwane ki darkhwast, aap hum se {email} par rabta kar sakte hain."
+        "body": "Lovebirds (\"hum\") is app ko chalate hain aur neeche bayan ki gayi maloomat ke data controller hain. Is policy se mutalliq kisi bhi baat ke liye, bashamool apna data dekhne ya delete karwane ki darkhwast, aap hum se {email} par rabta kar sakte hain."
       },
       "dataWeCollect": {
         "title": "2. Hum kya jama karte hain",
@@ -637,7 +643,7 @@
       },
       "ageLimit": {
         "title": "9. Sirf baaligh afraad ke liye",
-        "body": "Matrimonial App 18 saal ya us se zyada umar ke afraad ke liye hai. Hum signup par tareekh-e-paidaish poochte hain aur 18 saal se kam umar ke accounts qubool nahi karte. Agar hamein maloom ho ke koi account nabaligh ka hai to hum use aur us ka data hazf kar dete hain. Agar aap ko lage ke koi nabaligh app istemal kar raha hai to {email} par email karein."
+        "body": "Lovebirds 18 saal ya us se zyada umar ke afraad ke liye hai. Hum signup par tareekh-e-paidaish poochte hain aur 18 saal se kam umar ke accounts qubool nahi karte. Agar hamein maloom ho ke koi account nabaligh ka hai to hum use aur us ka data hazf kar dete hain. Agar aap ko lage ke koi nabaligh app istemal kar raha hai to {email} par email karein."
       },
       "changes": {
         "title": "10. Is policy mein tabdeeliyan",
@@ -651,7 +657,7 @@
     "terms": {
       "eligibility": {
         "title": "1. Aap ka 18 saal ka hona lazim hai",
-        "body": "Aap Matrimonial App sirf usi soorat istemal kar sakte hain jab aap 18 saal ya us se zyada umar ke hon aur qanoonan yeh muahida karne ke ahal hon. Aap signup par apni umar ki tasdeeq karte hain. 18 saal se kam umar mein, ya kisi nabaligh ki janib se, account banana in sharait ki khilaf warzi hai aur hum aisa account hazf kar denge."
+        "body": "Aap Lovebirds sirf usi soorat istemal kar sakte hain jab aap 18 saal ya us se zyada umar ke hon aur qanoonan yeh muahida karne ke ahal hon. Aap signup par apni umar ki tasdeeq karte hain. 18 saal se kam umar mein, ya kisi nabaligh ki janib se, account banana in sharait ki khilaf warzi hai aur hum aisa account hazf kar denge."
       },
       "yourAccount": {
         "title": "2. Aap ka account",
@@ -659,7 +665,7 @@
       },
       "acceptableUse": {
         "title": "3. App kaise istemal karein",
-        "body": "Matrimonial App dosti, taalluq ya shadi ke liye logon se milne ki jagah hai. Doosre members ke saath waisa sulook karein jaisa aap apne ghar walon ke liye chahte hain. Guftagu usi raftaar se barhayein jo dono ko qubool ho, aur \"nahi\" ka ehtiram pehli hi baar karein."
+        "body": "Lovebirds dosti, taalluq ya shadi ke liye logon se milne ki jagah hai. Doosre members ke saath waisa sulook karein jaisa aap apne ghar walon ke liye chahte hain. Guftagu usi raftaar se barhayein jo dono ko qubool ho, aur \"nahi\" ka ehtiram pehli hi baar karein."
       },
       "prohibited": {
         "title": "4. Kya mana hai",
@@ -725,7 +731,7 @@
     "myHistory": "My History",
     "learnMore": "Mazeed janein",
     "share": "Share Karein",
-    "shareEventMessage": "{title} — {city}, {date}. Isay Matrimonial App par dekhein!",
+    "shareEventMessage": "{title} — {city}, {date}. Isay Lovebirds par dekhein!",
     "historyEmpty": "Aap jo profiles dekhein ge woh yahan dikhengi."
   },
   "explorePlus": {
@@ -852,10 +858,12 @@
     "otpCooldown": "Naya code mangwane se pehle {seconds}s intezar karein.",
     "otpRateLimited": "Bohat zyada codes mangwaye gaye. {minutes} minute baad koshish karein.",
     "otpSendFailed": "Code bheja nahi ja saka. Thori der baad dobara koshish karein.",
-    "otpTicketInvalid": "Aap ki email tasdeeq ki muddat khatam ho gayi. Pehle qadam par wapas ja kar dobara tasdeeq karein."
+    "otpTicketInvalid": "Aap ki email tasdeeq ki muddat khatam ho gayi. Pehle qadam par wapas ja kar dobara tasdeeq karein.",
+    "cnicTaken": "Yeh CNIC pehle se kisi aur account par registered hai. Ek CNIC se sirf ek hi account ban sakta hai."
   },
   "media": {
-    "fileUnavailable": "Muntakhib karda file is device par mazeed dastyab nahi."
+    "fileUnavailable": "Muntakhib karda file is device par mazeed dastyab nahi.",
+    "fileTooLarge": "Yeh file bohat bari hai. Had {mb} MB hai."
   },
   "reactions": {
     "add": "Radd-e-amal shamil karein",

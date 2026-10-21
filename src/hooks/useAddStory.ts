@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import * as ImagePicker from 'expo-image-picker';
+import { canOpenPhotoLibrary } from '../utils/photoLibraryAccess';
 import { useDialog } from '../store/DialogContext';
 import { useLanguage } from '../store/LanguageContext';
 import { useStories } from '../store/StoriesContext';
@@ -13,8 +14,7 @@ export function useAddStory() {
 
   const addStory = useCallback(async () => {
     if (posting) return;
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
+    if (!(await canOpenPhotoLibrary())) {
       await notify({ title: t('permissions.photoLibraryTitle'), message: t('permissions.photoLibraryBody') });
       return;
     }

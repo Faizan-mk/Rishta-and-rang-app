@@ -6,7 +6,8 @@
 //
 //   request  { email, purpose, language }       → sends a code
 //   verify   { email, purpose, code }           → { ticket }
-//   signup   { email, password, fullName, ticket } → creates the confirmed account
+//   signup   { email, password, fullName, ticket, cnic } → creates the confirmed
+//            account — refused with cnic_taken if another account holds the CNIC
 //   reset    { email, password, ticket }        → writes the new password
 //
 // `purpose` is 'signup' or 'reset'; a code or ticket minted for one is useless
@@ -23,12 +24,15 @@
 //                    only has to be a verified address, not a domain.
 //   RESEND_API_KEY   Resend → API Keys. Used when Brevo's isn't set; needs a
 //                    verified domain to reach anyone but the account owner.
-//   OTP_FROM_EMAIL   "Matrimonial App <address>" — for Brevo, the address
+//   OTP_FROM_EMAIL   "Lovebirds <address>" — for Brevo, the address
 //                    verified under Senders; for Resend, one on its domain
 //   OTP_SECRET       any long random string; keys the code/ticket hashes.
 //                    Falls back to the service role key when unset.
+//   CNIC_SECRET      keys the CNIC hashes — the same one the cnic function
+//                    uses (see supabase/functions/cnic).
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { cnicDigits, cnicDisplay, cnicHash } from '../_shared/cnic.ts';
 
 type Purpose = 'signup' | 'reset';
 
@@ -103,20 +107,20 @@ async function hmac(secret: string, message: string): Promise<string> {
 
 const COPY: Record<string, Record<Purpose, { subject: string; intro: string }> & { expiry: string; ignore: string }> = {
   en: {
-    signup: { subject: 'Your Matrimonial App verification code', intro: 'Use this code to verify your email and finish creating your account.' },
-    reset: { subject: 'Your Matrimonial App password reset code', intro: 'Use this code to reset your password.' },
+    signup: { subject: 'Your Lovebirds verification code', intro: 'Use this code to verify your email and finish creating your account.' },
+    reset: { subject: 'Your Lovebirds password reset code', intro: 'Use this code to reset your password.' },
     expiry: 'The code expires in {minutes} minutes. Never share it with anyone — our team will never ask for it.',
     ignore: "If you didn't request this, you can safely ignore this email.",
   },
   roman: {
-    signup: { subject: 'Matrimonial App tasdeeqi code', intro: 'Apni email ki tasdeeq aur account mukammal karne ke liye yeh code istemal karein.' },
-    reset: { subject: 'Matrimonial App password reset code', intro: 'Apna password reset karne ke liye yeh code istemal karein.' },
+    signup: { subject: 'Lovebirds tasdeeqi code', intro: 'Apni email ki tasdeeq aur account mukammal karne ke liye yeh code istemal karein.' },
+    reset: { subject: 'Lovebirds password reset code', intro: 'Apna password reset karne ke liye yeh code istemal karein.' },
     expiry: 'Yeh code {minutes} minute mein khatam ho jayega. Yeh code kisi ko na batayein — hamari team kabhi yeh nahi mangegi.',
     ignore: 'Agar aap ne yeh request nahi ki to is email ko nazar andaz kar dein.',
   },
   ur: {
-    signup: { subject: 'میٹریمونیل ایپ تصدیقی کوڈ', intro: 'اپنی ای میل کی تصدیق اور اکاؤنٹ مکمل کرنے کے لیے یہ کوڈ استعمال کریں۔' },
-    reset: { subject: 'میٹریمونیل ایپ پاس ورڈ ری سیٹ کوڈ', intro: 'اپنا پاس ورڈ ری سیٹ کرنے کے لیے یہ کوڈ استعمال کریں۔' },
+    signup: { subject: 'لوبرڈز تصدیقی کوڈ', intro: 'اپنی ای میل کی تصدیق اور اکاؤنٹ مکمل کرنے کے لیے یہ کوڈ استعمال کریں۔' },
+    reset: { subject: 'لوبرڈز پاس ورڈ ری سیٹ کوڈ', intro: 'اپنا پاس ورڈ ری سیٹ کرنے کے لیے یہ کوڈ استعمال کریں۔' },
     expiry: 'یہ کوڈ {minutes} منٹ میں ختم ہو جائے گا۔ یہ کوڈ کسی کو نہ بتائیں — ہماری ٹیم کبھی یہ نہیں مانگے گی۔',
     ignore: 'اگر آپ نے یہ درخواست نہیں کی تو اس ای میل کو نظر انداز کر دیں۔',
   },
@@ -130,12 +134,12 @@ function renderEmail(purpose: Purpose, code: string, language: string) {
   const { subject, intro } = copy[purpose];
 
   const html = `<!doctype html>
-<html dir="${dir}"><body style="margin:0;padding:24px;background:#f4f1ec;font-family:Arial,Helvetica,sans-serif;color:#1f2a2e">
+<html dir="${dir}"><body style="margin:0;padding:24px;background:#FCE4EC;font-family:Arial,Helvetica,sans-serif;color:#1f2a2e">
   <table role="presentation" width="100%" style="max-width:480px;margin:0 auto;background:#ffffff;border-radius:16px;padding:32px">
     <tr><td>
-      <h1 style="margin:0 0 16px;font-size:20px;color:#1f6f6b">Matrimonial App</h1>
+      <h1 style="margin:0 0 16px;font-size:24px;font-family:Georgia,serif;color:#241F21">L<span style="color:#C9A45C">o</span>ve<span style="color:#C9A45C">b</span>irds</h1>
       <p style="margin:0 0 24px;font-size:15px;line-height:22px">${intro}</p>
-      <p dir="ltr" style="margin:0 0 24px;font-size:34px;font-weight:bold;letter-spacing:10px;text-align:center;color:#1f2a2e">${code}</p>
+      <p dir="ltr" style="margin:0 0 24px;font-size:34px;font-weight:bold;letter-spacing:10px;text-align:center;color:#AD1457">${code}</p>
       <p style="margin:0 0 12px;font-size:13px;line-height:20px;color:#5b6b70">${expiry}</p>
       <p style="margin:0;font-size:13px;line-height:20px;color:#5b6b70">${copy.ignore}</p>
     </td></tr>
@@ -149,8 +153,8 @@ function renderEmail(purpose: Purpose, code: string, language: string) {
 /** "Name <address>" → its two halves; a bare address gets the app's name. */
 function parseSender(from: string): { name: string; email: string } {
   const match = from.match(/^\s*(.*?)\s*<\s*([^>]+?)\s*>\s*$/);
-  if (match) return { name: match[1].replace(/^"|"$/g, '') || 'Matrimonial App', email: match[2] };
-  return { name: 'Matrimonial App', email: from.trim() };
+  if (match) return { name: match[1].replace(/^"|"$/g, '') || 'Lovebirds', email: match[2] };
+  return { name: 'Lovebirds', email: from.trim() };
 }
 
 /** `detail` is the provider's own reason for a refusal — logged, and returned
@@ -198,7 +202,7 @@ async function sendEmail(to: string, purpose: Purpose, code: string, language: s
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from: from || 'Matrimonial App <onboarding@resend.dev>', to: [to], subject, html, text }),
+    body: JSON.stringify({ from: from || 'Lovebirds <onboarding@resend.dev>', to: [to], subject, html, text }),
   });
   if (!res.ok) {
     const detail = `Resend ${res.status}: ${(await res.text()).slice(0, 300)}`;
@@ -221,6 +225,7 @@ interface Body {
   ticket?: string;
   password?: string;
   fullName?: string;
+  cnic?: string;
 }
 
 Deno.serve(async (req: Request) => {
@@ -248,6 +253,21 @@ Deno.serve(async (req: Request) => {
     return (data as string | null) ?? null;
   };
   const ticketHash = (purpose: Purpose, ticket: string) => hmac(secret, `ticket:${purpose}:${email}:${ticket}`);
+
+  // Per-address limits live in otp_issue / otp_verify. These sit on top, per
+  // client IP, so one machine can't walk the endpoint across thousands of
+  // addresses. Limits: public.rate_limit_config (53_rate_limits.sql).
+  const clientIp =
+    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('cf-connecting-ip') || null;
+  const ipLimit = body.action === 'request' ? 'otp_request_ip' : 'otp_verify_ip';
+  if (clientIp) {
+    const { data: wait, error: limitError } = await admin.rpc('rate_limit_check', {
+      p_name: ipLimit,
+      p_subject: clientIp,
+    });
+    if (limitError) console.error('auth-otp: rate limit check failed', limitError.message);
+    if (typeof wait === 'number' && wait > 0) return json({ error: 'rate_limited', retryAfter: wait }, 429);
+  }
 
   try {
     switch (body.action) {
@@ -285,7 +305,9 @@ Deno.serve(async (req: Request) => {
         const sent = await sendEmail(email, purpose, code, body.language ?? 'en');
         if (!sent.ok) {
           await admin.rpc('otp_release_cooldown', { p_email: email, p_purpose: purpose });
-          return json({ error: 'send_failed', detail: sent.detail }, 502);
+          // sendEmail has already logged the provider's reason; the caller is
+          // unauthenticated, so it only learns that sending failed.
+          return json({ error: 'send_failed' }, 502);
         }
         return json({ ok: true, resendIn: RESEND_COOLDOWN_SECONDS, expiresIn: CODE_TTL_SECONDS });
       }
@@ -324,6 +346,8 @@ Deno.serve(async (req: Request) => {
         const ticket = body.ticket ?? '';
         if (!ticket) return json({ error: 'ticket_invalid' }, 400);
         if (!isStrongPassword(password)) return json({ error: 'weak_password' }, 400);
+        const cnic = cnicDigits(body.cnic);
+        if (!cnic) return json({ error: 'invalid_cnic' }, 400);
 
         const hash = await ticketHash('signup', ticket);
         const { data: valid, error: validError } = await admin.rpc('otp_ticket_valid', {
@@ -333,6 +357,17 @@ Deno.serve(async (req: Request) => {
         });
         if (validError) throw validError;
         if (!valid) return json({ error: 'ticket_invalid' }, 400);
+
+        // One account per CNIC (56_cnic_unique.sql): asked before the account
+        // exists, so a taken CNIC leaves nothing behind.
+        const cnicKey = await cnicHash(cnic);
+        const { data: holder, error: holderError } = await admin
+          .from('cnic_registry')
+          .select('user_id')
+          .eq('cnic_hash', cnicKey)
+          .maybeSingle();
+        if (holderError) throw holderError;
+        if (holder) return json({ error: 'cnic_taken' }, 409);
 
         // Confirmed from birth: the code already proved the inbox is theirs, so
         // Supabase sends no confirmation email (and no link) of its own.
@@ -346,9 +381,24 @@ Deno.serve(async (req: Request) => {
           if (/already|exists|registered/i.test(createError.message)) return json({ error: 'email_taken' }, 409);
           throw createError;
         }
+        const userId = created.user?.id;
+        if (!userId) throw new Error('createUser returned no user');
+
+        // Another signup with the same CNIC got in between the check above and
+        // here: the new account goes again rather than share it.
+        const { data: claim, error: claimError } = await admin.rpc('cnic_claim', {
+          p_user_id: userId,
+          p_cnic_hash: cnicKey,
+          p_cnic_number: cnicDisplay(cnic),
+        });
+        if (claimError || claim !== 'ok') {
+          await admin.auth.admin.deleteUser(userId);
+          if (claimError) throw claimError;
+          return json({ error: 'cnic_taken' }, 409);
+        }
 
         await admin.rpc('otp_consume_ticket', { p_email: email, p_purpose: 'signup', p_ticket_hash: hash });
-        return json({ ok: true, userId: created.user?.id });
+        return json({ ok: true, userId });
       }
 
       case 'reset': {

@@ -1,6 +1,6 @@
 import { Platform } from 'react-native';
 import { File } from 'expo-file-system';
-import { PUBLIC_BUCKET, VERIFICATION_BUCKET, publicMediaUrl, supabase } from './supabase';
+import { PUBLIC_BUCKET, VERIFICATION_BUCKET, VOICE_BUCKET, publicMediaUrl, supabase, voiceMediaUrl } from './supabase';
 import { AppError } from '../utils/appError';
 
 export function isLocalUri(uri: string): boolean {
@@ -82,8 +82,22 @@ async function readLocalFile(localUri: string): Promise<Uint8Array | Blob> {
   return file.bytes();
 }
 
+// Mirrors the bucket caps in supabase/51_storage_upload_limits.sql, so an
+// oversized file gets a sentence the member can act on instead of a storage
+// rejection. The bucket setting is what actually enforces it.
+const MAX_UPLOAD_BYTES: Record<string, number> = {
+  [PUBLIC_BUCKET]: 50 * 1024 * 1024,
+  [VERIFICATION_BUCKET]: 10 * 1024 * 1024,
+  [VOICE_BUCKET]: 10 * 1024 * 1024,
+};
+
 async function upload(localUri: string, bucket: string, path: string, mimeType?: string | null): Promise<void> {
   const body = await readLocalFile(localUri);
+  const size = body instanceof Blob ? body.size : body.byteLength;
+  const maxBytes = MAX_UPLOAD_BYTES[bucket];
+  if (maxBytes && size > maxBytes) {
+    throw new AppError('media.fileTooLarge', { mb: Math.round(maxBytes / (1024 * 1024)) });
+  }
   const contentType = (body instanceof Blob && body.type) || contentTypeFor(localUri, mimeType);
   const { error } = await supabase.storage.from(bucket).upload(path, body, { contentType, upsert: true });
   if (error) throw new Error(error.message);
@@ -100,26 +114,40 @@ async function uploadPublic(
   return publicMediaUrl(path);
 }
 
+// Voice goes to its own bucket, which takes audio only and caps a file at
+// 10 MB — public-media no longer accepts audio (supabase/54_voice_limits.sql).
+async function uploadVoice(
+  userId: string,
+  localUri: string,
+  folder: string,
+  mimeType?: string | null
+): Promise<string> {
+  const path = `${userId}/${folder}/${fileName(localUri, mimeType)}`;
+  await upload(localUri, VOICE_BUCKET, path, mimeType);
+  return voiceMediaUrl(path);
+}
+
 async function uploadVerification(userId: string, localUri: string, folder: string): Promise<string> {
   const path = `${userId}/${folder}/${fileName(localUri)}`;
   await upload(localUri, VERIFICATION_BUCKET, path);
   return path;
 }
 
-/** The fragment of a public-media URL that maps back to a storage path. */
-const PUBLIC_URL_MARKER = '/storage/v1/object/public/public-media/';
-
-function storagePathFromPublicUrl(url: string): string | null {
-  const index = url.indexOf(PUBLIC_URL_MARKER);
-  if (index === -1) return null;
-  return decodeURIComponent(url.slice(index + PUBLIC_URL_MARKER.length));
+/** Maps a public URL back to its bucket and storage path. */
+function storageLocationFromPublicUrl(url: string): { bucket: string; path: string } | null {
+  for (const bucket of [PUBLIC_BUCKET, VOICE_BUCKET]) {
+    const marker = `/storage/v1/object/public/${bucket}/`;
+    const index = url.indexOf(marker);
+    if (index !== -1) return { bucket, path: decodeURIComponent(url.slice(index + marker.length)) };
+  }
+  return null;
 }
 
 async function removeFile(url: string): Promise<void> {
-  const path = storagePathFromPublicUrl(url);
-  if (!path) return;
+  const location = storageLocationFromPublicUrl(url);
+  if (!location) return;
   try {
-    await supabase.storage.from(PUBLIC_BUCKET).remove([path]);
+    await supabase.storage.from(location.bucket).remove([location.path]);
   } catch {
     // Best-effort: a failed delete must never break the surrounding flow.
   }
@@ -138,19 +166,29 @@ async function verificationUrl(path: string | null): Promise<string | undefined>
 export const mediaUpload = {
   uploadPhoto: (userId: string, uri: string) => uploadPublic(userId, uri, 'photos'),
   uploadVideoIntro: (userId: string, uri: string) => uploadPublic(userId, uri, 'video'),
-  uploadVoiceIntro: (userId: string, uri: string) => uploadPublic(userId, uri, 'voice'),
+  uploadVoiceIntro: (userId: string, uri: string) => uploadVoice(userId, uri, 'voice'),
   uploadCnicPhoto: (userId: string, uri: string) => uploadVerification(userId, uri, 'cnic'),
   uploadSelfiePhoto: (userId: string, uri: string) => uploadVerification(userId, uri, 'selfie'),
   uploadChatImage: (userId: string, matchId: string, uri: string, mimeType?: string | null) =>
     uploadPublic(userId, uri, `chat/${matchId}`, mimeType),
   uploadChatAudio: (userId: string, matchId: string, uri: string, mimeType?: string | null) =>
-    uploadPublic(userId, uri, `chat/${matchId}`, mimeType),
+    uploadVoice(userId, uri, `chat/${matchId}`, mimeType),
   uploadStoryMedia: (userId: string, uri: string, mimeType?: string | null) =>
     uploadPublic(userId, uri, 'stories', mimeType),
   publicUrl: publicMediaUrl,
   verificationUrl,
   removeFiles: async (urls: string[]) => {
     await Promise.all(urls.filter(Boolean).map(removeFile));
+  },
+  /** CNIC / selfie paths in the private bucket. Best-effort, like removeFiles. */
+  removeVerificationFiles: async (paths: string[]) => {
+    const keep = paths.filter(Boolean);
+    if (!keep.length) return;
+    try {
+      await supabase.storage.from(VERIFICATION_BUCKET).remove(keep);
+    } catch {
+      // A failed delete must never block the account deletion around it.
+    }
   },
   isLocalUri,
 };

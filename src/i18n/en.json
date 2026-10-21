@@ -1,6 +1,8 @@
 {
-  "appName": "Matrimonial App",
+  "appName": "Lovebirds",
   "common": {
+    "maxLengthReached": "Maximum {max} characters.",
+    "tooManyRequests": "You are going a bit fast. Please wait a moment and try again.",
     "next": "Next",
     "back": "Back",
     "continue": "Continue",
@@ -107,7 +109,7 @@
     "submit": "Continue",
     "missingFields": "Please fill in every field.",
     "invalidDob": "Enter a valid date of birth as YYYY-MM-DD.",
-    "tooYoung": "You must be at least 18 to use Matrimonial App."
+    "tooYoung": "You must be at least 18 to use Lovebirds."
   },
   "intent": {
     "title": "What brings you here?",
@@ -147,6 +149,7 @@
     "roman": "Roman English"
   },
   "onboarding": {
+    "skip": "Skip",
     "getStarted": "Get Started",
     "page1": {
       "title": "Serious rishtas, made simple",
@@ -213,12 +216,12 @@
     "favourited": "Favourited",
     "block": "Block",
     "report": "Report",
-    "shareMessage": "Check out {name}'s profile on Matrimonial App!",
+    "shareMessage": "Check out {name}'s profile on Lovebirds!",
     "openToRelocate": "Open to relocate",
     "careerPlansTitle": "Career plans",
     "grewUpIn": "Grew up in {place}",
     "filtersTitle": "Filters",
-    "filterVerifiedOnly": "Profiles with verification badges",
+    "filterVerifiedOnly": "Only profiles with a selfie",
     "filterActiveToday": "Active today only",
     "filtersEmpty": "No profiles match your filters right now. Try loosening them.",
     "filtersReset": "Clear filters",
@@ -409,6 +412,9 @@
     "savedBody": "Your profile has been updated."
   },
   "editProfile": {
+    "voiceTooLong": "Recording stopped at {minutes} minutes, the longest a voice intro can be.",
+    "tooManyTags": "You can add up to {max} tags. Remove one to add another.",
+    "heightRange": "Height must be between {min} and {max} cm.",
     "title": "Edit profile",
     "bio": "Bio",
     "bioPlaceholder": "Tell people a bit about yourself...",
@@ -459,7 +465,7 @@
     "themesSubtitle": "Pick a colour theme for the whole app. Light and dark mode still apply on top of it.",
     "themeActive": "Active",
     "themeMaroon": "Maroon & Gold",
-    "themeMaroonDesc": "The classic Matrimonial App look",
+    "themeMaroonDesc": "The classic Lovebirds look",
     "themeEmerald": "Emerald & Gold",
     "themeEmeraldDesc": "Deep emerald with antique gold",
     "themeNavy": "Navy & Gold",
@@ -600,12 +606,12 @@
     "contactLine": "Questions about either document? Email {email}.",
     "privacyPolicyTitle": "Privacy policy",
     "termsTitle": "Terms of service",
-    "privacyIntro": "Matrimonial App is a matchmaking app for adults in Pakistan. This policy explains what we collect from you, why we need it, who else can see it, and how you get it deleted.",
-    "termsIntro": "These terms are the agreement between you and Matrimonial App. By creating an account you accept them. If you do not accept them, do not use the app.",
+    "privacyIntro": "Lovebirds is a matchmaking app for adults in Pakistan. This policy explains what we collect from you, why we need it, who else can see it, and how you get it deleted.",
+    "termsIntro": "These terms are the agreement between you and Lovebirds. By creating an account you accept them. If you do not accept them, do not use the app.",
     "privacy": {
       "whoWeAre": {
         "title": "1. Who we are",
-        "body": "Matrimonial App (\"we\", \"us\") operates this app and is the data controller for the information described below. You can reach us at {email} about anything in this policy, including a request to see or delete your data."
+        "body": "Lovebirds (\"we\", \"us\") operates this app and is the data controller for the information described below. You can reach us at {email} about anything in this policy, including a request to see or delete your data."
       },
       "dataWeCollect": {
         "title": "2. What we collect",
@@ -637,7 +643,7 @@
       },
       "ageLimit": {
         "title": "9. Adults only",
-        "body": "Matrimonial App is for people aged 18 and over. We ask for your date of birth at signup and refuse accounts under 18. If we learn that an account belongs to a minor, we delete it and its data. If you believe a minor is using the app, email {email}."
+        "body": "Lovebirds is for people aged 18 and over. We ask for your date of birth at signup and refuse accounts under 18. If we learn that an account belongs to a minor, we delete it and its data. If you believe a minor is using the app, email {email}."
       },
       "changes": {
         "title": "10. Changes to this policy",
@@ -651,7 +657,7 @@
     "terms": {
       "eligibility": {
         "title": "1. You must be 18",
-        "body": "You may use Matrimonial App only if you are 18 or older and legally able to enter this agreement. You confirm your age at signup. Creating an account while under 18, or on behalf of someone under 18, is a breach of these terms and we will delete the account."
+        "body": "You may use Lovebirds only if you are 18 or older and legally able to enter this agreement. You confirm your age at signup. Creating an account while under 18, or on behalf of someone under 18, is a breach of these terms and we will delete the account."
       },
       "yourAccount": {
         "title": "2. Your account",
@@ -659,7 +665,7 @@
       },
       "acceptableUse": {
         "title": "3. How to use the app",
-        "body": "Matrimonial App is for meeting people for friendship, a relationship, or marriage. Treat other members the way you would want your own family treated. Take conversations at the pace both of you are comfortable with, and respect a \"no\" the first time."
+        "body": "Lovebirds is for meeting people for friendship, a relationship, or marriage. Treat other members the way you would want your own family treated. Take conversations at the pace both of you are comfortable with, and respect a \"no\" the first time."
       },
       "prohibited": {
         "title": "4. What is not allowed",
@@ -725,7 +731,7 @@
     "myHistory": "My History",
     "learnMore": "Learn more",
     "share": "Share",
-    "shareEventMessage": "{title} — {city}, {date}. Check it out on Matrimonial App!",
+    "shareEventMessage": "{title} — {city}, {date}. Check it out on Lovebirds!",
     "historyEmpty": "Profiles you view will show up here."
   },
   "explorePlus": {
@@ -852,10 +858,12 @@
     "otpCooldown": "Please wait {seconds}s before requesting another code.",
     "otpRateLimited": "Too many codes requested. Try again in {minutes} min.",
     "otpSendFailed": "We could not send the code. Try again in a moment.",
-    "otpTicketInvalid": "Your email verification has expired. Go back to the first step and verify your email again."
+    "otpTicketInvalid": "Your email verification has expired. Go back to the first step and verify your email again.",
+    "cnicTaken": "This CNIC is already registered with another account. Each CNIC can be used for one account only."
   },
   "media": {
-    "fileUnavailable": "The selected file is no longer available on this device."
+    "fileUnavailable": "The selected file is no longer available on this device.",
+    "fileTooLarge": "This file is too large. The limit is {mb} MB."
   },
   "reactions": {
     "add": "Add a reaction",

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Image, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Image, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, {
   Easing,
@@ -16,6 +16,7 @@ import Animated, {
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
 import { withAlpha } from '../../theme/glow';
+import { splitBrandName } from '../../utils/brandName';
 import { fonts } from '../../theme/fonts';
 import { scaleFont } from '../../theme/responsive';
 
@@ -117,6 +118,7 @@ export function SplashLoader({ ready, onFinish }: SplashLoaderProps) {
   }));
 
   const name = t('appName');
+  const brandSegments = splitBrandName(name);
 
   return (
     <Animated.View
@@ -140,7 +142,15 @@ export function SplashLoader({ ready, onFinish }: SplashLoaderProps) {
 
       <View style={styles.below} pointerEvents="none">
         <Animated.Text style={[styles.title, titleStyle]} numberOfLines={1} adjustsFontSizeToFit>
-          {name}
+          {brandSegments.map((segment, i) =>
+            segment.accent ? (
+              <Text key={i} style={styles.titleAccent}>
+                {segment.text}
+              </Text>
+            ) : (
+              segment.text
+            )
+          )}
         </Animated.Text>
         <Animated.View style={[styles.rule, ruleStyle]} />
         <Animated.Text style={[styles.tagline, taglineStyle]} numberOfLines={1}>
@@ -293,6 +303,9 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     textAlign: 'center',
   },
+  // The wordmark's gold letters, lifted a shade further than BRAND_GOLD_BRIGHT
+  // so they still read on every theme's brand colour behind the loader.
+  titleAccent: { color: '#F9D77E' },
   rule: { width: 56, height: 2, borderRadius: 1, marginTop: 12, backgroundColor: withAlpha('#FFFFFF', 0.7) },
   tagline: {
     marginTop: 10,

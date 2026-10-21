@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Image, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Modal, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -672,6 +672,10 @@ function ImageBubble({
 }) {
   const { t } = useLanguage();
   const insets = useSafeAreaInsets();
+  const { width: windowWidth } = useWindowDimensions();
+  // 240 on most phones, but the bubble is 78% of the chat row, which on a
+  // 320dp phone is narrower than 240 — a fixed square spilled past it there.
+  const photoSize = Math.min(240, Math.round(windowWidth * 0.6));
   const [previewVisible, setPreviewVisible] = useState(false);
   const [failed, setFailed] = useState(false);
 
@@ -696,12 +700,12 @@ function ImageBubble({
     <>
       <View accessibilityRole="button" accessibilityLabel={t('chat.openPhoto')}>
         {failed ? (
-          <View style={[styles.image, styles.imageFallback]}>
+          <View style={[styles.image, { width: photoSize }, styles.imageFallback]}>
             <Ionicons name="image-outline" size={28} color={colors.textTertiary} />
             <Text style={[typography.caption, { color: colors.textTertiary }]}>{t('chat.photoUnavailable')}</Text>
           </View>
         ) : (
-          <Image source={{ uri }} style={styles.image} onError={() => setFailed(true)} />
+          <Image source={{ uri }} style={[styles.image, { width: photoSize }]} onError={() => setFailed(true)} />
         )}
       </View>
       {/* `statusBarTranslucent` matches every other Modal in the app
@@ -789,7 +793,8 @@ export const makeStyles = (colors: Palette) =>
     textThem: { color: colors.textPrimary },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },
     bareImage: { borderRadius: radius.lg, overflow: 'hidden' },
-    image: { width: 240, height: 240, borderRadius: radius.lg },
+    // Width comes per-render from `photoSize` (see PhotoContent).
+    image: { aspectRatio: 1, borderRadius: radius.lg },
     imageFallback: {
       backgroundColor: colors.skeleton,
       alignItems: 'center',

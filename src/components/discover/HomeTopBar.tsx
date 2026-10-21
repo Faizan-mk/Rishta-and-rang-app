@@ -13,9 +13,11 @@ import Animated, {
 import { fonts, radius, spacing } from '../../theme';
 import { scaleFont } from '../../theme/responsive';
 import { APP_MODE, glow, modeAccent, withAlpha, type Gradient } from '../../theme/glow';
+
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
+import { BRAND_GOLD } from '../../utils/brandName';
 
 interface HomeTopBarProps {
   // Number of active browse filters, shown as a count on the filters button.
@@ -45,9 +47,22 @@ export function HomeTopBar({
 
   return (
     <View style={[styles.wrap, rtl && styles.rowRtl]}>
-      <Text style={styles.title} numberOfLines={1}>
-        {t('appName')}
-      </Text>
+      {/* Name and heart sit together as the wordmark. The block takes the
+          free width, so the icons stay pinned to the far edge; at "Lovebirds"
+          length the larger size and the heart keep that gap from reading as
+          empty space. */}
+      <View style={styles.brand}>
+        <View style={[styles.brandRow, rtl && styles.rowRtl]}>
+          <Text style={styles.title} numberOfLines={1}>
+            {t('appName')}
+          </Text>
+          {/* Two hearts leaning into each other: the pair in the name. */}
+          <View style={[styles.hearts, rtl ? styles.heartsRtl : styles.heartsLtr]} pointerEvents="none">
+            <Ionicons name="heart" size={scaleFont(15)} color={accent.primary} style={styles.heartBack} />
+            <Ionicons name="heart" size={scaleFont(12)} color={BRAND_GOLD} style={styles.heartFront} />
+          </View>
+        </View>
+      </View>
 
       <Pressable
         onPress={onOpenFilters}
@@ -128,10 +143,18 @@ const makeStyles = (colors: Palette, accentColor: string) =>
       paddingBottom: spacing.sm,
     },
     rowRtl: { flexDirection: 'row-reverse' },
+    brand: { flex: 1 },
+    brandRow: { flexDirection: 'row', alignItems: 'center' },
+    hearts: { width: scaleFont(24), height: scaleFont(20), marginTop: -scaleFont(10) },
+    heartsLtr: { marginLeft: 2 },
+    heartsRtl: { marginRight: 2 },
+    heartBack: { position: 'absolute', left: 0, top: 2, transform: [{ rotate: '-14deg' }] },
+    heartFront: { position: 'absolute', left: scaleFont(10), top: 0, transform: [{ rotate: '16deg' }] },
     title: {
-      flex: 1,
+      flexShrink: 1,
       fontFamily: fonts.display,
-      fontSize: scaleFont(26),
+      fontSize: scaleFont(30),
+      // The whole name in the app colour; Home keeps the wordmark one tone.
       color: accentColor,
     },
     // Round icon button: a white disc with a hairline, lit in the accent while

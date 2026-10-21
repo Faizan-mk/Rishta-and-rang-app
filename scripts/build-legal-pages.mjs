@@ -63,8 +63,22 @@ const STYLE = `
     p { margin: 0 0 .9rem; color: var(--muted); }
     .intro, h2 { color: var(--ink); }
     a { color: var(--accent); }
+    .brand { margin: 0 0 1rem; font-family: Georgia, 'Times New Roman', serif; font-size: 1.6rem; color: var(--ink); }
+    .brand .gold { color: #C9A45C; }
     footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .85rem; }
 `.trim();
+
+// The app's wordmark: the name in ink, with the "o" and the "b" in gold, as on
+// the app's own screens (src/utils/brandName.ts).
+function wordmark(name) {
+  return [...name]
+    .map((ch, i, all) => {
+      const lower = all.join('').toLowerCase();
+      const gold = i === lower.indexOf('o') || i === lower.indexOf('b');
+      return gold ? `<span class="gold">${escapeHtml(ch)}</span>` : escapeHtml(ch);
+    })
+    .join('');
+}
 
 function page({ file, title, intro, sections, group }) {
   const body = sections
@@ -87,6 +101,7 @@ ${STYLE}
 <body>
   <main>
     <header>
+      <p class="brand">${wordmark(dict.appName)}</p>
       <h1>${escapeHtml(title)}</h1>
       <p class="updated">${escapeHtml(dict.appName)} · ${fill(dict.legal.lastUpdated)}</p>
     </header>
