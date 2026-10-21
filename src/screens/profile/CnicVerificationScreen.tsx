@@ -97,7 +97,7 @@ export function CnicVerificationScreen() {
     // here; a changed number with the old photo needs a fresh one.
     const newPhoto = Boolean(cnicPhotoUri && mediaUpload.isLocalUri(cnicPhotoUri));
     if (!newPhoto && cnicNumber !== user.cnicNumber) {
-      await notify({ title: t('cnic.title'), message: t('cnic.photoRequired') });
+      await notify({ title: t('cnic.photoRequired') });
       return;
     }
     setSaving(true);
@@ -105,10 +105,7 @@ export function CnicVerificationScreen() {
       const match = await matchCnicPhoto(cnicPhotoUri as string, cnicNumber);
       if (match !== 'match') {
         setSaving(false);
-        await notify({
-          title: t('cnic.title'),
-          message: t(match === 'mismatch' ? 'cnic.photoMismatch' : 'cnic.photoUnreadable'),
-        });
+        await notify({ title: t(match === 'mismatch' ? 'cnic.photoMismatch' : 'cnic.photoUnreadable') });
         return;
       }
     }

@@ -95,10 +95,7 @@ export function SelfieVerificationScreen() {
     const match = await matchCnicPhoto(uri, draft?.cnicNumber ?? '');
     setCheckingCnicPhoto(false);
     if (match !== 'match') {
-      await notify({
-        title: t('cnic.title'),
-        message: t(match === 'mismatch' ? 'cnic.photoMismatch' : 'cnic.photoUnreadable'),
-      });
+      await notify({ title: t(match === 'mismatch' ? 'cnic.photoMismatch' : 'cnic.photoUnreadable') });
       return;
     }
     setCnicPhotoUri(uri);

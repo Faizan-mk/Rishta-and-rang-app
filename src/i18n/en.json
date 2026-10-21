@@ -532,9 +532,9 @@
     "imageCheckFailed_tooSmall": "That image couldn't be read. Try a clearer photo.",
     "imageCheckFailed_wrongShape": "That doesn't look like an ID card photo — make sure the whole card fills the frame.",
     "imageCheckFailed_notCardColored": "That doesn't look like a Pakistani CNIC. Upload a clear, well-lit photo of the green ID card.",
-    "photoMismatch": "The CNIC number you entered and the number on the CNIC photo don't match. Check the number or take the photo again.",
-    "photoUnreadable": "We couldn't read the CNIC number on the photo. Take a clear, well-lit photo where the number is easy to see.",
-    "photoRequired": "You changed the CNIC number, so take a new photo of that CNIC as well."
+    "photoMismatch": "CNIC number and photo don't match",
+    "photoUnreadable": "We could not read the CNIC number. Take a clear image.",
+    "photoRequired": "Take a new photo of this CNIC"
   },
   "bureau": {
     "confirmTitle": "Request bureau verification?",
