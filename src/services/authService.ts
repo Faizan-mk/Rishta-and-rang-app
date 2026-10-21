@@ -454,6 +454,7 @@ async function createAccount(email: string, input: SignupInput): Promise<string>
         password: input.password,
         fullName: input.fullName.trim(),
         ticket: input.emailTicket,
+        cnic: input.cnicNumber,
       });
       created = true;
     } catch (err) {
@@ -526,6 +527,10 @@ async function uploadSignupMedia(userId: string, input: SignupInput): Promise<Si
 async function signup(input: SignupInput): Promise<UserProfile> {
   const email = input.email.trim().toLowerCase();
   const userId = await createAccount(email, input);
+  // auth-otp has already claimed the CNIC for a fresh account; this covers a
+  // resumed one, and is a no-op otherwise. cnic_number is written by the claim
+  // alone — the column is pinned for member sessions (56_cnic_unique.sql).
+  await claimCnic(input.cnicNumber);
 
   // Rows before media. These three writes are what decide whether the member
   // gets into the app at all, so they go first and the (much slower, much more
@@ -546,7 +551,6 @@ async function signup(input: SignupInput): Promise<UserProfile> {
       .upsert(
         {
           id: userId,
-          cnic_number: input.cnicNumber,
           cnic_photo_path: null,
           cnic_verified: true,
           bureau_verified: false,
@@ -792,9 +796,10 @@ async function updateUser(updated: UserProfile): Promise<UserProfile> {
         ? await mediaUpload.uploadCnicPhoto(userId, updated.cnicPhotoUri)
         : undefined;
 
+    // cnic_number is absent: it changes only through claimCnic, which the CNIC
+    // screen calls first, and is pinned for member sessions anyway.
     const verificationPatch: Record<string, unknown> = {
       id: userId,
-      cnic_number: updated.cnicNumber,
       cnic_verified: updated.cnicVerified ?? true,
       bureau_verified: updated.bureauVerified ?? false,
     };
@@ -920,13 +925,18 @@ function otpError(payload: OtpErrorPayload): AppError {
       return new AppError('authErrors.otpExpired');
     case 'ticket_invalid':
       return new AppError('authErrors.otpTicketInvalid');
+    case 'cnic_taken':
+      return new AppError('authErrors.cnicTaken');
+    case 'invalid_cnic':
+      return new AppError('cnic.invalidFormat');
     default:
       return new AppError('common.somethingWentWrong');
   }
 }
 
-async function callAuthOtp<T>(body: Record<string, unknown>): Promise<T> {
-  const { data, error } = await supabase.functions.invoke('auth-otp', { body });
+/** auth-otp and cnic answer failures in the same `{ error }` shape. */
+async function callAuthOtp<T>(body: Record<string, unknown>, fn: 'auth-otp' | 'cnic' = 'auth-otp'): Promise<T> {
+  const { data, error } = await supabase.functions.invoke(fn, { body });
   if (!error) return data as T;
 
   // A non-2xx answer arrives as FunctionsHttpError with the Response on
@@ -979,6 +989,23 @@ async function resetPasswordWithOtp(email: string, ticket: string, newPassword: 
   await callAuthOtp({ action: 'reset', email: email.trim().toLowerCase(), ticket, password: newPassword });
 }
 
+/**
+ * Signup's first step: throws `authErrors.cnicTaken` when another account
+ * already holds this CNIC, before any email code goes out. Advisory — the
+ * account creation itself checks again.
+ */
+async function checkCnic(cnic: string): Promise<void> {
+  await callAuthOtp({ action: 'check', cnic }, 'cnic');
+}
+
+/**
+ * Makes the CNIC the signed-in member's own, the only way cnic_number is
+ * written. Throws `authErrors.cnicTaken` when another account holds it.
+ */
+async function claimCnic(cnic: string): Promise<void> {
+  await callAuthOtp({ action: 'claim', cnic }, 'cnic');
+}
+
 export const authService = {
   touchLastActive,
   touchOffline,
@@ -996,4 +1023,6 @@ export const authService = {
   requestOtp,
   verifyOtp,
   resetPasswordWithOtp,
+  checkCnic,
+  claimCnic,
 };

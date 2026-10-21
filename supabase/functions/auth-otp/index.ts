@@ -6,7 +6,8 @@
 //
 //   request  { email, purpose, language }       → sends a code
 //   verify   { email, purpose, code }           → { ticket }
-//   signup   { email, password, fullName, ticket } → creates the confirmed account
+//   signup   { email, password, fullName, ticket, cnic } → creates the confirmed
+//            account — refused with cnic_taken if another account holds the CNIC
 //   reset    { email, password, ticket }        → writes the new password
 //
 // `purpose` is 'signup' or 'reset'; a code or ticket minted for one is useless
@@ -27,8 +28,11 @@
 //                    verified under Senders; for Resend, one on its domain
 //   OTP_SECRET       any long random string; keys the code/ticket hashes.
 //                    Falls back to the service role key when unset.
+//   CNIC_SECRET      keys the CNIC hashes — the same one the cnic function
+//                    uses (see supabase/functions/cnic).
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { cnicDigits, cnicDisplay, cnicHash } from '../_shared/cnic.ts';
 
 type Purpose = 'signup' | 'reset';
 
@@ -221,6 +225,7 @@ interface Body {
   ticket?: string;
   password?: string;
   fullName?: string;
+  cnic?: string;
 }
 
 Deno.serve(async (req: Request) => {
@@ -341,6 +346,8 @@ Deno.serve(async (req: Request) => {
         const ticket = body.ticket ?? '';
         if (!ticket) return json({ error: 'ticket_invalid' }, 400);
         if (!isStrongPassword(password)) return json({ error: 'weak_password' }, 400);
+        const cnic = cnicDigits(body.cnic);
+        if (!cnic) return json({ error: 'invalid_cnic' }, 400);
 
         const hash = await ticketHash('signup', ticket);
         const { data: valid, error: validError } = await admin.rpc('otp_ticket_valid', {
@@ -350,6 +357,17 @@ Deno.serve(async (req: Request) => {
         });
         if (validError) throw validError;
         if (!valid) return json({ error: 'ticket_invalid' }, 400);
+
+        // One account per CNIC (56_cnic_unique.sql): asked before the account
+        // exists, so a taken CNIC leaves nothing behind.
+        const cnicKey = await cnicHash(cnic);
+        const { data: holder, error: holderError } = await admin
+          .from('cnic_registry')
+          .select('user_id')
+          .eq('cnic_hash', cnicKey)
+          .maybeSingle();
+        if (holderError) throw holderError;
+        if (holder) return json({ error: 'cnic_taken' }, 409);
 
         // Confirmed from birth: the code already proved the inbox is theirs, so
         // Supabase sends no confirmation email (and no link) of its own.
@@ -363,9 +381,24 @@ Deno.serve(async (req: Request) => {
           if (/already|exists|registered/i.test(createError.message)) return json({ error: 'email_taken' }, 409);
           throw createError;
         }
+        const userId = created.user?.id;
+        if (!userId) throw new Error('createUser returned no user');
+
+        // Another signup with the same CNIC got in between the check above and
+        // here: the new account goes again rather than share it.
+        const { data: claim, error: claimError } = await admin.rpc('cnic_claim', {
+          p_user_id: userId,
+          p_cnic_hash: cnicKey,
+          p_cnic_number: cnicDisplay(cnic),
+        });
+        if (claimError || claim !== 'ok') {
+          await admin.auth.admin.deleteUser(userId);
+          if (claimError) throw claimError;
+          return json({ error: 'cnic_taken' }, 409);
+        }
 
         await admin.rpc('otp_consume_ticket', { p_email: email, p_purpose: 'signup', p_ticket_hash: hash });
-        return json({ ok: true, userId: created.user?.id });
+        return json({ ok: true, userId });
       }
 
       case 'reset': {

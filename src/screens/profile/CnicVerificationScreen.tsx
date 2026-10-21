@@ -12,6 +12,8 @@ import { useLanguage } from '../../store/LanguageContext';
 import { useAuth } from '../../store/AuthContext';
 import { useTheme } from '../../store/ThemeContext';
 import { useDialog } from '../../store/DialogContext';
+import { authService } from '../../services/authService';
+import { AppError, errorMessage } from '../../utils/appError';
 import { digitsToCnicDisplay, isValidCnicFormat, cnicMatchesGender, maskCnic } from '../../utils/cnic';
 import { analyzeIdCardPhoto, CNIC_ASPECT } from '../../utils/idCardImageCheck';
 import { fonts, radius, spacing, typography } from '../../theme';
@@ -90,6 +92,18 @@ export function CnicVerificationScreen() {
       return;
     }
     setSaving(true);
+    try {
+      // Claimed first: if another account holds this CNIC nothing else is saved.
+      if (cnicNumber !== user.cnicNumber) await authService.claimCnic(cnicNumber);
+    } catch (e) {
+      setSaving(false);
+      if (e instanceof AppError && e.key === 'authErrors.cnicTaken') {
+        await notify({ title: t('cnic.title'), message: t('authErrors.cnicTaken') });
+      } else {
+        setNumberError(errorMessage(e, t));
+      }
+      return;
+    }
     await updateUser({ ...user, cnicNumber, cnicPhotoUri: cnicPhotoUri ?? undefined, cnicVerified: true });
     setSaving(false);
     setEditing(false);

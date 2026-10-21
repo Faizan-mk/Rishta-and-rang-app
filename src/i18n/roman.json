@@ -858,7 +858,8 @@
     "otpCooldown": "Naya code mangwane se pehle {seconds}s intezar karein.",
     "otpRateLimited": "Bohat zyada codes mangwaye gaye. {minutes} minute baad koshish karein.",
     "otpSendFailed": "Code bheja nahi ja saka. Thori der baad dobara koshish karein.",
-    "otpTicketInvalid": "Aap ki email tasdeeq ki muddat khatam ho gayi. Pehle qadam par wapas ja kar dobara tasdeeq karein."
+    "otpTicketInvalid": "Aap ki email tasdeeq ki muddat khatam ho gayi. Pehle qadam par wapas ja kar dobara tasdeeq karein.",
+    "cnicTaken": "Yeh CNIC pehle se kisi aur account par registered hai. Ek CNIC se sirf ek hi account ban sakta hai."
   },
   "media": {
     "fileUnavailable": "Muntakhib karda file is device par mazeed dastyab nahi.",
