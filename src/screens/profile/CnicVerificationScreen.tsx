@@ -16,6 +16,8 @@ import { authService } from '../../services/authService';
 import { AppError, errorMessage } from '../../utils/appError';
 import { digitsToCnicDisplay, isValidCnicFormat, cnicMatchesGender, maskCnic } from '../../utils/cnic';
 import { analyzeIdCardPhoto, CNIC_ASPECT } from '../../utils/idCardImageCheck';
+import { matchCnicPhoto } from '../../utils/cnicPhotoMatch';
+import { mediaUpload } from '../../services/mediaUpload';
 import { fonts, radius, spacing, typography } from '../../theme';
 import { cardSurface } from '../../theme/surfaces';
 import { flat, withAlpha } from '../../theme/glow';
@@ -91,7 +93,25 @@ export function CnicVerificationScreen() {
       setNumberError(t('cnic.genderMismatch'));
       return;
     }
+    // The number on the card has to be the number typed. A new photo is read
+    // here; a changed number with the old photo needs a fresh one.
+    const newPhoto = Boolean(cnicPhotoUri && mediaUpload.isLocalUri(cnicPhotoUri));
+    if (!newPhoto && cnicNumber !== user.cnicNumber) {
+      await notify({ title: t('cnic.title'), message: t('cnic.photoRequired') });
+      return;
+    }
     setSaving(true);
+    if (newPhoto) {
+      const match = await matchCnicPhoto(cnicPhotoUri as string, cnicNumber);
+      if (match !== 'match') {
+        setSaving(false);
+        await notify({
+          title: t('cnic.title'),
+          message: t(match === 'mismatch' ? 'cnic.photoMismatch' : 'cnic.photoUnreadable'),
+        });
+        return;
+      }
+    }
     try {
       // Claimed first: if another account holds this CNIC nothing else is saved.
       if (cnicNumber !== user.cnicNumber) await authService.claimCnic(cnicNumber);

@@ -15,6 +15,7 @@ import { useTheme } from '../../store/ThemeContext';
 import { useDialog } from '../../store/DialogContext';
 import { useOnboarding } from '../../store/onboardingStore';
 import { analyzeIdCardPhoto, CNIC_ASPECT } from '../../utils/idCardImageCheck';
+import { matchCnicPhoto } from '../../utils/cnicPhotoMatch';
 import { AppError, errorMessage } from '../../utils/appError';
 import { radius, spacing, typography } from '../../theme';
 import { flat, glow, withAlpha } from '../../theme/glow';
@@ -85,10 +86,19 @@ export function SelfieVerificationScreen() {
     setPendingCnicPhoto(null);
     setCheckingCnicPhoto(true);
     const check = await analyzeIdCardPhoto(uri);
-    setCheckingCnicPhoto(false);
-
     if (!check.looksValid) {
+      setCheckingCnicPhoto(false);
       setCnicPhotoError(t(`cnic.imageCheckFailed_${check.reason ?? 'notCardColored'}`));
+      return;
+    }
+
+    const match = await matchCnicPhoto(uri, draft?.cnicNumber ?? '');
+    setCheckingCnicPhoto(false);
+    if (match !== 'match') {
+      await notify({
+        title: t('cnic.title'),
+        message: t(match === 'mismatch' ? 'cnic.photoMismatch' : 'cnic.photoUnreadable'),
+      });
       return;
     }
     setCnicPhotoUri(uri);

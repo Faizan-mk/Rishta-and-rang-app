@@ -531,7 +531,10 @@
     "notVerifiedInfo": "Aapki ID photo account banate waqt jama ki jaati hai, is liye yeh yahan dastyaab nahi.",
     "imageCheckFailed_tooSmall": "Yeh tasveer parhi nahi ja saki. Ek saaf tasveer azmayein.",
     "imageCheckFailed_wrongShape": "Yeh ID card ki tasveer nahi lagti — yaqeeni banayein ke pura card frame mein aaye.",
-    "imageCheckFailed_notCardColored": "Yeh Pakistani CNIC nahi lagta. Sabz ID card ki saaf aur roshan tasveer upload karein."
+    "imageCheckFailed_notCardColored": "Yeh Pakistani CNIC nahi lagta. Sabz ID card ki saaf aur roshan tasveer upload karein.",
+    "photoMismatch": "Aap ne jo CNIC number darj kiya hai aur jo CNIC ki tasveer bheji hai, woh match nahi kar rahe. Number check karein ya tasveer dobara lein.",
+    "photoUnreadable": "Tasveer par CNIC number parha nahi ja saka. Saaf aur roshan tasveer lein jis mein number wazeh nazar aaye.",
+    "photoRequired": "Aap ne CNIC number badla hai, is liye us CNIC ki nayi tasveer bhi lein."
   },
   "bureau": {
     "confirmTitle": "Bureau Tasdeeq ki Darkhwast Karein?",
