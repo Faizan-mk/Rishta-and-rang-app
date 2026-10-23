@@ -17,7 +17,7 @@
     "android": {
       "googleServicesFile": "./google-services.json",
       "package": "com.rishtaandrang.app",
-      "versionCode": 18,
+      "versionCode": 19,
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/adaptive-icon.png"

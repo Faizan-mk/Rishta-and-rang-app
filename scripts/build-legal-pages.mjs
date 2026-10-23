@@ -27,7 +27,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const dict = JSON.parse(readFileSync(resolve(root, 'src/i18n/en.json'), 'utf8'));
-const SUPPORT_EMAIL = 'support@rishtaandrang.app';
+const SUPPORT_EMAIL = 'supportlovebirds@gmail.com'; // same as SUPPORT_EMAIL in src/constants/Config.ts
 
 const PRIVACY_SECTIONS = [
   'whoWeAre', 'dataWeCollect', 'howWeUse', 'legalBasis', 'sharing', 'retention',

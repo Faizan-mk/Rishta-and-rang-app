@@ -24,7 +24,7 @@ export const MIN_SIGNUP_PHOTOS = 2;
 export const MAX_SIGNUP_PHOTOS = 4;
 
 /** Support inbox — also the contact address printed in the legal documents. */
-export const SUPPORT_EMAIL = 'supportsmatrimonialapp@gmail.com';
+export const SUPPORT_EMAIL = 'supportlovebirds@gmail.com';
 
 /**
  * Where the hosted Privacy Policy and Terms of Service live.
