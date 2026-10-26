@@ -328,6 +328,7 @@
     "reportSentBody": "Thanks — our safety team will review this conversation shortly.",
     "statusSending": "Sending",
     "statusSent": "Sent",
+    "statusDelivered": "Delivered",
     "statusRead": "Read",
     "online": "Online",
     "recording": "Recording...",

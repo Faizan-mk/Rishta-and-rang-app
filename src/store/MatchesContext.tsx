@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { AppState } from 'react-native';
 import { mapMatchRow, matchesService, rowToMessage, type MatchRow, type ReadMarks } from '../services/matchesService';
 import { likesService } from '../services/likesService';
 import { pushService } from '../services/pushService';
@@ -60,7 +61,7 @@ interface MatchesContextValue {
   /** "Clear Chat" — hides every message in the thread, on this side only. */
   clearChat: (matchId: string) => void;
   markMatchRead: (matchId: string) => void;
-  /** Resyncs `theirReadAt` from the server — a poll to back up the realtime listener. */
+  /** Resyncs `theirReadAt` and `theirDeliveredAt` from the server — a poll to back up the realtime listener. */
   refreshReadReceipt: (matchId: string) => Promise<void>;
   /** Asks to move to rishta. Rejects with the database's reason if it may not. */
   sendRishtaRequest: (matchId: string, requestText: string) => Promise<void>;
@@ -93,6 +94,9 @@ interface ThreadPaging {
 
 const UNLOADED: ThreadPaging = { loaded: false, loading: false, hasMore: true };
 
+// How long `reportDelivered` waits for more to arrive before telling the server.
+const DELIVERED_DEBOUNCE_MS = 1500;
+
 /**
  * Fills in what the shared `matches` row no longer carries.
  *
@@ -106,12 +110,18 @@ const UNLOADED: ThreadPaging = { loaded: false, loading: false, hasMore: true };
  * whole history, which is all a list row has ever needed
  * (supabase/33_chat_paging_and_receipts.sql).
  */
-function withThreadState(fresh: Match[], previews: Record<string, ChatMessage>, reads: ReadMarks): Match[] {
+function withThreadState(
+  fresh: Match[],
+  previews: Record<string, ChatMessage>,
+  reads: ReadMarks,
+  deliveries: Record<string, string>
+): Match[] {
   return fresh
     .map((match) => {
       const theirReadAt = reads.theirs[match.id];
+      const theirDeliveredAt = deliveries[match.id];
       const last = previews[match.id];
-      if (!last) return theirReadAt ? { ...match, theirReadAt } : match;
+      if (!last) return { ...match, theirReadAt, theirDeliveredAt };
       const readAt = reads.mine[match.id];
       return {
         ...match,
@@ -121,6 +131,7 @@ function withThreadState(fresh: Match[], previews: Record<string, ChatMessage>, 
         // thread. Our own messages never count, however long ago we read.
         unread: !last.fromMe && (!readAt || last.sentAt > readAt),
         theirReadAt,
+        theirDeliveredAt,
       };
     })
     .sort((a, b) => b.lastMessageAt.localeCompare(a.lastMessageAt));
@@ -188,17 +199,22 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
 
       // Previews, not history: one message per conversation is what the list
       // renders, and the threads themselves are paged in as they are opened.
-      const [freshMatches, freshBlocked, freshPreviews, freshReactions, freshReads] = await Promise.all([
+      const [freshMatches, freshBlocked, freshPreviews, freshReactions, freshReads, freshDeliveries] = await Promise.all([
         matchesService.fetchMatches(userId),
         matchesService.fetchBlocked(userId),
         matchesService.fetchThreadPreviews(userId),
         reactionsService.fetchReactions(),
         matchesService.fetchReads(userId),
+        // A missing receipt only costs a tick its second half — never worth
+        // failing the whole list over.
+        matchesService.fetchDeliveries(userId).catch(() => ({})),
       ]);
       if (cancelled) return;
       const previewByMatch: Record<string, ChatMessage> = {};
       for (const message of freshPreviews) previewByMatch[message.matchId] = message;
-      setMatches(withThreadState(freshMatches, previewByMatch, freshReads));
+      setMatches(withThreadState(freshMatches, previewByMatch, freshReads, freshDeliveries));
+      // Everything addressed to this member is now on this phone.
+      reportDelivered();
       setBlockedProfiles(freshBlocked);
       // The preview seeds the thread so a chat opens on its last line rather
       // than on nothing while the first page is fetched.
@@ -214,10 +230,30 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
       if (!cancelled) showError({ messageKey: 'netErrors.matchesRefresh' });
     });
 
+    // Tells the server this phone has what was sent to it, which is what turns
+    // the sender's one tick into two (supabase/58_delivery_receipts.sql).
+    // Debounced: a burst of messages, or a foreground right after sign-in, is
+    // one call rather than one per message.
+    let deliveredTimer: ReturnType<typeof setTimeout> | null = null;
+    function reportDelivered() {
+      if (deliveredTimer) clearTimeout(deliveredTimer);
+      deliveredTimer = setTimeout(() => {
+        deliveredTimer = null;
+        if (!cancelled) matchesService.markDelivered().catch(() => undefined);
+      }, DELIVERED_DEBOUNCE_MS);
+    }
+
+    // Coming back to the app is when anything sent while it was away gets
+    // fetched, so it is also when it counts as delivered.
+    const appStateSub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') reportDelivered();
+    });
+
     // Live chat: Postgres Realtime streams new messages in (including ones sent
     // from another device or session). The seed above supplies the history; the
     // channel supplies everything after, de-duped by message id.
     const applyMessage = (message: ChatMessage) => {
+      if (!message.fromMe) reportDelivered();
       setChatHistory((prev) => {
         const list = prev[message.matchId] ?? [];
         const merged = mergeMessage(list, message);
@@ -335,6 +371,21 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
       );
     };
 
+    // The other member's app fetching my messages is what turns one tick into
+    // two. My own mark echoes back here as well and is skipped.
+    const applyDeliveryMark = (row: Record<string, unknown>) => {
+      if (String(row.user_id) === userId) return;
+      const matchId = String(row.match_id);
+      const at = String(row.delivered_until);
+      setMatches((prev) =>
+        prev.map((match) =>
+          match.id === matchId && (!match.theirDeliveredAt || at > match.theirDeliveredAt)
+            ? { ...match, theirDeliveredAt: at }
+            : match
+        )
+      );
+    };
+
     const channel = supabase
       .channel(`chat_messages_${userId}`)
       .on(
@@ -356,6 +407,16 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'match_reads' },
         (payload) => applyReadMark(payload.new as Record<string, unknown>)
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'match_deliveries' },
+        (payload) => applyDeliveryMark(payload.new as Record<string, unknown>)
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'match_deliveries' },
+        (payload) => applyDeliveryMark(payload.new as Record<string, unknown>)
       )
       // No `profile_id`/`user_id` filter any more. A filter here would put us
       // back to hearing only our own writes, which is exactly what stopped the
@@ -405,6 +466,8 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       cancelled = true;
+      if (deliveredTimer) clearTimeout(deliveredTimer);
+      appStateSub.remove();
       supabase.removeChannel(channel);
     };
   }, [user?.id]);
@@ -749,11 +812,22 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
   const refreshReadReceipt = async (matchId: string) => {
     if (!user) return;
     try {
-      const reads = await matchesService.fetchReads(user.id);
-      const theirs = reads.theirs[matchId];
-      if (!theirs) return;
+      // The delivered mark (one tick to two) rides the same poll.
+      const [reads, deliveries] = await Promise.all([
+        matchesService.fetchReads(user.id),
+        matchesService.fetchDeliveries(user.id).catch(() => ({}) as Record<string, string>),
+      ]);
+      const read = reads.theirs[matchId];
+      const delivered = deliveries[matchId];
+      if (!read && !delivered) return;
       setMatches((prev) =>
-        prev.map((m) => (m.id === matchId && (!m.theirReadAt || theirs > m.theirReadAt) ? { ...m, theirReadAt: theirs } : m))
+        prev.map((m) => {
+          if (m.id !== matchId) return m;
+          const next = { ...m };
+          if (read && (!m.theirReadAt || read > m.theirReadAt)) next.theirReadAt = read;
+          if (delivered && (!m.theirDeliveredAt || delivered > m.theirDeliveredAt)) next.theirDeliveredAt = delivered;
+          return next.theirReadAt === m.theirReadAt && next.theirDeliveredAt === m.theirDeliveredAt ? m : next;
+        })
       );
     } catch {
       // A background resync, not a user-facing action — nothing to surface.

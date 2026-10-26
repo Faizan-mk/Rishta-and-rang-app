@@ -300,6 +300,31 @@ async function markRead(profileId: string, matchId: string, at: string): Promise
   if (error) throw new Error(error.message);
 }
 
+/**
+ * The other member's delivered mark for every conversation, keyed by match id.
+ * My own rows come back too (both sides are readable); only theirs is a receipt.
+ */
+async function fetchDeliveries(profileId: string): Promise<Record<string, string>> {
+  const { data, error } = await supabase.from('match_deliveries').select('match_id, user_id, delivered_until');
+  if (error) throw new Error(error.message);
+  const theirs: Record<string, string> = {};
+  for (const row of data ?? []) {
+    const mark = row as unknown as { match_id: string; user_id: string; delivered_until: string };
+    if (mark.user_id !== profileId) theirs[mark.match_id] = mark.delivered_until;
+  }
+  return theirs;
+}
+
+/**
+ * Tells the server this app has fetched everything sent to it so far, which is
+ * what turns the sender's one tick into two. The server works out the mark
+ * itself from the messages it holds (supabase/58_delivery_receipts.sql).
+ */
+async function markDelivered(): Promise<void> {
+  const { error } = await supabase.rpc('mark_delivered');
+  if (error) throw new Error(error.message);
+}
+
 async function fetchBlocked(profileId: string): Promise<BlockedProfile[]> {
   const { data, error } = await supabase
     .from('blocked_users')
@@ -533,6 +558,8 @@ export const matchesService = {
   fetchMessagePage,
   fetchReads,
   markRead,
+  fetchDeliveries,
+  markDelivered,
   fetchBlocked,
   findMatchRow,
   fetchCounterpartCard,

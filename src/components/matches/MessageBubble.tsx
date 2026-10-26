@@ -77,15 +77,21 @@ function groupReactions(reactions: MessageReaction[], userId: string | undefined
  * against this message's own timestamp (supabase/33_chat_paging_and_receipts.sql),
  * which is absent when they have never opened the thread or have turned their
  * online status off — and an absent mark simply leaves the ticks grey.
+ *
+ * `delivered` is the other member's `match_deliveries` mark the same way
+ * (supabase/58_delivery_receipts.sql): their app has fetched it. Read implies
+ * delivered, so a read mark alone is enough even if the delivered one lags.
  */
 function deliveryOf(
   message: ChatMessage,
-  theirReadAt?: string
-): 'sending' | 'failed' | 'sent' | 'read' | null {
+  theirReadAt?: string,
+  theirDeliveredAt?: string
+): 'sending' | 'failed' | 'sent' | 'delivered' | 'read' | null {
   if (!message.fromMe) return null;
   if (message.status === 'sending') return 'sending';
   if (message.status === 'failed') return 'failed';
   if (theirReadAt && message.sentAt <= theirReadAt) return 'read';
+  if (theirDeliveredAt && message.sentAt <= theirDeliveredAt) return 'delivered';
   return 'sent';
 }
 
@@ -100,6 +106,7 @@ export const MessageBubble = React.memo(function MessageBubble({
   message,
   currentUserId,
   theirReadAt,
+  theirDeliveredAt,
   onRetry,
   onDeleteForEveryone,
   onDeleteForMe,
@@ -110,6 +117,7 @@ export const MessageBubble = React.memo(function MessageBubble({
   message: ChatMessage;
   currentUserId?: string;
   theirReadAt?: string;
+  theirDeliveredAt?: string;
   onRetry?: (message: ChatMessage) => void;
   /** Only ever offered on your own messages — the sheet hides it otherwise. */
   onDeleteForEveryone?: (message: ChatMessage) => void;
@@ -229,7 +237,7 @@ export const MessageBubble = React.memo(function MessageBubble({
   // coloured bubble around it read as a box within a box. With a reply quote
   // above it the bubble stays, so the quote has something to sit in.
   const bareImage = message.kind === 'image' && Boolean(message.imageUri) && !replyToMessage;
-  const delivery = deliveryOf(message, theirReadAt);
+  const delivery = deliveryOf(message, theirReadAt, theirDeliveredAt);
   const timeLabel = formatMessageTime(message.sentAt, t);
 
   let content: React.ReactNode;
@@ -342,16 +350,22 @@ export const MessageBubble = React.memo(function MessageBubble({
           {delivery === 'sending' && (
             <Ionicons name="time-outline" size={12} color={colors.textTertiary} accessibilityLabel={t('chat.statusSending')} />
           )}
-          {/* Two ticks either way — the colour is what changes. Grey means the
-              message reached the server; blue means their read mark has passed
-              it. A different glyph for each would make "delivered" read as a
-              lesser thing than it is. */}
+          {/* WhatsApp's three: one grey tick is on the server, two grey ticks
+              reached their phone, two blue ticks they have read it. */}
           {delivery === 'sent' && (
+            <Ionicons
+              name="checkmark"
+              size={14}
+              color={colors.textTertiary}
+              accessibilityLabel={t('chat.statusSent')}
+            />
+          )}
+          {delivery === 'delivered' && (
             <Ionicons
               name="checkmark-done"
               size={14}
               color={colors.textTertiary}
-              accessibilityLabel={t('chat.statusSent')}
+              accessibilityLabel={t('chat.statusDelivered')}
             />
           )}
           {delivery === 'read' && (

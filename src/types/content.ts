@@ -121,6 +121,11 @@ export interface Match {
   // when they have turned their online status off — a receipt is the same class
   // of signal as "last seen" and is behind the same switch.
   theirReadAt?: string;
+  // The newest of my messages the other member's app has actually fetched.
+  // Anything of mine sent at or before it reached their phone; anything after
+  // is only on the server so far (supabase/58_delivery_receipts.sql). Not
+  // behind the online-status switch: it says which messages arrived, not when.
+  theirDeliveredAt?: string;
   // When the other member was last seen. Absent when they have never been
   // stamped or have turned their online status off, which is the same absence
   // and shows the same nothing.
@@ -146,11 +151,11 @@ export type ChatMessageKind = 'text' | 'voice' | 'image';
  * a message from the other person has no state worth showing.
  *
  * `sending` is the optimistic copy that goes on screen the instant Send is
- * tapped; `sent` means the row is on the server, which is the only "delivered"
- * this app can honestly claim (there is no device acknowledgement); `failed`
- * means the insert did not land and the message is still only on this phone.
- * Whether they have *read* it is not stored here — it is the counterpart's
- * `match_reads` mark against `sentAt` (supabase/33_chat_paging_and_receipts.sql).
+ * tapped; `sent` means the row is on the server; `failed` means the insert
+ * did not land and the message is still only on this phone. Whether it reached
+ * their phone, or they have *read* it, is not stored here — those are the
+ * counterpart's `match_deliveries` and `match_reads` marks against `sentAt`
+ * (supabase/58_delivery_receipts.sql, supabase/33_chat_paging_and_receipts.sql).
  */
 export type MessageStatus = 'sending' | 'sent' | 'failed';
 

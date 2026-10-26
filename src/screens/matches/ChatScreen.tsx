@@ -620,6 +620,7 @@ export function ChatScreen() {
                   message={item}
                   currentUserId={user?.id}
                   theirReadAt={match.theirReadAt}
+                  theirDeliveredAt={match.theirDeliveredAt}
                   onRetry={retryMessage}
                   onDeleteForEveryone={onDeleteForEveryone}
                   onDeleteForMe={onDeleteForMe}
