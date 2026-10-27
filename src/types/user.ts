@@ -87,6 +87,8 @@ export interface UserProfile {
   subscriptionPlan?: 'trial' | 'monthly' | 'yearly';
   hasUsedTrial?: boolean;
   subscriptionRenewsAt?: string;
+  /** Last self-service rename; the next one opens 30 days later (supabase/59_name_change_limit.sql). */
+  nameChangedAt?: string;
   createdAt: string;
 }
 

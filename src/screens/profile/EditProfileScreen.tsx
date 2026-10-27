@@ -35,6 +35,10 @@ const GRADIENT_START = { x: 0, y: 0 } as const;
 const GRADIENT_END = { x: 1, y: 1 } as const;
 
 const MAX_PHOTOS = 4;
+// Same window supabase/59_name_change_limit.sql enforces; the screen only
+// mirrors it so the field can say when it opens again instead of failing on save.
+const NAME_CHANGE_DAYS = 30;
+const MAX_NAME_LENGTH = 100;
 const MIN_HEIGHT_CM = 100;
 const MAX_HEIGHT_CM = 250;
 // The rest of the caps supabase/52_input_limits.sql holds the profile to.
@@ -111,6 +115,7 @@ export function EditProfileScreen() {
   const { notify } = useDialog();
   const { prefs } = usePrivacy();
 
+  const [name, setName] = useState(user?.fullName ?? '');
   const [bio, setBio] = useState(user?.bio ?? '');
   const [city, setCity] = useState<string | null>(user?.city || null);
   const [photos, setPhotos] = useState<string[]>(user?.photos ?? []);
@@ -259,7 +264,23 @@ export function EditProfileScreen() {
       ? t('editProfile.heightRange', { min: MIN_HEIGHT_CM, max: MAX_HEIGHT_CM })
       : undefined;
 
+  const nameOpensAt = user?.nameChangedAt
+    ? new Date(new Date(user.nameChangedAt).getTime() + NAME_CHANGE_DAYS * 24 * 60 * 60 * 1000)
+    : null;
+  const nameLocked = Boolean(nameOpensAt && nameOpensAt > new Date());
+  // Built from the dictionary rather than toLocaleDateString, as CalendarModal
+  // does: Hermes' trimmed ICU would otherwise print the month in English.
+  const nameHint = nameLocked && nameOpensAt
+    ? t('editProfile.nameLockedUntil', {
+        date: `${nameOpensAt.getDate()} ${t(`calendar.month${nameOpensAt.getMonth()}`)} ${nameOpensAt.getFullYear()}`,
+      })
+    : t('editProfile.nameHint', { days: NAME_CHANGE_DAYS });
+
   const onSave = async () => {
+    if (!nameLocked && !name.trim()) {
+      await notify({ title: t('editProfile.fullName'), message: t('editProfile.nameRequired') });
+      return;
+    }
     if (heightError) {
       await notify({ title: t('editProfile.height'), message: heightError });
       return;
@@ -269,6 +290,7 @@ export function EditProfileScreen() {
       const heightParsed = Number(details.heightCm);
       await updateUser({
         ...user,
+        fullName: nameLocked ? user.fullName : name.trim(),
         bio,
         city: city ?? '',
         photos,
@@ -449,6 +471,17 @@ export function EditProfileScreen() {
       </FadeIn>
 
       <FadeIn delay={80} style={styles.card}>
+        <TextField
+          label={t('editProfile.fullName')}
+          value={name}
+          onChangeText={setName}
+          editable={!nameLocked}
+          maxLength={MAX_NAME_LENGTH}
+          autoComplete="name"
+          style={nameLocked ? styles.lockedInput : undefined}
+        />
+        <Text style={[styles.nameHint, rtl && styles.rtlText]}>{nameHint}</Text>
+
         <TextField
           label={t('editProfile.bio')}
           placeholder={t('editProfile.bioPlaceholder')}
@@ -806,6 +839,9 @@ const makeStyles = (colors: Palette) =>
     videoPreviewInner: { flex: 1 },
     videoPreview: { width: '100%', height: '100%' },
     videoPlayOverlay: { alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(36,31,33,0.25)' },
+    lockedInput: { color: colors.textTertiary },
+    // Pulled up under its field, whose container carries the usual gap below.
+    nameHint: { ...typography.caption, color: colors.textSecondary, marginTop: -spacing.sm, marginBottom: spacing.md },
     bioInput: { minHeight: 90, textAlignVertical: 'top' },
     chipRow: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.xs },
     tagInputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm },

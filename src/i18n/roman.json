@@ -413,6 +413,11 @@
     "savedBody": "Aapki profile update ho gayi hai."
   },
   "editProfile": {
+    "fullName": "Poora naam",
+    "nameHint": "Aap har {days} din mein ek dafa apna naam badal sakte hain.",
+    "nameLockedUntil": "Aap ne haal hi mein naam badla hai. Dobara {date} ko badal sakenge.",
+    "nameRequired": "Apna naam likhein.",
+    "nameChangeTooSoon": "Naam har 30 din mein sirf ek dafa badla ja sakta hai.",
     "voiceTooLong": "Recording {minutes} minute par ruk gayi, voice intro is se lamba nahi ho sakta.",
     "tooManyTags": "Aap zyada se zyada {max} tags laga sakte hain. Naya lagane ke liye koi ek hatayein.",
     "heightRange": "Height {min} aur {max} cm ke darmiyan honi chahiye.",

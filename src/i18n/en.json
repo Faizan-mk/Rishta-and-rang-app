@@ -413,6 +413,11 @@
     "savedBody": "Your profile has been updated."
   },
   "editProfile": {
+    "fullName": "Full name",
+    "nameHint": "You can change your name once every {days} days.",
+    "nameLockedUntil": "You changed your name recently. You can change it again on {date}.",
+    "nameRequired": "Enter your name.",
+    "nameChangeTooSoon": "You can only change your name once every 30 days.",
     "voiceTooLong": "Recording stopped at {minutes} minutes, the longest a voice intro can be.",
     "tooManyTags": "You can add up to {max} tags. Remove one to add another.",
     "heightRange": "Height must be between {min} and {max} cm.",

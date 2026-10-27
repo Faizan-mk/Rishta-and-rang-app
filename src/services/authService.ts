@@ -108,6 +108,7 @@ export interface ProfileDoc {
   subscriptionPlan: UserProfile['subscriptionPlan'] | null;
   hasUsedTrial: boolean;
   subscriptionRenewsAt: string | null;
+  nameChangedAt: string | null;
   createdAt: string;
 }
 
@@ -128,7 +129,7 @@ interface VerificationDoc {
 // names ProfileDoc / the mapping functions below expect. Kept on one line: the
 // supabase-js type parser only understands a single-line select string.
 export const PROFILE_SELECT: string =
-  'id, fullName:full_name, dob, gender, city, bio, intent, language, activeMode:active_mode, datingVibeTags:dating_vibe_tags, datingIntentionLabel:dating_intention_label, rishtaReligion:rishta_religion, rishtaSect:rishta_sect, rishtaFamilyBackground:rishta_family_background, rishtaEducation:rishta_education, rishtaReadiness:rishta_readiness, rishtaPrayerHabits:rishta_prayer_habits, rishtaIncomeRange:rishta_income_range, rishtaLivingAbroad:rishta_living_abroad, heightCm:height_cm, maritalStatus:marital_status, hasChildren:has_children, occupation, practising, prayerHabits:prayer_habits, halalOnly:halal_only, smoking, drinking, religiousDress:religious_dress, openToRelocate:open_to_relocate, preferredCountry:preferred_country, careerPlans:career_plans, educationLevel:education_level, degree, jobTitle:job_title, industry, languages, nationality, grewUpIn:grew_up_in, country, selfieVerified:selfie_verified, bureauVerified:bureau_verified, lastActiveAt:last_active_at, photos, voiceIntroUrl:voice_intro_url, voiceIntroDurationSec:voice_intro_duration_sec, videoIntroUrl:video_intro_url, waliName:wali_name, waliInvitedAt:wali_invited_at, isExplorePlus:is_explore_plus, subscriptionPlan:subscription_plan, hasUsedTrial:has_used_trial, subscriptionRenewsAt:subscription_renews_at, createdAt:created_at';
+  'id, fullName:full_name, dob, gender, city, bio, intent, language, activeMode:active_mode, datingVibeTags:dating_vibe_tags, datingIntentionLabel:dating_intention_label, rishtaReligion:rishta_religion, rishtaSect:rishta_sect, rishtaFamilyBackground:rishta_family_background, rishtaEducation:rishta_education, rishtaReadiness:rishta_readiness, rishtaPrayerHabits:rishta_prayer_habits, rishtaIncomeRange:rishta_income_range, rishtaLivingAbroad:rishta_living_abroad, heightCm:height_cm, maritalStatus:marital_status, hasChildren:has_children, occupation, practising, prayerHabits:prayer_habits, halalOnly:halal_only, smoking, drinking, religiousDress:religious_dress, openToRelocate:open_to_relocate, preferredCountry:preferred_country, careerPlans:career_plans, educationLevel:education_level, degree, jobTitle:job_title, industry, languages, nationality, grewUpIn:grew_up_in, country, selfieVerified:selfie_verified, bureauVerified:bureau_verified, lastActiveAt:last_active_at, photos, voiceIntroUrl:voice_intro_url, voiceIntroDurationSec:voice_intro_duration_sec, videoIntroUrl:video_intro_url, waliName:wali_name, waliInvitedAt:wali_invited_at, isExplorePlus:is_explore_plus, subscriptionPlan:subscription_plan, hasUsedTrial:has_used_trial, subscriptionRenewsAt:subscription_renews_at, nameChangedAt:name_changed_at, createdAt:created_at';
 
 export async function fetchProfileRow(userId: string): Promise<ProfileDoc | null> {
   const { data, error } = await supabase.from('profiles').select(PROFILE_SELECT).eq('id', userId).maybeSingle();
@@ -230,6 +231,7 @@ async function mapToUserProfile(
     subscriptionPlan: data.subscriptionPlan ?? undefined,
     hasUsedTrial: data.hasUsedTrial,
     subscriptionRenewsAt: data.subscriptionRenewsAt ?? undefined,
+    nameChangedAt: data.nameChangedAt ?? undefined,
     createdAt: data.createdAt,
   };
 }
@@ -781,7 +783,11 @@ async function updateUser(updated: UserProfile): Promise<UserProfile> {
   };
 
   const { error: updateError } = await supabase.from('profiles').update(patch).eq('id', userId);
-  if (updateError) throw new Error(updateError.message);
+  if (updateError) {
+    // Raised by supabase/59_name_change_limit.sql for a second rename inside 30 days.
+    if (updateError.message.includes('name_change_too_soon')) throw new AppError('editProfile.nameChangeTooSoon');
+    throw new Error(updateError.message);
+  }
 
   const { error: privateError } = await supabase
     .from('profile_private')
