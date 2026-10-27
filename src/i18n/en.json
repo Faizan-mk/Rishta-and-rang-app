@@ -761,7 +761,6 @@
     "clearHistoryConfirmTitle": "Clear your view history?",
     "clearHistoryConfirmBody": "This removes your recently viewed profiles list. It can't be undone.",
     "viewedAt": "Viewed {time}",
-    "subtitle": "Browse everyone who fits your filters.",
     "whoLikedYou": "Who liked you",
     "whoLikedYouEmpty": "No likes yet — when someone likes you, they land here.",
     "whoLikedYouLocked": "{count} people liked you",

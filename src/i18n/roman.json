@@ -761,7 +761,6 @@
     "clearHistoryConfirmTitle": "History saaf karein?",
     "clearHistoryConfirmBody": "Yeh aapki haal hi mein dekhi gayi profiles ki list hata dega. Wapas nahi aayegi.",
     "viewedAt": "{time} dekhi",
-    "subtitle": "Apne filters ke mutabiq sab profiles dekhein.",
     "whoLikedYou": "Kis ne aap ko like kiya",
     "whoLikedYouEmpty": "Abhi koi like nahi — koi aap ko like karega to yahan aayega.",
     "whoLikedYouLocked": "{count} logon ne aap ko like kiya",

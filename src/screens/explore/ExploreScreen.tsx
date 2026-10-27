@@ -199,11 +199,10 @@ export function ExploreScreen() {
         <AccentHeading
           size="screen"
           title={t('explore.title')}
-          subtitle={t('explore.subtitle')}
           gradient={accent.ramp}
           // The chip stays mounted on every tab and only hides off For You:
-          // dropping it widened the title column, re-wrapped the subtitle and
-          // moved the tabs and everything under them on each switch.
+          // dropping it changed the header's height and moved the tabs and
+          // everything under them on each switch.
           right={
             <View
               style={tab !== 'forYou' && styles.hidden}
