@@ -26,16 +26,24 @@ interface HomeTopBarProps {
   // Whether the filters sheet is currently open, so the button stays lit once
   // tapped.
   filtersOpen: boolean;
+  // The sort sits in its own button beside Filters, lit while it isn't the
+  // default order or while its sheet is open.
+  sortActive: boolean;
+  sortOpen: boolean;
+  onOpenSort: () => void;
   notificationCount: number;
   onNotifications: () => void;
 }
 
-// Browse header: the app's name leads in its own colour, the filters and
+// Browse header: the app's name leads in its own colour, the sort, filters and
 // notifications buttons trail as round icon buttons.
 export function HomeTopBar({
   activeFilterCount,
   onOpenFilters,
   filtersOpen,
+  sortActive,
+  sortOpen,
+  onOpenSort,
   notificationCount,
   onNotifications,
 }: HomeTopBarProps) {
@@ -44,6 +52,7 @@ export function HomeTopBar({
   const accent = modeAccent(colors, APP_MODE);
   const styles = useMemo(() => makeStyles(colors, accent.primary), [colors, accent.primary]);
   const filtersLit = activeFilterCount > 0 || filtersOpen;
+  const sortLit = sortActive || sortOpen;
 
   return (
     <View style={[styles.wrap, rtl && styles.rowRtl]}>
@@ -63,6 +72,17 @@ export function HomeTopBar({
           </View>
         </View>
       </View>
+
+      <Pressable
+        onPress={onOpenSort}
+        hitSlop={6}
+        accessibilityRole="button"
+        accessibilityLabel={t('discover.sortBy')}
+        style={({ pressed }) => [styles.iconButton, (sortLit || pressed) && styles.iconButtonActive]}
+      >
+        <Ionicons name="swap-vertical-outline" size={20} color={sortLit ? accent.primary : colors.textPrimary} />
+        {sortActive && <View style={[styles.sortDot, glow(accent.primary, 0.7, 8, 4)]} pointerEvents="none" />}
+      </Pressable>
 
       <Pressable
         onPress={onOpenFilters}
@@ -185,6 +205,18 @@ const makeStyles = (colors: Palette, accentColor: string) =>
       justifyContent: 'center',
     },
     countPillText: { color: '#FFFFFF', fontSize: scaleFont(9), fontFamily: fonts.bodyBold },
+    // A dot rather than a count: a sort is one choice, not several.
+    sortDot: {
+      position: 'absolute',
+      top: 0,
+      right: 0,
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+      backgroundColor: accentColor,
+      borderWidth: 1.5,
+      borderColor: colors.surface,
+    },
     badge: {
       position: 'absolute',
       top: -2,

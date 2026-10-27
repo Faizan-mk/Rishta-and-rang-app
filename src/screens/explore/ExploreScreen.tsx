@@ -27,6 +27,7 @@ import { SmartImage } from '../../components/common/SmartImage';
 import { BrowseFiltersSheet } from '../../components/discover/BrowseSheets';
 import {
   DEFAULT_BROWSE_FILTERS,
+  applyBrowseFilters,
   countActiveFilters,
   type BrowseFilters,
 } from '../../components/discover/browseOptions';
@@ -150,21 +151,7 @@ export function ExploreScreen() {
     return [...dating, ...rishta];
   }, [datingProfiles, rishtaProfiles, user?.gender, blockedProfileIds, rishtaProfileIds]);
 
-  const filtered = useMemo(() => {
-    let list = pool.filter((p) => p.age >= filters.ageMin && p.age <= filters.ageMax);
-    if (filters.city) {
-      const city = filters.city.toLowerCase();
-      list = list.filter((p) => p.city?.toLowerCase() === city);
-    }
-    if (filters.intent) list = list.filter((p) => p.intent === filters.intent);
-    if (filters.sect) {
-      const sect = filters.sect.toLowerCase();
-      list = list.filter((p) => p.sect?.toLowerCase() === sect);
-    }
-    if (filters.readiness) list = list.filter((p) => p.readiness === filters.readiness);
-    if (filters.verifiedOnly) list = list.filter((p) => p.selfieVerified || p.bureauVerified);
-    return list;
-  }, [pool, filters]);
+  const filtered = useMemo(() => applyBrowseFilters(pool, filters), [pool, filters]);
 
   const newMembers = useMemo(
     () => [...filtered].sort((a, b) => timestamp(b.joinedAt) - timestamp(a.joinedAt)).slice(0, ROW_SIZE),

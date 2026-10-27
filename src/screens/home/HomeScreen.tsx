@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Image, Modal, Pressable, RefreshControl, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -16,9 +16,11 @@ import { HomeStoriesRow, type StoryConnection, type StorySuggestion } from '../.
 import { MatchScoreCard } from '../../components/discover/MatchScoreCard';
 import { SwipeableCard } from '../../components/discover/SwipeableCard';
 import { SwipeActionBar } from '../../components/discover/SwipeActionBar';
-import { BrowseFiltersSheet } from '../../components/discover/BrowseSheets';
+import { BrowseFiltersSheet, BrowseSortSheet } from '../../components/discover/BrowseSheets';
 import {
   DEFAULT_BROWSE_FILTERS,
+  applyBrowseFilters,
+  compareBySort,
   countActiveFilters,
   type BrowseFilters,
 } from '../../components/discover/browseOptions';
@@ -59,7 +61,6 @@ import { useNotifications } from '../../store/NotificationContext';
 import { useViewHistory } from '../../store/ViewHistoryContext';
 import { oppositeGenderProfiles } from '../../utils/genderMatch';
 import { datingCompatibility, rishtaCompatibility } from '../../utils/compatibility';
-import { isActiveToday } from '../../utils/time';
 import { radius, spacing, typography } from '../../theme';
 import { APP_MODE, glow, modeAccent } from '../../theme/glow';
 import { scaleFont } from '../../theme/responsive';
@@ -103,6 +104,7 @@ export function HomeScreen() {
   const [previewUri, setPreviewUri] = useState<string | null>(null);
   const [reportVisible, setReportVisible] = useState(false);
   const [filtersVisible, setFiltersVisible] = useState(false);
+  const [sortVisible, setSortVisible] = useState(false);
   const [filters, setFilters] = useState<BrowseFilters>(DEFAULT_BROWSE_FILTERS);
   const insets = useSafeAreaInsets();
 
@@ -164,22 +166,43 @@ export function HomeScreen() {
       .map((p) => ({ id: p.id, name: p.name, photo: p.photos[0], kind: p.intent === 'casual' ? 'dating' : 'rishta' }));
   }, [deck, storyGroups, matches]);
 
+  // A non-default sort reorders only the cards still ahead: the ones already
+  // swiped keep their places, so a page arriving mid-deck (loadMore below) can
+  // slot its profiles in among the unseen ones without moving the card on
+  // screen or skipping anyone. A change of filters or sort starts over (cursor
+  // goes back to 0 further down), so nothing is pinned then.
+  const cursorRef = useRef(0);
+  cursorRef.current = cursor;
+  const orderRef = useRef<{ filters: BrowseFilters; ids: string[] }>({ filters, ids: [] });
   const visibleProfiles = useMemo(() => {
-    let list = deck.filter((p) => p.age >= filters.ageMin && p.age <= filters.ageMax);
-    if (filters.city) {
-      const city = filters.city.toLowerCase();
-      list = list.filter((p) => p.city?.toLowerCase() === city);
+    const list = applyBrowseFilters(deck, filters);
+    // Scored the way the match card scores the card on screen.
+    const scores = new Map<string, number>();
+    const scoreOf = (p: (typeof list)[number]) => {
+      let score = scores.get(p.id);
+      if (score === undefined) {
+        score = !user
+          ? 0
+          : p.intent === 'casual'
+            ? datingCompatibility(user, p as DiscoverProfile)
+            : rishtaCompatibility(user, p as RishtaListingProfile);
+        scores.set(p.id, score);
+      }
+      return score;
+    };
+    const compare = compareBySort(filters.sort, scoreOf);
+    let ordered = list;
+    if (compare) {
+      const sameControls = orderRef.current.filters === filters;
+      const pinnedIds = sameControls ? orderRef.current.ids.slice(0, cursorRef.current) : [];
+      const byId = new Map(list.map((p) => [p.id, p]));
+      const pinned = pinnedIds.map((id) => byId.get(id)).filter((p): p is (typeof list)[number] => Boolean(p));
+      const pinnedSet = new Set(pinned.map((p) => p.id));
+      ordered = [...pinned, ...list.filter((p) => !pinnedSet.has(p.id)).sort(compare)];
     }
-    if (filters.intent) list = list.filter((p) => p.intent === filters.intent);
-    if (filters.sect) {
-      const sect = filters.sect.toLowerCase();
-      list = list.filter((p) => p.sect?.toLowerCase() === sect);
-    }
-    if (filters.readiness) list = list.filter((p) => p.readiness === filters.readiness);
-    if (filters.verifiedOnly) list = list.filter((p) => p.selfieVerified || p.bureauVerified);
-    if (filters.activeToday) list = list.filter((p) => isActiveToday(p.lastActiveAt));
-    return list;
-  }, [deck, filters]);
+    orderRef.current = { filters, ids: ordered.map((p) => p.id) };
+    return ordered;
+  }, [deck, filters, user]);
 
   const safeCursor = Math.min(cursor, visibleProfiles.length);
   const currentProfile = visibleProfiles[safeCursor];
@@ -430,6 +453,9 @@ export function HomeScreen() {
         activeFilterCount={filtersActive}
         onOpenFilters={() => setFiltersVisible(true)}
         filtersOpen={filtersVisible}
+        sortActive={filters.sort !== DEFAULT_BROWSE_FILTERS.sort}
+        sortOpen={sortVisible}
+        onOpenSort={() => setSortVisible(true)}
         notificationCount={unreadCount}
         onNotifications={() => router.push('/notifications')}
       />
@@ -542,6 +568,13 @@ export function HomeScreen() {
         filters={filters}
         onChange={setFilters}
         onClose={() => setFiltersVisible(false)}
+      />
+
+      <BrowseSortSheet
+        visible={sortVisible}
+        sort={filters.sort}
+        onChange={(sort) => setFilters((f) => ({ ...f, sort }))}
+        onClose={() => setSortVisible(false)}
       />
 
       <Modal visible={Boolean(previewUri)} transparent animationType="fade" onRequestClose={() => setPreviewUri(null)}>

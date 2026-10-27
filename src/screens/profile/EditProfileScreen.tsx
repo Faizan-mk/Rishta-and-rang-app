@@ -18,6 +18,7 @@ import { Button } from '../../components/Button';
 import { Chip } from '../../components/common/Chip';
 import { FadeIn } from '../../components/common/FadeInUp';
 import { PAKISTAN_CITIES } from '../../data/locations';
+import { EDUCATION_LEVELS, JOB_TITLES, NATIONALITIES, PAKISTANI_LANGUAGES } from '../../data/profileOptions';
 import { useLanguage } from '../../store/LanguageContext';
 import { useAuth } from '../../store/AuthContext';
 import { useTheme } from '../../store/ThemeContext';
@@ -48,12 +49,12 @@ const MAX_LANGUAGES = 20;
 const MAX_VOICE_SEC = 300;
 const MARITAL_OPTIONS: NonNullable<UserProfile['maritalStatus']>[] = ['single', 'divorced', 'widowed'];
 const OTHER_OPTION = 'Other';
-const EDUCATION_LEVEL_OPTIONS = ['Matric / O-Level', 'Intermediate / A-Level', 'Bachelor\'s', 'Master\'s', 'MPhil', 'PhD', 'Diploma', 'Religious education', OTHER_OPTION];
+const EDUCATION_LEVEL_OPTIONS = [...EDUCATION_LEVELS, OTHER_OPTION];
 const DEGREE_OPTIONS = ['BA', 'B.Com', 'BBA', 'BS Computer Science', 'BS Engineering', 'LLB', 'MBBS', 'BDS', 'MA', 'M.Com', 'MBA', 'MS / MPhil', 'PhD', 'Other'];
-const JOB_TITLE_OPTIONS = ['Student', 'Software Engineer', 'Doctor', 'Engineer', 'Teacher', 'Business Owner', 'Banker', 'Lawyer', 'Government Officer', 'Healthcare Professional', 'Armed Forces', 'Homemaker', 'Retired', 'Other'];
+const JOB_TITLE_OPTIONS = [...JOB_TITLES, OTHER_OPTION];
 const INDUSTRY_OPTIONS = ['Information Technology', 'Healthcare', 'Education', 'Finance and Banking', 'Engineering', 'Law', 'Government', 'Business and Trade', 'Telecommunications', 'Manufacturing', 'Media and Marketing', 'Real Estate', 'Agriculture', 'Other'];
-const PAKISTANI_LANGUAGE_OPTIONS = ['Urdu', 'English', 'Punjabi', 'Sindhi', 'Pashto', 'Balochi', 'Saraiki', 'Hindko', 'Kashmiri', 'Arabic', OTHER_OPTION];
-const NATIONALITY_OPTIONS = ['Pakistani', 'Dual nationality', OTHER_OPTION];
+const PAKISTANI_LANGUAGE_OPTIONS = [...PAKISTANI_LANGUAGES, OTHER_OPTION];
+const NATIONALITY_OPTIONS = [...NATIONALITIES, OTHER_OPTION];
 const COUNTRY_OPTIONS = ['Pakistan', 'United Arab Emirates', 'Saudi Arabia', 'Qatar', 'Bahrain', 'United Kingdom', 'United States', 'Canada', 'Australia', OTHER_OPTION];
 
 type DetailsState = {
