@@ -566,7 +566,16 @@
     "imageCheckFailed_tooSmall": "Yeh tasveer parhi nahi ja saki. Ek saaf tasveer azmayein.",
     "imageCheckFailed_wrongShape": "Yeh ID card ki tasveer nahi lagti — yaqeeni banayein ke pura card frame mein aaye.",
     "imageCheckFailed_notCardColored": "Yeh Pakistani CNIC nahi lagta. Sabz ID card ki saaf aur roshan tasveer upload karein.",
-    "photoMismatch": "CNIC number aur tasveer match nahi karte",
+    "photoMismatch": "Aap ka CNIC number card se match nahi karta",
+    "numberMismatchTyped": "Aap ne likha: {number}. CNIC number bilkul waisa likhein jaisa card par likha hai.",
+    "fixNumber": "CNIC number theek karein",
+    "nameMismatch": "Aap ka naam CNIC se match nahi karta",
+    "nameMismatchTyped": "Aap ne likha: \"{name}\". Apna naam bilkul waisa likhein jaisa CNIC par likha hai.",
+    "fixName": "Naam theek karein",
+    "dobMismatch": "Aap ki tareekh-e-paidaish CNIC se match nahi karti",
+    "dobMismatchTyped": "Aap ne likha: {date}. Apni tareekh-e-paidaish bilkul waisi likhein jaisi CNIC par likhi hai.",
+    "fixDob": "Tareekh theek karein",
+    "retakePhoto": "Dobara photo lein",
     "photoUnreadable": "CNIC number parha nahi ja saka. Saaf tasveer lein."
   },
   "bureau": {

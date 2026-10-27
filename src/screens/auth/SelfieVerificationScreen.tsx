@@ -22,6 +22,12 @@ import { flat, glow, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 import { cardSurface } from '../../theme/surfaces';
 
+/** A stored YYYY-MM-DD date the way the CNIC prints it, so the two read alike in the popup. */
+function cardDate(iso: string): string {
+  const [y, m, d] = iso.split('-');
+  return y && m && d ? `${d}.${m}.${y}` : iso;
+}
+
 export function SelfieVerificationScreen() {
   const router = useRouter();
   const { colors } = useTheme();
@@ -29,7 +35,7 @@ export function SelfieVerificationScreen() {
   const { t, rtl, language } = useLanguage();
   const onboardRamp = flat(colors.teal);
   const { signup } = useAuth();
-  const { notify } = useDialog();
+  const { confirm, notify } = useDialog();
   const { draft, patchDraft } = useOnboarding();
   const [selfieUri, setSelfieUri] = useState<string | null>(null);
   // The shot waiting to be cropped; null while the cropper is closed.
@@ -92,10 +98,30 @@ export function SelfieVerificationScreen() {
       return;
     }
 
-    const match = await matchCnicPhoto(uri, draft?.cnicNumber ?? '');
+    const match = await matchCnicPhoto(uri, draft?.cnicNumber ?? '', draft?.fullName ?? '', draft?.dob ?? '');
     setCheckingCnicPhoto(false);
+    if (match === 'mismatch' || match === 'nameMismatch' || match === 'dobMismatch') {
+      // Usually a detail was typed differently from the card, not a wrong
+      // card, so show what was typed and offer the way back to fix it. The
+      // signup screen is still on the stack with its fields, and its kept
+      // email ticket skips the code step on the way forward again.
+      const popup =
+        match === 'mismatch'
+          ? { title: 'cnic.photoMismatch', message: t('cnic.numberMismatchTyped', { number: draft?.cnicNumber ?? '' }), fix: 'cnic.fixNumber' }
+          : match === 'nameMismatch'
+            ? { title: 'cnic.nameMismatch', message: t('cnic.nameMismatchTyped', { name: draft?.fullName ?? '' }), fix: 'cnic.fixName' }
+            : { title: 'cnic.dobMismatch', message: t('cnic.dobMismatchTyped', { date: cardDate(draft?.dob ?? '') }), fix: 'cnic.fixDob' };
+      const goFix = await confirm({
+        title: t(popup.title),
+        message: popup.message,
+        confirmLabel: t(popup.fix),
+        cancelLabel: t('cnic.retakePhoto'),
+      });
+      if (goFix) router.dismissTo('/signup');
+      return;
+    }
     if (match !== 'match') {
-      await notify({ title: t(match === 'mismatch' ? 'cnic.photoMismatch' : 'cnic.photoUnreadable') });
+      await notify({ title: t('cnic.photoUnreadable') });
       return;
     }
     setCnicPhotoUri(uri);

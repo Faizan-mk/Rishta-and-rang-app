@@ -566,7 +566,16 @@
     "imageCheckFailed_tooSmall": "That image couldn't be read. Try a clearer photo.",
     "imageCheckFailed_wrongShape": "That doesn't look like an ID card photo — make sure the whole card fills the frame.",
     "imageCheckFailed_notCardColored": "That doesn't look like a Pakistani CNIC. Upload a clear, well-lit photo of the green ID card.",
-    "photoMismatch": "CNIC number and photo don't match",
+    "photoMismatch": "Your CNIC number doesn't match the card",
+    "numberMismatchTyped": "You typed: {number}. Enter the number exactly as it is printed on your CNIC.",
+    "fixNumber": "Fix CNIC number",
+    "nameMismatch": "Your name doesn't match the CNIC",
+    "nameMismatchTyped": "You typed: \"{name}\". Write your name exactly as it is printed on your CNIC.",
+    "fixName": "Fix name",
+    "dobMismatch": "Your date of birth doesn't match the CNIC",
+    "dobMismatchTyped": "You entered: {date}. Enter your date of birth exactly as it is printed on your CNIC.",
+    "fixDob": "Fix date of birth",
+    "retakePhoto": "Retake photo",
     "photoUnreadable": "We could not read the CNIC number. Take a clear image."
   },
   "bureau": {
