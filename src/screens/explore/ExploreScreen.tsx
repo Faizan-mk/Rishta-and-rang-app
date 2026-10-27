@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Image,
   Modal,
@@ -93,6 +93,14 @@ export function ExploreScreen() {
     if (contentOffset.y + layoutMeasurement.height * 2 >= contentSize.height) loadMore();
   };
   const [tab, setTab] = useState<ExploreTab>('forYou');
+  // One ScrollView serves every tab, so without this a tab opened partway
+  // down wherever the previous one had been scrolled to.
+  const scrollRef = useRef<ScrollView>(null);
+  const switchTab = (next: ExploreTab) => {
+    if (next === tab) return;
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
+    setTab(next);
+  };
   const [filters, setFilters] = useState<BrowseFilters>(DEFAULT_BROWSE_FILTERS);
   const [filtersVisible, setFiltersVisible] = useState(false);
   const [likes, setLikes] = useState<LikeReceived[]>([]);
@@ -206,8 +214,16 @@ export function ExploreScreen() {
           title={t('explore.title')}
           subtitle={t('explore.subtitle')}
           gradient={accent.ramp}
+          // The chip stays mounted on every tab and only hides off For You:
+          // dropping it widened the title column, re-wrapped the subtitle and
+          // moved the tabs and everything under them on each switch.
           right={
-            tab === 'forYou' ? (
+            <View
+              style={tab !== 'forYou' && styles.hidden}
+              pointerEvents={tab === 'forYou' ? 'auto' : 'none'}
+              accessibilityElementsHidden={tab !== 'forYou'}
+              importantForAccessibility={tab === 'forYou' ? 'auto' : 'no-hide-descendants'}
+            >
               <Pressable
                 onPress={() => setFiltersVisible(true)}
                 style={[styles.filterChip, activeFilters > 0 && styles.filterChipActive]}
@@ -226,7 +242,7 @@ export function ExploreScreen() {
                   </View>
                 )}
               </Pressable>
-            ) : undefined
+            </View>
           }
         />
       </View>
@@ -238,7 +254,7 @@ export function ExploreScreen() {
           const active = tab === tabDef.key;
           if (active) {
             return (
-              <Pressable key={tabDef.key} onPress={() => setTab(tabDef.key)} style={styles.tabItem}>
+              <Pressable key={tabDef.key} onPress={() => switchTab(tabDef.key)} style={styles.tabItem}>
                 <LinearGradient
                   colors={accent.ramp}
                   start={GRADIENT_START}
@@ -254,7 +270,7 @@ export function ExploreScreen() {
             );
           }
           return (
-            <Pressable key={tabDef.key} onPress={() => setTab(tabDef.key)} style={styles.tabItem}>
+            <Pressable key={tabDef.key} onPress={() => switchTab(tabDef.key)} style={styles.tabItem}>
               <View style={styles.tabPillIdle}>
                 <Ionicons name={tabDef.icon} size={14} color={colors.textTertiary} />
                 <Text style={styles.tabLabel} numberOfLines={1}>
@@ -267,6 +283,7 @@ export function ExploreScreen() {
       </View>
 
       <ScrollView
+        ref={scrollRef}
         showsVerticalScrollIndicator={false}
         // The grid is paged the same way the swipe deck is; reaching the bottom
         // is what asks for the next page.
@@ -667,6 +684,7 @@ const makeStyles = (colors: Palette) =>
       justifyContent: 'center',
     },
     countPillText: { color: '#FFFFFF', fontSize: scaleFont(10), fontFamily: fonts.bodyBold },
+    hidden: { opacity: 0 },
     // Floating pill track, same as the Friends/Rishta toggle on Home.
     tabRow: {
       flexDirection: 'row',
