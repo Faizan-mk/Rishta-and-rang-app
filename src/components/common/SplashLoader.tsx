@@ -153,8 +153,17 @@ export function SplashLoader({ ready, onFinish }: SplashLoaderProps) {
           )}
         </Animated.Text>
         <Animated.View style={[styles.rule, ruleStyle]} />
-        <Animated.Text style={[styles.tagline, taglineStyle]} numberOfLines={1}>
-          {t('loader.tagline')}
+        {/* Uppercased here rather than with textTransform: Android measures the
+            line before the transform, so the wider capitals overflowed and the
+            tagline ended in "PARTN…". It shrinks to fit a narrow screen or a
+            large font setting instead of cutting off. */}
+        <Animated.Text
+          style={[styles.tagline, taglineStyle]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.7}
+        >
+          {t('loader.tagline').toUpperCase()}
         </Animated.Text>
         <View style={styles.dots}>
           {Array.from({ length: DOT_COUNT }, (_, i) => (
@@ -312,7 +321,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodyBold,
     fontSize: scaleFont(13),
     letterSpacing: 1.5,
-    textTransform: 'uppercase',
     color: withAlpha('#FFFFFF', 0.85),
     textAlign: 'center',
   },
