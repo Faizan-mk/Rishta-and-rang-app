@@ -122,6 +122,8 @@
     "matrimonialDesc": "Shaadi ki baat cheet ke liye tayyar."
   },
   "photos": {
+    "noFaceTitle": "Is photo mein chehra nazar nahi aaya",
+    "noFaceBody": "Har photo mein aap ka chehra saaf nazar aana chahiye. Apni photo lagayein.",
     "title": "Apni Tasveerein Shamil Karein",
     "subtitle": "2 se 4 tasveerein upload karein taake log aapko pehchan sakein.",
     "addPhoto": "Tasveer Shamil Karein",

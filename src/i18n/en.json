@@ -122,6 +122,8 @@
     "matrimonialDesc": "Ready for a rishta conversation."
   },
   "photos": {
+    "noFaceTitle": "No face found in this photo",
+    "noFaceBody": "Every photo must show your face clearly. Add a photo of yourself.",
     "title": "Add your photos",
     "subtitle": "Upload 2-4 photos so people know it's really you.",
     "addPhoto": "Add photo",

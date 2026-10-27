@@ -20,6 +20,7 @@ import { scaleFont } from '../../theme/responsive';
 import { flat, glow, withAlpha } from '../../theme/glow';
 import { cardSurface } from '../../theme/surfaces';
 import type { Palette } from '../../theme/palettes';
+import { checkPhotoFace } from '../../utils/photoFaceCheck';
 
 const MAX_PHOTOS = 4;
 const MIN_PHOTOS = 2;
@@ -68,8 +69,12 @@ export function IntentPhotosScreen() {
     }
   };
 
-  const onCropped = (uri: string) => {
+  const onCropped = async (uri: string) => {
     setPending(null);
+    if ((await checkPhotoFace(uri)) === 'noFace') {
+      await notify({ title: t('photos.noFaceTitle'), message: t('photos.noFaceBody') });
+      return;
+    }
     setPhotos((prev) => [...prev, uri].slice(0, MAX_PHOTOS));
   };
 

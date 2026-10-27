@@ -25,6 +25,7 @@ import { useTheme } from '../../store/ThemeContext';
 import { useDialog } from '../../store/DialogContext';
 import { usePrivacy } from '../../store/PrivacyContext';
 import { errorMessage } from '../../utils/appError';
+import { checkPhotoFace } from '../../utils/photoFaceCheck';
 import type { UserProfile } from '../../types/user';
 import { fonts, radius, spacing, typography } from '../../theme';
 import { cardSurface } from '../../theme/surfaces';
@@ -237,8 +238,12 @@ export function EditProfileScreen() {
     }
   };
 
-  const onPhotoCropped = (uri: string) => {
+  const onPhotoCropped = async (uri: string) => {
     setPendingPhoto(null);
+    if ((await checkPhotoFace(uri)) === 'noFace') {
+      await notify({ title: t('photos.noFaceTitle'), message: t('photos.noFaceBody') });
+      return;
+    }
     setPhotos((prev) => [...prev, uri].slice(0, MAX_PHOTOS));
   };
 
