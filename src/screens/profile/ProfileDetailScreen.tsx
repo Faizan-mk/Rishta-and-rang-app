@@ -34,6 +34,7 @@ import { useDialog } from '../../store/DialogContext';
 import { useMatches } from '../../store/MatchesContext';
 import { useFavorites } from '../../store/FavoritesContext';
 import { useViewHistory } from '../../store/ViewHistoryContext';
+import { useActivityHistory } from '../../store/ActivityHistoryContext';
 import { datingCompatibility, rishtaCompatibility } from '../../utils/compatibility';
 import { fonts, radius, spacing, typography } from '../../theme';
 import { cardSurface } from '../../theme/surfaces';
@@ -58,6 +59,7 @@ export function ProfileDetailScreen() {
   const { datingProfiles, rishtaProfiles } = useDiscovery();
   const { isFavorite, isLiked, toggleLike, toggleFavorite } = useFavorites();
   const { recordView } = useViewHistory();
+  const { recordPass, unhideLiked } = useActivityHistory();
   const { kind, id } = useLocalSearchParams<{ kind: 'dating' | 'rishta'; id: string }>();
 
   const [galleryWidth, setGalleryWidth] = useState(0);
@@ -138,7 +140,10 @@ export function ProfileDetailScreen() {
   const match = getMatchForProfile(profile.id);
   const liked = isLiked(profile.id);
 
-  const onPass = () => router.back();
+  const onPass = () => {
+    recordPass({ id: profile.id, kind, name: profile.name, age: profile.age, city: profile.city, photo: profile.photos[0] ?? '' });
+    router.back();
+  };
   // Like (Friends) and Express interest (Rishta) are the same like underneath,
   // so they share one path: the daily-cap popup, and the match celebration
   // when this like is the one that made it mutual.
@@ -152,6 +157,7 @@ export function ProfileDetailScreen() {
       await notify({ title: t('discover.limitReachedTitle'), message: t('discover.limitReachedBody') });
       return;
     }
+    unhideLiked(profile.id);
     if (outcome?.isNew) {
       setCelebration({ name: profile.name, photo: profile.photos[0] ?? '' });
       return;

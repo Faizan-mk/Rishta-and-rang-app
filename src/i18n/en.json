@@ -779,10 +779,6 @@
   "explore": {
     "title": "Explore",
     "premiumLockHint": "Unlock Explore+ to see who they are",
-    "clearHistory": "Clear history",
-    "clearHistoryConfirmTitle": "Clear your view history?",
-    "clearHistoryConfirmBody": "This removes your recently viewed profiles list. It can't be undone.",
-    "viewedAt": "Viewed {time}",
     "whoLikedYou": "Who liked you",
     "whoLikedYouEmpty": "No likes yet — when someone likes you, they land here.",
     "whoLikedYouLocked": "{count} people liked you",
@@ -802,7 +798,22 @@
     "learnMore": "Learn more",
     "share": "Share",
     "shareEventMessage": "{title} — {city}, {date}. Check it out on Lovebirds!",
-    "historyEmpty": "Profiles you view will show up here."
+    "history": {
+      "liked": "Liked",
+      "passed": "Passed",
+      "compliments": "Compliments",
+      "favorites": "Favourites",
+      "likedEmpty": "People you like show up here.",
+      "passedEmpty": "People you pass show up here, in case you change your mind.",
+      "complimentsEmpty": "Compliments you send show up here.",
+      "favoritesEmpty": "Tap the star on a profile to save it here.",
+      "clear": "Clear list",
+      "clearTitle": "Clear {section}?",
+      "likedClearBody": "This only clears the list. Your likes stay, and anyone you like again shows up here.",
+      "passedClearBody": "Everyone you passed is removed from this list.",
+      "complimentsClearBody": "This only clears the list. Compliments already sent stay sent.",
+      "favoritesClearBody": "Everyone is removed from your Favourites. Your likes aren't affected."
+    }
   },
   "explorePlus": {
     "title": "Explore+",

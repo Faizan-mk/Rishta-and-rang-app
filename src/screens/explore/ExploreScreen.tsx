@@ -31,7 +31,7 @@ import {
   countActiveFilters,
   type BrowseFilters,
 } from '../../components/discover/browseOptions';
-import { likesService, type LikeReceived } from '../../services/likesService';
+import { likesService, type LikeReceived, type ProfileSummary } from '../../services/likesService';
 import { mockEvents } from '../../data/mockEvents';
 import { FEATURE_EVENTS } from '../../config/features';
 import type { DiscoverProfile, RishtaListingProfile } from '../../types/content';
@@ -41,8 +41,9 @@ import { vocabularyLabel } from '../../i18n/vocabulary';
 import { useTheme } from '../../store/ThemeContext';
 import { useAuth } from '../../store/AuthContext';
 import { useMatches } from '../../store/MatchesContext';
-import { useViewHistory } from '../../store/ViewHistoryContext';
+import { useFavorites } from '../../store/FavoritesContext';
 import { useDialog } from '../../store/DialogContext';
+import { useActivityHistory, type ActivityEntry } from '../../store/ActivityHistoryContext';
 import { oppositeGenderProfiles } from '../../utils/genderMatch';
 import { timeAgo } from '../../utils/time';
 import { fonts, radius, spacing, typography } from '../../theme';
@@ -51,6 +52,14 @@ import { glow, APP_MODE, modeAccent, withAlpha, type ModeAccent } from '../../th
 import type { Palette } from '../../theme/palettes';
 
 type ExploreTab = 'forYou' | 'events' | 'history';
+type HistorySection = 'liked' | 'passed' | 'compliments' | 'favorites';
+
+const HISTORY_SECTIONS: { key: HistorySection; labelKey: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { key: 'liked', labelKey: 'explore.history.liked', icon: 'heart' },
+  { key: 'passed', labelKey: 'explore.history.passed', icon: 'close' },
+  { key: 'compliments', labelKey: 'explore.history.compliments', icon: 'chatbubble-ellipses' },
+  { key: 'favorites', labelKey: 'explore.history.favorites', icon: 'star' },
+];
 type ExploreProfile = (DiscoverProfile | RishtaListingProfile) & { kind: 'dating' | 'rishta' };
 
 const TABS: { key: ExploreTab; labelKey: string; icon: keyof typeof Ionicons.glyphMap }[] = [
@@ -83,8 +92,12 @@ export function ExploreScreen() {
   const { t, rtl } = useLanguage();
   const { user } = useAuth();
   const { rishtaProfileIds, blockedProfiles } = useMatches();
-  const { history, clearHistory } = useViewHistory();
+  const { favorites, likedIdList, clearFavorites } = useFavorites();
+  const { passed, compliments, clearPassed, clearCompliments, hiddenLiked, clearLiked } = useActivityHistory();
   const { confirm } = useDialog();
+  const [historySection, setHistorySection] = useState<HistorySection>('liked');
+  // Liked people outside the fetched deck pages, looked up by id once.
+  const [likedExtra, setLikedExtra] = useState<Record<string, ProfileSummary>>({});
   const { datingProfiles, rishtaProfiles, loadMore } = useDiscovery();
 
   // Within a screen's height of the bottom counts as "reached it", so the next
@@ -140,6 +153,66 @@ export function ExploreScreen() {
   // Friends, serious and matrimonial members as Rishta, and the Intent filter
   // narrows it to one kind. A thread that moved to Rishta takes that member out
   // of the Friends side.
+  const deckById = useMemo(() => {
+    const map = new Map<string, ProfileSummary>();
+    const add = (p: DiscoverProfile | RishtaListingProfile, kind: 'dating' | 'rishta') =>
+      map.set(p.id, { id: p.id, kind, name: p.name, age: p.age, city: p.city, photo: p.photos[0] ?? '' });
+    datingProfiles.forEach((p) => add(p, p.intent === 'casual' ? 'dating' : 'rishta'));
+    rishtaProfiles.forEach((p) => add(p, 'rishta'));
+    return map;
+  }, [datingProfiles, rishtaProfiles]);
+
+  useEffect(() => {
+    const missing = likedIdList.filter((id) => !deckById.has(id) && !likedExtra[id]);
+    if (!missing.length) return;
+    let cancelled = false;
+    likesService.fetchProfileSummaries(missing).then((rows) => {
+      if (cancelled || !rows.length) return;
+      setLikedExtra((prev) => ({ ...prev, ...Object.fromEntries(rows.map((r) => [r.id, r])) }));
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [likedIdList.join(','), deckById]);
+
+  const historyEntries: { entry: ProfileSummary; note?: string; at?: string }[] = useMemo(() => {
+    switch (historySection) {
+      case 'liked':
+        return likedIdList
+          .map((id) => deckById.get(id) ?? likedExtra[id])
+          .filter((e): e is ProfileSummary => Boolean(e))
+          .filter((e) => !blockedProfileIds.has(e.id) && !hiddenLiked.has(e.id))
+          .map((entry) => ({ entry }));
+      case 'passed':
+        return passed.filter((e) => !blockedProfileIds.has(e.id)).map((e: ActivityEntry) => ({ entry: e, at: e.at }));
+      case 'compliments':
+        return compliments
+          .filter((e) => !blockedProfileIds.has(e.id))
+          .map((e: ActivityEntry) => ({ entry: e, at: e.at, note: e.note }));
+      default:
+        return favorites
+          .filter((f) => !blockedProfileIds.has(f.id))
+          .map((f) => ({ entry: { id: f.id, kind: f.kind, name: f.name, age: f.age, city: f.city, photo: f.photo } }));
+    }
+  }, [historySection, likedIdList, deckById, likedExtra, passed, compliments, favorites, blockedProfileIds, hiddenLiked]);
+
+  const onClearHistorySection = async () => {
+    const section = historySection;
+    const ok = await confirm({
+      title: t('explore.history.clearTitle', { section: t(`explore.history.${section}`) }),
+      message: t(`explore.history.${section}ClearBody`),
+      confirmLabel: t('explore.history.clear'),
+      cancelLabel: t('common.cancel'),
+      destructive: true,
+    });
+    if (!ok) return;
+    if (section === 'liked') clearLiked(historyEntries.map(({ entry }) => entry.id));
+    else if (section === 'passed') clearPassed();
+    else if (section === 'compliments') clearCompliments();
+    else clearFavorites();
+  };
+
   const pool: ExploreProfile[] = useMemo(() => {
     const visible = (p: DiscoverProfile | RishtaListingProfile) => !blockedProfileIds.has(p.id);
     const dating = oppositeGenderProfiles(datingProfiles, user?.gender)
@@ -180,16 +253,6 @@ export function ExploreScreen() {
     }
   };
 
-  const onClearHistory = async () => {
-    const confirmed = await confirm({
-      title: t('explore.clearHistoryConfirmTitle'),
-      message: t('explore.clearHistoryConfirmBody'),
-      confirmLabel: t('explore.clearHistory'),
-      cancelLabel: t('common.cancel'),
-      destructive: true,
-    });
-    if (confirmed) clearHistory();
-  };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -434,50 +497,83 @@ export function ExploreScreen() {
 
         {tab === 'history' && (
           <View style={styles.section}>
-            {history.length === 0 ? (
+            {/* Four lists of what this member did: liked, passed, sent a
+                compliment to, saved. Each opens the profile again. */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={[styles.historyChips, rtl && styles.rowRtl]}
+            >
+              {HISTORY_SECTIONS.map((section) => {
+                const selected = section.key === historySection;
+                return (
+                  <Pressable
+                    key={section.key}
+                    onPress={() => setHistorySection(section.key)}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected }}
+                    style={[styles.historyChip, selected && { backgroundColor: accent.primary, borderColor: accent.primary }]}
+                  >
+                    <Ionicons name={section.icon} size={14} color={selected ? '#FFFFFF' : colors.textSecondary} />
+                    <Text style={[styles.historyChipLabel, selected && styles.historyChipLabelSelected]}>
+                      {t(section.labelKey)}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+
+            {historyEntries.length === 0 ? (
               <View style={styles.emptyState}>
-                  <EmptyOrb ramp={accent.ramp} icon="time" />
-                <Text style={[styles.emptyText, rtl && styles.rtlText]}>{t('explore.historyEmpty')}</Text>
+                <EmptyOrb
+                  ramp={accent.ramp}
+                  icon={HISTORY_SECTIONS.find((h) => h.key === historySection)?.icon ?? 'time'}
+                />
+                <Text style={[styles.emptyText, rtl && styles.rtlText]}>{t(`explore.history.${historySection}Empty`)}</Text>
               </View>
             ) : (
-              <>
-                {history.map((entry, index) => (
-                  <Animated.View key={entry.id} entering={FadeInUp.delay(Math.min(index * 40, 240)).duration(280)}>
-                    <Pressable
-                      onPress={() => router.push({ pathname: '/profile-detail', params: { kind: entry.kind, id: entry.id } })}
-                      style={[styles.historyRow, rtl && styles.rowRtl]}
+              historyEntries.map(({ entry, at, note }, index) => (
+                <Animated.View key={entry.id} entering={FadeInUp.delay(Math.min(index * 40, 240)).duration(280)}>
+                  <Pressable
+                    onPress={() => router.push({ pathname: '/profile-detail', params: { kind: entry.kind, id: entry.id } })}
+                    style={[styles.historyRow, rtl && styles.rowRtl]}
+                  >
+                    <LinearGradient
+                      colors={accent.ramp}
+                      start={GRADIENT_START}
+                      end={GRADIENT_END}
+                      style={styles.historyAvatarRing}
                     >
-                      <LinearGradient
-                        colors={accent.ramp}
-                        start={GRADIENT_START}
-                        end={GRADIENT_END}
-                        style={styles.historyAvatarRing}
-                      >
-                        <SmartImage uri={entry.photo} name={entry.name} style={styles.historyAvatar} size={16} />
-                      </LinearGradient>
-                      <View style={styles.historyTextWrap}>
-                        <Text style={[styles.historyName, rtl && styles.rtlText]}>
-                          {entry.name}
-                        </Text>
-                        <Text style={[styles.historyMeta, rtl && styles.rtlText]}>
-                          {t('explore.viewedAt', { time: timeAgo(entry.viewedAt, t) })}
-                        </Text>
-                      </View>
-                      <Ionicons
-                        name={rtl ? 'chevron-back' : 'chevron-forward'}
-                        size={16}
-                        color={colors.textTertiary}
-                      />
-                    </Pressable>
-                  </Animated.View>
-                ))}
-                <Button
-                  label={t('explore.clearHistory')}
-                  variant="ghost"
-                  onPress={onClearHistory}
-                  style={styles.clearButton}
-                />
-              </>
+                      <SmartImage uri={entry.photo} name={entry.name} style={styles.historyAvatar} size={16} />
+                    </LinearGradient>
+                    <View style={styles.historyTextWrap}>
+                      <Text style={[styles.historyName, rtl && styles.rtlText]} numberOfLines={1}>
+                        {entry.name}
+                      </Text>
+                      <Text style={[styles.historyMeta, rtl && styles.rtlText]} numberOfLines={note ? 2 : 1}>
+                        {note
+                          ? `“${note}”`
+                          : [vocabularyLabel(entry.city, t), at ? timeAgo(at, t) : null].filter(Boolean).join(' · ')}
+                      </Text>
+                    </View>
+                    <Ionicons
+                      name={rtl ? 'chevron-back' : 'chevron-forward'}
+                      size={16}
+                      color={colors.textTertiary}
+                    />
+                  </Pressable>
+                </Animated.View>
+              ))
+            )}
+
+            {/* Clearing Liked only empties this list; the likes themselves stand. */}
+            {historyEntries.length > 0 && (
+              <Button
+                label={t('explore.history.clear')}
+                variant="ghost"
+                onPress={onClearHistorySection}
+                style={styles.clearButton}
+              />
             )}
           </View>
         )}
@@ -859,6 +955,20 @@ const makeStyles = (colors: Palette) =>
     historyTextWrap: { flex: 1 },
     historyName: { ...typography.h3, color: colors.textPrimary },
     historyMeta: { ...typography.caption, color: colors.textSecondary },
+    historyChips: { flexDirection: 'row', gap: spacing.xs, paddingBottom: spacing.md },
+    historyChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+      borderRadius: radius.pill,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+      paddingHorizontal: spacing.md,
+      paddingVertical: 6,
+    },
+    historyChipLabel: { ...typography.label, color: colors.textSecondary, fontFamily: fonts.bodyBold },
+    historyChipLabelSelected: { color: '#FFFFFF' },
     clearButton: { marginTop: spacing.md, borderWidth: 1.5, borderColor: colors.gold },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   });

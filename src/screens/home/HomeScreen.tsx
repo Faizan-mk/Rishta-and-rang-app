@@ -59,6 +59,7 @@ import { useStories } from '../../store/StoriesContext';
 import { useAddStory } from '../../hooks/useAddStory';
 import { useNotifications } from '../../store/NotificationContext';
 import { useViewHistory } from '../../store/ViewHistoryContext';
+import { useActivityHistory } from '../../store/ActivityHistoryContext';
 import { oppositeGenderProfiles } from '../../utils/genderMatch';
 import { datingCompatibility, rishtaCompatibility, sharedTraits } from '../../utils/compatibility';
 import { radius, spacing, typography } from '../../theme';
@@ -97,6 +98,7 @@ export function HomeScreen() {
   const { addStory, posting: postingStory } = useAddStory();
   const { addNotification, unreadCount } = useNotifications();
   const { recordView } = useViewHistory();
+  const { recordPass, recordCompliment, unhideLiked } = useActivityHistory();
   const [celebration, setCelebration] = useState<{ name: string; photo: string } | null>(null);
   const [cursor, setCursor] = useState(0);
   const [previewUri, setPreviewUri] = useState<string | null>(null);
@@ -293,8 +295,18 @@ export function HomeScreen() {
     setCursor((c) => Math.max(c - 1, 0));
   };
 
+  const summaryOf = (p: NonNullable<typeof currentProfile>) => ({
+    id: p.id,
+    kind: mode,
+    name: p.name,
+    age: p.age,
+    city: p.city,
+    photo: p.photos[0] ?? '',
+  });
+
   const onPass = () => {
     if (!currentProfile) return;
+    recordPass(summaryOf(currentProfile));
     advance();
   };
 
@@ -344,6 +356,7 @@ export function HomeScreen() {
     // What the server actually counted, which is the number the "likes left"
     // line should show.
     if (outcome) applyServerCount(outcome.likesLeft);
+    if (!wasLiked) unhideLiked(profile.id);
     if (!wasLiked) {
       // Only on the call that formed the pair. `isNew` comes from the RPC
       // itself, so this cannot fire on a one-sided like, and re-liking someone
@@ -416,6 +429,7 @@ export function HomeScreen() {
       await notify({ title: t('report.failedTitle'), message: t('report.failedBody') });
       return;
     }
+    recordCompliment(summaryOf(currentProfile), text);
     await notify({ title: t('discover.complimentSentTitle'), message: t('discover.complimentSentBody', { name: currentProfile.name }) });
   };
 

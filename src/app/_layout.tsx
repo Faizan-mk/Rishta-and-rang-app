@@ -14,6 +14,7 @@ import { NotificationProvider } from '../store/NotificationContext';
 import { MatchesProvider } from '../store/MatchesContext';
 import { FavoritesProvider } from '../store/FavoritesContext';
 import { ViewHistoryProvider } from '../store/ViewHistoryContext';
+import { ActivityHistoryProvider } from '../store/ActivityHistoryContext';
 import { LikeLimitProvider } from '../store/LikeLimitContext';
 import { PrivacyProvider } from '../store/PrivacyContext';
 import { DiscoveryProvider }  from '../store/DiscoveryContext';
@@ -145,6 +146,7 @@ export default function RootLayout() {
                     <MatchesProvider>
                       <FavoritesProvider>
                         <ViewHistoryProvider>
+                          <ActivityHistoryProvider>
                           <LikeLimitProvider>
                             <PrivacyProvider>
                               <DiscoveryProvider>
@@ -156,6 +158,7 @@ export default function RootLayout() {
                               </DiscoveryProvider>
                             </PrivacyProvider>
                           </LikeLimitProvider>
+                          </ActivityHistoryProvider>
                         </ViewHistoryProvider>
                       </FavoritesProvider>
                     </MatchesProvider>

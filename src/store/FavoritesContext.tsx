@@ -15,6 +15,8 @@ interface FavoritesContextValue {
   isFavorite: (id: string) => boolean;
   /** Liked them (or matched, which takes two likes). */
   isLiked: (id: string) => boolean;
+  /** Everyone liked, as ids: server likes plus matches. For History's Liked list. */
+  likedIdList: string[];
   /**
    * Likes or un-likes a member. Liking resolves with the conversation if that
    * completed the pair — `isNew` true only on the call that formed it, which is
@@ -26,6 +28,8 @@ interface FavoritesContextValue {
   /** Saves to or drops from Favorites. Never likes, notifies or counts a like. */
   toggleFavorite: (profile: FavoriteProfile) => void;
   removeFavorite: (id: string) => void;
+  /** Empties Favorites. Likes are untouched. */
+  clearFavorites: () => void;
 }
 
 const FavoritesContext = createContext<FavoritesContextValue | undefined>(undefined);
@@ -167,8 +171,25 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
     favoritesService.removeFavorite(user.id, id);
   };
 
+  const clearFavorites = () => {
+    if (!user) return;
+    const userId = user.id;
+    const ids = favorites.map((f) => f.id);
+    setFavorites([]);
+    ids.forEach((id) => favoritesService.removeFavorite(userId, id));
+  };
+
   const value = useMemo(
-    () => ({ favorites, isFavorite, isLiked, toggleLike, toggleFavorite, removeFavorite }),
+    () => ({
+      favorites,
+      isFavorite,
+      isLiked,
+      likedIdList: [...new Set([...likedIds, ...matchedIds])],
+      toggleLike,
+      toggleFavorite,
+      removeFavorite,
+      clearFavorites,
+    }),
     [favorites, likedIds, matchedIds, user?.id]
   );
 

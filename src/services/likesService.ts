@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import type { ProfileMode } from '../types/user';
+import { ageFromDob } from '../utils/date';
 
 // ---------------------------------------------------------------------------
 // Likes, in two tables that answer two different questions.
@@ -127,4 +128,31 @@ async function fetchMyLikedIds(): Promise<string[]> {
   return data.map((row) => (typeof row === 'string' ? row : String(Object.values(row)[0])));
 }
 
-export const likesService = { fetchLikesReceived, likeProfile, withdrawLike, fetchMyLikedIds };
+export interface ProfileSummary {
+  id: string;
+  kind: ProfileMode;
+  name: string;
+  age: number;
+  city: string;
+  photo: string;
+}
+
+/** Name, photo and the like for a set of members, for lists built from ids alone. */
+async function fetchProfileSummaries(ids: string[]): Promise<ProfileSummary[]> {
+  if (!ids.length) return [];
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, full_name, dob, city, photos, intent')
+    .in('id', ids);
+  if (error || !data) return [];
+  return data.map((row) => ({
+    id: row.id as string,
+    kind: row.intent === 'casual' ? 'dating' : 'rishta',
+    name: (row.full_name as string) ?? '',
+    age: ageFromDob(row.dob as string) ?? 0,
+    city: (row.city as string) ?? '',
+    photo: ((row.photos as string[] | null) ?? [])[0] ?? '',
+  }));
+}
+
+export const likesService = { fetchLikesReceived, likeProfile, withdrawLike, fetchMyLikedIds, fetchProfileSummaries };

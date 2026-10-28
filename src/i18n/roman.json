@@ -779,10 +779,6 @@
   "explore": {
     "title": "Explore",
     "premiumLockHint": "Wo kaun hain, dekhne ke liye Explore+ lein",
-    "clearHistory": "History saaf karein",
-    "clearHistoryConfirmTitle": "History saaf karein?",
-    "clearHistoryConfirmBody": "Yeh aapki haal hi mein dekhi gayi profiles ki list hata dega. Wapas nahi aayegi.",
-    "viewedAt": "{time} dekhi",
     "whoLikedYou": "Kis ne aap ko like kiya",
     "whoLikedYouEmpty": "Abhi koi like nahi — koi aap ko like karega to yahan aayega.",
     "whoLikedYouLocked": "{count} logon ne aap ko like kiya",
@@ -802,7 +798,22 @@
     "learnMore": "Mazeed janein",
     "share": "Share Karein",
     "shareEventMessage": "{title} — {city}, {date}. Isay Lovebirds par dekhein!",
-    "historyEmpty": "Aap jo profiles dekhein ge woh yahan dikhengi."
+    "history": {
+      "liked": "Pasand",
+      "passed": "Pass kiye",
+      "compliments": "Compliments",
+      "favorites": "Favourites",
+      "likedEmpty": "Jinhein aap pasand karenge woh yahan dikhenge.",
+      "passedEmpty": "Jinhein aap pass karenge woh yahan dikhenge, agar aap ka iraada badle.",
+      "complimentsEmpty": "Aap ke bheje hue compliments yahan dikhenge.",
+      "favoritesEmpty": "Kisi profile par ⭐ dabayein, woh yahan save ho jayegi.",
+      "clear": "List saaf karein",
+      "clearTitle": "{section} saaf karein?",
+      "likedClearBody": "Sirf list saaf hogi. Aap ke likes waise hi rahenge, aur jise dobara like karenge woh yahan aa jayega.",
+      "passedClearBody": "Pass kiye hue sab log is list se hat jayenge.",
+      "complimentsClearBody": "Sirf list saaf hogi. Bheje hue compliments wapas nahi honge.",
+      "favoritesClearBody": "Sab log Favourites se hat jayenge. Aap ke likes par koi asar nahi hoga."
+    }
   },
   "explorePlus": {
     "title": "Explore+",
