@@ -571,6 +571,7 @@ export function ExploreScreen() {
               <Button
                 label={t('explore.history.clear')}
                 variant="ghost"
+                icon={<Ionicons name="trash-outline" size={16} color={colors.teal} />}
                 onPress={onClearHistorySection}
                 style={styles.clearButton}
               />
