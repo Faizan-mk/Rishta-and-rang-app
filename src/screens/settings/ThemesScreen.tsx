@@ -2,7 +2,6 @@ import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { AccentHeading } from '../../components/common/AccentHeading';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { FadeIn } from '../../components/common/FadeInUp';
 import { useLanguage } from '../../store/LanguageContext';
@@ -30,16 +29,7 @@ export function ThemesScreen() {
   return (
     // The stack draws the header, so only the bottom inset is ours (same as Settings).
     <ScreenContainer edges={['bottom']}>
-      <FadeIn>
-        <AccentHeading
-          size="screen"
-          title={t('settings.themesTitle')}
-          gradient={flat(colors.brandMain)}
-          style={styles.heading}
-        />
-        <Text style={[styles.subtitle, rtl && styles.rtlText]}>{t('settings.themesSubtitle')}</Text>
-      </FadeIn>
-
+      {/* The stack header already says "Themes"; the list starts straight under it. */}
       {APP_THEME_IDS.map((id, index) => {
         // Preview each theme in the mode the app is in right now, so what the
         // card shows is what tapping it gives.
@@ -136,8 +126,6 @@ const previewStyles = StyleSheet.create({
 
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
-    heading: { marginBottom: spacing.xs },
-    subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg },
     card: {
       backgroundColor: colors.surface,
       borderRadius: radius.lg,
