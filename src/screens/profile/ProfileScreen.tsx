@@ -20,7 +20,6 @@ import {
   FuturePlansSection,
   EducationCareerSection,
   LanguagesBackgroundSection,
-  VerificationSection,
   IntroMediaSection,
 } from '../../components/discover/ProfileDetailSections';
 import { useLanguage } from '../../store/LanguageContext';
@@ -324,10 +323,11 @@ export function ProfileScreen() {
         <FuturePlansSection profile={browseProfile} />
         <EducationCareerSection profile={browseProfile} />
         <LanguagesBackgroundSection profile={browseProfile} />
-        <VerificationSection profile={browseProfile} />
       </View>
 
       <View style={styles.section}>
+        {/* Titled like every other group on this screen. */}
+        <AccentHeading title={t('profile.accountSection')} gradient={accent.duo} style={styles.sectionHeading} />
         <View style={styles.quickLinks}>
           <QuickLinkRow icon="star-outline" tint={colors.gold} label={t('profile.favorites')} onPress={() => router.push('/favorites')} rtl={rtl} />
           <QuickLinkRow icon="sparkles-outline" tint={colors.gold} label={t('profile.subscription')} onPress={() => router.push('/explore-plus')} rtl={rtl} />

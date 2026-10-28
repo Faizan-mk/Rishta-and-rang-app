@@ -12,7 +12,7 @@ import { DiscoverProfileCard } from '../../components/discover/DiscoverProfileCa
 import { TAB_BAR_BASE_HEIGHT } from '../../store/TabBarVisibilityContext';
 import { MatchCelebration } from '../../components/discover/MatchCelebration';
 import { HomeTopBar } from '../../components/discover/HomeTopBar';
-import { HomeStoriesRow, type StoryConnection, type StorySuggestion } from '../../components/discover/HomeStoriesRow';
+import { HomeStoriesRow } from '../../components/discover/HomeStoriesRow';
 import { MatchScoreCard } from '../../components/discover/MatchScoreCard';
 import { SwipeableCard } from '../../components/discover/SwipeableCard';
 import { SwipeActionBar } from '../../components/discover/SwipeActionBar';
@@ -35,7 +35,6 @@ import {
   EducationCareerSection,
   LanguagesBackgroundSection,
   SimilaritiesSection,
-  VerificationSection,
   MidProfilePhoto,
   IntroMediaSection,
 } from '../../components/discover/ProfileDetailSections';
@@ -74,9 +73,6 @@ const ACTION_BAR_CLEARANCE = 92;
 // that a fast swiper never reaches the end of the deck while it loads.
 const DECK_LOW_WATER = 5;
 
-// How many deck profiles fill out the end of the story strip.
-const STORY_SUGGESTION_COUNT = 12;
-
 export function HomeScreen() {
   const router = useRouter();
   const { colors } = useTheme();
@@ -113,14 +109,18 @@ export function HomeScreen() {
     [blockedProfiles]
   );
 
-  // Connections without a story up, most recent chat first, for the end of
-  // the story strip. Anyone with a story already has a circle further left.
-  const storyConnections = useMemo<StoryConnection[]>(() => {
-    const withStory = new Set(storyGroups.map((g) => g.userId));
-    return matches
-      .filter((m) => !m.sourceProfileId || (!blockedProfileIds.has(m.sourceProfileId) && !withStory.has(m.sourceProfileId)))
-      .map((m) => ({ matchId: m.id, name: m.name, photo: m.photo }));
-  }, [matches, storyGroups, blockedProfileIds]);
+  // The strip shows only people this member has matched with (both liked).
+  // The server already returns no one else (story_feed / are_connected in
+  // supabase/46_stories.sql); this keeps the strip to that rule even while a
+  // just-ended match or a fresh block is still in the cached feed.
+  const matchedStoryGroups = useMemo(() => {
+    const matchedIds = new Set(
+      matches
+        .map((m) => m.sourceProfileId)
+        .filter((id): id is string => typeof id === 'string' && !blockedProfileIds.has(id))
+    );
+    return storyGroups.filter((g) => matchedIds.has(g.userId));
+  }, [storyGroups, matches, blockedProfileIds]);
 
   // One deck for everyone: casual members show as Friends cards, serious and
   // matrimonial members as Rishta cards. The Intent filter is how a member
@@ -150,21 +150,6 @@ export function HomeScreen() {
     });
     return list;
   }, [datingProfiles, rishtaProfiles, user?.gender, blockedProfileIds, rishtaProfileIds]);
-
-  // The browse bar's filters are applied on top of the deck.
-  // Deck profiles for the end of the story strip, after the member's own
-  // connections, so a member with few matches still sees a full strip. Anyone
-  // already in the strip, or already matched, is left out.
-  const storySuggestions = useMemo<StorySuggestion[]>(() => {
-    const inStrip = new Set<string>([
-      ...storyGroups.map((g) => g.userId),
-      ...matches.map((m) => m.sourceProfileId).filter((id): id is string => Boolean(id)),
-    ]);
-    return deck
-      .filter((p) => !inStrip.has(p.id) && p.photos[0])
-      .slice(0, STORY_SUGGESTION_COUNT)
-      .map((p) => ({ id: p.id, name: p.name, photo: p.photos[0], kind: p.intent === 'casual' ? 'dating' : 'rishta' }));
-  }, [deck, storyGroups, matches]);
 
   // A non-default sort reorders only the cards still ahead: the ones already
   // swiped keep their places, so a page arriving mid-deck (loadMore below) can
@@ -466,12 +451,12 @@ export function HomeScreen() {
         posting={postingStory}
         onPressMine={() => router.push({ pathname: '/story/[userId]', params: { userId: user.id } })}
         onAddStory={addStory}
-        groups={storyGroups}
+        groups={matchedStoryGroups}
         onPressGroup={(id) => router.push({ pathname: '/story/[userId]', params: { userId: id } })}
-        connections={storyConnections}
-        onPressConnection={(matchId) => router.push(`/chat/${matchId}`)}
-        suggestions={storySuggestions}
-        onPressSuggestion={(p) => router.push({ pathname: '/profile-detail', params: { kind: p.kind, id: p.id } })}
+        connections={[]}
+        onPressConnection={() => {}}
+        suggestions={[]}
+        onPressSuggestion={() => {}}
       />
 
       {currentProfile ? (
@@ -518,7 +503,6 @@ export function HomeScreen() {
               <EducationCareerSection profile={currentProfile} />
               <LanguagesBackgroundSection profile={currentProfile} />
               <BioSection profile={currentProfile} />
-              <VerificationSection profile={currentProfile} />
 
               <ProfileActionsFooter name={currentProfile.name} onSendCompliment={onSendCompliment} />
 

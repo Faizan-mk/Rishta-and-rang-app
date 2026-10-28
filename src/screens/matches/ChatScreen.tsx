@@ -197,8 +197,12 @@ export function ChatScreen() {
     const subscription = AppState.addEventListener('change', (state) => {
       if (state === 'active') void refresh();
     });
+    // A per-mount topic: supabase-js hands back the existing channel for a
+    // topic already in use, and adding a listener to one that's subscribed
+    // throws. Two chat screens for the same person can be on the stack at
+    // once (chat → their profile → "Message"), so the name can't be shared.
     const channel = supabase
-      .channel(`profile_presence_${counterpartId}`)
+      .channel(`profile_presence_${counterpartId}_${Math.random().toString(36).slice(2, 10)}`)
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${counterpartId}` },
@@ -270,6 +274,13 @@ export function ChatScreen() {
 
   // The thread's own world colours the header and the outgoing bubbles' company.
   const accent = modeAccent(colors, match.movedToRishta ? 'rishta' : match.mode);
+  const openProfile = () => {
+    if (!match.sourceProfileId) return;
+    router.push({
+      pathname: '/profile-detail',
+      params: { kind: match.movedToRishta ? 'rishta' : match.mode, id: match.sourceProfileId },
+    });
+  };
   // Same rule as the deck's pill, so "online" means one thing across the app —
   // and a member who has hidden their online status has no timestamp at all,
   // which lands here as simply not online.
@@ -476,15 +487,18 @@ export function ChatScreen() {
         <Pressable onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name={rtl ? 'chevron-forward' : 'chevron-back'} size={22} color={colors.textPrimary} />
         </Pressable>
-        <LinearGradient
-          colors={accent.ramp}
-          start={GRADIENT_START}
-          end={GRADIENT_END}
-          style={styles.headerAvatarRing}
-        >
-          <Image source={{ uri: match.photo }} style={styles.headerAvatar} />
-        </LinearGradient>
-        <View style={styles.headerTextWrap}>
+        {/* Photo and name open the person's profile, as in WhatsApp. */}
+        <Pressable onPress={openProfile} hitSlop={4}>
+          <LinearGradient
+            colors={accent.ramp}
+            start={GRADIENT_START}
+            end={GRADIENT_END}
+            style={styles.headerAvatarRing}
+          >
+            <Image source={{ uri: match.photo }} style={styles.headerAvatar} />
+          </LinearGradient>
+        </Pressable>
+        <Pressable onPress={openProfile} style={styles.headerTextWrap}>
           <Text style={styles.headerName} numberOfLines={1}>
             {match.name}
           </Text>
@@ -502,7 +516,7 @@ export function ChatScreen() {
                 avatar and four icons. Same short label the Matches list uses. */}
             {match.movedToRishta && <Badge label={t('matches.rishtaBadge')} tone="rishta" />}
           </View>
-        </View>
+        </Pressable>
         <Pressable
           onPress={openMenu}
           style={styles.headerIconButton}

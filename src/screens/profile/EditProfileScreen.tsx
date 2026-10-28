@@ -342,24 +342,12 @@ export function EditProfileScreen() {
   return (
     // The stack already draws an "Edit Profile" header above this screen
     // (app/_layout.tsx), so the container must not claim the top inset again —
-    // that double padding is what pushed the hero box most of the way down the
-    // phone, away from the header it belongs under. Only the bottom edge is
-    // ours. Same fix as Notifications, Settings and Favorites.
+    // that double padding pushed the form most of the way down the phone, away
+    // from the header it belongs under. Only the bottom edge is ours. Same fix
+    // as Notifications, Settings and Favorites.
     <ScreenContainer style={styles.screenContent} edges={['bottom']}>
       <FadeIn>
-        <LinearGradient
-          colors={accent.ramp}
-          start={GRADIENT_START}
-          end={GRADIENT_END}
-          style={[styles.hero, glow(accent.primary, 0.45, 20, 9)]}
-        >
-          <View style={styles.heroGlow} pointerEvents="none" />
-          <View style={styles.heroIcon}>
-            <Ionicons name="create" size={20} color="#FFFFFF" />
-          </View>
-          <Text style={[styles.heroTitle, rtl && styles.rtlText]}>{t('editProfile.title')}</Text>
-        </LinearGradient>
-
+        {/* No hero banner: the stack header already says "Edit Profile". */}
         <View style={styles.card}>
         <AccentHeading title={t('photos.title')} gradient={accent.duo} style={styles.heading} />
         {prefs.blurPhotos && (
@@ -695,39 +683,8 @@ const makeStyles = (colors: Palette) =>
   StyleSheet.create({
     // Separate the form from the native navigation header on compact phones.
     // A gap under the native header, not a second one on top of a safe-area
-    // inset the header already accounts for. `xl` here is what held the hero
-    // box so far down the screen.
+    // inset the header already accounts for.
     screenContent: { paddingTop: spacing.md },
-    hero: {
-      borderRadius: radius.lg,
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.md,
-      gap: spacing.sm,
-      marginBottom: spacing.md,
-      overflow: 'hidden',
-      borderWidth: 1,
-      borderColor: withAlpha(colors.gold, 0.5),
-    },
-    // A blown-out highlight inside the hero, so the ramp reads as lit rather
-    // than as a flat two-colour sweep.
-    heroGlow: {
-      position: 'absolute',
-      top: -60,
-      right: -30,
-      width: 170,
-      height: 170,
-      borderRadius: 85,
-      backgroundColor: 'rgba(255,255,255,0.14)',
-    },
-    heroIcon: {
-      width: 38,
-      height: 38,
-      borderRadius: 19,
-      backgroundColor: 'rgba(255,255,255,0.22)',
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    heroTitle: { ...typography.h1, color: '#FFFFFF' },
     // Every group of fields sits on its own biodata card.
     card: { ...cardSurface(colors), marginTop: spacing.md, paddingBottom: spacing.md },
     heading: { marginBottom: spacing.md },

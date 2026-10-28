@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextStyle, ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { PRESS_IN, PRESS_OUT } from '../theme/motion';
 import { radius, spacing, typography } from '../theme';
 import type { Gradient } from '../theme/glow';
 import { scaleSpace } from '../theme/responsive';
@@ -25,6 +26,10 @@ interface ButtonProps {
   // For buttons that sit on a photo or a dark sheet, where the variant's own
   // label colour would disappear.
   labelStyle?: TextStyle;
+  // Keeps the label on one line, shrinking it to fit, for buttons that share
+  // a row: a wrapped label pushes its icon off-centre and makes the button
+  // taller than its neighbour.
+  singleLine?: boolean;
 }
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -32,7 +37,7 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const GRADIENT_START = { x: 0, y: 0 } as const;
 const GRADIENT_END = { x: 1, y: 1 } as const;
 
-export function Button({ label, onPress, variant = 'primary', disabled, loading, style, icon, gradient, labelStyle }: ButtonProps) {
+export function Button({ label, onPress, variant = 'primary', disabled, loading, style, icon, gradient, labelStyle, singleLine }: ButtonProps) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const isDisabled = disabled || loading;
@@ -45,10 +50,10 @@ export function Button({ label, onPress, variant = 'primary', disabled, loading,
       onPress={onPress}
       disabled={isDisabled}
       onPressIn={() => {
-        scale.value = withSpring(0.96, { damping: 14, stiffness: 220 });
+        scale.value = withTiming(0.96, PRESS_IN);
       }}
       onPressOut={() => {
-        scale.value = withSpring(1, { damping: 12, stiffness: 200 });
+        scale.value = withTiming(1, PRESS_OUT);
       }}
       style={[
         styles.base,
@@ -77,6 +82,9 @@ export function Button({ label, onPress, variant = 'primary', disabled, loading,
         <>
           {icon}
           <Text
+            numberOfLines={singleLine ? 1 : undefined}
+            adjustsFontSizeToFit={singleLine}
+            minimumFontScale={0.8}
             style={[
               styles.label,
               variant === 'primary' && styles.labelPrimary,
@@ -85,6 +93,7 @@ export function Button({ label, onPress, variant = 'primary', disabled, loading,
               variant === 'danger' && styles.labelDanger,
               gradient && styles.labelOnGradient,
               icon ? { marginLeft: spacing.xs } : null,
+              singleLine ? { flexShrink: 1 } : null,
               labelStyle,
             ]}
           >

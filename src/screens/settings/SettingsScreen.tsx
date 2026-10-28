@@ -72,12 +72,10 @@ export function SettingsScreen() {
     // pushed the page's own heading down the phone, away from the header it is
     // meant to sit under. Only the bottom edge is ours.
     <ScreenContainer edges={['bottom']}>
+      {/* The stack header already says "Settings"; the first section heading
+          leads the page instead of a second copy of the title. */}
       <FadeIn>
-        <AccentHeading size="screen" title={t('settings.title')} gradient={accent.ramp} style={styles.heading} />
-      </FadeIn>
-
-      <FadeIn delay={40}>
-        <AccentHeading title={t('settings.appearance')} gradient={accent.duo} style={styles.sectionHeading} />
+        <AccentHeading title={t('settings.appearance')} gradient={accent.duo} style={styles.firstSectionHeading} />
         <View style={styles.themeRow}>
           {THEME_OPTIONS.map((option) => {
             const selected = mode === option.key;
@@ -181,8 +179,8 @@ export function SettingsScreen() {
 
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
-    heading: { marginBottom: spacing.lg },
     sectionHeading: { marginBottom: spacing.md, marginTop: spacing.lg },
+    firstSectionHeading: { marginBottom: spacing.md },
     themeRow: { flexDirection: 'row', gap: spacing.sm },
     themeSlot: { flex: 1 },
     themeOption: {

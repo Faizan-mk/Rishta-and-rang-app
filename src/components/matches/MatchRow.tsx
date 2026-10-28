@@ -32,9 +32,13 @@ export const MatchRow = React.memo(function MatchRow({
   onPress,
   story,
   onPressStory,
+  onPressAvatar,
 }: {
   match: Match;
   onPress: () => void;
+  // WhatsApp-style: the photo opens the person's profile, the rest of the row
+  // opens the chat. With a story up, the photo opens the story instead.
+  onPressAvatar?: () => void;
   // Set when this person has a story up, WhatsApp-style: the avatar gets a
   // story ring and tapping it opens the story instead of the chat.
   story?: 'unseen' | 'seen';
@@ -72,9 +76,11 @@ export const MatchRow = React.memo(function MatchRow({
           <Image source={{ uri: match.photo }} style={styles.storyAvatar} />
         </Pressable>
       ) : (
-        <LinearGradient colors={accent.ramp} start={GRADIENT_START} end={GRADIENT_END} style={styles.avatarRing}>
-          <Image source={{ uri: match.photo }} style={styles.avatar} />
-        </LinearGradient>
+        <Pressable onPress={onPressAvatar ?? onPress} hitSlop={4}>
+          <LinearGradient colors={accent.ramp} start={GRADIENT_START} end={GRADIENT_END} style={styles.avatarRing}>
+            <Image source={{ uri: match.photo }} style={styles.avatar} />
+          </LinearGradient>
+        </Pressable>
       )}
 
       <View style={styles.textWrap}>

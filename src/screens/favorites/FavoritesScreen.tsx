@@ -3,7 +3,6 @@ import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInUp } from 'react-native-reanimated';
-import { AccentHeading } from '../../components/common/AccentHeading';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { EmptyOrb } from '../../components/common/EmptyOrb';
 import { ProfileCard } from '../../components/ProfileCard';
@@ -47,13 +46,7 @@ export function FavoritesScreen() {
     // down the phone, away from the header it sits under. Only the bottom edge
     // is ours. Same fix as Notifications and Settings.
     <ScreenContainer scroll={false} edges={['bottom']}>
-      <AccentHeading
-        size="screen"
-        title={t('profile.favorites')}
-        gradient={accent.ramp}
-        style={styles.heading}
-      />
-
+      {/* The stack header already says "Favorites"; no second title here. */}
       <FlatList
         data={favorites}
         keyExtractor={(item) => item.id}
@@ -73,7 +66,6 @@ export function FavoritesScreen() {
 
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
-    heading: { marginBottom: spacing.md },
     removeButton: {
       width: 42,
       height: 42,

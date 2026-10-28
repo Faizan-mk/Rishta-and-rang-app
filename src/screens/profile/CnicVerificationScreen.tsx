@@ -1,22 +1,31 @@
 import React, { useMemo, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
-import { ArchBadge } from '../../components/common/ArchBadge';
 import { FadeIn } from '../../components/common/FadeInUp';
 import { useLanguage } from '../../store/LanguageContext';
 import { useAuth } from '../../store/AuthContext';
 import { useTheme } from '../../store/ThemeContext';
 import { maskCnic } from '../../utils/cnic';
+import { isoToDisplay } from '../../utils/date';
 import { fonts, radius, spacing, typography } from '../../theme';
 import { cardSurface } from '../../theme/surfaces';
 import { withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 
 // Read-only. The CNIC number and card photo are fixed once signup has written
-// them (supabase/57_cnic_photo_lock.sql); a change goes through the team.
+// them (supabase/57_cnic_photo_lock.sql); a change goes through the team, which
+// is what the support link at the bottom is for.
+//
+// The stack header already carries the title, so the page opens on the status
+// instead of repeating it. The card photo and number start hidden — this is
+// the most sensitive thing in the app, and it's often opened with someone
+// nearby — and one eye button reveals both.
 export function CnicVerificationScreen() {
-  const { colors } = useTheme();
+  const router = useRouter();
+  const { colors, isDark } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
   const { user } = useAuth();
@@ -24,41 +33,98 @@ export function CnicVerificationScreen() {
 
   if (!user) return null;
 
+  const verified = Boolean(user.cnicVerified);
+  const genderLabel =
+    user.gender === 'male'
+      ? t('personalDetails.male')
+      : user.gender === 'female'
+        ? t('personalDetails.female')
+        : t('personalDetails.other');
+  const rows: { label: string; value: string; secret?: boolean }[] = [
+    { label: t('personalDetails.fullName'), value: user.fullName },
+    {
+      label: t('cnic.number'),
+      value: user.cnicNumber ? (revealed ? user.cnicNumber : maskCnic(user.cnicNumber)) : '—',
+      secret: Boolean(user.cnicNumber),
+    },
+    { label: t('personalDetails.dob'), value: isoToDisplay(user.dob) || '—' },
+    { label: t('personalDetails.gender'), value: genderLabel },
+  ];
+
   return (
-    <ScreenContainer>
+    <ScreenContainer edges={['bottom']}>
       <FadeIn>
-        <ArchBadge icon="card-outline" style={styles.badge} />
-        <Text style={[styles.title, rtl && styles.rtlText]}>{t('cnic.title')}</Text>
-
-        {user.cnicVerified && (
-          <>
-            <Text style={[styles.subtitle, rtl && styles.rtlText]}>{t('cnic.detailSubtitle')}</Text>
-
-            {user.cnicPhotoUri && <Image source={{ uri: user.cnicPhotoUri }} style={styles.preview} />}
-
-            <View style={styles.card}>
-              <View style={styles.cardHeaderRow}>
-                <Text style={[styles.label, rtl && styles.rtlText]}>{t('cnic.number')}</Text>
-                <Pressable onPress={() => setRevealed((r) => !r)} hitSlop={8}>
-                  <Ionicons name={revealed ? 'eye-off-outline' : 'eye-outline'} size={18} color={colors.textSecondary} />
-                </Pressable>
-              </View>
-              <Text style={styles.value}>{user.cnicNumber ? (revealed ? user.cnicNumber : maskCnic(user.cnicNumber)) : '—'}</Text>
-            </View>
-
-            <View style={[styles.verifiedRow, rtl && styles.rowRtl]}>
-              <Ionicons name="checkmark-circle" size={20} color={colors.success} />
-              <Text style={styles.verifiedText}>{t('cnic.verified')}</Text>
-            </View>
-          </>
-        )}
-
-        {!user.cnicVerified && (
-          <View style={styles.notVerifiedCard}>
-            <Ionicons name="information-circle-outline" size={22} color={colors.textSecondary} />
-            <Text style={[styles.notVerifiedText, rtl && styles.rtlText]}>{t('cnic.notVerifiedInfo')}</Text>
+        <View style={[styles.status, verified ? styles.statusVerified : styles.statusPending, rtl && styles.rowRtl]}>
+          <Ionicons
+            name={verified ? 'shield-checkmark' : 'information-circle'}
+            size={24}
+            color={verified ? colors.success : colors.gold}
+          />
+          <View style={styles.statusText}>
+            <Text style={[styles.statusTitle, { color: verified ? colors.success : colors.textPrimary }, rtl && styles.rtlText]}>
+              {verified ? t('cnic.statusVerified') : t('cnic.statusMissing')}
+            </Text>
+            <Text style={[styles.statusBody, rtl && styles.rtlText]}>
+              {verified ? t('cnic.lockedNote') : t('cnic.notVerifiedInfo')}
+            </Text>
           </View>
-        )}
+        </View>
+
+        <View style={styles.card}>
+          {user.cnicPhotoUri && (
+            <Pressable onPress={() => setRevealed((r) => !r)} style={styles.photoWrap}>
+              <Image source={{ uri: user.cnicPhotoUri }} style={styles.photo} blurRadius={revealed ? 0 : 18} />
+              {!revealed && (
+                <BlurView
+                  intensity={30}
+                  tint={isDark ? 'dark' : 'light'}
+                  experimentalBlurMethod="dimezisBlurView"
+                  style={[StyleSheet.absoluteFill, styles.photoCover]}
+                >
+                  <Ionicons name="eye-outline" size={22} color={colors.textPrimary} />
+                  <Text style={styles.photoHint}>{t('cnic.tapToShow')}</Text>
+                </BlurView>
+              )}
+            </Pressable>
+          )}
+
+          {rows.map((row, index) => (
+            <View
+              key={row.label}
+              style={[styles.row, rtl && styles.rowRtl, index === rows.length - 1 && styles.rowLast]}
+            >
+              <Text style={[styles.rowLabel, rtl && styles.rtlText]}>{row.label}</Text>
+              <View style={[styles.rowValueWrap, rtl && styles.rowRtl]}>
+                <Text style={[styles.rowValue, row.secret && styles.mono]} numberOfLines={1}>
+                  {row.value}
+                </Text>
+                {row.secret && (
+                  <Pressable
+                    onPress={() => setRevealed((r) => !r)}
+                    hitSlop={10}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('cnic.tapToShow')}
+                  >
+                    <Ionicons name={revealed ? 'eye-off-outline' : 'eye-outline'} size={18} color={colors.textSecondary} />
+                  </Pressable>
+                )}
+              </View>
+            </View>
+          ))}
+        </View>
+
+        <View style={[styles.privateRow, rtl && styles.rowRtl]}>
+          <Ionicons name="lock-closed-outline" size={14} color={colors.textTertiary} />
+          <Text style={[styles.privateText, rtl && styles.rtlText]}>{t('cnic.privateNote')}</Text>
+        </View>
+
+        <Pressable onPress={() => router.push('/help-support')} style={[styles.help, rtl && styles.rowRtl]}>
+          <View style={styles.helpText}>
+            <Text style={[styles.helpTitle, rtl && styles.rtlText]}>{t('cnic.wrongDetails')}</Text>
+            <Text style={[styles.helpBody, rtl && styles.rtlText]}>{t('cnic.contactSupport')}</Text>
+          </View>
+          <Ionicons name={rtl ? 'chevron-back' : 'chevron-forward'} size={18} color={colors.textTertiary} />
+        </Pressable>
       </FadeIn>
     </ScreenContainer>
   );
@@ -66,45 +132,61 @@ export function CnicVerificationScreen() {
 
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
-    badge: { marginBottom: spacing.md },
-    title: { ...typography.h1, color: colors.textPrimary, marginBottom: spacing.xs, textAlign: 'center' },
-    subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg, textAlign: 'center' },
-    preview: {
-      width: '100%',
-      aspectRatio: 16 / 10,
-      borderRadius: radius.md,
-      backgroundColor: colors.skeleton,
-      marginBottom: spacing.md,
-      borderWidth: 1.5,
-      borderColor: withAlpha(colors.gold, 0.7),
-    },
-    card: { ...cardSurface(colors), paddingBottom: spacing.lg, marginBottom: spacing.md },
-    cardHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
-    label: { ...typography.label, color: colors.textSecondary, marginBottom: 0 },
-    value: { ...typography.h3, color: colors.textPrimary },
-    // Pale-emerald seal pill, the design system's "verified" tone.
-    verifiedRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      alignSelf: 'center',
-      gap: spacing.xs,
-      backgroundColor: colors.successSoft,
-      borderRadius: radius.pill,
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.sm,
-    },
-    rowRtl: { flexDirection: 'row-reverse' },
-    verifiedText: { ...typography.label, color: colors.success, fontFamily: fonts.bodyBold },
-    notVerifiedCard: {
+    status: {
       flexDirection: 'row',
       alignItems: 'flex-start',
       gap: spacing.sm,
-      backgroundColor: colors.goldSoft,
       borderRadius: radius.lg,
       borderWidth: 1,
-      borderColor: withAlpha(colors.gold, 0.5),
       padding: spacing.md,
+      marginBottom: spacing.md,
     },
-    notVerifiedText: { ...typography.body, color: colors.textSecondary, flex: 1 },
+    statusVerified: { backgroundColor: colors.successSoft, borderColor: withAlpha(colors.success, 0.35) },
+    statusPending: { backgroundColor: colors.goldSoft, borderColor: withAlpha(colors.gold, 0.5) },
+    statusText: { flex: 1, gap: 2 },
+    statusTitle: { ...typography.bodyBold },
+    statusBody: { ...typography.caption, color: colors.textSecondary },
+    card: { ...cardSurface(colors), paddingTop: spacing.md, paddingBottom: spacing.xs },
+    photoWrap: {
+      width: '100%',
+      aspectRatio: 16 / 10,
+      borderRadius: radius.md,
+      overflow: 'hidden',
+      backgroundColor: colors.skeleton,
+      marginBottom: spacing.sm,
+      borderWidth: 1,
+      borderColor: withAlpha(colors.gold, 0.6),
+    },
+    photo: { width: '100%', height: '100%' },
+    photoCover: { alignItems: 'center', justifyContent: 'center', gap: spacing.xs },
+    photoHint: { ...typography.label, color: colors.textPrimary, fontFamily: fonts.bodyBold },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: spacing.md,
+      paddingVertical: spacing.sm + 4,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.border,
+    },
+    rowLast: { borderBottomWidth: 0 },
+    rowRtl: { flexDirection: 'row-reverse' },
+    rowLabel: { ...typography.caption, color: colors.textSecondary },
+    rowValueWrap: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexShrink: 1 },
+    rowValue: { ...typography.bodyBold, color: colors.textPrimary, flexShrink: 1, textAlign: 'right' },
+    mono: { letterSpacing: 1 },
+    privateRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: spacing.sm, paddingHorizontal: spacing.xs },
+    privateText: { ...typography.caption, color: colors.textTertiary, flex: 1 },
+    help: {
+      ...cardSurface(colors),
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      marginTop: spacing.lg,
+      paddingVertical: spacing.md,
+    },
+    helpText: { flex: 1, gap: 2 },
+    helpTitle: { ...typography.bodyBold, color: colors.textPrimary },
+    helpBody: { ...typography.caption, color: colors.textSecondary },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   });

@@ -1,41 +1,37 @@
 import React, { useMemo, useState } from 'react';
-import { FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { TAB_BAR_BASE_HEIGHT } from '../../store/TabBarVisibilityContext';
 import { MatchRow } from '../../components/matches/MatchRow';
-import { HomeStoriesRow, type StoryConnection } from '../../components/discover/HomeStoriesRow';
-import { AccentHeading } from '../../components/common/AccentHeading';
 import { AuroraBackground } from '../../components/common/AuroraBackground';
 import { EmptyOrb } from '../../components/common/EmptyOrb';
-import { FadeIn } from '../../components/common/FadeInUp';
 import { useLanguage } from '../../store/LanguageContext';
 import { useTheme } from '../../store/ThemeContext';
 import { useMatches } from '../../store/MatchesContext';
 import { useStories } from '../../store/StoriesContext';
-import { useAuth } from '../../store/AuthContext';
-import { useAddStory } from '../../hooks/useAddStory';
 import { fonts, radius, spacing, typography } from '../../theme';
 import { scaleSpace } from '../../theme/responsive';
-import { APP_MODE, glow, modeAccent } from '../../theme/glow';
+import { APP_MODE, modeAccent } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
-
-const GRADIENT_START = { x: 0, y: 0 } as const;
-const GRADIENT_END = { x: 1, y: 1 } as const;
 
 export function MatchesScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
-  const { user } = useAuth();
-  const { matches, blockedProfiles } = useMatches();
-  const { mine: myStories, others: storyGroups } = useStories();
-  const { addStory, posting: postingStory } = useAddStory();
+  const { matches } = useMatches();
+  const { others: storyGroups } = useStories();
   const [filter, setFilter] = useState<'all' | 'unread' | 'friends' | 'rishta'>('all');
+  const [query, setQuery] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const closeSearch = () => {
+    setQuery('');
+    setSearchOpen(false);
+  };
   const insets = useSafeAreaInsets();
 
   const accent = modeAccent(colors, APP_MODE);
@@ -48,7 +44,10 @@ export function MatchesScreen() {
   // flag is checked as well as `mode` so threads moved before the mode started
   // being flipped still count.
   const isRishta = (m: (typeof matches)[number]) => m.movedToRishta || m.mode === 'rishta';
+  // The search bar narrows by name on top of whichever filter chip is lit.
+  const needle = query.trim().toLowerCase();
   const visibleMatches = matches.filter((m) => {
+    if (needle && !m.name.toLowerCase().includes(needle)) return false;
     if (filter === 'unread') return m.unread;
     if (filter === 'friends') return !isRishta(m);
     if (filter === 'rishta') return isRishta(m);
@@ -61,16 +60,6 @@ export function MatchesScreen() {
   );
   const unreadCount = matches.filter((m) => m.unread).length;
 
-  // The status strip across the top, WhatsApp-style: the member's own story,
-  // then connections with a story up, then the rest of their connections.
-  const storyConnections = useMemo<StoryConnection[]>(() => {
-    const blocked = new Set(blockedProfiles.map((b) => b.id));
-    const withStory = new Set(storyGroups.map((g) => g.userId));
-    return matches
-      .filter((m) => !m.sourceProfileId || (!blocked.has(m.sourceProfileId) && !withStory.has(m.sourceProfileId)))
-      .map((m) => ({ matchId: m.id, name: m.name, photo: m.photo }));
-  }, [matches, storyGroups, blockedProfiles]);
-
   const filters: { key: typeof filter; label: string }[] = [
     { key: 'all', label: t('matches.filterAll') },
     { key: 'unread', label: unreadCount > 0 ? `${t('matches.filterUnread')} ${unreadCount}` : t('matches.filterUnread') },
@@ -80,24 +69,6 @@ export function MatchesScreen() {
 
   const listHeader = (
     <View>
-      {/* Full-bleed, past the screen's side padding, so the strip scrolls edge
-          to edge. */}
-      <View style={styles.storiesBleed}>
-        <HomeStoriesRow
-          myPhoto={user?.photos[0]}
-          hasMyStory={Boolean(myStories)}
-          posting={postingStory}
-          onPressMine={() => user && router.push({ pathname: '/story/[userId]', params: { userId: user.id } })}
-          onAddStory={addStory}
-          groups={storyGroups}
-          onPressGroup={(id) => router.push({ pathname: '/story/[userId]', params: { userId: id } })}
-          connections={storyConnections}
-          onPressConnection={(matchId) => router.push(`/chat/${matchId}`)}
-          suggestions={[]}
-          onPressSuggestion={() => undefined}
-        />
-      </View>
-
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -126,27 +97,44 @@ export function MatchesScreen() {
     <ScreenContainer scroll={false} edges={['top']}>
       <AuroraBackground colors={colors} mode={APP_MODE} bleed={spacing.lg} />
 
-      <FadeIn>
-        <AccentHeading
-          size="screen"
-          title={t('matches.title')}
-          gradient={accent.ramp}
-          style={styles.heading}
-          right={
-            unreadCount > 0 ? (
-              <LinearGradient
-                colors={accent.duo}
-                start={GRADIENT_START}
-                end={GRADIENT_END}
-                style={[styles.unreadPill, glow(accent.primary, 0.55, 12, 5)]}
-              >
-                <View style={styles.unreadDot} />
-                <Text style={styles.unreadPillText}>{unreadCount}</Text>
-              </LinearGradient>
-            ) : undefined
-          }
-        />
-      </FadeIn>
+      {/* A slim title with a search icon, WhatsApp-style; the icon swaps the
+          row for the search field. Both are the same height, so opening search
+          doesn't shift the list. Outside the list, so it stays put while the
+          chats scroll under it. */}
+      {searchOpen ? (
+        <View style={[styles.topRow, styles.searchBar, rtl && styles.rowRtl]}>
+          <Ionicons name="search" size={18} color={colors.textTertiary} />
+          <TextInput
+            value={query}
+            onChangeText={setQuery}
+            placeholder={t('matches.searchPlaceholder')}
+            placeholderTextColor={colors.textTertiary}
+            style={[styles.searchInput, rtl && styles.rtlText]}
+            returnKeyType="search"
+            autoCorrect={false}
+            autoFocus
+            maxLength={60}
+          />
+          <Pressable onPress={closeSearch} hitSlop={8} accessibilityLabel={t('matches.searchClear')}>
+            <Ionicons name="close" size={20} color={colors.textSecondary} />
+          </Pressable>
+        </View>
+      ) : (
+        <View style={[styles.topRow, rtl && styles.rowRtl]}>
+          <Text style={[styles.topTitle, rtl && styles.rtlText]} numberOfLines={1}>
+            {t('matches.title')}
+          </Text>
+          <Pressable
+            onPress={() => setSearchOpen(true)}
+            hitSlop={6}
+            accessibilityRole="button"
+            accessibilityLabel={t('matches.searchPlaceholder')}
+            style={styles.searchButton}
+          >
+            <Ionicons name="search" size={20} color={colors.textPrimary} />
+          </Pressable>
+        </View>
+      )}
 
       <FlatList
         style={styles.list}
@@ -157,6 +145,14 @@ export function MatchesScreen() {
             <MatchRow
               match={item}
               onPress={() => router.push(`/chat/${item.id}`)}
+              onPressAvatar={() =>
+                item.sourceProfileId
+                  ? router.push({
+                      pathname: '/profile-detail',
+                      params: { kind: item.movedToRishta ? 'rishta' : item.mode, id: item.sourceProfileId },
+                    })
+                  : router.push(`/chat/${item.id}`)
+              }
               story={item.sourceProfileId ? storyByUser.get(item.sourceProfileId) : undefined}
               onPressStory={() =>
                 item.sourceProfileId &&
@@ -173,7 +169,9 @@ export function MatchesScreen() {
           <View style={styles.emptyState}>
               <EmptyOrb ramp={accent.ramp} icon="chatbubble-ellipses-outline" />
             <Text style={[styles.emptyText, rtl && styles.rtlText]}>
-              {filter === 'unread'
+              {needle
+                ? t('matches.searchEmpty', { query: query.trim() })
+                : filter === 'unread'
                 ? t('matches.noUnread')
                 : filter === 'friends'
                   ? t('matches.noFriends')
@@ -190,18 +188,36 @@ export function MatchesScreen() {
 
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
-    heading: { marginBottom: spacing.md },
-    unreadPill: {
+    // Pulled up into the container's top padding so the title sits where Home's
+    // top bar puts its own, not a row lower than every other tab.
+    topRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 5,
-      borderRadius: radius.pill,
-      paddingHorizontal: spacing.sm + 2,
-      paddingVertical: 5,
+      gap: spacing.sm,
+      height: 44,
+      marginTop: -spacing.md,
+      marginBottom: spacing.sm,
     },
-    unreadDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#FFFFFF' },
-    unreadPillText: { ...typography.caption, color: '#FFFFFF', fontFamily: fonts.bodyBold },
-    storiesBleed: { marginHorizontal: -spacing.lg },
+    rowRtl: { flexDirection: 'row-reverse' },
+    topTitle: { ...typography.h2, color: colors.textPrimary, flex: 1 },
+    searchButton: {
+      width: 40,
+      height: 40,
+      borderRadius: radius.pill,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+    },
+    searchBar: {
+      paddingHorizontal: spacing.md,
+      borderRadius: radius.pill,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+    },
+    searchInput: { flex: 1, ...typography.body, color: colors.textPrimary, paddingVertical: spacing.sm },
     // Bleeds to the screen edges like the story strip, so a fifth chip on a
     // narrow phone scrolls instead of wrapping.
     chipsScroll: { flexGrow: 0, marginHorizontal: -spacing.lg, marginBottom: spacing.sm },

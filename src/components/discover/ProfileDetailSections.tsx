@@ -12,7 +12,6 @@ import { flat, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
-import { FEATURE_BUREAU } from '../../config/features';
 import { vocabularyLabel } from '../../i18n/vocabulary';
 import { SmartImage } from '../common/SmartImage';
 import { AccentHeading } from '../common/AccentHeading';
@@ -404,52 +403,6 @@ export function BioSection({ profile }: { profile: BrowseProfile }) {
   );
 }
 
-export function VerificationSection({ profile }: { profile: BrowseProfile }) {
-  const { t, rtl } = useLanguage();
-  const { colors } = useTheme();
-  const styles = useMemo(() => makeSectionStyles(colors), [colors]);
-
-  const items = [
-    {
-      verified: Boolean(profile.selfieVerified),
-      text: profile.selfieVerified
-        ? t('discover.verifiedPhotoDone', { name: profile.name })
-        : t('discover.verifiedPhotoPending', { name: profile.name }),
-    },
-    // The bureau line is listed only while the badge means something — see
-    // FEATURE_BUREAU. Nothing behind it runs a check yet.
-    ...(FEATURE_BUREAU
-      ? [
-          {
-            verified: Boolean(profile.bureauVerified),
-            text: profile.bureauVerified
-              ? t('discover.bureauDone', { name: profile.name })
-              : t('discover.bureauPending', { name: profile.name }),
-          },
-        ]
-      : []),
-  ];
-
-  return (
-    <View style={styles.verificationCard}>
-      <View style={styles.verificationHeader}>
-        <Text style={[styles.verificationTitle, rtl && styles.rtlText]}>{t('discover.verifiedProfileTitle')}</Text>
-        <Ionicons name="information-circle-outline" size={16} color={colors.textTertiary} />
-      </View>
-      {items.map((item) => (
-        <View key={item.text} style={styles.verificationRow}>
-          <Ionicons
-            name={item.verified ? 'checkmark-circle' : 'ellipse-outline'}
-            size={18}
-            color={item.verified ? colors.success : colors.textTertiary}
-          />
-          <Text style={[styles.verificationLabel, rtl && styles.rtlText]}>{item.text}</Text>
-        </View>
-      ))}
-    </View>
-  );
-}
-
 function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
@@ -568,15 +521,5 @@ const makeSectionStyles = (colors: Palette) =>
     chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
     bodyText: { ...typography.body, color: colors.textPrimary },
     quoteMark: { fontFamily: fonts.display, fontSize: 44, lineHeight: 40, color: colors.gold, marginBottom: -spacing.sm },
-    verificationCard: {
-      ...cardSurface(colors),
-      marginTop: spacing.md,
-      paddingBottom: spacing.lg,
-      gap: spacing.sm,
-    },
-    verificationHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-    verificationTitle: { ...typography.h3, color: colors.textPrimary },
-    verificationRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-    verificationLabel: { ...typography.body, color: colors.textPrimary, flex: 1 },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   });

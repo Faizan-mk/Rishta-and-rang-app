@@ -2,7 +2,6 @@ import React, { useMemo, useState } from 'react';
 import { Pressable, SectionList, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { AccentHeading } from '../../components/common/AccentHeading';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { EmptyOrb } from '../../components/common/EmptyOrb';
 import { NotificationRow } from '../../components/dashboard/NotificationRow';
@@ -113,12 +112,6 @@ export function NotificationsScreen() {
     // the header it is meant to sit under. Only the bottom edge is ours.
     <ScreenContainer scroll={false} edges={['bottom']}>
       <FadeIn style={styles.header}>
-        <AccentHeading
-          size="screen"
-          title={t('notificationsScreen.title')}
-          gradient={accent.ramp}
-        />
-
         <View style={[styles.toolbar, rtl && styles.rowRtl]}>
           {(['all', 'unread'] as const).map((key) => {
             const selected = filter === key;
@@ -190,7 +183,9 @@ export function NotificationsScreen() {
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
     header: { marginBottom: spacing.sm },
-    toolbar: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.md },
+    // First thing under the stack's own "Notifications" header, which is the
+    // only title the screen needs.
+    toolbar: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
     rowRtl: { flexDirection: 'row-reverse' },
     spacer: { flex: 1 },
     chip: {
