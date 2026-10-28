@@ -158,7 +158,7 @@ export const MessageBubble = React.memo(function MessageBubble({
         .onEnd((e) => {
           const forward = e.translationX * swipeSign;
           if (forward > REPLY_SWIPE_THRESHOLD) runOnJS(triggerReply)();
-          dragX.value = withSpring(0, { damping: 20, stiffness: 260 });
+          dragX.value = withSpring(0, { damping: 30, stiffness: 260 });
         }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [swipeSign, onSwipeReply, message.id]

@@ -1,5 +1,5 @@
 import React from 'react';
-import Animated, { FadeInUp, FadeInDown } from 'react-native-reanimated';
+import Animated, { Easing, FadeInUp, FadeInDown } from 'react-native-reanimated';
 import type { LayoutChangeEvent, StyleProp, View, ViewStyle } from 'react-native';
 
 interface FadeInUpProps {
@@ -18,7 +18,9 @@ export const FadeIn = React.forwardRef<View, FadeInUpProps>(function FadeIn(
   { children, delay = 0, from = 'up', style, onLayout },
   ref
 ) {
-  const entering = (from === 'up' ? FadeInUp : FadeInDown).delay(delay).duration(420).springify().damping(16);
+  // Eased, not sprung: a spring here overshot its resting place and settled
+  // back, so every screen's content wobbled as it arrived.
+  const entering = (from === 'up' ? FadeInUp : FadeInDown).delay(delay).duration(320).easing(Easing.out(Easing.cubic));
   return (
     <Animated.View ref={ref as React.Ref<never>} entering={entering} style={style} onLayout={onLayout}>
       {children}

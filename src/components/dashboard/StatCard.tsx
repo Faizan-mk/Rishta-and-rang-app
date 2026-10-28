@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { PRESS_IN, PRESS_OUT } from '../../theme/motion';
 import { radius, spacing, typography } from '../../theme';
 import { glow, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
@@ -31,10 +32,10 @@ export function StatCard({ icon, value, label, tint, tintSoft, onPress }: StatCa
       onPress={onPress}
       disabled={!onPress}
       onPressIn={() => {
-        if (onPress) scale.value = withSpring(0.94, { damping: 14, stiffness: 260 });
+        if (onPress) scale.value = withTiming(0.94, PRESS_IN);
       }}
       onPressOut={() => {
-        if (onPress) scale.value = withSpring(1, { damping: 12, stiffness: 220 });
+        if (onPress) scale.value = withTiming(1, PRESS_OUT);
       }}
       style={[
         styles.card,

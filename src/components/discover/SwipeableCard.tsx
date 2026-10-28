@@ -64,7 +64,7 @@ export function SwipeableCard({ profileId, onSwipeRight, onSwipeLeft, children }
       if (settled.value) return;
       const decided = Math.abs(e.translationX) > threshold || Math.abs(e.velocityX) > FLICK_VELOCITY;
       if (!decided) {
-        x.value = withSpring(0, { damping: 18, stiffness: 220 });
+        x.value = withSpring(0, { damping: 28, stiffness: 220 });
         return;
       }
       const direction = e.translationX > 0 ? 'right' : 'left';

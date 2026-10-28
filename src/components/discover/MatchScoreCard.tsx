@@ -8,9 +8,9 @@ import Animated, {
   useSharedValue,
   withDelay,
   withRepeat,
-  withSpring,
   withTiming,
 } from 'react-native-reanimated';
+import { PRESS_IN, PRESS_OUT } from '../../theme/motion';
 import { Badge } from '../common/Badge';
 import { fonts, radius, spacing, typography } from '../../theme';
 import { scaleFont } from '../../theme/responsive';
@@ -66,10 +66,10 @@ export function MatchScoreCard({ name, score, bureauVerified, onPress }: MatchSc
     <AnimatedPressable
       onPress={onPress}
       onPressIn={() => {
-        scale.value = withSpring(0.98, { damping: 14, stiffness: 220 });
+        scale.value = withTiming(0.98, PRESS_IN);
       }}
       onPressOut={() => {
-        scale.value = withSpring(1, { damping: 12, stiffness: 200 });
+        scale.value = withTiming(1, PRESS_OUT);
       }}
       style={[styles.card, glow(accent.primary, 0.12, 24, 4), animatedStyle]}
     >

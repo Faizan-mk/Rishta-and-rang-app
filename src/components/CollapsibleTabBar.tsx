@@ -3,7 +3,8 @@ import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { SETTLE } from '../theme/motion';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useTheme } from '../store/ThemeContext';
 import { TAB_BAR_BASE_HEIGHT } from '../store/TabBarVisibilityContext';
@@ -94,7 +95,7 @@ function TabItem({
   const lift = useSharedValue(focused ? 1 : 0);
 
   useEffect(() => {
-    lift.value = withSpring(focused ? 1 : 0, { damping: 15, stiffness: 220 });
+    lift.value = withTiming(focused ? 1 : 0, SETTLE);
   }, [focused, lift]);
 
   const podStyle = useAnimatedStyle(() => ({

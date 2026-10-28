@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
+import { PRESS_IN, PRESS_OUT } from '../../theme/motion';
 import { radius, spacing, typography } from '../../theme';
 import { glow, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
@@ -81,10 +82,10 @@ function UtilityAction({
     <Pressable
       onPress={onPress}
       onPressIn={() => {
-        scale.value = withSpring(0.85, { damping: 14, stiffness: 260 });
+        scale.value = withTiming(0.85, PRESS_IN);
       }}
       onPressOut={() => {
-        scale.value = withSpring(1, { damping: 10, stiffness: 220 });
+        scale.value = withTiming(1, PRESS_OUT);
       }}
       style={styles.utilityButton}
     >

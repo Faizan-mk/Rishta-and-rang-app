@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { PRESS_IN, PRESS_OUT } from '../../theme/motion';
 import { radius, spacing, typography } from '../../theme';
 import type { Palette } from '../../theme/palettes';
 import { useTheme } from '../../store/ThemeContext';
@@ -54,10 +55,10 @@ export function SettingsRow({ icon, label, description, right, switchValue, onSw
       <AnimatedPressable
         onPress={onPress}
         onPressIn={() => {
-          scale.value = withSpring(0.98, { damping: 16, stiffness: 260 });
+          scale.value = withTiming(0.98, PRESS_IN);
         }}
         onPressOut={() => {
-          scale.value = withSpring(1, { damping: 14, stiffness: 220 });
+          scale.value = withTiming(1, PRESS_OUT);
         }}
         style={animatedStyle}
       >

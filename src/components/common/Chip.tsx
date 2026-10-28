@@ -2,7 +2,8 @@ import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { PRESS_IN, PRESS_OUT } from '../../theme/motion';
 import { radius, spacing, typography } from '../../theme';
 import { flat, glow, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
@@ -45,10 +46,10 @@ export function Chip({ label, selected, onPress, tone = 'neutral', icon }: ChipP
     <AnimatedPressable
       onPress={onPress}
       onPressIn={() => {
-        scale.value = withSpring(0.94, { damping: 14, stiffness: 220 });
+        scale.value = withTiming(0.94, PRESS_IN);
       }}
       onPressOut={() => {
-        scale.value = withSpring(1, { damping: 12, stiffness: 200 });
+        scale.value = withTiming(1, PRESS_OUT);
       }}
       style={[styles.wrap, selected && glow(toneColor, 0.5, 12, 5), animatedStyle]}
     >

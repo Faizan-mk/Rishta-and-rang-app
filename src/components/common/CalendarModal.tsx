@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { SlideInDown } from 'react-native-reanimated';
+import Animated, { Easing, FadeIn, SlideInDown } from 'react-native-reanimated';
 import { radius, spacing, typography } from '../../theme';
 import { withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
@@ -123,9 +123,12 @@ export function CalendarModal({ visible, initialIso, maxDateIso, onSelect, onClo
           a Pressable (with stopPropagation to keep taps from closing it), the
           sheet lost its touches on Android: the year list would not scroll and
           taps on years and days went nowhere. */}
-      <View style={styles.overlay}>
+      {/* The dimmed backdrop fades in while the sheet slides up and stops —
+          eased, not sprung: the spring it used overshot and bounced the sheet
+          as it opened. */}
+      <Animated.View entering={FadeIn.duration(200)} style={styles.overlay}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityRole="button" />
-        <Animated.View entering={SlideInDown.duration(500).springify().damping(22).stiffness(120)} style={styles.sheet}>
+        <Animated.View entering={SlideInDown.duration(300).easing(Easing.out(Easing.cubic))} style={styles.sheet}>
           <View style={styles.sheetHandle} />
           <View style={styles.header}>
             <Pressable onPress={goPrev} style={styles.navButton} hitSlop={8}>
@@ -200,7 +203,7 @@ export function CalendarModal({ visible, initialIso, maxDateIso, onSelect, onClo
             </>
           )}
         </Animated.View>
-      </View>
+      </Animated.View>
     </Modal>
   );
 }

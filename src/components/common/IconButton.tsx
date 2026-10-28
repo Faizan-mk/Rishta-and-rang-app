@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { PRESS_IN, PRESS_OUT } from '../../theme/motion';
 import { radius } from '../../theme';
 import { scaleFont } from '../../theme/responsive';
 import { glow, withAlpha } from '../../theme/glow';
@@ -30,10 +31,10 @@ export function IconButton({ icon, onPress, size = 20, color, background, badge,
     <AnimatedPressable
       onPress={onPress}
       onPressIn={() => {
-        scale.value = withSpring(0.88, { damping: 14, stiffness: 260 });
+        scale.value = withTiming(0.88, PRESS_IN);
       }}
       onPressOut={() => {
-        scale.value = withSpring(1, { damping: 12, stiffness: 220 });
+        scale.value = withTiming(1, PRESS_OUT);
       }}
       style={[styles.button, { backgroundColor: background ?? colors.surface }, animatedStyle, style]}
     >
