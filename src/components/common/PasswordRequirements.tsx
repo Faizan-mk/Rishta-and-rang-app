@@ -17,10 +17,13 @@ export function PasswordRequirements({ password }: { password: string }) {
     [/[^A-Za-z0-9]/.test(password), t('signup.passwordRequirementSpecial')],
   ] as const;
 
+  // A met rule is green, the colour every theme keeps for "done": the brand
+  // accent it used before is pink in most themes, so a satisfied rule looked
+  // like a warning.
   return (
     <View style={{ marginTop: -spacing.sm, marginBottom: spacing.md }}>
       {checks.map(([valid, label]) => (
-        <Text key={label} style={{ ...typography.caption, color: valid ? colors.teal : colors.textTertiary, marginBottom: 2, ...(rtl ? { textAlign: 'right', writingDirection: 'rtl' as const } : {}) }}>
+        <Text key={label} style={{ ...typography.caption, color: valid ? colors.success : colors.textTertiary, marginBottom: 2, ...(rtl ? { textAlign: 'right', writingDirection: 'rtl' as const } : {}) }}>
           {valid ? '✓' : '○'} {label}
         </Text>
       ))}
