@@ -27,18 +27,26 @@ interface MatchScoreCardProps {
   // 0-100 compatibility score from utils/compatibility.
   score: number;
   bureauVerified: boolean;
+  // Free members see a lock in place of the number: the score itself is the
+  // Explore+ feature (listed on that screen as "your match score with every
+  // profile"). There is no separate breakdown behind it to sell.
+  locked?: boolean;
   onPress: () => void;
 }
 
 // Sits directly under the photo: this app's own compatibility score, with the
 // bureau badge alongside it, instead of a generic "upgrade" strip. The bar fills
 // on arrival so the number lands as a result rather than as static furniture.
-export function MatchScoreCard({ name, score, bureauVerified, onPress }: MatchScoreCardProps) {
+export function MatchScoreCard({ name, score, bureauVerified, locked = false, onPress }: MatchScoreCardProps) {
   const { colors } = useTheme();
   const { t, rtl } = useLanguage();
   const accent = modeAccent(colors, APP_MODE);
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const clamped = Math.max(0, Math.min(100, Math.round(score)));
+  const clamped = locked ? 0 : Math.max(0, Math.min(100, Math.round(score)));
+  // Locked, the bar still fills, all the way and faded, so it reads as a score
+  // being kept from you rather than a score of zero. A real length would give
+  // the number away.
+  const barTarget = locked ? 100 : clamped;
 
   const scale = useSharedValue(1);
   const fill = useSharedValue(0);
@@ -47,8 +55,8 @@ export function MatchScoreCard({ name, score, bureauVerified, onPress }: MatchSc
 
   useEffect(() => {
     fill.value = 0;
-    fill.value = withDelay(160, withTiming(clamped, { duration: 900, easing: Easing.out(Easing.cubic) }));
-  }, [clamped, fill]);
+    fill.value = withDelay(160, withTiming(barTarget, { duration: 900, easing: Easing.out(Easing.cubic) }));
+  }, [barTarget, fill]);
 
   useEffect(() => {
     sweep.value = withRepeat(withTiming(1, { duration: 2600, easing: Easing.inOut(Easing.quad) }), -1, false);
@@ -89,20 +97,28 @@ export function MatchScoreCard({ name, score, bureauVerified, onPress }: MatchSc
           end={GRADIENT_END}
           style={[styles.scoreBlock, glow(accent.primary, 0.35, 14, 6)]}
         >
-          <Text style={styles.scoreValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
-            {clamped}
-          </Text>
-          <Text style={styles.scoreUnit}>%</Text>
+          {locked ? (
+            <Ionicons name="lock-closed" size={22} color="#FFFFFF" />
+          ) : (
+            <>
+              <Text style={styles.scoreValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+                {clamped}
+              </Text>
+              <Text style={styles.scoreUnit}>%</Text>
+            </>
+          )}
         </LinearGradient>
 
         <View style={styles.textBlock}>
           <Text style={[styles.title, rtl && styles.rtlText]}>{t('discover.matchScoreTitle')}</Text>
-          <Text style={[styles.subtitle, rtl && styles.rtlText]}>{t('discover.matchScoreSubtitle', { name })}</Text>
+          <Text style={[styles.subtitle, rtl && styles.rtlText]}>
+            {locked ? t('discover.matchScoreLockedSubtitle', { name }) : t('discover.matchScoreSubtitle', { name })}
+          </Text>
         </View>
       </View>
 
       <View style={styles.track}>
-        <Animated.View style={[styles.trackFill, fillStyle]}>
+        <Animated.View style={[styles.trackFill, locked && styles.trackFillLocked, fillStyle]}>
           <LinearGradient colors={accent.ramp} start={GRADIENT_START} end={GRADIENT_END} style={StyleSheet.absoluteFill} />
         </Animated.View>
       </View>
@@ -120,7 +136,7 @@ export function MatchScoreCard({ name, score, bureauVerified, onPress }: MatchSc
         )}
         <View style={[styles.ctaRow, rtl && styles.rowRtl]}>
           <Text style={[styles.cta, { color: accent.primary }]} numberOfLines={1}>
-            {t('discover.matchScoreCta')}
+            {locked ? t('explorePlus.upgrade') : t('discover.matchScoreCta')}
           </Text>
           <Ionicons name={rtl ? 'chevron-back' : 'chevron-forward'} size={14} color={accent.primary} />
         </View>
@@ -173,6 +189,7 @@ const makeStyles = (colors: Palette) =>
     subtitle: { ...typography.caption, color: colors.textSecondary },
     track: { height: 6, borderRadius: 3, backgroundColor: colors.border, overflow: 'hidden' },
     trackFill: { height: 6, borderRadius: 3, overflow: 'hidden' },
+    trackFillLocked: { opacity: 0.3 },
     footerRow: {
       flexDirection: 'row',
       flexWrap: 'wrap',

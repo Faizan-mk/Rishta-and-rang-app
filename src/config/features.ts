@@ -18,3 +18,10 @@ export const FEATURE_EVENTS = false;
 // review-queue build). Existing `bureauVerified` rows are left alone — the flag
 // hides the badge and the request row, it does not rewrite anyone's profile.
 export const FEATURE_BUREAU = false;
+
+// Explore+ perks given to everyone for now, to show members what they do
+// before they're sold. Each one's lock is still in place behind its flag: set
+// it to false to put the feature back behind Explore+ (the Explore+ screen
+// lists it again automatically).
+export const FREE_MATCH_SCORE = false;
+export const FREE_REWIND = false;

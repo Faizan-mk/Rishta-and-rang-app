@@ -11,24 +11,40 @@ export type { FavoriteProfile };
 
 interface FavoritesContextValue {
   favorites: FavoriteProfile[];
+  /** Saved to Favorites: a private bookmark, nothing sent to them. */
   isFavorite: (id: string) => boolean;
+  /** Liked them (or matched, which takes two likes). */
+  isLiked: (id: string) => boolean;
   /**
    * Likes or un-likes a member. Liking resolves with the conversation if that
    * completed the pair — `isNew` true only on the call that formed it, which is
    * what a celebration may fire on. Un-liking resolves with null.
    */
-  toggleFavorite: (
+  toggleLike: (
     profile: FavoriteProfile
   ) => Promise<{ match: Match | null; isNew: boolean; likesLeft: number } | null>;
+  /** Saves to or drops from Favorites. Never likes, notifies or counts a like. */
+  toggleFavorite: (profile: FavoriteProfile) => void;
   removeFavorite: (id: string) => void;
 }
 
 const FavoritesContext = createContext<FavoritesContextValue | undefined>(undefined);
 
+function withoutId(set: Set<string>, id: string): Set<string> {
+  if (!set.has(id)) return set;
+  const next = new Set(set);
+  next.delete(id);
+  return next;
+}
+
 export function FavoritesProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const { rishtaProfileIds, likeProfile } = useMatches();
+  const { rishtaProfileIds, likeProfile, matches } = useMatches();
   const [favorites, setFavorites] = useState<FavoriteProfile[]>([]);
+  // Who this member has actually liked, straight from the server. A like is
+  // what "liked" means on a card; a favourite row can be missing one (it's
+  // written separately, and Favorites can drop it without un-liking).
+  const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
 
   // Guards the cache write below, so one account's favourites can never be
   // persisted under another's key during a sign-out/sign-in.
@@ -38,10 +54,17 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
     if (!user) {
       hydratedFor.current = null;
       setFavorites([]);
+      setLikedIds(new Set());
       return;
     }
     const userId = user.id;
     let cancelled = false;
+    likesService
+      .fetchMyLikedIds()
+      .then((ids) => {
+        if (!cancelled) setLikedIds(new Set(ids));
+      })
+      .catch(() => undefined);
     (async () => {
       const cached = await cache.read<FavoriteProfile[]>(userId, CACHE_KEYS.favorites);
       if (cancelled) return;
@@ -82,13 +105,26 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
     });
   }, [rishtaProfileIds, favorites, user?.id]);
 
+  // A match only forms from two likes, so anyone matched was liked too; that
+  // holds even before my_liked_ids is deployed or has answered.
+  const matchedIds = useMemo(
+    () => new Set(matches.map((m) => m.sourceProfileId).filter((id): id is string => typeof id === 'string')),
+    [matches]
+  );
+  // Like and Favourite are separate now. A star used to send a like (and its
+  // notification, and count against the daily cap), and a like filled the star;
+  // a bookmark someone meant to keep to themselves told the other person.
+  const isLiked = (id: string) => likedIds.has(id) || matchedIds.has(id);
   const isFavorite = (id: string) => favorites.some((f) => f.id === id);
 
-  const toggleFavorite = async (profile: FavoriteProfile) => {
+  const toggleLike = async (profile: FavoriteProfile) => {
     if (!user) return null;
-    if (isFavorite(profile.id)) {
-      setFavorites((prev) => prev.filter((f) => f.id !== profile.id));
-      favoritesService.removeFavorite(user.id, profile.id);
+    // Already matched: the heart shows filled and stays that way. Withdrawing
+    // the like here would leave the conversation standing with half its basis
+    // gone; ending a match is block / unmatch, not a second tap on Like.
+    if (matchedIds.has(profile.id)) return null;
+    if (isLiked(profile.id)) {
+      setLikedIds((prev) => withoutId(prev, profile.id));
       // Taking a like back also takes it off the other member's "who liked you".
       likesService.withdrawLike(profile.id, user.id).catch(() => undefined);
       return null;
@@ -96,24 +132,33 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
     // One call does the like, the reciprocity check and the match. The card the
     // other side sees in "who liked you" is copied from our own profile inside
     // the RPC, so there is nothing to pass and nothing to disagree with.
-    setFavorites((prev) => [profile, ...prev]);
-    favoritesService.addFavorite(user.id, profile);
+    setLikedIds((prev) => new Set(prev).add(profile.id));
     try {
       return await likeProfile({ id: profile.id, name: profile.name, photo: profile.photo, mode: profile.kind });
     } catch (error) {
       // The cap is enforced server-side, so this is where hitting it surfaces.
-      // Put the favourite back — nothing was recorded — and let the caller
+      // Take the like back off — nothing was recorded — and let the caller
       // decide what to show.
       const reason = error instanceof Error ? error.message : '';
       if (reason.includes('daily_like_limit_reached')) {
-        setFavorites((prev) => prev.filter((f) => f.id !== profile.id));
-        favoritesService.removeFavorite(user.id, profile.id);
+        setLikedIds((prev) => withoutId(prev, profile.id));
         throw new AppError('discover.limitReachedBody');
       }
-      // Offline, or refused for another reason. The favourite stands locally;
-      // the caller simply learns of no match.
+      // Offline, or refused for another reason. The like stands locally; the
+      // caller simply learns of no match.
       return null;
     }
+  };
+
+  const toggleFavorite = (profile: FavoriteProfile) => {
+    if (!user) return;
+    if (isFavorite(profile.id)) {
+      setFavorites((prev) => prev.filter((f) => f.id !== profile.id));
+      favoritesService.removeFavorite(user.id, profile.id);
+      return;
+    }
+    setFavorites((prev) => [profile, ...prev]);
+    favoritesService.addFavorite(user.id, profile);
   };
 
   const removeFavorite = (id: string) => {
@@ -122,7 +167,10 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
     favoritesService.removeFavorite(user.id, id);
   };
 
-  const value = useMemo(() => ({ favorites, isFavorite, toggleFavorite, removeFavorite }), [favorites, user?.id]);
+  const value = useMemo(
+    () => ({ favorites, isFavorite, isLiked, toggleLike, toggleFavorite, removeFavorite }),
+    [favorites, likedIds, matchedIds, user?.id]
+  );
 
   return <FavoritesContext.Provider value={value}>{children}</FavoritesContext.Provider>;
 }

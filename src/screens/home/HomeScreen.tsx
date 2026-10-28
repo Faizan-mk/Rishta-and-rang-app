@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Image, Modal, Pressable, RefreshControl, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, RefreshControl, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,6 +7,7 @@ import Animated, {
   FadeIn as ReanimatedFadeIn,
 } from 'react-native-reanimated';
 import { AuroraBackground } from '../../components/common/AuroraBackground';
+import { PhotoPreview } from '../../components/common/PhotoPreview';
 import { EmptyOrb } from '../../components/common/EmptyOrb';
 import { DiscoverProfileCard } from '../../components/discover/DiscoverProfileCard';
 import { TAB_BAR_BASE_HEIGHT } from '../../store/TabBarVisibilityContext';
@@ -14,7 +15,7 @@ import { MatchCelebration } from '../../components/discover/MatchCelebration';
 import { HomeTopBar } from '../../components/discover/HomeTopBar';
 import { HomeStoriesRow } from '../../components/discover/HomeStoriesRow';
 import { MatchScoreCard } from '../../components/discover/MatchScoreCard';
-import { SwipeableCard } from '../../components/discover/SwipeableCard';
+import { MatchWhySheet } from '../../components/discover/MatchWhySheet';
 import { SwipeActionBar } from '../../components/discover/SwipeActionBar';
 import { BrowseFiltersSheet, BrowseSortSheet } from '../../components/discover/BrowseSheets';
 import {
@@ -59,11 +60,12 @@ import { useAddStory } from '../../hooks/useAddStory';
 import { useNotifications } from '../../store/NotificationContext';
 import { useViewHistory } from '../../store/ViewHistoryContext';
 import { oppositeGenderProfiles } from '../../utils/genderMatch';
-import { datingCompatibility, rishtaCompatibility } from '../../utils/compatibility';
+import { datingCompatibility, rishtaCompatibility, sharedTraits } from '../../utils/compatibility';
 import { radius, spacing, typography } from '../../theme';
 import { APP_MODE, glow, modeAccent } from '../../theme/glow';
 import { scaleFont } from '../../theme/responsive';
 import type { Palette } from '../../theme/palettes';
+import { FREE_MATCH_SCORE, FREE_REWIND } from '../../config/features';
 
 // Clearance under the scroll content so the floating action bar never covers the
 // last row of a profile.
@@ -79,7 +81,7 @@ export function HomeScreen() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
   const { user } = useAuth();
-  const { isFavorite, toggleFavorite } = useFavorites();
+  const { isFavorite, isLiked, toggleLike, toggleFavorite } = useFavorites();
   const { confirm, notify } = useDialog();
   const { recordLike, applyServerCount } = useLikeLimit();
   const { datingProfiles, rishtaProfiles, loading, loadMore, reload } = useDiscovery();
@@ -101,6 +103,7 @@ export function HomeScreen() {
   const [reportVisible, setReportVisible] = useState(false);
   const [filtersVisible, setFiltersVisible] = useState(false);
   const [sortVisible, setSortVisible] = useState(false);
+  const [whyOpen, setWhyOpen] = useState(false);
   const [filters, setFilters] = useState<BrowseFilters>(DEFAULT_BROWSE_FILTERS);
   const insets = useSafeAreaInsets();
 
@@ -254,26 +257,17 @@ export function HomeScreen() {
         : rishtaCompatibility(user, currentProfile as RishtaListingProfile)
       : 0;
 
+  // The same comparison the match score is built from (utils/compatibility),
+  // so the reasons listed always add up to the number above them.
   const similarities = useMemo(() => {
     if (!user || !currentProfile) return [];
-    const found: string[] = [];
-    if (user.city && currentProfile.city && user.city.toLowerCase() === currentProfile.city.toLowerCase()) {
-      found.push(t('discover.similarCity', { city: currentProfile.city }));
-    }
-    if (mode === 'dating') {
-      const userTags = new Set(user.dating.vibeTags.map((tag) => tag.toLowerCase()));
-      (currentProfile.vibeTags ?? []).forEach((tag) => {
-        if (userTags.has(tag.toLowerCase())) found.push(t('discover.similarTag', { tag }));
-      });
-    } else {
-      if (user.rishta.religion && currentProfile.religion && user.rishta.religion.toLowerCase() === currentProfile.religion.toLowerCase()) {
-        found.push(currentProfile.religion);
-      }
-      if (user.rishta.sect && currentProfile.sect && user.rishta.sect.toLowerCase() === currentProfile.sect.toLowerCase()) {
-        found.push(currentProfile.sect);
-      }
-    }
-    return found;
+    return sharedTraits(user, currentProfile, mode).map((trait) => {
+      if (trait.text) return trait.text;
+      const params = { ...trait.params };
+      // Readiness arrives as its own dictionary key, translated in place.
+      if (typeof params.readiness === 'string') params.readiness = t(params.readiness);
+      return t(trait.key, params);
+    });
   }, [user, currentProfile, mode, t]);
 
   const advance = () => setCursor((c) => Math.min(c + 1, visibleProfiles.length));
@@ -292,7 +286,7 @@ export function HomeScreen() {
 
   const onUndo = async () => {
     if (!canUndo) return;
-    if (!user?.isExplorePlus) {
+    if (!user?.isExplorePlus && !FREE_REWIND) {
       await promptUpgrade(t('discover.rewindLockedTitle'), t('discover.rewindLockedBody'));
       return;
     }
@@ -306,20 +300,20 @@ export function HomeScreen() {
 
   const onOpenMatchScore = async () => {
     if (!currentProfile) return;
-    if (!user?.isExplorePlus) {
+    if (!user?.isExplorePlus && !FREE_MATCH_SCORE) {
       await promptUpgrade(
         t('discover.matchScoreLockedTitle'),
         t('discover.matchScoreLockedBody', { name: currentProfile.name })
       );
       return;
     }
-    router.push({ pathname: '/profile-detail', params: { kind: mode, id: currentProfile.id } });
+    setWhyOpen(true);
   };
 
   const onLike = async () => {
     if (!currentProfile) return;
     const profile = currentProfile;
-    const wasLiked = isFavorite(profile.id);
+    const wasLiked = isLiked(profile.id);
     if (!wasLiked) {
       const allowed = recordLike();
       if (!allowed) {
@@ -329,9 +323,9 @@ export function HomeScreen() {
         return;
       }
     }
-    let outcome: Awaited<ReturnType<typeof toggleFavorite>> = null;
+    let outcome: Awaited<ReturnType<typeof toggleLike>> = null;
     try {
-      outcome = await toggleFavorite({
+      outcome = await toggleLike({
         id: profile.id,
         kind: mode,
         name: profile.name,
@@ -472,18 +466,19 @@ export function HomeScreen() {
               <RefreshControl refreshing={loading} onRefresh={reload} tintColor={colors.teal} colors={[colors.teal]} />
             }
           >
-            <SwipeableCard profileId={currentProfile.id} onSwipeRight={onLike} onSwipeLeft={onPass}>
-              <DiscoverProfileCard
-                profile={currentProfile}
-                liked={isFavorite(currentProfile.id)}
-                onPressPhoto={setPreviewUri}
-              />
-            </SwipeableCard>
+            {/* No swipe: Pass and Like are the buttons in the bar below, so a tap on
+                the photo always reaches the photo. */}
+            <DiscoverProfileCard
+              profile={currentProfile}
+              liked={isLiked(currentProfile.id)}
+              onPressPhoto={(uri) => setPreviewUri((cur) => cur ?? uri)}
+            />
 
             <MatchScoreCard
               name={currentProfile.name}
               score={compatibilityScore}
               bureauVerified={Boolean(currentProfile.bureauVerified)}
+              locked={!user.isExplorePlus && !FREE_MATCH_SCORE}
               onPress={onOpenMatchScore}
             />
 
@@ -493,7 +488,11 @@ export function HomeScreen() {
               <AboutMeSection profile={currentProfile} />
               <ReadinessSection profile={currentProfile} />
 
-              <MidProfilePhoto photos={currentProfile.photos} onPress={setPreviewUri} />
+              {/* A member who blurs their photos keeps the second one hidden too,
+                  until there's a like between them, same as the card above. */}
+              {!(currentProfile.photosBlurred && !isLiked(currentProfile.id)) && (
+                <MidProfilePhoto photos={currentProfile.photos} onPress={(uri) => setPreviewUri((cur) => cur ?? uri)} />
+              )}
               <IntroMediaSection profile={currentProfile} />
 
               <FaithSection profile={currentProfile} />
@@ -518,8 +517,8 @@ export function HomeScreen() {
 
           <SwipeActionBar
             canUndo={canUndo}
-            liked={isFavorite(currentProfile.id)}
-            locked={!user.isExplorePlus}
+            liked={isLiked(currentProfile.id)}
+            locked={!user.isExplorePlus && !FREE_REWIND}
             onUndo={onUndo}
             onPass={onPass}
             onLike={onLike}
@@ -561,11 +560,25 @@ export function HomeScreen() {
         onClose={() => setSortVisible(false)}
       />
 
-      <Modal visible={Boolean(previewUri)} transparent animationType="fade" onRequestClose={() => setPreviewUri(null)}>
-        <Pressable style={styles.previewOverlay} onPress={() => setPreviewUri(null)}>
-          {previewUri && <Image source={{ uri: previewUri }} style={styles.previewImage} resizeMode="contain" />}
-        </Pressable>
-      </Modal>
+      <PhotoPreview uri={previewUri} onClose={() => setPreviewUri(null)} />
+
+      {currentProfile && (
+        <MatchWhySheet
+          visible={whyOpen}
+          name={currentProfile.name}
+          score={compatibilityScore}
+          reasons={similarities}
+          onClose={() => setWhyOpen(false)}
+          onViewProfile={() => {
+            setWhyOpen(false);
+            router.push({ pathname: '/profile-detail', params: { kind: mode, id: currentProfile.id } });
+          }}
+          onEditProfile={() => {
+            setWhyOpen(false);
+            router.push('/edit-profile');
+          }}
+        />
+      )}
 
       <MatchCelebration
         visible={Boolean(celebration)}
@@ -597,7 +610,5 @@ const makeStyles = (colors: Palette) =>
       paddingVertical: spacing.sm + 2,
     },
     emptyResetLabel: { ...typography.label, color: '#FFFFFF', fontSize: scaleFont(13) },
-    previewOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', alignItems: 'center', justifyContent: 'center' },
-    previewImage: { width: '100%', height: '80%' },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },
   });

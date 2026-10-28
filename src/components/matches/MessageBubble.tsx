@@ -421,9 +421,8 @@ export const MessageBubble = React.memo(function MessageBubble({
 });
 
 // Exported for its own tests: opening it depends on a gesture-handler
-// long-press, which — like the discovery deck's swipe gesture
-// (SwipeableCard.test.tsx) — isn't something Jest's gesture-handler mock
-// actually activates, so the sheet's own contents are tested directly here.
+// long-press, which isn't something Jest's gesture-handler mock actually
+// activates, so the sheet's own contents are tested directly here.
 export function ReactionPicker({
   visible,
   onClose,

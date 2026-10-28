@@ -6,6 +6,7 @@ import { cache, CACHE_KEYS } from '../services/cache';
 import type { DiscoverProfile, RishtaListingProfile } from '../types/content';
 import { useAuth } from './AuthContext';
 import { useToast } from './ToastContext';
+import type { RishtaReadiness } from '../types/user';
 
 // Set to true (in dev only) to fill gaps in the swipe deck with fabricated
 // demo profiles.  Production builds must NEVER show mock people as real members.
@@ -241,13 +242,27 @@ export function DiscoveryProvider({ children }: { children: React.ReactNode }) {
     const channel = supabase
       .channel(`profiles_presence_${user.id}`)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles' }, (payload) => {
-        const row = payload.new as { id: string; last_active_at: string | null; is_online: boolean | null };
+        const row = payload.new as {
+          id: string;
+          last_active_at: string | null;
+          is_online: boolean | null;
+          rishta_readiness?: RishtaReadiness | null;
+        };
         const { dating, rishta } = decks.current;
         if (!dating.some((p) => p.id === row.id) && !rishta.some((p) => p.id === row.id)) return;
         const lastActiveAt = row.last_active_at ?? undefined;
         const isOnline = Boolean(row.is_online);
-        const patchOne = <T extends { id: string; lastActiveAt?: string; isOnline?: boolean }>(list: T[]): T[] =>
-          list.map((profile) => (profile.id === row.id ? { ...profile, lastActiveAt, isOnline } : profile));
+        // The same update carries the whole row, so a member moving to "Ready
+        // now" shows on cards already on screen, not only after a refresh.
+        const readiness = row.rishta_readiness ?? undefined;
+        const patchOne = <T extends { id: string; lastActiveAt?: string; isOnline?: boolean; readiness?: RishtaReadiness }>(
+          list: T[]
+        ): T[] =>
+          list.map((profile) =>
+            profile.id === row.id
+              ? { ...profile, lastActiveAt, isOnline, ...(readiness ? { readiness } : {}) }
+              : profile
+          );
         setDatingProfiles(patchOne);
         setRishtaProfiles(patchOne);
       })

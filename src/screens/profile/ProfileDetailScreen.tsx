@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Image, LayoutChangeEvent, Modal, NativeScrollEvent, NativeSyntheticEvent, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, LayoutChangeEvent, NativeScrollEvent, NativeSyntheticEvent, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -7,6 +7,7 @@ import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import { AccentHeading } from '../../components/common/AccentHeading';
+import { PhotoPreview } from '../../components/common/PhotoPreview';
 import { Badge } from '../../components/common/Badge';
 import { Chip } from '../../components/common/Chip';
 import { Button } from '../../components/Button';
@@ -38,6 +39,7 @@ import { fonts, radius, spacing, typography } from '../../theme';
 import { cardSurface } from '../../theme/surfaces';
 import { glow, modeAccent, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
+import { FREE_MATCH_SCORE } from '../../config/features';
 
 const READINESS_KEY: Record<string, string> = {
   browsing: 'profile.readinessBrowsing',
@@ -54,7 +56,7 @@ export function ProfileDetailScreen() {
   const { notify } = useDialog();
   const { getMatchForProfile } = useMatches();
   const { datingProfiles, rishtaProfiles } = useDiscovery();
-  const { isFavorite, toggleFavorite } = useFavorites();
+  const { isFavorite, isLiked, toggleLike, toggleFavorite } = useFavorites();
   const { recordView } = useViewHistory();
   const { kind, id } = useLocalSearchParams<{ kind: 'dating' | 'rishta'; id: string }>();
 
@@ -109,27 +111,32 @@ export function ProfileDetailScreen() {
     );
   }
 
+  const scoreOpen = Boolean(user.isExplorePlus) || FREE_MATCH_SCORE;
   const compatibilityScore = kind === 'dating' ? datingCompatibility(user, profile as DiscoverProfile) : rishtaCompatibility(user, profile as RishtaListingProfile);
   // The profile is browsed from one deck or the other, so it wears that deck's ramp.
   const detailRamp = modeAccent(colors, kind === 'rishta' ? 'rishta' : 'dating').ramp;
-  const photosHidden = Boolean(profile.photosBlurred) && !isFavorite(profile.id);
+  const photosHidden = Boolean(profile.photosBlurred) && !isLiked(profile.id);
 
   const onGalleryLayout = (e: LayoutChangeEvent) => setGalleryWidth(e.nativeEvent.layout.width);
+  // Read once the swipe has settled, not on every scroll frame: updating the
+  // dots mid-swipe re-rendered the whole profile while the photo was moving,
+  // which is what made the gallery stutter.
   const onGalleryScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     if (galleryWidth === 0) return;
     const index = Math.round(e.nativeEvent.contentOffset.x / galleryWidth);
     setActiveIndex(index);
   };
 
-  const onToggleFavorite = () =>
-    toggleFavorite({ id: profile.id, kind, name: profile.name, age: profile.age, city: profile.city, photo: profile.photos[0] });
+  const asFavorite = { id: profile.id, kind, name: profile.name, age: profile.age, city: profile.city, photo: profile.photos[0] };
+  // The star: a private save to Favorites, nothing sent to them.
+  const onToggleFavorite = () => toggleFavorite(asFavorite);
 
   // What the action bar shows: a like can only be sent once, so once it's out
   // the button says so instead of looking untouched (pressing "Like" on someone
   // already liked or matched used to do nothing, silently), and a match turns
   // the bar into the way to message them.
   const match = getMatchForProfile(profile.id);
-  const liked = isFavorite(profile.id);
+  const liked = isLiked(profile.id);
 
   const onPass = () => router.back();
   // Like (Friends) and Express interest (Rishta) are the same like underneath,
@@ -137,9 +144,9 @@ export function ProfileDetailScreen() {
   // when this like is the one that made it mutual.
   const onLike = async () => {
     if (liked) return;
-    let outcome: Awaited<ReturnType<typeof onToggleFavorite>> = null;
+    let outcome: Awaited<ReturnType<typeof toggleLike>> = null;
     try {
-      outcome = await onToggleFavorite();
+      outcome = await toggleLike(asFavorite);
     } catch {
       // Out of free likes for today; the cap is refused server-side.
       await notify({ title: t('discover.limitReachedTitle'), message: t('discover.limitReachedBody') });
@@ -181,12 +188,27 @@ export function ProfileDetailScreen() {
             <ScrollView
               horizontal
               pagingEnabled
+              // Always come to rest on a whole photo, even after a slow or short
+              // drag, instead of stopping with two halves on screen.
+              snapToInterval={galleryWidth}
+              snapToAlignment="start"
+              decelerationRate="fast"
+              disableIntervalMomentum
+              nestedScrollEnabled
+              overScrollMode="never"
               showsHorizontalScrollIndicator={false}
-              onScroll={onGalleryScroll}
-              scrollEventThrottle={16}
+              onMomentumScrollEnd={onGalleryScroll}
             >
               {profile.photos.map((uri) => (
-                <Image key={uri} source={{ uri }} style={[styles.galleryImage, { width: galleryWidth }]} />
+                // `resize` decodes the photo at the size it's shown rather than
+                // full camera resolution (Android), so swiping isn't held up by
+                // decoding a multi-megapixel image.
+                <Image
+                  key={uri}
+                  source={{ uri }}
+                  resizeMethod="resize"
+                  style={[styles.galleryImage, { width: galleryWidth }]}
+                />
               ))}
             </ScrollView>
           )}
@@ -259,19 +281,26 @@ export function ProfileDetailScreen() {
             <Text style={styles.metaText}>{vocabularyLabel(profile.city, t)}</Text>
           </View>
 
-          <View style={[styles.compatibilityBanner, glow(detailRamp[0], 0.12, 18, 4), rtl && styles.rowRtl]}>
+          {/* The score is an Explore+ feature, same as on Home's card. */}
+          <Pressable
+            disabled={scoreOpen}
+            onPress={() => router.push('/explore-plus')}
+            style={[styles.compatibilityBanner, glow(detailRamp[0], 0.12, 18, 4), rtl && styles.rowRtl]}
+          >
             <LinearGradient
               colors={detailRamp}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.compatibilitySeal}
             >
-              <Ionicons name="sparkles" size={18} color="#FFFFFF" />
+              <Ionicons name={scoreOpen ? 'sparkles' : 'lock-closed'} size={18} color="#FFFFFF" />
             </LinearGradient>
             <Text style={[styles.compatibilityTitle, rtl && styles.rtlText]}>
-              {t('profile.aiScoreValue', { score: compatibilityScore })}
+              {scoreOpen
+                ? t('profile.aiScoreValue', { score: compatibilityScore })
+                : t('profile.aiScoreLocked')}
             </Text>
-          </View>
+          </Pressable>
 
           {kind === 'dating' && (profile as DiscoverProfile).vibeTags?.length > 0 && (
             <View style={styles.chipRow}>
@@ -295,7 +324,8 @@ export function ProfileDetailScreen() {
             </View>
           )}
 
-          <MidProfilePhoto photos={profile.photos} onPress={() => setPreviewUri(profile.photos[1])} />
+          {/* Hidden with the gallery when this member blurs their photos. */}
+          {!photosHidden && <MidProfilePhoto photos={profile.photos} onPress={() => setPreviewUri(profile.photos[1])} />}
           <IntroMediaSection profile={profile} />
 
           <AboutMeSection profile={profile} />
@@ -371,11 +401,7 @@ export function ProfileDetailScreen() {
         )}
       </Animated.View>
 
-      <Modal visible={Boolean(previewUri)} transparent animationType="fade" onRequestClose={() => setPreviewUri(null)}>
-        <Pressable style={styles.previewOverlay} onPress={() => setPreviewUri(null)}>
-          {previewUri && <Image source={{ uri: previewUri }} style={styles.previewImage} resizeMode="contain" />}
-        </Pressable>
-      </Modal>
+      <PhotoPreview uri={previewUri} onClose={() => setPreviewUri(null)} />
 
       <MatchCelebration
         visible={Boolean(celebration)}
@@ -466,8 +492,6 @@ const makeStyles = (colors: Palette) =>
       justifyContent: 'center',
     },
     compatibilityTitle: { ...typography.h3, color: colors.textPrimary, flexShrink: 1 },
-    previewOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', alignItems: 'center', justifyContent: 'center' },
-    previewImage: { width: '100%', height: '80%' },
     actionBar: {
       position: 'absolute',
       left: 0,

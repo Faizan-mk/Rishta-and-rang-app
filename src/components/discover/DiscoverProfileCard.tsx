@@ -1,5 +1,14 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  type LayoutChangeEvent,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -59,11 +68,26 @@ export const DiscoverProfileCard = React.memo(function DiscoverProfileCard({
   const [activeIndex, setActiveIndex] = useState(0);
 
   const photoCount = profile.photos.length;
-  const showPhoto = (index: number) => setActiveIndex(Math.max(0, Math.min(photoCount - 1, index)));
+  const [frameWidth, setFrameWidth] = useState(0);
+  const pagerRef = useRef<ScrollView>(null);
+  const onFrameLayout = (e: LayoutChangeEvent) => setFrameWidth(e.nativeEvent.layout.width);
+  // Read once a swipe has settled, so the dots don't re-render the card mid-swipe.
+  const onPagerSettled = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (!frameWidth) return;
+    setActiveIndex(Math.round(e.nativeEvent.contentOffset.x / frameWidth));
+  };
+
+  // The arrows on the photo step the pager the same way a swipe does.
+  const goToPhoto = (index: number) => {
+    const next = Math.max(0, Math.min(photoCount - 1, index));
+    pagerRef.current?.scrollTo({ x: next * frameWidth, animated: true });
+    setActiveIndex(next);
+  };
 
   // A new profile arrives on its first photo, not wherever the last one was left.
   useEffect(() => {
     setActiveIndex(0);
+    pagerRef.current?.scrollTo({ x: 0, animated: false });
   }, [profile.id]);
 
   // Distance only appears when the backend actually worked one out.
@@ -91,10 +115,36 @@ export const DiscoverProfileCard = React.memo(function DiscoverProfileCard({
       {/* Gold hairline frame one layer out from the photo, with the deck's
           own colour thrown softly onto the page beneath it. */}
       <View style={[styles.frameGlow, glow(accent.primary, 0.22, 24, 8)]}>
-        <View style={styles.photoFrame}>
-          {/* Sized with percentages only, so it renders without waiting on an
-              onLayout measurement (which can lag, or never fire, on some platforms). */}
-          <SmartImage uri={profile.photos[activeIndex] ?? profile.photos[0]} name={profile.name} style={styles.photo} size={64} />
+        <View style={styles.photoFrame} onLayout={onFrameLayout}>
+          {/* Swipe sideways through the photos, tap one to open it full screen.
+              The first photo is drawn straight away, sized with percentages, so
+              the card never waits on the onLayout measurement the pager needs. */}
+          {frameWidth > 0 && photoCount > 1 ? (
+            <ScrollView
+              ref={pagerRef}
+              horizontal
+              pagingEnabled
+              snapToInterval={frameWidth}
+              snapToAlignment="start"
+              decelerationRate="fast"
+              disableIntervalMomentum
+              nestedScrollEnabled
+              overScrollMode="never"
+              showsHorizontalScrollIndicator={false}
+              onMomentumScrollEnd={onPagerSettled}
+              style={StyleSheet.absoluteFill}
+            >
+              {profile.photos.map((uri) => (
+                <Pressable key={uri} onPress={() => !photosHidden && onPressPhoto?.(uri)} style={{ width: frameWidth, height: '100%' }}>
+                  <SmartImage uri={uri} name={profile.name} style={styles.photo} size={64} />
+                </Pressable>
+              ))}
+            </ScrollView>
+          ) : (
+            <Pressable onPress={() => !photosHidden && onPressPhoto?.(profile.photos[0])} style={StyleSheet.absoluteFill}>
+              <SmartImage uri={profile.photos[0]} name={profile.name} style={styles.photo} size={64} />
+            </Pressable>
+          )}
 
           {/* Colour wash over the photo's foot, tying it to the panel below. */}
           <LinearGradient
@@ -102,15 +152,6 @@ export const DiscoverProfileCard = React.memo(function DiscoverProfileCard({
             style={styles.photoScrim}
             pointerEvents="none"
           />
-
-          {/* Tap zones rather than a nested horizontal pager: paging by drag would
-              fight the card's own like/pass swipe. Sides step through the photos,
-              the middle opens the full-screen preview. */}
-          <View style={styles.tapZones}>
-            <Pressable style={styles.tapZoneSide} onPress={() => showPhoto(activeIndex - 1)} />
-            <Pressable style={styles.tapZoneCenter} onPress={() => onPressPhoto?.(profile.photos[activeIndex])} />
-            <Pressable style={styles.tapZoneSide} onPress={() => showPhoto(activeIndex + 1)} />
-          </View>
 
           {photosHidden && (
             // Android's BlurView renders as a flat, un-blurred tint unless
@@ -129,12 +170,36 @@ export const DiscoverProfileCard = React.memo(function DiscoverProfileCard({
             </BlurView>
           )}
 
-          {photoCount > 1 && (
-            <View style={styles.photoDots} pointerEvents="none">
-              {profile.photos.map((_, i) => (
-                <View key={i} style={[styles.photoDot, i === activeIndex && styles.photoDotActive]} />
-              ))}
-            </View>
+          {photoCount > 1 && !photosHidden && (
+            <>
+              {/* Arrows say there's more than one photo before anyone thinks to
+                  swipe, and step through them the same way. */}
+              {activeIndex > 0 && (
+                <Pressable
+                  onPress={() => goToPhoto(activeIndex - 1)}
+                  hitSlop={10}
+                  accessibilityRole="button"
+                  style={[styles.photoArrow, styles.photoArrowLeft]}
+                >
+                  <Ionicons name="chevron-back" size={18} color="#FFFFFF" />
+                </Pressable>
+              )}
+              {activeIndex < photoCount - 1 && (
+                <Pressable
+                  onPress={() => goToPhoto(activeIndex + 1)}
+                  hitSlop={10}
+                  accessibilityRole="button"
+                  style={[styles.photoArrow, styles.photoArrowRight]}
+                >
+                  <Ionicons name="chevron-forward" size={18} color="#FFFFFF" />
+                </Pressable>
+              )}
+              <View style={styles.photoDots} pointerEvents="none">
+                {profile.photos.map((_, i) => (
+                  <View key={i} style={[styles.photoDot, i === activeIndex && styles.photoDotActive]} />
+                ))}
+              </View>
+            </>
           )}
 
           {activity && (
@@ -250,9 +315,6 @@ const makeStyles = (colors: Palette) =>
     },
     photo: { width: '100%', height: '100%' },
     photoScrim: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '38%' },
-    tapZones: { ...StyleSheet.absoluteFillObject, flexDirection: 'row' },
-    tapZoneSide: { width: '28%', height: '100%' },
-    tapZoneCenter: { flex: 1, height: '100%' },
     blurCenter: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.sm, paddingHorizontal: spacing.xl },
     blurText: { ...typography.body, color: '#FFFFFF', textAlign: 'center' },
     // At the photo's foot, clear of the identity panel that tucks over it.
@@ -264,6 +326,20 @@ const makeStyles = (colors: Palette) =>
       gap: 5,
     },
     photoDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.45)' },
+    // Vertically centred on the photo, just inside its edges.
+    photoArrow: {
+      position: 'absolute',
+      top: '50%',
+      marginTop: -16,
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: 'rgba(36,31,33,0.35)',
+    },
+    photoArrowLeft: { left: spacing.xs },
+    photoArrowRight: { right: spacing.xs },
     photoDotActive: { width: 18, backgroundColor: colors.gold },
     // Bottom-left, on the photo's darkened foot and away from the face: a
     // small dark-glass pill rather than a white slab over the portrait.

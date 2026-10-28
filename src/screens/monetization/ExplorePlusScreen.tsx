@@ -28,6 +28,7 @@ import { fonts, radius, spacing, typography } from '../../theme';
 import { cardSurface } from '../../theme/surfaces';
 import { flat, glow, withAlpha } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
+import { FREE_MATCH_SCORE, FREE_REWIND } from '../../config/features';
 
 type Plan = 'trial' | 'monthly' | 'yearly';
 
@@ -265,6 +266,24 @@ export function ExplorePlusScreen() {
             </View>
             <Text style={[styles.featureText, rtl && styles.rtlText]}>{t('explorePlus.featureSeeWhoLikedYou')}</Text>
           </View>
+          {/* Every paid unlock is listed, so nothing an upgrade opens comes as a
+              surprise. Perks that are free for now (config/features) drop out. */}
+          {!FREE_REWIND && (
+            <View style={[styles.featureRow, rtl && styles.rowRtl]}>
+              <View style={styles.featureTick}>
+                <Ionicons name="checkmark" size={12} color="#FFFFFF" />
+              </View>
+              <Text style={[styles.featureText, rtl && styles.rtlText]}>{t('explorePlus.featureRewind')}</Text>
+            </View>
+          )}
+          {!FREE_MATCH_SCORE && (
+            <View style={[styles.featureRow, rtl && styles.rowRtl]}>
+              <View style={styles.featureTick}>
+                <Ionicons name="checkmark" size={12} color="#FFFFFF" />
+              </View>
+              <Text style={[styles.featureText, rtl && styles.rtlText]}>{t('explorePlus.featureMatchScore')}</Text>
+            </View>
+          )}
 
           <View style={styles.limitCard}>
             <Ionicons name="heart-outline" size={16} color={colors.teal} />

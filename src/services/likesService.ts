@@ -114,4 +114,17 @@ async function withdrawLike(targetId: string, likerId: string): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
-export const likesService = { fetchLikesReceived, likeProfile, withdrawLike };
+/**
+ * Everyone this member has liked, by id (supabase/60_my_liked_ids.sql). The
+ * `likes` table only lets a member read likes aimed at them, so this is the
+ * one way to know "have I liked them?" from the server rather than from the
+ * favourites list, which can be missing a like. Empty if the function isn't
+ * there yet, so callers fall back to favourites alone.
+ */
+async function fetchMyLikedIds(): Promise<string[]> {
+  const { data, error } = await supabase.rpc('my_liked_ids');
+  if (error || !Array.isArray(data)) return [];
+  return data.map((row) => (typeof row === 'string' ? row : String(Object.values(row)[0])));
+}
+
+export const likesService = { fetchLikesReceived, likeProfile, withdrawLike, fetchMyLikedIds };
