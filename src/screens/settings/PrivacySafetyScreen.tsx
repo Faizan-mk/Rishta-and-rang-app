@@ -22,7 +22,7 @@ export function PrivacySafetyScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
-  const { deleteAccount, deactivateAccount } = useAuth();
+  const { user, deleteAccount, deactivateAccount } = useAuth();
   const { confirm, notify } = useDialog();
   const { prefs, setPref } = usePrivacy();
   const { blockedProfiles } = useMatches();
@@ -31,7 +31,13 @@ export function PrivacySafetyScreen() {
   const onDeleteAccount = async () => {
     const confirmed = await confirm({
       title: t('privacy.deleteAccountConfirmTitle'),
-      message: t('privacy.deleteAccountConfirmBody'),
+      // Deleting here doesn't touch Google Play billing, so a subscriber is told
+      // to cancel there too, or they'd keep paying for nothing.
+      message: user?.isExplorePlus
+        ? `${t('privacy.deleteAccountConfirmBody')}
+
+${t('privacy.deleteAccountSubscriptionNote')}`
+        : t('privacy.deleteAccountConfirmBody'),
       confirmLabel: t('privacy.deleteAccountConfirmLabel'),
       cancelLabel: t('common.cancel'),
       destructive: true,
