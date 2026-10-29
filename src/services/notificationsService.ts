@@ -99,11 +99,22 @@ async function addNotification(
   profileId: string,
   type: NotificationItem['type'],
   title: string,
-  body: string
+  body: string,
+  about?: { id: string; kind: 'dating' | 'rishta' }
 ): Promise<NotificationItem> {
   const { data, error } = await supabase
     .from('notifications')
-    .insert({ profile_id: profileId, type, title, body, created_at: new Date().toISOString(), read: false })
+    .insert({
+      profile_id: profileId,
+      type,
+      title,
+      body,
+      created_at: new Date().toISOString(),
+      read: false,
+      // Who it's about, so the row gets their photo and opens their profile.
+      related_id: about?.id ?? null,
+      related_kind: about?.kind ?? null,
+    })
     .select(NOTIFICATION_SELECT)
     .single();
   if (error) throw new Error(error.message);

@@ -99,19 +99,13 @@ async function likeProfile(targetId: string, mode: ProfileMode): Promise<LikeOut
   };
 }
 
-async function withdrawLike(targetId: string, likerId: string): Promise<void> {
-  const { error: likeError } = await supabase
-    .from('likes')
-    .delete()
-    .eq('liker_id', likerId)
-    .eq('target_id', targetId);
-  if (likeError) throw new Error(likeError.message);
-
-  const { error } = await supabase
-    .from('likes_received')
-    .delete()
-    .eq('profile_id', targetId)
-    .eq('liker_id', likerId);
+/**
+ * Takes a like back (supabase/65_withdraw_like.sql): the like, their "who liked
+ * you" card and their notification go, and a free trial it used is returned.
+ * Refused with `already_matched` once it has made a match.
+ */
+async function withdrawLike(targetId: string): Promise<void> {
+  const { error } = await supabase.rpc('withdraw_like', { p_target: targetId });
   if (error) throw new Error(error.message);
 }
 

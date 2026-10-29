@@ -5,7 +5,10 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   FadeIn as ReanimatedFadeIn,
+  FadeInDown,
+  FadeOutDown,
 } from 'react-native-reanimated';
+import { Ionicons } from '@expo/vector-icons';
 import { AuroraBackground } from '../../components/common/AuroraBackground';
 import { PhotoPreview } from '../../components/common/PhotoPreview';
 import { EmptyOrb } from '../../components/common/EmptyOrb';
@@ -71,6 +74,8 @@ import { FREE_MATCH_SCORE, FREE_REWIND } from '../../config/features';
 // Clearance under the scroll content so the floating action bar never covers the
 // last row of a profile.
 const ACTION_BAR_CLEARANCE = 92;
+// How long "Liked · Undo" stays up after a like.
+const UNDO_LIKE_MS = 5000;
 
 // How few cards may be left before the next page is fetched. Far enough ahead
 // that a fast swiper never reaches the end of the deck while it loads.
@@ -82,7 +87,7 @@ export function HomeScreen() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
   const { user } = useAuth();
-  const { isFavorite, isLiked, toggleLike, toggleFavorite } = useFavorites();
+  const { isFavorite, isLiked, toggleLike, unlike, toggleFavorite } = useFavorites();
   const { confirm, notify } = useDialog();
   const { recordLike, applyServerCount } = useLikeLimit();
   const { datingProfiles, rishtaProfiles, loading, loadMore, reload } = useDiscovery();
@@ -96,11 +101,23 @@ export function HomeScreen() {
     }, [refreshStories])
   );
   const { addStory, posting: postingStory } = useAddStory();
-  const { addNotification, unreadCount } = useNotifications();
+  const { addNotification, dropLikeRows, unreadCount } = useNotifications();
   const { recordView } = useViewHistory();
   const { recordPass, recordCompliment, unhideLiked } = useActivityHistory();
   const [celebration, setCelebration] = useState<{ name: string; photo: string } | null>(null);
   const [cursor, setCursor] = useState(0);
+  // The like just sent, offered back for a few seconds: a mis-tap on Like moves
+  // straight on to the next card, so this is the moment to catch it.
+  const [undoLike, setUndoLike] = useState<{ id: string; name: string } | null>(null);
+  const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (undoTimer.current) clearTimeout(undoTimer.current);
+  }, []);
+  const offerUndoLike = (id: string, name: string) => {
+    if (undoTimer.current) clearTimeout(undoTimer.current);
+    setUndoLike({ id, name });
+    undoTimer.current = setTimeout(() => setUndoLike(null), UNDO_LIKE_MS);
+  };
   const [previewUri, setPreviewUri] = useState<string | null>(null);
   const [reportVisible, setReportVisible] = useState(false);
   const [filtersVisible, setFiltersVisible] = useState(false);
@@ -131,8 +148,18 @@ export function HomeScreen() {
   // matrimonial members as Rishta cards. The Intent filter is how a member
   // narrows it to one kind. Anyone casual whose thread moved to Rishta stays off
   // the deck for good.
+  // Someone already matched is a conversation, not a card to swipe. Cards the
+  // member has already had on screen stay, though: dropping one from behind
+  // the cursor (a like that just matched) would shift the deck and skip the
+  // next person.
+  const shownIds = useRef(new Set<string>());
+  const matchedIds = useMemo(
+    () => new Set(matches.map((m) => m.sourceProfileId).filter((id): id is string => Boolean(id))),
+    [matches]
+  );
   const deck = useMemo(() => {
-    const visible = (p: BrowseProfile) => !blockedProfileIds.has(p.id);
+    const visible = (p: BrowseProfile) =>
+      !blockedProfileIds.has(p.id) && (!matchedIds.has(p.id) || shownIds.current.has(p.id));
     const dating = oppositeGenderProfiles(datingProfiles, user?.gender).filter(
       (p) => visible(p) && !rishtaProfileIds.has(p.id) && p.intent === 'casual'
     );
@@ -154,7 +181,7 @@ export function HomeScreen() {
       list.push(p);
     });
     return list;
-  }, [datingProfiles, rishtaProfiles, user?.gender, blockedProfileIds, rishtaProfileIds]);
+  }, [datingProfiles, rishtaProfiles, user?.gender, blockedProfileIds, rishtaProfileIds, matchedIds]);
 
   // A non-default sort reorders only the cards still ahead: the ones already
   // swiped keep their places, so a page arriving mid-deck (loadMore below) can
@@ -196,6 +223,7 @@ export function HomeScreen() {
 
   const safeCursor = Math.min(cursor, visibleProfiles.length);
   const currentProfile = visibleProfiles[safeCursor];
+  if (currentProfile) shownIds.current.add(currentProfile.id);
 
   // Which kind of card is on screen: casual members are Friends, everyone else
   // is Rishta. It decides what a like does and which details count, not the
@@ -363,14 +391,33 @@ export function HomeScreen() {
       // already matched does not celebrate again.
       if (outcome?.isNew) {
         setCelebration({ name: profile.name, photo: profile.photos[0] });
-        addNotification('match', t('matches.itsAMatch'), t('matches.matchedBody', { name: profile.name }));
+        addNotification('match', t('matches.itsAMatch'), t('matches.matchedBody', { name: profile.name }), { id: profile.id, kind: mode });
       }
       if (mode !== 'dating') {
-        addNotification('like', t('profileDetail.interestSentTitle'), t('profileDetail.interestSentBody', { name: profile.name }));
+        addNotification('like', t('profileDetail.interestSentTitle'), t('profileDetail.interestSentBody', { name: profile.name }), { id: profile.id, kind: mode });
         await notify({ title: t('profileDetail.interestSentTitle'), message: t('profileDetail.interestSentBody', { name: profile.name }) });
       }
+      // A match is a conversation now, not something to take back here.
+      if (outcome && !outcome.isNew) offerUndoLike(profile.id, profile.name);
     }
     advance();
+  };
+
+  // Takes the like back everywhere (their "who liked you", their notification,
+  // a trial it used) and brings the card back up.
+  const onUndoLike = async () => {
+    const target = undoLike;
+    if (!target) return;
+    if (undoTimer.current) clearTimeout(undoTimer.current);
+    setUndoLike(null);
+    const ok = await unlike(target.id);
+    if (!ok) {
+      await notify({ title: t('discover.undoLikeFailed') });
+      return;
+    }
+    dropLikeRows(target.id);
+    const index = visibleProfiles.findIndex((p) => p.id === target.id);
+    if (index >= 0) setCursor(index);
   };
 
   const onToggleFavourite = () => {
@@ -538,6 +585,24 @@ export function HomeScreen() {
             onLike={onLike}
             bottomInset={actionBarBottom}
           />
+          {undoLike && (
+            <Animated.View
+              entering={FadeInDown.duration(180)}
+              exiting={FadeOutDown.duration(160)}
+              style={[styles.undoWrap, { bottom: actionBarBottom + ACTION_BAR_CLEARANCE - spacing.sm }]}
+              pointerEvents="box-none"
+            >
+              <View style={[styles.undoBar, rtl && styles.rowRtl]}>
+                <Ionicons name="heart" size={16} color={accent.primary} />
+                <Text style={[styles.undoText, rtl && styles.rtlText]} numberOfLines={1}>
+                  {t('discover.likedUndoText', { name: undoLike.name })}
+                </Text>
+                <Pressable onPress={onUndoLike} hitSlop={8} style={styles.undoAction} accessibilityRole="button">
+                  <Text style={[styles.undoActionText, { color: accent.primary }]}>{t('discover.likedUndo')}</Text>
+                </Pressable>
+              </View>
+            </Animated.View>
+          )}
         </Animated.View>
       ) : (
         <Animated.View entering={ReanimatedFadeIn.duration(240)} style={styles.emptyState}>
@@ -625,4 +690,26 @@ const makeStyles = (colors: Palette) =>
     },
     emptyResetLabel: { ...typography.label, color: '#FFFFFF', fontSize: scaleFont(13) },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },
+    rowRtl: { flexDirection: 'row-reverse' },
+    undoWrap: { position: 'absolute', left: spacing.md, right: spacing.md },
+    undoBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      paddingVertical: spacing.sm,
+      paddingLeft: spacing.md,
+      paddingRight: spacing.xs,
+      borderRadius: radius.pill,
+      backgroundColor: colors.surfaceElevated,
+      borderWidth: 1,
+      borderColor: colors.border,
+      shadowColor: '#000',
+      shadowOpacity: 0.12,
+      shadowRadius: 10,
+      shadowOffset: { width: 0, height: 4 },
+      elevation: 4,
+    },
+    undoText: { ...typography.caption, color: colors.textPrimary, fontWeight: '600', flex: 1 },
+    undoAction: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs },
+    undoActionText: { ...typography.label, fontWeight: '800' },
   });

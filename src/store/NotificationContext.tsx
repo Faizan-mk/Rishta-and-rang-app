@@ -15,7 +15,16 @@ interface NotificationContextValue {
   /** Empties the feed for good. Rejects if the server refused, so the caller
    *  can put the rows back on screen rather than showing a lie. */
   clearAll: () => Promise<void>;
-  addNotification: (type: NotificationItem['type'], title: string, body: string) => void;
+  addNotification: (
+    type: NotificationItem['type'],
+    title: string,
+    body: string,
+    about?: { id: string; kind: 'dating' | 'rishta' }
+  ) => void;
+  /** Drops this member's own "interest sent" rows about someone (a like taken back). */
+  dropLikeRows: (profileId: string) => void;
+  /** Re-reads the feed from the server, so rows deleted there (a like taken back) go here too. */
+  refreshFeed: () => void;
 }
 
 // Which preference toggle gates each notification type — a disabled toggle means
@@ -117,17 +126,34 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }
   };
 
-  const addNotification = (type: NotificationItem['type'], title: string, body: string) => {
+  const addNotification = (
+    type: NotificationItem['type'],
+    title: string,
+    body: string,
+    about?: { id: string; kind: 'dating' | 'rishta' }
+  ) => {
     if (!user || !prefs[PREF_KEY_BY_TYPE[type]]) return;
-    notificationsService.addNotification(user.id, type, title, body).then((item) => {
+    notificationsService.addNotification(user.id, type, title, body, about).then((item) => {
       setFeed((prev) => [item, ...prev]);
     });
   };
 
+  const refreshFeed = () => {
+    if (!user) return;
+    notificationsService
+      .fetchFeed(user.id)
+      .then(setFeed)
+      .catch(() => undefined);
+  };
+
+  // The server row goes with withdraw_like; this keeps the list on screen in step.
+  const dropLikeRows = (profileId: string) =>
+    setFeed((prev) => prev.filter((n) => !(n.type === 'like' && n.relatedId === profileId)));
+
   const unreadCount = useMemo(() => feed.filter((n) => !n.read).length, [feed]);
 
   const value = useMemo(
-    () => ({ prefs, setPref, feed, unreadCount, markAllRead, markRead, markReadForMatch, clearAll, addNotification }),
+    () => ({ prefs, setPref, feed, unreadCount, markAllRead, markRead, markReadForMatch, clearAll, addNotification, dropLikeRows, refreshFeed }),
     [prefs, feed, unreadCount, user?.id]
   );
 

@@ -25,6 +25,12 @@ interface FavoritesContextValue {
   toggleLike: (
     profile: FavoriteProfile
   ) => Promise<{ match: Match | null; isNew: boolean; likesLeft: number } | null>;
+  /**
+   * Takes back a like that hasn't made a match. Resolves true once the server
+   * has removed it (and with it their notification); false if it couldn't be,
+   * in which case the like is shown again.
+   */
+  unlike: (id: string) => Promise<boolean>;
   /** Saves to or drops from Favorites. Never likes, notifies or counts a like. */
   toggleFavorite: (profile: FavoriteProfile) => void;
   removeFavorite: (id: string) => void;
@@ -127,6 +133,18 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
   const isLiked = (id: string) => likedIds.has(id) || matchedIds.has(id);
   const isFavorite = (id: string) => favorites.some((f) => f.id === id);
 
+  const unlike = async (id: string) => {
+    if (!user || matchedIds.has(id)) return false;
+    setLikedIds((prev) => withoutId(prev, id));
+    try {
+      await likesService.withdrawLike(id);
+      return true;
+    } catch {
+      setLikedIds((prev) => new Set(prev).add(id));
+      return false;
+    }
+  };
+
   const toggleLike = async (profile: FavoriteProfile) => {
     if (!user) return null;
     // Already matched: the heart shows filled and stays that way. Withdrawing
@@ -134,9 +152,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
     // gone; ending a match is block / unmatch, not a second tap on Like.
     if (matchedIds.has(profile.id)) return null;
     if (isLiked(profile.id)) {
-      setLikedIds((prev) => withoutId(prev, profile.id));
-      // Taking a like back also takes it off the other member's "who liked you".
-      likesService.withdrawLike(profile.id, user.id).catch(() => undefined);
+      await unlike(profile.id);
       return null;
     }
     // One call does the like, the reciprocity check and the match. The card the
@@ -199,6 +215,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
       isLiked,
       likedIdList: [...new Set([...likedIds, ...matchedIds])],
       toggleLike,
+      unlike,
       toggleFavorite,
       removeFavorite,
       clearFavorites,

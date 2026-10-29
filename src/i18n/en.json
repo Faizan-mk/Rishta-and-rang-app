@@ -192,6 +192,9 @@
     "proActiveBody": "You've got unlimited likes and can see everyone who's liked you."
   },
   "discover": {
+    "likedUndoText": "You liked {name}",
+    "likedUndo": "Undo",
+    "undoLikeFailed": "We couldn't take the like back. Check your connection and try again.",
     "subtitle": "Friend Mode",
     "like": "Like",
     "pass": "Pass",
@@ -863,7 +866,7 @@
     "matchedMessage": "Matched · Send a message",
     "notNow": "Not now",
     "interestSentTitle": "Interest sent",
-    "interestSentBody": "{name} will be notified. If they're interested too, you'll both be able to move to Rishta Mode.",
+    "interestSentBody": "Interest sent to {name}.",
     "message": "Message",
     "photosHidden": "Photos hidden until you match",
     "messageLockedTitle": "Not matched yet",

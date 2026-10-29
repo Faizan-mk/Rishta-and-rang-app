@@ -192,6 +192,9 @@
     "proActiveBody": "Aapke paas unlimited likes hain aur aap dekh sakte hain ke kisne aapko pasand kiya."
   },
   "discover": {
+    "likedUndoText": "Aap ne {name} ko like kiya",
+    "likedUndo": "Undo",
+    "undoLikeFailed": "Like wapas nahi ho saka. Apna connection dekh kar dobara koshish karein.",
     "subtitle": "Friend Mode",
     "like": "Pasand",
     "pass": "Nazar Andaz",
@@ -863,7 +866,7 @@
     "matchedMessage": "Match ho gaya · Message karein",
     "notNow": "Abhi nahi",
     "interestSentTitle": "Dilchaspi Bhej Di Gayi",
-    "interestSentBody": "{name} ko muttala kar diya jayega. Agar woh bhi dilchaspi rakhte hain to aap dono Rishta Mode ki taraf barh sakenge.",
+    "interestSentBody": "{name} ko dilchaspi bhej di gayi.",
     "message": "Paigham",
     "photosHidden": "Match hone tak tasveerein posheeda hain",
     "messageLockedTitle": "Abhi match nahi hua",
