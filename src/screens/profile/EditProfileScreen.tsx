@@ -3,6 +3,7 @@ import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { canOpenPhotoLibrary } from '../../utils/photoLibraryAccess';
+import { vocabularyLabel } from '../../i18n/vocabulary';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -54,7 +55,6 @@ const EDUCATION_LEVEL_OPTIONS = [...EDUCATION_LEVELS, OTHER_OPTION];
 const DEGREE_OPTIONS = ['BA', 'B.Com', 'BBA', 'BS Computer Science', 'BS Engineering', 'LLB', 'MBBS', 'BDS', 'MA', 'M.Com', 'MBA', 'MS / MPhil', 'PhD', 'Other'];
 const JOB_TITLE_OPTIONS = [...JOB_TITLES, OTHER_OPTION];
 const INDUSTRY_OPTIONS = ['Information Technology', 'Healthcare', 'Education', 'Finance and Banking', 'Engineering', 'Law', 'Government', 'Business and Trade', 'Telecommunications', 'Manufacturing', 'Media and Marketing', 'Real Estate', 'Agriculture', 'Other'];
-const PAKISTANI_LANGUAGE_OPTIONS = [...PAKISTANI_LANGUAGES, OTHER_OPTION];
 const NATIONALITY_OPTIONS = [...NATIONALITIES, OTHER_OPTION];
 const COUNTRY_OPTIONS = ['Pakistan', 'United Arab Emirates', 'Saudi Arabia', 'Qatar', 'Bahrain', 'United Kingdom', 'United States', 'Canada', 'Australia', OTHER_OPTION];
 
@@ -564,13 +564,7 @@ export function EditProfileScreen() {
 
       <FadeIn delay={340} style={styles.card}>
         <AccentHeading title={t('discover.languagesBackgroundTitle')} gradient={accent.duo} style={styles.sectionHeading} />
-        <SelectOrOtherField
-          label={t('editProfile.languages')}
-          value={details.languagesText}
-          onChange={(v) => setField('languagesText', v)}
-          options={PAKISTANI_LANGUAGE_OPTIONS}
-          placeholder={t('editProfile.languagesPlaceholder')}
-        />
+        <LanguagesField value={details.languagesText} onChange={(v) => setField('languagesText', v)} rtl={rtl} />
         <SelectOrOtherField label={t('editProfile.nationality')} value={details.nationality} options={NATIONALITY_OPTIONS} onChange={(v) => setField('nationality', v)} />
         <SelectOrOtherField label={t('editProfile.grewUpIn')} value={details.grewUpIn} options={PAKISTAN_CITIES} onChange={(v) => setField('grewUpIn', v)} />
         <SelectOrOtherField label={t('editProfile.country')} value={details.country} options={COUNTRY_OPTIONS} onChange={(v) => setField('country', v)} />
@@ -639,6 +633,71 @@ function SelectOrOtherField({
           placeholder={t('common.enterAnswer')}
         />
       )}
+    </>
+  );
+}
+
+// Most people speak more than one language, so this picks several: a chip per
+// common language, toggled on and off, and a free-text line for any others.
+// The value stays the comma-separated text the rest of the form saves.
+function LanguagesField({
+  value,
+  onChange,
+  rtl,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  rtl: boolean;
+}) {
+  const { t } = useLanguage();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const all = value
+    .split(',')
+    .map((l) => l.trim())
+    .filter(Boolean);
+  const isListed = (l: string) => PAKISTANI_LANGUAGES.some((k) => k.toLowerCase() === l.toLowerCase());
+  const picked = new Set(all.filter(isListed).map((l) => l.toLowerCase()));
+  const others = all.filter((l) => !isListed(l));
+  const [othersText, setOthersText] = useState(others.join(', '));
+
+  const save = (listed: string[], otherText: string) => {
+    const extra = otherText
+      .split(',')
+      .map((l) => l.trim())
+      .filter(Boolean);
+    onChange([...listed, ...extra].join(', '));
+  };
+  const listedNow = PAKISTANI_LANGUAGES.filter((k) => picked.has(k.toLowerCase()));
+
+  const toggle = (lang: string) => {
+    const next = picked.has(lang.toLowerCase()) ? listedNow.filter((k) => k !== lang) : [...listedNow, lang];
+    save(next, othersText);
+  };
+
+  return (
+    <>
+      <Text style={[styles.fieldLabel, rtl && styles.rtlText]}>{t('editProfile.languages')}</Text>
+      <Text style={[styles.fieldHint, rtl && styles.rtlText]}>{t('editProfile.languagesHint')}</Text>
+      <View style={[styles.chipRow, rtl && { flexDirection: 'row-reverse' }]}>
+        {PAKISTANI_LANGUAGES.map((lang) => (
+          <Chip
+            key={lang}
+            label={vocabularyLabel(lang, t)}
+            selected={picked.has(lang.toLowerCase())}
+            onPress={() => toggle(lang)}
+          />
+        ))}
+      </View>
+      <TextField
+        label={t('editProfile.languagesOther')}
+        value={othersText}
+        onChangeText={(text) => {
+          setOthersText(text);
+          save(listedNow, text);
+        }}
+        placeholder={t('editProfile.languagesOtherPlaceholder')}
+      />
     </>
   );
 }
@@ -807,6 +866,7 @@ const makeStyles = (colors: Palette) =>
     nameHint: { ...typography.caption, color: colors.textSecondary, marginTop: -spacing.sm, marginBottom: spacing.md },
     bioInput: { minHeight: 90, textAlignVertical: 'top' },
     chipRow: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.xs },
+    fieldHint: { ...typography.caption, color: colors.textSecondary, marginBottom: spacing.xs },
     tagInputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm },
     tagInputField: { flex: 1 },
     addTagButton: { marginBottom: spacing.md },
