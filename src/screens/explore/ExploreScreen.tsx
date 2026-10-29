@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Image,
   Modal,
   Pressable,
@@ -210,7 +211,9 @@ export function ExploreScreen() {
       destructive: true,
     });
     if (!ok) return;
-    if (section === 'liked') clearLiked(historyEntries.map(({ entry }) => entry.id));
+    // Every like, not just the rows on screen: ones still loading would
+    // otherwise turn up a moment after the list was cleared.
+    if (section === 'liked') clearLiked(likedIdList);
     else if (section === 'passed') clearPassed();
     else if (section === 'compliments') clearCompliments();
     else clearFavorites();
@@ -353,6 +356,10 @@ export function ExploreScreen() {
               <AccentHeading title={t('explore.whoLikedYou')} gradient={accent.duo} style={styles.sectionHeading} />
               {likes.length === 0 ? (
                 <Text style={[styles.sectionEmpty, rtl && styles.rtlText]}>{t('explore.whoLikedYouEmpty')}</Text>
+              ) : !reveals.ready ? (
+                // A moment, until we know who may be shown: not the lock card
+                // for a second and then the faces.
+                <ActivityIndicator color={accent.primary} style={styles.likesLoading} />
               ) : (
                 <>
                   {!reveals.plus && reveals.left !== null && reveals.left > 0 && (
@@ -976,6 +983,7 @@ const makeStyles = (colors: Palette) =>
     revealHint: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: spacing.sm },
     revealHintText: { ...typography.label, fontFamily: fonts.bodyBold, flex: 1 },
     gridAboveCard: { marginBottom: spacing.md },
+    likesLoading: { paddingVertical: spacing.lg },
     historyChips: { flexDirection: 'row', gap: spacing.xs, paddingBottom: spacing.md },
     historyChip: {
       flexDirection: 'row',

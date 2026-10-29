@@ -53,6 +53,11 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
   // Guards the cache write below, so one account's favourites can never be
   // persisted under another's key during a sign-out/sign-in.
   const hydratedFor = useRef<string | null>(null);
+  // Bumped by every add/remove/clear made here. The server copy fetched on
+  // sign-in only lands if nothing changed while it was on its way; otherwise
+  // it would put back what was just removed (a Clear right after opening the
+  // app came back a moment later).
+  const localEdits = useRef(0);
 
   useEffect(() => {
     if (!user) {
@@ -76,9 +81,10 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
         setFavorites(cached);
         hydratedFor.current = userId;
       }
+      const editsBefore = localEdits.current;
       const fresh = await favoritesService.fetchFavorites(userId);
       if (cancelled) return;
-      setFavorites(fresh);
+      if (localEdits.current === editsBefore) setFavorites(fresh);
       hydratedFor.current = userId;
     })().catch(() => {
       // Offline: whatever the cache gave us stays on screen.
@@ -156,6 +162,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
 
   const toggleFavorite = (profile: FavoriteProfile) => {
     if (!user) return;
+    localEdits.current += 1;
     if (isFavorite(profile.id)) {
       setFavorites((prev) => prev.filter((f) => f.id !== profile.id));
       favoritesService.removeFavorite(user.id, profile.id);
@@ -167,16 +174,22 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
 
   const removeFavorite = (id: string) => {
     if (!user) return;
+    localEdits.current += 1;
     setFavorites((prev) => prev.filter((f) => f.id !== id));
     favoritesService.removeFavorite(user.id, id);
   };
 
   const clearFavorites = () => {
     if (!user) return;
-    const userId = user.id;
-    const ids = favorites.map((f) => f.id);
+    const before = favorites;
+    localEdits.current += 1;
     setFavorites([]);
-    ids.forEach((id) => favoritesService.removeFavorite(userId, id));
+    // One request for the lot. If it fails they're put back, rather than
+    // looking cleared now and reappearing on the next launch.
+    favoritesService.removeAllFavorites(user.id).catch(() => {
+      localEdits.current += 1;
+      setFavorites(before);
+    });
   };
 
   const value = useMemo(

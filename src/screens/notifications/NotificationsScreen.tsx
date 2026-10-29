@@ -30,7 +30,7 @@ export function NotificationsScreen() {
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
   const { matches } = useMatches();
   const { datingProfiles, rishtaProfiles } = useDiscovery();
-  const { canSee, openLiker } = useLikeReveals();
+  const { ready, canSee, openLiker } = useLikeReveals();
 
   // Whose photo goes on each row: a message is about the person in that
   // thread, a like or match about the profile it names. Looked up in what the
@@ -63,11 +63,14 @@ export function NotificationsScreen() {
     });
     return (item: NotificationItem): NotificationItem => {
       if (item.type !== 'like' || !item.relatedId) return item;
-      if (!canSee(item.relatedId)) return { ...item, title: t('reveals.someone') };
+      // Until reveals have loaded, the server's own title stands (it already
+      // hides anyone the member may not see); masking it meanwhile made
+      // visible names blink to "Someone" and back.
+      if (!canSee(item.relatedId)) return ready ? { ...item, title: t('reveals.someone') } : item;
       const name = byPerson.get(item.relatedId);
       return name ? { ...item, title: name } : item;
     };
-  }, [matches, datingProfiles, rishtaProfiles, canSee, t]);
+  }, [matches, datingProfiles, rishtaProfiles, canSee, ready, t]);
 
   // Today, Yesterday, then everything older, newest first within each.
   const sections = useMemo(() => {

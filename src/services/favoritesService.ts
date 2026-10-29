@@ -62,4 +62,10 @@ async function removeFavorite(profileId: string, targetId: string): Promise<void
   if (error) throw new Error(error.message);
 }
 
-export const favoritesService = { fetchFavorites, addFavorite, updateFavoriteKind, removeFavorite };
+/** Every favourite at once, in one request (My History's Clear). */
+async function removeAllFavorites(profileId: string): Promise<void> {
+  const { error } = await supabase.from('favorites').delete().eq('profile_id', profileId);
+  if (error) throw new Error(error.message);
+}
+
+export const favoritesService = { fetchFavorites, addFavorite, updateFavoriteKind, removeFavorite, removeAllFavorites };

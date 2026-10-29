@@ -24,16 +24,21 @@ export function useLikeReveals() {
   const [left, setLeft] = useState<number | null>(null);
   const [revealed, setRevealed] = useState<Set<string>>(new Set());
   const [available, setAvailable] = useState(true);
+  // False until the first load answers. Before that nobody is known to be
+  // visible, and treating them as locked flashed the lock card on every open.
+  const [loaded, setLoaded] = useState(false);
 
   const refresh = useCallback(async () => {
     const state = await likesService.fetchRevealState();
     if (!state) {
       setAvailable(false);
+      setLoaded(true);
       return;
     }
     setAvailable(true);
     setLeft(state.left);
     setRevealed(new Set(state.ids));
+    setLoaded(true);
   }, []);
 
   useFocusEffect(
@@ -59,5 +64,8 @@ export function useLikeReveals() {
     if (upgrade) router.push('/explore-plus');
   };
 
-  return { plus, left, canSee, openLiker, refresh };
+  /** Whether `canSee` can be trusted yet; screens hold their likes back until it can. */
+  const ready = plus || loaded;
+
+  return { plus, left, ready, canSee, openLiker, refresh };
 }
