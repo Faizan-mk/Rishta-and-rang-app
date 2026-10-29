@@ -263,11 +263,28 @@ Deno.serve(async (req: Request) => {
     // What the recipient reads the app in decides the wording.
     const { data: recipient } = await supabase
       .from('profiles')
-      .select('language')
+      .select('language, is_explore_plus')
       .eq('id', userId)
       .maybeSingle();
 
-    const senderName = sender?.full_name ?? '';
+    let senderName = sender?.full_name ?? '';
+
+    // A like names the liker only for a recipient who may see who it was:
+    // Explore+, or a free member for whom this liker was one of their three
+    // free trials (like_profile records that before this push is sent;
+    // supabase/61_like_reveals.sql). Everyone else gets "Someone".
+    if (event === 'like' && !recipient?.is_explore_plus) {
+      const { data: revealed } = await supabase
+        .from('like_reveals')
+        .select('liker_id')
+        .eq('viewer_id', userId)
+        .eq('liker_id', callerId)
+        .maybeSingle();
+      if (!revealed) {
+        const lang = recipient?.language;
+        senderName = lang === 'ur' ? 'کسی' : lang === 'roman' ? 'Kisi' : 'Someone';
+      }
+    }
     const line = copyFor(event, recipient?.language);
 
     if (event === 'match') {

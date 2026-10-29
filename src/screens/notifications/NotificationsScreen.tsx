@@ -15,6 +15,7 @@ import { useDiscovery } from '../../store/DiscoveryContext';
 import { fonts, radius, spacing, typography } from '../../theme';
 import { dayKey } from '../../utils/time';
 import type { NotificationItem } from '../../types/content';
+import { useLikeReveals } from '../../hooks/useLikeReveals';
 import { APP_MODE, modeAccent } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
 
@@ -29,6 +30,7 @@ export function NotificationsScreen() {
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
   const { matches } = useMatches();
   const { datingProfiles, rishtaProfiles } = useDiscovery();
+  const { canSee, openLiker } = useLikeReveals();
 
   // Whose photo goes on each row: a message is about the person in that
   // thread, a like or match about the profile it names. Looked up in what the
@@ -43,9 +45,29 @@ export function NotificationsScreen() {
     matches.forEach((m) => {
       if (m.sourceProfileId && m.photo) byPerson.set(m.sourceProfileId, m.photo);
     });
-    return (item: NotificationItem) =>
-      (item.matchId && byMatch.get(item.matchId)) || (item.relatedId && byPerson.get(item.relatedId)) || undefined;
-  }, [matches, datingProfiles, rishtaProfiles]);
+    return (item: NotificationItem) => {
+      // A like nobody has revealed yet shows no face: the photo would give away
+      // who it was as surely as the name.
+      if (item.type === 'like' && item.relatedId && !canSee(item.relatedId)) return undefined;
+      return (item.matchId && byMatch.get(item.matchId)) || (item.relatedId && byPerson.get(item.relatedId)) || undefined;
+    };
+  }, [matches, datingProfiles, rishtaProfiles, canSee]);
+
+  // A like that arrived as "Someone" reads with the real name once it may be
+  // seen (revealed, or after upgrading), if the app has that person to hand.
+  const nameFor = useMemo(() => {
+    const byPerson = new Map<string, string>();
+    [...datingProfiles, ...rishtaProfiles].forEach((p) => byPerson.set(p.id, p.name));
+    matches.forEach((m) => {
+      if (m.sourceProfileId) byPerson.set(m.sourceProfileId, m.name);
+    });
+    return (item: NotificationItem): NotificationItem => {
+      if (item.type !== 'like' || !item.relatedId) return item;
+      if (!canSee(item.relatedId)) return { ...item, title: t('reveals.someone') };
+      const name = byPerson.get(item.relatedId);
+      return name ? { ...item, title: name } : item;
+    };
+  }, [matches, datingProfiles, rishtaProfiles, canSee, t]);
 
   // Today, Yesterday, then everything older, newest first within each.
   const sections = useMemo(() => {
@@ -74,6 +96,11 @@ export function NotificationsScreen() {
     markRead(item.id);
     if (item.matchId) {
       router.push(`/chat/${item.matchId}`);
+      return;
+    }
+    if (item.type === 'like' && item.relatedId) {
+      // Free members spend one of their looks here; Explore+ just opens it.
+      void openLiker(item.relatedId, item.relatedKind ?? 'dating');
       return;
     }
     if (item.relatedId) {
@@ -151,7 +178,7 @@ export function NotificationsScreen() {
           <Text style={[styles.sectionTitle, rtl && styles.rtlText]}>{section.title}</Text>
         )}
         renderItem={({ item }) => (
-          <NotificationRow item={item} photo={photoFor(item)} onPress={() => onPressNotification(item)} />
+          <NotificationRow item={nameFor(item)} photo={photoFor(item)} onPress={() => onPressNotification(item)} />
         )}
         ItemSeparatorComponent={() => <View style={[styles.separator, rtl && styles.separatorRtl]} />}
         showsVerticalScrollIndicator={false}

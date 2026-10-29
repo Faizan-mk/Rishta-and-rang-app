@@ -50,6 +50,7 @@ import { fonts, radius, spacing, typography } from '../../theme';
 import { scaleFont } from '../../theme/responsive';
 import { glow, APP_MODE, modeAccent, withAlpha, type ModeAccent } from '../../theme/glow';
 import type { Palette } from '../../theme/palettes';
+import { useLikeReveals } from '../../hooks/useLikeReveals';
 
 type ExploreTab = 'forYou' | 'events' | 'history';
 type HistorySection = 'liked' | 'passed' | 'compliments' | 'favorites';
@@ -122,7 +123,9 @@ export function ExploreScreen() {
   const [activeEvent, setActiveEvent] = useState<(typeof mockEvents)[number] | null>(null);
   const insets = useSafeAreaInsets();
 
-  const isPro = Boolean(user?.isExplorePlus);
+  const reveals = useLikeReveals();
+  const seenLikes = likes.filter((like) => reveals.canSee(like.id));
+  const lockedLikes = likes.filter((like) => !reveals.canSee(like.id));
   const accent = modeAccent(colors, APP_MODE);
   const activeFilters = countActiveFilters(filters);
 
@@ -344,66 +347,80 @@ export function ExploreScreen() {
       >
         {tab === 'forYou' && (
           <>
-            {/* The one paid unlock in V1: free members see the count, not the faces. */}
+            {/* Free members see their first three likers (useLikeReveals); anyone
+                after that is a count behind Explore+. Explore+ sees every face. */}
             <View style={styles.section}>
               <AccentHeading title={t('explore.whoLikedYou')} gradient={accent.duo} style={styles.sectionHeading} />
               {likes.length === 0 ? (
                 <Text style={[styles.sectionEmpty, rtl && styles.rtlText]}>{t('explore.whoLikedYouEmpty')}</Text>
-              ) : isPro ? (
-                <View style={styles.grid}>
-                  {likes.map((like) => (
-                    <View key={like.id} style={styles.gridSlot}>
-                      <PhotoTile
-                        uri={like.photo}
-                        name={like.name}
-                        title={like.name}
-                        caption={vocabularyLabel(like.city, t)}
-                        accent={accent}
-                        colors={colors}
-                        onPress={() =>
-                          router.push({ pathname: '/profile-detail', params: { kind: like.kind, id: like.id } })
-                        }
-                      />
-                    </View>
-                  ))}
-                </View>
               ) : (
-                <Pressable onPress={() => router.push('/explore-plus')} style={[styles.lockedCard, glow(accent.primary, 0.35, 18, 8)]}>
-                  <Image source={{ uri: likes[0].photo }} style={styles.lockedImage} blurRadius={22} />
-                  <BlurView intensity={40} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
-                  <LinearGradient
-                    colors={[withAlpha(accent.primary, 0.35), withAlpha(accent.secondary, 0.2), 'transparent']}
-                    start={SCRIM_END}
-                    end={SCRIM_START}
-                    style={StyleSheet.absoluteFill}
-                    pointerEvents="none"
-                  />
-                  <View style={styles.lockedBody}>
-                    <LinearGradient
-                      colors={accent.ramp}
-                      start={GRADIENT_START}
-                      end={GRADIENT_END}
-                      style={[styles.lockedOrb, glow(accent.primary, 0.6, 16, 8)]}
-                    >
-                      <Ionicons name="lock-closed" size={20} color="#FFFFFF" />
-                    </LinearGradient>
-                    <Text style={styles.lockedCount}>
-                      {likes.length === 1
-                        ? t('explore.whoLikedYouLockedOne')
-                        : t('explore.whoLikedYouLocked', { count: likes.length })}
-                    </Text>
-                    <Text style={styles.lockedHint}>{t('explore.premiumLockHint')}</Text>
-                    <LinearGradient
-                      colors={accent.ramp}
-                      start={GRADIENT_START}
-                      end={GRADIENT_END}
-                      style={[styles.lockedButton, glow(accent.primary, 0.6, 14, 6)]}
-                    >
-                      <Ionicons name="sparkles" size={14} color="#FFFFFF" />
-                      <Text style={styles.lockedButtonText}>{t('explorePlus.upgrade')}</Text>
-                    </LinearGradient>
+                <>
+                  {!reveals.plus && reveals.left !== null && reveals.left > 0 && (
+                    <View style={[styles.revealHint, rtl && styles.rowRtl]}>
+                      <Ionicons name="eye-outline" size={14} color={accent.primary} />
+                      <Text style={[styles.revealHintText, { color: accent.primary }, rtl && styles.rtlText]}>
+                        {t(reveals.left === 1 ? 'reveals.hintOne' : 'reveals.hint', { count: reveals.left })}
+                      </Text>
+                    </View>
+                  )}
+                  {seenLikes.length > 0 && (
+                  <View style={[styles.grid, lockedLikes.length > 0 && styles.gridAboveCard]}>
+                    {seenLikes.map((like) => (
+                      <View key={like.id} style={styles.gridSlot}>
+                        <PhotoTile
+                          uri={like.photo}
+                          name={like.name}
+                          title={like.name}
+                          caption={vocabularyLabel(like.city, t)}
+                          accent={accent}
+                          colors={colors}
+                          onPress={() =>
+                            router.push({ pathname: '/profile-detail', params: { kind: like.kind, id: like.id } })
+                          }
+                        />
+                      </View>
+                    ))}
                   </View>
-                </Pressable>
+                  )}
+                  {lockedLikes.length > 0 && (
+                  <Pressable onPress={() => router.push('/explore-plus')} style={[styles.lockedCard, glow(accent.primary, 0.35, 18, 8)]}>
+                    <Image source={{ uri: lockedLikes[0].photo }} style={styles.lockedImage} blurRadius={22} />
+                    <BlurView intensity={40} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
+                    <LinearGradient
+                      colors={[withAlpha(accent.primary, 0.35), withAlpha(accent.secondary, 0.2), 'transparent']}
+                      start={SCRIM_END}
+                      end={SCRIM_START}
+                      style={StyleSheet.absoluteFill}
+                      pointerEvents="none"
+                    />
+                    <View style={styles.lockedBody}>
+                      <LinearGradient
+                        colors={accent.ramp}
+                        start={GRADIENT_START}
+                        end={GRADIENT_END}
+                        style={[styles.lockedOrb, glow(accent.primary, 0.6, 16, 8)]}
+                      >
+                        <Ionicons name="lock-closed" size={20} color="#FFFFFF" />
+                      </LinearGradient>
+                      <Text style={styles.lockedCount}>
+                        {lockedLikes.length === 1
+                          ? t('explore.whoLikedYouLockedOne')
+                          : t('explore.whoLikedYouLocked', { count: lockedLikes.length })}
+                      </Text>
+                      <Text style={styles.lockedHint}>{t('reveals.hintNone')}</Text>
+                      <LinearGradient
+                        colors={accent.ramp}
+                        start={GRADIENT_START}
+                        end={GRADIENT_END}
+                        style={[styles.lockedButton, glow(accent.primary, 0.6, 14, 6)]}
+                      >
+                        <Ionicons name="sparkles" size={14} color="#FFFFFF" />
+                        <Text style={styles.lockedButtonText}>{t('explorePlus.upgrade')}</Text>
+                      </LinearGradient>
+                    </View>
+                  </Pressable>
+                  )}
+                </>
               )}
             </View>
 
@@ -864,7 +881,7 @@ const makeStyles = (colors: Palette) =>
       borderColor: colors.gold,
     },
     lockedCount: { ...typography.h2, color: colors.textPrimary, textAlign: 'center' },
-    lockedHint: { ...typography.caption, color: colors.textSecondary, textAlign: 'center' },
+    lockedHint: { ...typography.caption, fontFamily: fonts.bodyBold, color: colors.textPrimary, textAlign: 'center' },
     lockedButton: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -956,6 +973,9 @@ const makeStyles = (colors: Palette) =>
     historyTextWrap: { flex: 1 },
     historyName: { ...typography.h3, color: colors.textPrimary },
     historyMeta: { ...typography.caption, color: colors.textSecondary },
+    revealHint: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: spacing.sm },
+    revealHintText: { ...typography.label, fontFamily: fonts.bodyBold, flex: 1 },
+    gridAboveCard: { marginBottom: spacing.md },
     historyChips: { flexDirection: 'row', gap: spacing.xs, paddingBottom: spacing.md },
     historyChip: {
       flexDirection: 'row',

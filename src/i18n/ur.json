@@ -361,7 +361,13 @@
     "moveToRishta": "رشتے کی طرف بڑھیں",
     "moveToRishtaSent": "💫 رشتہ کی درخواست بھیج دی گئی — {name} کے جواب کا انتظار ہے۔",
     "moveToRishtaAccepted": "✅ {name} نے قبول کر لیا — اب آپ دونوں رشتہ مرحلے میں ہیں۔",
-    "moveToRishtaPending": "رشتہ کی درخواست زیر التوا ہے...",
+    "moveToRishtaPending": "رشتہ کی درخواست زیر التوا",
+    "cancelRishtaAction": "واپس لیں",
+    "cancelRishtaTitle": "رشتہ کی درخواست واپس لیں؟",
+    "cancelRishtaBody": "{name} کو یہ درخواست اب نظر نہیں آئے گی۔ آپ بعد میں دوبارہ بھیج سکتے ہیں۔",
+    "cancelRishtaConfirm": "واپس لیں",
+    "cancelRishtaKeep": "رہنے دیں",
+    "cancelRishtaFailed": "درخواست واپس نہیں ہو سکی۔ اپنا کنکشن دیکھ کر دوبارہ کوشش کریں۔",
     "moveToRishtaConfirmTitle": "رشتے کی درخواست بھیجیں؟",
     "moveToRishtaConfirmBody": "اس سے {name} کو معلوم ہوگا کہ آپ سنجیدہ اور خاندانی گفتگو کی طرف بڑھنا چاہتے ہیں۔",
     "block": "بلاک کریں",
@@ -778,11 +784,10 @@
   },
   "explore": {
     "title": "دریافت کریں",
-    "premiumLockHint": "وہ کون ہیں، دیکھنے کے لیے ایکسپلور+ لیں",
     "whoLikedYou": "کس نے آپ کو پسند کیا",
-    "whoLikedYouEmpty": "ابھی کوئی پسندیدگی نہیں — کوئی آپ کو پسند کرے گا تو یہاں نظر آئے گا۔",
     "whoLikedYouLocked": "{count} لوگوں نے آپ کو پسند کیا",
     "whoLikedYouLockedOne": "1 شخص نے آپ کو پسند کیا",
+    "whoLikedYouEmpty": "ابھی کوئی پسندیدگی نہیں — کوئی آپ کو پسند کرے گا تو یہاں نظر آئے گا۔",
     "newMembers": "نئے ممبرز",
     "newMembersEmpty": "ابھی کوئی نیا ممبر نہیں۔",
     "recentlyActive": "حال ہی میں فعال",
@@ -1102,5 +1107,13 @@
   },
   "loader": {
     "tagline": "اپنا ہمسفر ڈھونڈیں"
+  },
+  "reveals": {
+    "someone": "کسی",
+    "hint": "آپ کے {count} مفت ٹرائل باقی ہیں کہ کس نے پسند کیا",
+    "hintOne": "آپ کا 1 مفت ٹرائل باقی ہے",
+    "hintNone": "آپ کے 3 مفت ٹرائل ختم ہو گئے۔ سب دیکھنے کے لیے اپ گریڈ کریں",
+    "noneLeftTitle": "آپ کے 3 ٹرائل ختم ہو گئے",
+    "noneLeftBody": "کسی نے آپ کو پسند کیا ہے۔ کون ہے، یہ دیکھنے کے لیے ایکسپلور+ میں اپ گریڈ کریں۔"
   }
 }

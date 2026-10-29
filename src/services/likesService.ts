@@ -155,4 +155,25 @@ async function fetchProfileSummaries(ids: string[]): Promise<ProfileSummary[]> {
   }));
 }
 
-export const likesService = { fetchLikesReceived, likeProfile, withdrawLike, fetchMyLikedIds, fetchProfileSummaries };
+/**
+ * How many free looks at "who liked me" are left (-1 = Explore+, unlimited) and
+ * whose like has already been revealed (supabase/61_like_reveals.sql). Null if
+ * that isn't deployed, so callers can fall back to showing everyone.
+ */
+async function fetchRevealState(): Promise<{ left: number; ids: string[] } | null> {
+  const [{ data: left, error: leftError }, { data: rows, error: rowsError }] = await Promise.all([
+    supabase.rpc('like_reveals_left'),
+    supabase.from('like_reveals').select('liker_id'),
+  ]);
+  if (leftError || rowsError || typeof left !== 'number') return null;
+  return { left, ids: (rows ?? []).map((r) => String(r.liker_id)) };
+}
+
+export const likesService = {
+  fetchLikesReceived,
+  likeProfile,
+  withdrawLike,
+  fetchMyLikedIds,
+  fetchProfileSummaries,
+  fetchRevealState,
+};

@@ -361,7 +361,13 @@
     "moveToRishta": "Move to Rishta",
     "moveToRishtaSent": "💫 Rishta request sent — waiting for {name} to respond.",
     "moveToRishtaAccepted": "✅ {name} accepted — you're both in Rishta stage now.",
-    "moveToRishtaPending": "Rishta request pending...",
+    "moveToRishtaPending": "Rishta request pending",
+    "cancelRishtaAction": "Cancel",
+    "cancelRishtaTitle": "Take back your rishta request?",
+    "cancelRishtaBody": "{name} won't see the request any more. You can send it again later.",
+    "cancelRishtaConfirm": "Take it back",
+    "cancelRishtaKeep": "Keep it",
+    "cancelRishtaFailed": "We couldn't take the request back. Check your connection and try again.",
     "moveToRishtaConfirmTitle": "Send a Move to Rishta request?",
     "moveToRishtaConfirmBody": "This lets {name} know you'd like to take things toward a serious, family-involved conversation.",
     "block": "Block",
@@ -778,11 +784,10 @@
   },
   "explore": {
     "title": "Explore",
-    "premiumLockHint": "Unlock Explore+ to see who they are",
     "whoLikedYou": "Who liked you",
-    "whoLikedYouEmpty": "No likes yet — when someone likes you, they land here.",
     "whoLikedYouLocked": "{count} people liked you",
     "whoLikedYouLockedOne": "1 person liked you",
+    "whoLikedYouEmpty": "No likes yet — when someone likes you, they land here.",
     "newMembers": "New members",
     "newMembersEmpty": "No new members yet.",
     "recentlyActive": "Recently active",
@@ -1102,5 +1107,13 @@
   },
   "loader": {
     "tagline": "Find your life partner"
+  },
+  "reveals": {
+    "someone": "Someone",
+    "hint": "{count} of your 3 free trials left: see who liked you",
+    "hintOne": "1 free trial left to see who liked you",
+    "hintNone": "Your 3 free trials are used. Upgrade to see everyone",
+    "noneLeftTitle": "Your 3 free trials are used",
+    "noneLeftBody": "Someone liked you. Upgrade to Explore+ to see who, and everyone else who likes you."
   }
 }

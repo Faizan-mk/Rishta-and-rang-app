@@ -145,7 +145,7 @@
   },
   "language": {
     "title": "Apni Zaban Muntakhib Karein",
-    "subtitle": "Friends aur rishta, ek hi app mein.",
+    "subtitle": "Dost aur rishta, ek hi app mein.",
     "english": "English",
     "urdu": "اردو",
     "roman": "Roman English"
@@ -361,7 +361,13 @@
     "moveToRishta": "Rishtay ki Taraf Barhein",
     "moveToRishtaSent": "💫 Rishta ki darkhwast bhej di gayi — {name} ke jawab ka intezar hai.",
     "moveToRishtaAccepted": "✅ {name} ne qabool kar liya — ab aap dono Rishta stage mein hain.",
-    "moveToRishtaPending": "Rishta ki darkhwast zair-e-tameel hai...",
+    "moveToRishtaPending": "Rishta request zair-e-tameel",
+    "cancelRishtaAction": "Wapas lein",
+    "cancelRishtaTitle": "Rishta ki darkhwast wapas lein?",
+    "cancelRishtaBody": "{name} ko yeh darkhwast ab nazar nahi aayegi. Aap baad mein dobara bhej sakte hain.",
+    "cancelRishtaConfirm": "Wapas lein",
+    "cancelRishtaKeep": "Rehne dein",
+    "cancelRishtaFailed": "Darkhwast wapas nahi ho saki. Apna connection dekh kar dobara koshish karein.",
     "moveToRishtaConfirmTitle": "Rishtay ki darkhwast bhejein?",
     "moveToRishtaConfirmBody": "Is se {name} ko maloom hoga ke aap sanjeeda aur khandani guftagu ki taraf barhna chahte hain.",
     "block": "Block Karein",
@@ -778,11 +784,10 @@
   },
   "explore": {
     "title": "Explore",
-    "premiumLockHint": "Wo kaun hain, dekhne ke liye Explore+ lein",
     "whoLikedYou": "Kis ne aap ko like kiya",
-    "whoLikedYouEmpty": "Abhi koi like nahi — koi aap ko like karega to yahan aayega.",
     "whoLikedYouLocked": "{count} logon ne aap ko like kiya",
     "whoLikedYouLockedOne": "1 shakhs ne aap ko like kiya",
+    "whoLikedYouEmpty": "Abhi koi like nahi — koi aap ko like karega to yahan aayega.",
     "newMembers": "Naye members",
     "newMembersEmpty": "Abhi koi naya member nahi.",
     "recentlyActive": "Haal hi mein active",
@@ -1102,5 +1107,13 @@
   },
   "loader": {
     "tagline": "Apna humsafar dhoondein"
+  },
+  "reveals": {
+    "someone": "Kisi",
+    "hint": "Aap ke {count} muft trial baqi hain ke kis ne pasand kiya",
+    "hintOne": "Aap ka 1 muft trial baqi hai",
+    "hintNone": "Aap ke 3 muft trial khatam ho gaye. Sab dekhne ke liye upgrade karein",
+    "noneLeftTitle": "Aap ke 3 trial khatam ho gaye",
+    "noneLeftBody": "Kisi ne aap ko pasand kiya hai. Kaun hai, yeh dekhne ke liye Explore+ mein upgrade karein."
   }
 }
