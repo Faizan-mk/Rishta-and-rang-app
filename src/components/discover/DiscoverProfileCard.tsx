@@ -64,7 +64,8 @@ export const DiscoverProfileCard = React.memo(function DiscoverProfileCard({
   // The app's one colour, whichever kind of profile this is.
   const accent = modeAccent(colors, APP_MODE);
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const photosHidden = Boolean(profile.photosBlurred) && !liked;
+  // The server decides (no photo links are sent while it holds them back).
+  const photosHidden = Boolean(profile.photosBlurred);
   const [activeIndex, setActiveIndex] = useState(0);
 
   const photoCount = profile.photos.length;

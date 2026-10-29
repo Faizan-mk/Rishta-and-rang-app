@@ -550,8 +550,8 @@ export function HomeScreen() {
               <ReadinessSection profile={currentProfile} />
 
               {/* A member who blurs their photos keeps the second one hidden too,
-                  until there's a like between them, same as the card above. */}
-              {!(currentProfile.photosBlurred && !isLiked(currentProfile.id)) && (
+                  until they match or like the viewer, same as the card above. */}
+              {!currentProfile.photosBlurred && (
                 <MidProfilePhoto photos={currentProfile.photos} onPress={(uri) => setPreviewUri((cur) => cur ?? uri)} />
               )}
               <IntroMediaSection profile={currentProfile} />

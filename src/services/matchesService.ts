@@ -133,7 +133,7 @@ async function fetchProfileCards(ids: string[]): Promise<Map<string, ProfileCard
   if (ids.length === 0) return cards;
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, full_name, photos, last_active_at')
+    .select('id, full_name, photos:visible_photos, last_active_at')
     .in('id', ids);
   if (error) throw new Error(error.message);
   for (const row of data ?? []) {

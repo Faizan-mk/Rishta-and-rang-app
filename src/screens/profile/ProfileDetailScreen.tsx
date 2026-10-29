@@ -117,7 +117,7 @@ export function ProfileDetailScreen() {
   const compatibilityScore = kind === 'dating' ? datingCompatibility(user, profile as DiscoverProfile) : rishtaCompatibility(user, profile as RishtaListingProfile);
   // The profile is browsed from one deck or the other, so it wears that deck's ramp.
   const detailRamp = modeAccent(colors, kind === 'rishta' ? 'rishta' : 'dating').ramp;
-  const photosHidden = Boolean(profile.photosBlurred) && !isLiked(profile.id);
+  const photosHidden = Boolean(profile.photosBlurred);
 
   const onGalleryLayout = (e: LayoutChangeEvent) => setGalleryWidth(e.nativeEvent.layout.width);
   // Read once the swipe has settled, not on every scroll frame: updating the

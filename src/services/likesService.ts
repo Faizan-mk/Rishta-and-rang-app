@@ -136,7 +136,7 @@ async function fetchProfileSummaries(ids: string[]): Promise<ProfileSummary[]> {
   if (!ids.length) return [];
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, full_name, dob, city, photos, intent')
+    .select('id, full_name, dob, city, photos:visible_photos, intent')
     .in('id', ids);
   if (error || !data) return [];
   return data.map((row) => ({

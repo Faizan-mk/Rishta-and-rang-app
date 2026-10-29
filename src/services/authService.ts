@@ -98,6 +98,8 @@ export interface ProfileDoc {
   /** Last time this member opened the app — drives the activity badge and sorts. */
   lastActiveAt: string | null;
   /** Ordered public URLs — the replaced `profile_photos` rows. */
+  /** Set by the server when this member's photos are held back from the viewer. */
+  photosBlurred?: boolean;
   photos: string[];
   voiceIntroUrl: string | null;
   voiceIntroDurationSec: number | null;
@@ -126,10 +128,13 @@ interface VerificationDoc {
 }
 
 // Every column the app reads off `profiles`, aliased to the camelCase field
-// names ProfileDoc / the mapping functions below expect. Kept on one line: the
+// names ProfileDoc / the mapping functions below expect. Photos and the video
+// intro come through visible_photos / visible_video_intro, which hold them
+// back from anyone a "blur my photos" member hasn't matched or liked
+// (supabase/68_enforce_privacy_switches.sql). Kept on one line: the
 // supabase-js type parser only understands a single-line select string.
 export const PROFILE_SELECT: string =
-  'id, fullName:full_name, dob, gender, city, bio, intent, language, activeMode:active_mode, datingVibeTags:dating_vibe_tags, datingIntentionLabel:dating_intention_label, rishtaReligion:rishta_religion, rishtaSect:rishta_sect, rishtaFamilyBackground:rishta_family_background, rishtaEducation:rishta_education, rishtaReadiness:rishta_readiness, rishtaPrayerHabits:rishta_prayer_habits, rishtaIncomeRange:rishta_income_range, rishtaLivingAbroad:rishta_living_abroad, heightCm:height_cm, maritalStatus:marital_status, hasChildren:has_children, occupation, practising, prayerHabits:prayer_habits, halalOnly:halal_only, smoking, drinking, religiousDress:religious_dress, openToRelocate:open_to_relocate, preferredCountry:preferred_country, careerPlans:career_plans, educationLevel:education_level, degree, jobTitle:job_title, industry, languages, nationality, grewUpIn:grew_up_in, country, selfieVerified:selfie_verified, bureauVerified:bureau_verified, lastActiveAt:last_active_at, photos, voiceIntroUrl:voice_intro_url, voiceIntroDurationSec:voice_intro_duration_sec, videoIntroUrl:video_intro_url, waliName:wali_name, waliInvitedAt:wali_invited_at, isExplorePlus:is_explore_plus, subscriptionPlan:subscription_plan, hasUsedTrial:has_used_trial, subscriptionRenewsAt:subscription_renews_at, nameChangedAt:name_changed_at, createdAt:created_at';
+  'id, fullName:full_name, dob, gender, city, bio, intent, language, activeMode:active_mode, datingVibeTags:dating_vibe_tags, datingIntentionLabel:dating_intention_label, rishtaReligion:rishta_religion, rishtaSect:rishta_sect, rishtaFamilyBackground:rishta_family_background, rishtaEducation:rishta_education, rishtaReadiness:rishta_readiness, rishtaPrayerHabits:rishta_prayer_habits, rishtaIncomeRange:rishta_income_range, rishtaLivingAbroad:rishta_living_abroad, heightCm:height_cm, maritalStatus:marital_status, hasChildren:has_children, occupation, practising, prayerHabits:prayer_habits, halalOnly:halal_only, smoking, drinking, religiousDress:religious_dress, openToRelocate:open_to_relocate, preferredCountry:preferred_country, careerPlans:career_plans, educationLevel:education_level, degree, jobTitle:job_title, industry, languages, nationality, grewUpIn:grew_up_in, country, selfieVerified:selfie_verified, bureauVerified:bureau_verified, lastActiveAt:last_active_at, photos:visible_photos, photosBlurred:photos_blurred, voiceIntroUrl:voice_intro_url, voiceIntroDurationSec:voice_intro_duration_sec, videoIntroUrl:visible_video_intro, waliName:wali_name, waliInvitedAt:wali_invited_at, isExplorePlus:is_explore_plus, subscriptionPlan:subscription_plan, hasUsedTrial:has_used_trial, subscriptionRenewsAt:subscription_renews_at, nameChangedAt:name_changed_at, createdAt:created_at';
 
 export async function fetchProfileRow(userId: string): Promise<ProfileDoc | null> {
   const { data, error } = await supabase.from('profiles').select(PROFILE_SELECT).eq('id', userId).maybeSingle();

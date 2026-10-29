@@ -33,7 +33,8 @@ export const RishtaListingCard = React.memo(function RishtaListingCard({ profile
   const { t, rtl } = useLanguage();
   const heartScale = useSharedValue(1);
   const heartStyle = useAnimatedStyle(() => ({ transform: [{ scale: heartScale.value }] }));
-  const photosHidden = Boolean(profile.photosBlurred) && !liked;
+  // The server decides (no photo links are sent while it holds them back).
+  const photosHidden = Boolean(profile.photosBlurred);
   const accent = modeAccent(colors, 'rishta');
 
   const onLikePress = () => {
