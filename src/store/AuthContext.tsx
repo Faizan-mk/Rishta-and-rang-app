@@ -21,6 +21,8 @@ interface AuthContextValue {
   setIntent: (intent: Intent) => void;
   setReadiness: (readiness: RishtaReadiness) => void;
   deleteAccount: () => Promise<void>;
+  /** Hides the account for up to 30 days and signs out; signing in brings it back. */
+  deactivateAccount: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -206,6 +208,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await cache.clearUser(user.id);
   }, [user]);
 
+  const deactivateAccount = useCallback(async () => {
+    if (!user) return;
+    const userId = user.id;
+    await authService.deactivateAccount();
+    await authService.logout();
+    setUser(null);
+    await cache.clearUser(userId);
+  }, [user]);
+
   const value = useMemo(
     () => ({
       user,
@@ -219,8 +230,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIntent,
       setReadiness,
       deleteAccount,
+      deactivateAccount,
     }),
-    [user, initializing, signup, login, logout, updateUser, refreshUser, setActiveMode, setIntent, setReadiness, deleteAccount]
+    [user, initializing, signup, login, logout, updateUser, refreshUser, setActiveMode, setIntent, setReadiness, deleteAccount, deactivateAccount]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

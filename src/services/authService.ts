@@ -1019,6 +1019,15 @@ async function claimCnic(cnic: string): Promise<void> {
   await callAuthOtp({ action: 'claim', cnic }, 'cnic');
 }
 
+/**
+ * Takes the member off the app for up to 30 days without deleting anything
+ * (supabase/69_deactivate_account.sql). Signing in again brings them back.
+ */
+async function deactivateAccount(): Promise<void> {
+  const { error } = await supabase.rpc('deactivate_account');
+  if (error) throw new Error(error.message);
+}
+
 export const authService = {
   touchLastActive,
   touchOffline,
@@ -1031,6 +1040,7 @@ export const authService = {
   updateUser,
   setActiveMode,
   deleteAccount,
+  deactivateAccount,
   emailExists,
   inspectEmail,
   requestOtp,

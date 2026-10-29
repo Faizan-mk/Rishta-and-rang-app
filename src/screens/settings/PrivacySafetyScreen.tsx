@@ -22,7 +22,7 @@ export function PrivacySafetyScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
-  const { deleteAccount } = useAuth();
+  const { deleteAccount, deactivateAccount } = useAuth();
   const { confirm, notify } = useDialog();
   const { prefs, setPref } = usePrivacy();
   const { blockedProfiles } = useMatches();
@@ -47,6 +47,23 @@ export function PrivacySafetyScreen() {
         title: t('privacy.deleteAccountFailedTitle'),
         message: reauth ? t('privacy.deleteAccountReauth') : t('privacy.deleteAccountFailedBody'),
       });
+    }
+  };
+
+  // A break rather than goodbye: hidden for up to 30 days, everything kept,
+  // and signing in again brings the profile back.
+  const onDeactivate = async () => {
+    const confirmed = await confirm({
+      title: t('privacy.deactivateTitle'),
+      message: t('privacy.deactivateBody'),
+      confirmLabel: t('privacy.deactivateConfirm'),
+      cancelLabel: t('common.cancel'),
+    });
+    if (!confirmed) return;
+    try {
+      await deactivateAccount();
+    } catch {
+      await notify({ title: t('privacy.deactivateFailed') });
     }
   };
 
@@ -136,6 +153,8 @@ export function PrivacySafetyScreen() {
         />
         <View style={[styles.card, styles.dangerCard]}>
           <SettingsRow icon="trash-outline" label={t('privacy.deleteAccount')} right="chevron" onPress={onDeleteAccount} />
+          <View style={styles.divider} />
+          <SettingsRow icon="pause-circle-outline" label={t('privacy.deactivate')} right="chevron" onPress={onDeactivate} />
         </View>
       </FadeIn>
     </ScreenContainer>
