@@ -93,6 +93,7 @@ export function ChatScreen() {
     refreshReadReceipt,
     sendRishtaRequest,
     respondRishtaRequest,
+    cancelRishtaRequest,
     blockMatch,
     blockedProfiles,
     unblockUser,
@@ -361,7 +362,29 @@ export function ChatScreen() {
   // up front and offers the screen that fixes it rather than an error.
   const canRequestRishta = rishtaProfileComplete(user);
 
+  // A request that's out can be taken back until it's answered — sent by
+  // mistake, or just changed your mind.
+  const onCancelRishta = async () => {
+    const confirmed = await confirm({
+      title: t('chat.cancelRishtaTitle'),
+      message: t('chat.cancelRishtaBody', { name: match.name }),
+      confirmLabel: t('chat.cancelRishtaConfirm'),
+      cancelLabel: t('chat.cancelRishtaKeep'),
+      destructive: true,
+    });
+    if (!confirmed) return;
+    try {
+      await cancelRishtaRequest(matchId);
+    } catch {
+      await notify({ title: t('chat.moveToRishta'), message: t('chat.cancelRishtaFailed') });
+    }
+  };
+
   const onMoveToRishta = async () => {
+    if (match.rishtaRequestPending) {
+      await onCancelRishta();
+      return;
+    }
     if (!canRequestRishta) {
       const goToProfile = await confirm({
         title: t('chat.rishtaProfileNeededTitle'),
@@ -567,10 +590,9 @@ export function ChatScreen() {
         <FadeIn delay={80}>
           <Pressable
             onPress={onMoveToRishta}
-            disabled={match.rishtaRequestPending}
-            // Muted while the request is out, and muted again while the rishta
-            // profile is empty — but still tappable in that second case, since
-            // the tap is what offers the screen that fills it in.
+            // Muted while the request is out (a tap there offers to take it
+            // back), and muted while the rishta profile is empty (a tap offers
+            // the screen that fills it in).
             style={[
               styles.moveToRishtaWrap,
               (match.rishtaRequestPending || !canRequestRishta) && styles.moveToRishtaBarPending,
@@ -596,6 +618,11 @@ export function ChatScreen() {
               <Text style={styles.moveToRishtaText}>
                 {match.rishtaRequestPending ? t('chat.moveToRishtaPending') : t('chat.moveToRishta')}
               </Text>
+              {match.rishtaRequestPending && (
+                <View style={styles.moveToRishtaCancel}>
+                  <Text style={styles.moveToRishtaCancelText}>{t('chat.cancelRishtaAction')}</Text>
+                </View>
+              )}
             </LinearGradient>
           </Pressable>
         </FadeIn>
@@ -979,9 +1006,21 @@ const makeStyles = (colors: Palette) =>
       borderWidth: 1,
       borderColor: withAlpha(colors.metalBright, 0.6),
       paddingVertical: spacing.sm + 2,
+      paddingHorizontal: spacing.md,
     },
     moveToRishtaBarPending: { opacity: 0.6 },
-    moveToRishtaText: { ...typography.label, color: '#FFFFFF', fontFamily: fonts.bodyBold },
+    // Wraps rather than cutting off, so the whole text and "take it back" show.
+    moveToRishtaText: { ...typography.label, color: '#FFFFFF', fontFamily: fonts.bodyBold, flexShrink: 1 },
+    // "Cancel" as a small pill beside the pending text, so it reads as a button.
+    moveToRishtaCancel: {
+      flexShrink: 0,
+      marginLeft: spacing.xs,
+      borderRadius: radius.pill,
+      backgroundColor: 'rgba(255,255,255,0.25)',
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 2,
+    },
+    moveToRishtaCancelText: { ...typography.label, color: '#FFFFFF', fontFamily: fonts.bodyBold },
     // An inverted list grows from the bottom on its own, so `justifyContent`
     // is not needed here any more — and would push a short thread the wrong way.
     listContent: { padding: spacing.md, flexGrow: 1 },

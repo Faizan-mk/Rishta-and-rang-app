@@ -67,6 +67,7 @@ interface MatchesContextValue {
   sendRishtaRequest: (matchId: string, requestText: string) => Promise<void>;
   /** Answers the other member's request; accepting moves both sides at once. */
   respondRishtaRequest: (matchId: string, accept: boolean) => Promise<'accepted' | 'declined'>;
+  cancelRishtaRequest: (matchId: string) => Promise<void>;
   removeMatch: (matchId: string) => void;
   blockMatch: (matchId: string) => void;
   unblockUser: (id: string) => void;
@@ -854,6 +855,13 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
       .catch(() => undefined);
   };
 
+  // Withdraws our own pending request. The server also deletes the "request
+  // sent" line; realtime removes it from both chats.
+  const cancelRishtaRequest = async (matchId: string) => {
+    await matchesService.cancelRishta(matchId);
+    setMatches((prev) => prev.map((m) => (m.id === matchId ? { ...m, rishtaRequestPending: false } : m)));
+  };
+
   const respondRishtaRequest = async (matchId: string, accept: boolean) => {
     const outcome = await matchesService.respondRishta(matchId, accept);
     // The in-app row is written inside `respond_rishta` for both of them — the
@@ -1032,6 +1040,7 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
       blockMatch,
       unblockUser,
       respondRishtaRequest,
+      cancelRishtaRequest,
       getMatchForProfile,
       blockProfile,
       likeProfile,

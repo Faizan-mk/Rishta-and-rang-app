@@ -399,6 +399,16 @@ async function respondRishta(matchId: string, accept: boolean): Promise<'accepte
   return data === 'accepted' ? 'accepted' : 'declined';
 }
 
+/**
+ * Takes back the caller's own request while it is still unanswered
+ * (supabase/62_cancel_rishta_request.sql). The row, the other member's
+ * notification and the "request sent" line in chat all go with it.
+ */
+async function cancelRishta(matchId: string): Promise<void> {
+  const { error } = await supabase.rpc('cancel_rishta_request', { p_match_id: matchId });
+  if (error) throw new Error(error.message);
+}
+
 /** Unmatching ends the conversation for both sides — there is one row now. */
 async function deleteMatch(matchId: string): Promise<void> {
   const { error } = await supabase.from('matches').delete().eq('id', matchId);
@@ -566,6 +576,7 @@ export const matchesService = {
   ensureMatch,
   requestRishta,
   respondRishta,
+  cancelRishta,
   deleteMatch,
   insertTextMessage,
   insertVoiceMessage,
