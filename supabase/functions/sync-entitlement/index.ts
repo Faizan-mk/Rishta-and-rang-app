@@ -36,7 +36,10 @@ function json(payload: unknown, status = 200): Response {
 
 interface RevenueCatSubscriber {
   subscriber?: {
-    entitlements?: Record<string, { expires_date?: string | null; product_identifier?: string }>;
+    entitlements?: Record<
+      string,
+      { expires_date?: string | null; product_identifier?: string; product_plan_identifier?: string | null }
+    >;
     subscriptions?: Record<string, { period_type?: string }>;
   };
 }
@@ -66,10 +69,18 @@ async function fetchEntitlementState(appUserId: string, secretKey: string): Prom
   // in the future means still active.
   const active = !entitlement.expires_date || (Number.isFinite(expiresAtMs) && (expiresAtMs as number) > Date.now());
 
+  // Google base plans come back as product "explore_plus" plus a plan
+  // ("monthly" / "yearly"); the plan is what says monthly or yearly, and the
+  // subscription may be keyed either way.
+  const product = entitlement.product_identifier ?? '';
+  const plan = entitlement.product_plan_identifier ?? null;
+  const subscriptions = body.subscriber?.subscriptions ?? {};
+  const subscription = subscriptions[product] ?? (plan ? subscriptions[`${product}:${plan}`] : undefined);
+
   return {
     active,
-    productId: entitlement.product_identifier ?? null,
-    periodType: body.subscriber?.subscriptions?.[entitlement.product_identifier ?? '']?.period_type ?? null,
+    productId: plan ? `${product}:${plan}` : product || null,
+    periodType: subscription?.period_type ?? null,
     expiresAtMs,
   };
 }
