@@ -50,7 +50,12 @@ export function useLikeReveals() {
     }, [user?.id, refresh])
   );
 
-  const canSee = (likerId: string) => plus || !available || revealed.has(likerId);
+  // Stable between renders, so screens that memo on it (Notifications'
+  // photo and name lookups) only recompute when the answer can change.
+  const canSee = useCallback(
+    (likerId: string) => plus || !available || revealed.has(likerId),
+    [plus, available, revealed]
+  );
 
   /** Opens a liker's profile, or offers Explore+ if they're locked. */
   const openLiker = async (likerId: string, kind: 'dating' | 'rishta') => {

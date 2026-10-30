@@ -780,7 +780,9 @@ async function updateUser(updated: UserProfile): Promise<UserProfile> {
     photos: photoUrls,
     voice_intro_url: voiceIntroUrl,
     voice_intro_duration_sec: updated.voiceIntroDurationSec ?? null,
-    video_intro_url: videoIntroUrl,
+    // '' removes the video; null would mean "leave it" (supabase/71: the
+    // media lives in profile_media and an older build sends null).
+    video_intro_url: videoIntroUrl ?? '',
     wali_name: updated.waliName ?? null,
     wali_invited_at: updated.waliInvitedAt ?? null,
     // The entitlement and badge columns are deliberately absent. `authenticated`
