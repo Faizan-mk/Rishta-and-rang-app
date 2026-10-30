@@ -396,7 +396,7 @@ export function HomeScreen() {
       }
       if (mode !== 'dating') {
         addNotification('like', t('profileDetail.interestSentTitle'), t('profileDetail.interestSentBody', { name: profile.name }), { id: profile.id, kind: mode });
-        await notify({ title: t('profileDetail.interestSentTitle'), message: t('profileDetail.interestSentBody', { name: profile.name }) });
+        // No popup: the "Liked · Undo" bar below says it, and lets it be taken back.
       }
       // A match is a conversation now, not something to take back here.
       if (outcome && !outcome.isNew) offerUndoLike(profile.id, profile.name);

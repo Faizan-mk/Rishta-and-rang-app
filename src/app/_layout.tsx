@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View } from 'react-native';
+import { Text, TextInput, View } from 'react-native';
 import '../utils/webGlobalStyles';
 import { Stack } from 'expo-router';
 import { useFonts } from 'expo-font';
@@ -30,6 +30,20 @@ import { usePushRegistration } from '../hooks/usePushRegistration';
 import { usePushNavigation } from '../hooks/usePushNavigation';
 import { useActivityHeartbeat } from '../hooks/useActivityHeartbeat';
 import { useBillingRegistration } from '../hooks/useBillingRegistration';
+
+// A phone set to a very large font made text spill out of buttons, chips and
+// cards built for normal sizes. Text still grows with the setting, up to 1.3x,
+// which keeps it readable without breaking the layout.
+const MAX_FONT_SCALE = 1.3;
+type WithDefaults = { defaultProps?: Record<string, unknown> };
+(Text as unknown as WithDefaults).defaultProps = {
+  ...(Text as unknown as WithDefaults).defaultProps,
+  maxFontSizeMultiplier: MAX_FONT_SCALE,
+};
+(TextInput as unknown as WithDefaults).defaultProps = {
+  ...(TextInput as unknown as WithDefaults).defaultProps,
+  maxFontSizeMultiplier: MAX_FONT_SCALE,
+};
 
 // The signed-in and signed-out route groups are gated with <Stack.Protected>, so
 // a deep link into a protected screen falls back to the anchor route ("index"),

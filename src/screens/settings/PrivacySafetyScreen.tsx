@@ -31,13 +31,13 @@ export function PrivacySafetyScreen() {
   const onDeleteAccount = async () => {
     const confirmed = await confirm({
       title: t('privacy.deleteAccountConfirmTitle'),
-      // Deleting here doesn't touch Google Play billing, so a subscriber is told
-      // to cancel there too, or they'd keep paying for nothing.
-      message: user?.isExplorePlus
-        ? `${t('privacy.deleteAccountConfirmBody')}
-
-${t('privacy.deleteAccountSubscriptionNote')}`
-        : t('privacy.deleteAccountConfirmBody'),
+      // Deleting here doesn't touch Google Play billing, so anyone who has ever
+      // subscribed is told to check there too (the Explore+ flag alone misses a
+      // payment still on hold, or one not synced yet).
+      message:
+        user?.isExplorePlus || user?.subscriptionPlan || user?.hasUsedTrial
+          ? [t('privacy.deleteAccountConfirmBody'), t('privacy.deleteAccountSubscriptionNote')].join('\n\n')
+          : t('privacy.deleteAccountConfirmBody'),
       confirmLabel: t('privacy.deleteAccountConfirmLabel'),
       cancelLabel: t('common.cancel'),
       destructive: true,
