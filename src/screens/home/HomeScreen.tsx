@@ -264,6 +264,7 @@ export function HomeScreen() {
   // A re-filtered deck is a different deck, so start it from the top
   // instead of landing mid-way through it.
   useEffect(() => {
+    shownIds.current = new Set();
     setCursor(0);
   }, [filters]);
 

@@ -23,6 +23,8 @@ export function useLikeReveals() {
   const plus = Boolean(user?.isExplorePlus);
   const [left, setLeft] = useState<number | null>(null);
   const [revealed, setRevealed] = useState<Set<string>>(new Set());
+  // Likers the server didn't send at all, as a count for the lock card.
+  const [locked, setLocked] = useState(0);
   const [available, setAvailable] = useState(true);
   // False until the first load answers. Before that nobody is known to be
   // visible, and treating them as locked flashed the lock card on every open.
@@ -38,6 +40,7 @@ export function useLikeReveals() {
     setAvailable(true);
     setLeft(state.left);
     setRevealed(new Set(state.ids));
+    setLocked(state.locked);
     setLoaded(true);
   }, []);
 
@@ -67,5 +70,5 @@ export function useLikeReveals() {
   /** Whether `canSee` can be trusted yet; screens hold their likes back until it can. */
   const ready = plus || loaded;
 
-  return { plus, left, ready, canSee, openLiker, refresh };
+  return { plus, left, locked, ready, canSee, openLiker, refresh };
 }

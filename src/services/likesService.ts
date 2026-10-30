@@ -154,13 +154,19 @@ async function fetchProfileSummaries(ids: string[]): Promise<ProfileSummary[]> {
  * whose like has already been revealed (supabase/61_like_reveals.sql). Null if
  * that isn't deployed, so callers can fall back to showing everyone.
  */
-async function fetchRevealState(): Promise<{ left: number; ids: string[] } | null> {
-  const [{ data: left, error: leftError }, { data: rows, error: rowsError }] = await Promise.all([
+async function fetchRevealState(): Promise<{ left: number; ids: string[]; locked: number } | null> {
+  const [{ data: left, error: leftError }, { data: rows, error: rowsError }, { data: locked }] = await Promise.all([
     supabase.rpc('like_reveals_left'),
     supabase.from('like_reveals').select('liker_id'),
+    // Likers the server holds back (supabase/70): only their number comes down.
+    supabase.rpc('locked_likes_count'),
   ]);
   if (leftError || rowsError || typeof left !== 'number') return null;
-  return { left, ids: (rows ?? []).map((r) => String(r.liker_id)) };
+  return {
+    left,
+    ids: (rows ?? []).map((r) => String(r.liker_id)),
+    locked: typeof locked === 'number' ? locked : 0,
+  };
 }
 
 export const likesService = {

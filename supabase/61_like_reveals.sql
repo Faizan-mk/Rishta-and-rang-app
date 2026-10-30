@@ -151,6 +151,8 @@ where p.id = n.profile_id
   and n.type = 'like'
   and n.related_id is not null
   and not coalesce(p.is_explore_plus, false)
+  -- a like received, not the member's own "interest sent" row
+  and exists (select 1 from public.likes l where l.liker_id = n.related_id and l.target_id = n.profile_id)
   and not exists (
     select 1 from public.like_reveals r where r.viewer_id = n.profile_id and r.liker_id = n.related_id
   );

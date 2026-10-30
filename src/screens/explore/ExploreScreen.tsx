@@ -125,8 +125,10 @@ export function ExploreScreen() {
   const insets = useSafeAreaInsets();
 
   const reveals = useLikeReveals();
-  const seenLikes = likes.filter((like) => reveals.canSee(like.id));
-  const lockedLikes = likes.filter((like) => !reveals.canSee(like.id));
+  // The server sends only the likers this member may see (supabase/70);
+  // the rest arrive as a number.
+  const seenLikes = likes;
+  const lockedCount = reveals.plus ? 0 : reveals.locked;
   const accent = modeAccent(colors, APP_MODE);
   const activeFilters = countActiveFilters(filters);
 
@@ -354,7 +356,7 @@ export function ExploreScreen() {
                 after that is a count behind Explore+. Explore+ sees every face. */}
             <View style={styles.section}>
               <AccentHeading title={t('explore.whoLikedYou')} gradient={accent.duo} style={styles.sectionHeading} />
-              {likes.length === 0 ? (
+              {likes.length === 0 && lockedCount === 0 ? (
                 <Text style={[styles.sectionEmpty, rtl && styles.rtlText]}>{t('explore.whoLikedYouEmpty')}</Text>
               ) : !reveals.ready ? (
                 // A moment, until we know who may be shown: not the lock card
@@ -371,7 +373,7 @@ export function ExploreScreen() {
                     </View>
                   )}
                   {seenLikes.length > 0 && (
-                  <View style={[styles.grid, lockedLikes.length > 0 && styles.gridAboveCard]}>
+                  <View style={[styles.grid, lockedCount > 0 && styles.gridAboveCard]}>
                     {seenLikes.map((like) => (
                       <View key={like.id} style={styles.gridSlot}>
                         <PhotoTile
@@ -389,9 +391,8 @@ export function ExploreScreen() {
                     ))}
                   </View>
                   )}
-                  {lockedLikes.length > 0 && (
+                  {lockedCount > 0 && (
                   <Pressable onPress={() => router.push('/explore-plus')} style={[styles.lockedCard, glow(accent.primary, 0.35, 18, 8)]}>
-                    <Image source={{ uri: lockedLikes[0].photo }} style={styles.lockedImage} blurRadius={22} />
                     <BlurView intensity={40} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
                     <LinearGradient
                       colors={[withAlpha(accent.primary, 0.35), withAlpha(accent.secondary, 0.2), 'transparent']}
@@ -410,9 +411,9 @@ export function ExploreScreen() {
                         <Ionicons name="lock-closed" size={20} color="#FFFFFF" />
                       </LinearGradient>
                       <Text style={styles.lockedCount}>
-                        {lockedLikes.length === 1
+                        {lockedCount === 1
                           ? t('explore.whoLikedYouLockedOne')
-                          : t('explore.whoLikedYouLocked', { count: lockedLikes.length })}
+                          : t('explore.whoLikedYouLocked', { count: lockedCount })}
                       </Text>
                       <Text style={styles.lockedHint}>{t('reveals.hintNone')}</Text>
                       <LinearGradient
@@ -875,7 +876,6 @@ const makeStyles = (colors: Palette) =>
       overflow: 'hidden',
       backgroundColor: colors.skeleton,
     },
-    lockedImage: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
     lockedBody: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.xs, padding: spacing.md },
     lockedOrb: {
       width: 46,

@@ -660,19 +660,48 @@ function LanguagesField({
   const picked = new Set(all.filter(isListed).map((l) => l.toLowerCase()));
   const others = all.filter((l) => !isListed(l));
   const [othersText, setOthersText] = useState(others.join(', '));
+  // Follow the saved value when it changes from outside (a late load), but
+  // not while the box already says the same thing in its own words.
+  const othersKey = others.map((l) => l.toLowerCase()).join(',');
+  useEffect(() => {
+    const typed = othersText
+      .split(',')
+      .map((l) => l.trim().toLowerCase())
+      .filter((l) => l && !isListed(l))
+      .join(',');
+    if (typed !== othersKey) setOthersText(others.join(', '));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [othersKey]);
 
+  const listedNow = PAKISTANI_LANGUAGES.filter((k) => picked.has(k.toLowerCase()));
+
+  // A listed language typed into the box counts as its chip, and only once.
   const save = (listed: string[], otherText: string) => {
-    const extra = otherText
+    const typed = otherText
       .split(',')
       .map((l) => l.trim())
       .filter(Boolean);
-    onChange([...listed, ...extra].join(', '));
+    const typedListed = PAKISTANI_LANGUAGES.filter((k) => typed.some((l) => l.toLowerCase() === k.toLowerCase()));
+    const chips = [...new Set([...listed, ...typedListed])];
+    onChange([...chips, ...typed.filter((l) => !isListed(l))].join(', '));
   };
-  const listedNow = PAKISTANI_LANGUAGES.filter((k) => picked.has(k.toLowerCase()));
 
   const toggle = (lang: string) => {
-    const next = picked.has(lang.toLowerCase()) ? listedNow.filter((k) => k !== lang) : [...listedNow, lang];
-    save(next, othersText);
+    if (picked.has(lang.toLowerCase())) {
+      // Off means off, even if it was typed into the box.
+      const rest = othersText
+        .split(',')
+        .map((l) => l.trim())
+        .filter((l) => l && l.toLowerCase() !== lang.toLowerCase())
+        .join(', ');
+      setOthersText(rest);
+      save(
+        listedNow.filter((k) => k !== lang),
+        rest
+      );
+      return;
+    }
+    save([...listedNow, lang], othersText);
   };
 
   return (

@@ -114,6 +114,11 @@ export function NotificationsScreen() {
       router.push(`/chat/${item.matchId}`);
       return;
     }
+    if (item.type === 'like' && !item.relatedId) {
+      // Locked: the server keeps who it was out of the row.
+      void openLiker('', item.relatedKind ?? 'dating');
+      return;
+    }
     if (item.type === 'like' && item.relatedId && !mine(item)) {
       // Free members spend one of their looks here; Explore+ just opens it.
       void openLiker(item.relatedId, item.relatedKind ?? 'dating');

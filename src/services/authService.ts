@@ -626,6 +626,10 @@ async function login(email: string, password: string): Promise<UserProfile> {
     throw new AppError(loginErrorMessage(err));
   }
 
+  // Signing in is what ends a deactivation (supabase/70); a heartbeat from
+  // some other device still signed in no longer does.
+  await supabase.rpc('reactivate_account').then(undefined, () => undefined);
+
   let profile: UserProfile | null;
   try {
     profile = await fetchFullProfile(userId);

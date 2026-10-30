@@ -845,14 +845,16 @@ export function MatchesProvider({ children }: { children: React.ReactNode }) {
     // The database is asked first: if the rishta profile is not filled in, the
     // request must not exist, and no message about it should be sent either.
     await matchesService.requestRishta(matchId);
-    setMatches((prev) => prev.map((m) => (m.id === matchId ? { ...m, rishtaRequestPending: true } : m)));
     // One notification for the request itself, not two — the message that
     // follows is the same event said twice.
     pushService.notifyRishtaRequest(matchId);
-    matchesService
+    // Written before the bar turns to "pending · Cancel": a Cancel can only
+    // come after the line exists, so it always finds it to delete.
+    await matchesService
       .insertTextMessage(user.id, matchId, requestText)
       .then((message) => pushMessage(matchId, message, requestText))
       .catch(() => undefined);
+    setMatches((prev) => prev.map((m) => (m.id === matchId ? { ...m, rishtaRequestPending: true } : m)));
   };
 
   // Withdraws our own pending request. The server also deletes the "request

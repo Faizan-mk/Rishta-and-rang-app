@@ -212,6 +212,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!user) return;
     const userId = user.id;
     await authService.deactivateAccount();
+    // signOut's default scope is global: every other device is signed out too.
     await authService.logout();
     setUser(null);
     await cache.clearUser(userId);
