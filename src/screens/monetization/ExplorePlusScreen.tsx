@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -38,6 +39,15 @@ type Plan = 'trial' | 'monthly' | 'yearly';
  *  relationship. */
 const PLAY_SUBSCRIPTIONS_URL = 'https://play.google.com/store/account/subscriptions?package=com.rishtaandrang.app';
 
+// Play's priceString carries decimals ("Rs 1,000.00"). Whole rupees read
+// better and are what Play actually charges in PKR.
+function priceLabel(pkg: ExplorePlusPackages['monthly'] | undefined): string | null {
+  const product = pkg?.product;
+  if (!product) return null;
+  if (product.currencyCode === 'PKR') return `Rs ${Math.round(product.price).toLocaleString('en-US')}`;
+  return product.priceString;
+}
+
 const GRADIENT_START = { x: 0, y: 0 } as const;
 const GRADIENT_END = { x: 1, y: 1 } as const;
 // Explore+ has its own colour identity — the theme's metal ramp (gold on
@@ -50,6 +60,14 @@ export function ExplorePlusScreen() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
   const { user, refreshUser } = useAuth();
+  // Explore+ can end while the app is open (a cancelled plan running out is
+  // written by the server's webhook), so the screen re-reads it on every open.
+  useFocusEffect(
+    useCallback(() => {
+      refreshUser().catch(() => undefined);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+  );
   const { notify } = useDialog();
   const { used, limit } = useLikeLimit();
   const { prefs } = usePrivacy();
@@ -222,7 +240,7 @@ export function ExplorePlusScreen() {
                 adjustsFontSizeToFit
                 minimumFontScale={0.6}
               >
-                {packages?.monthly?.product.priceString ?? t('explorePlus.monthlyPrice')}
+                {priceLabel(packages?.monthly) ?? t('explorePlus.monthlyPrice')}
               </Text>
             </Pressable>
             <Pressable
@@ -246,7 +264,7 @@ export function ExplorePlusScreen() {
                 adjustsFontSizeToFit
                 minimumFontScale={0.6}
               >
-                {packages?.yearly?.product.priceString ?? t('explorePlus.yearlyPrice')}
+                {priceLabel(packages?.yearly) ?? t('explorePlus.yearlyPrice')}
               </Text>
             </Pressable>
           </View>
@@ -304,8 +322,8 @@ export function ExplorePlusScreen() {
               that it renews and how to stop it. */}
           <Text style={[styles.renewalNote, rtl && styles.rtlText]}>
             {plan === 'yearly'
-              ? t('explorePlus.renewalYearly', { price: packages?.yearly?.product.priceString ?? 'PKR 8,990' })
-              : t('explorePlus.renewalMonthly', { price: packages?.monthly?.product.priceString ?? 'PKR 999' })}
+              ? t('explorePlus.renewalYearly', { price: priceLabel(packages?.yearly) ?? 'Rs 8,990' })
+              : t('explorePlus.renewalMonthly', { price: priceLabel(packages?.monthly) ?? 'Rs 999' })}
           </Text>
         </Animated.View>
       )}
@@ -330,13 +348,25 @@ export function ExplorePlusScreen() {
           {user.subscriptionRenewsAt && (
             <View style={styles.manageRow}>
               <Text style={[styles.manageLabel, rtl && styles.rtlText]}>{t('explorePlus.renewsOn')}</Text>
-              <Text style={styles.manageValue}>{isoToDisplay(user.subscriptionRenewsAt)}</Text>
+              <Text style={styles.manageValue}>{isoToDisplay(user.subscriptionRenewsAt.slice(0, 10))}</Text>
             </View>
           )}
           <View style={styles.manageRow}>
             <Text style={[styles.manageLabel, rtl && styles.rtlText]}>{t('explorePlus.featureUnlimitedLikes')}</Text>
             <Text style={styles.manageValue}>{t('explorePlus.unlimitedLikes')}</Text>
           </View>
+          {/* Everything the plan unlocks, not just likes, so a subscriber can
+              see what they're paying for. */}
+          {[
+            t('explorePlus.featureSeeWhoLikedYou'),
+            ...(!FREE_REWIND ? [t('explorePlus.featureRewind')] : []),
+            ...(!FREE_MATCH_SCORE ? [t('explorePlus.featureMatchScore')] : []),
+          ].map((label) => (
+            <View key={label} style={[styles.manageRow, rtl && styles.rowRtl]}>
+              <Text style={[styles.manageLabel, styles.manageLabelWide, rtl && styles.rtlText]}>{label}</Text>
+              <Ionicons name="checkmark-circle" size={20} color={colors.success} />
+            </View>
+          ))}
 
           <Button
             label={t('explorePlus.manageSubscription')}
@@ -549,6 +579,7 @@ const makeStyles = (colors: Palette) =>
     },
     manageLabel: { ...typography.body, color: colors.textSecondary },
     manageValue: { ...typography.bodyBold, color: colors.textPrimary },
+    manageLabelWide: { flex: 1, marginRight: spacing.sm },
     cancelButton: { marginTop: spacing.lg, borderColor: colors.gold, backgroundColor: 'transparent' },
     cancelLabel: { color: colors.textPrimary },
     sectionHeading: { marginBottom: spacing.md },
