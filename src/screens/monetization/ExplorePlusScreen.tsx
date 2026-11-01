@@ -23,7 +23,6 @@ import { useDialog } from '../../store/DialogContext';
 import { useLikeLimit } from '../../store/LikeLimitContext';
 import { usePrivacy } from '../../store/PrivacyContext';
 import { useMatches } from '../../store/MatchesContext';
-import { isoToDisplay } from '../../utils/date';
 import { errorMessage } from '../../utils/appError';
 import { fonts, radius, spacing, typography } from '../../theme';
 import { cardSurface } from '../../theme/surfaces';
@@ -46,6 +45,19 @@ function priceLabel(pkg: ExplorePlusPackages['monthly'] | undefined): string | n
   if (!product) return null;
   if (product.currencyCode === 'PKR') return `Rs ${Math.round(product.price).toLocaleString('en-US')}`;
   return product.priceString;
+}
+
+// Shown when Play's prices haven't loaded: what Play charges in PKR (it
+// rounded the 999 / 8,990 set in Play Console to 1,000 / 9,000).
+const FALLBACK_MONTHLY = 'Rs 1,000';
+const FALLBACK_YEARLY = 'Rs 9,000';
+
+/** A renewal timestamp as the member's own calendar date, dd/mm/yyyy. */
+function localDate(timestamp: string): string {
+  const d = new Date(timestamp);
+  if (Number.isNaN(d.getTime())) return '';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
 }
 
 const GRADIENT_START = { x: 0, y: 0 } as const;
@@ -158,9 +170,9 @@ export function ExplorePlusScreen() {
     }
   };
 
-  // Our backend can tell whether a subscription is active; it cannot cancel
-  // one — the member's own Play account is the actual billing relationship,
-  // and that is the one place a cancellation is real.
+  // Changing or cancelling a plan happens in the member's own Play account.
+  // (Our server only cancels on their behalf when they delete the account:
+  // supabase/functions/cancel-subscription.)
   const onManage = async () => {
     const canOpen = await Linking.canOpenURL(PLAY_SUBSCRIPTIONS_URL).catch(() => false);
     if (!canOpen) {
@@ -240,7 +252,7 @@ export function ExplorePlusScreen() {
                 adjustsFontSizeToFit
                 minimumFontScale={0.6}
               >
-                {priceLabel(packages?.monthly) ?? t('explorePlus.monthlyPrice')}
+                {priceLabel(packages?.monthly) ?? FALLBACK_MONTHLY}
               </Text>
             </Pressable>
             <Pressable
@@ -264,7 +276,7 @@ export function ExplorePlusScreen() {
                 adjustsFontSizeToFit
                 minimumFontScale={0.6}
               >
-                {priceLabel(packages?.yearly) ?? t('explorePlus.yearlyPrice')}
+                {priceLabel(packages?.yearly) ?? FALLBACK_YEARLY}
               </Text>
             </Pressable>
           </View>
@@ -322,8 +334,10 @@ export function ExplorePlusScreen() {
               that it renews and how to stop it. */}
           <Text style={[styles.renewalNote, rtl && styles.rtlText]}>
             {plan === 'yearly'
-              ? t('explorePlus.renewalYearly', { price: priceLabel(packages?.yearly) ?? 'Rs 8,990' })
-              : t('explorePlus.renewalMonthly', { price: priceLabel(packages?.monthly) ?? 'Rs 999' })}
+              ? t('explorePlus.renewalYearly', { price: priceLabel(packages?.yearly) ?? FALLBACK_YEARLY })
+              : t(plan === 'trial' ? 'explorePlus.renewalTrial' : 'explorePlus.renewalMonthly', {
+                  price: priceLabel(packages?.monthly) ?? FALLBACK_MONTHLY,
+                })}
           </Text>
         </Animated.View>
       )}
@@ -348,7 +362,7 @@ export function ExplorePlusScreen() {
           {user.subscriptionRenewsAt && (
             <View style={styles.manageRow}>
               <Text style={[styles.manageLabel, rtl && styles.rtlText]}>{t('explorePlus.renewsOn')}</Text>
-              <Text style={styles.manageValue}>{isoToDisplay(user.subscriptionRenewsAt.slice(0, 10))}</Text>
+              <Text style={styles.manageValue}>{localDate(user.subscriptionRenewsAt)}</Text>
             </View>
           )}
           <View style={styles.manageRow}>

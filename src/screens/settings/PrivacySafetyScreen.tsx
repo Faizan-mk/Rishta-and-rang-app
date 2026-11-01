@@ -31,9 +31,8 @@ export function PrivacySafetyScreen() {
   const onDeleteAccount = async () => {
     const confirmed = await confirm({
       title: t('privacy.deleteAccountConfirmTitle'),
-      // Deleting here doesn't touch Google Play billing, so anyone who has ever
-      // subscribed is told to check there too (the Explore+ flag alone misses a
-      // payment still on hold, or one not synced yet).
+      // Anyone who has subscribed is told their Play subscription is cancelled
+      // as part of this (AuthContext.deleteAccount).
       message:
         user?.isExplorePlus || user?.subscriptionPlan || user?.hasUsedTrial
           ? [t('privacy.deleteAccountConfirmBody'), t('privacy.deleteAccountSubscriptionNote')].join('\n\n')
@@ -44,14 +43,34 @@ export function PrivacySafetyScreen() {
     });
     if (!confirmed) return;
     try {
-      await deleteAccount();
+      try {
+        await deleteAccount();
+      } catch (e) {
+        if (!(e instanceof Error && e.message === 'SUBSCRIPTION_CANCEL_FAILED')) throw e;
+        // Deleting is always allowed; the member just has to know Play billing
+        // wasn't stopped.
+        const anyway = await confirm({
+          title: t('privacy.deleteSubscriptionCancelFailedTitle'),
+          message: t('privacy.deleteSubscriptionCancelFailed'),
+          confirmLabel: t('privacy.deleteAnyway'),
+          cancelLabel: t('common.cancel'),
+          destructive: true,
+        });
+        if (!anyway) return;
+        await deleteAccount({ skipCancel: true });
+      }
     } catch (e) {
       // Supabase won't delete an account with a session older than a few minutes.
       // Nothing was removed, so the member can log in again and retry.
       const reauth = e instanceof Error && e.message === 'REAUTH_REQUIRED';
+      const afterCancel = e instanceof Error && e.message === 'DELETE_FAILED_AFTER_CANCEL';
       await notify({
         title: t('privacy.deleteAccountFailedTitle'),
-        message: reauth ? t('privacy.deleteAccountReauth') : t('privacy.deleteAccountFailedBody'),
+        message: afterCancel
+          ? t('privacy.deleteFailedAfterCancel')
+          : reauth
+            ? t('privacy.deleteAccountReauth')
+            : t('privacy.deleteAccountFailedBody'),
       });
     }
   };

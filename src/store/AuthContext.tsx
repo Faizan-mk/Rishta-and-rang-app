@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { authService, authProbeInFlight, SignupInput } from '../services/authService';
 import { supabase } from '../services/supabase';
 import { cache, CACHE_KEYS } from '../services/cache';
+import { cancelPlaySubscription } from '../services/billingService';
 import type { Intent, ProfileMode, RishtaReadiness, UserProfile } from '../types/user';
 
 interface AuthContextValue {
@@ -20,7 +21,8 @@ interface AuthContextValue {
   setActiveMode: (mode: ProfileMode) => void;
   setIntent: (intent: Intent) => void;
   setReadiness: (readiness: RishtaReadiness) => void;
-  deleteAccount: () => Promise<void>;
+  /** Pass skipCancel after the member chose to delete even though the Play cancel failed. */
+  deleteAccount: (options?: { skipCancel?: boolean }) => Promise<void>;
   /** Hides the account for up to 30 days and signs out; signing in brings it back. */
   deactivateAccount: () => Promise<void>;
 }
@@ -143,8 +145,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshUser = useCallback(async () => {
     const fresh = await authService.getCurrentUser();
+    // Null here can just mean the network failed; signing out is the auth
+    // listener's call, not a refresh's.
+    if (!fresh) return null;
     setUser(fresh);
-    if (fresh) await cache.write(fresh.id, CACHE_KEYS.profile, fresh);
+    await cache.write(fresh.id, CACHE_KEYS.profile, fresh);
     return fresh;
   }, []);
 
@@ -201,9 +206,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [user]
   );
 
-  const deleteAccount = useCallback(async () => {
+  const deleteAccount = useCallback(async (options?: { skipCancel?: boolean }) => {
     if (!user) return;
-    await authService.deleteAccount(user.id);
+    // The Play subscription is stopped first, for everyone (the function
+    // answers "nothing to cancel" for someone who never bought). If it fails,
+    // the member is asked rather than blocked: deleting must always be
+    // possible, but not silently while Google keeps charging.
+    let cancelled = false;
+    if (!options?.skipCancel) {
+      try {
+        await cancelPlaySubscription();
+        cancelled = true;
+      } catch {
+        throw new Error('SUBSCRIPTION_CANCEL_FAILED');
+      }
+    }
+    try {
+      await authService.deleteAccount(user.id);
+    } catch (e) {
+      // Can't be undone: say the subscription is already off.
+      if (cancelled && (user.isExplorePlus || user.subscriptionPlan)) throw new Error('DELETE_FAILED_AFTER_CANCEL');
+      throw e;
+    }
     setUser(null);
     await cache.clearUser(user.id);
   }, [user]);

@@ -108,6 +108,16 @@ export async function restoreExplorePlus(): Promise<boolean> {
 }
 
 /**
+ * Cancels the member's Google Play subscription (supabase/functions/
+ * cancel-subscription), so deleting the account doesn't leave Play billing
+ * someone who can no longer open the app. Throws if it couldn't.
+ */
+export async function cancelPlaySubscription(): Promise<void> {
+  const { error } = await supabase.functions.invoke('cancel-subscription');
+  if (error) throw error;
+}
+
+/**
  * Asks `sync-entitlement` to check RevenueCat's own record for this member and
  * grant or revoke accordingly. The purchase above only unlocks the ask — this
  * is the write that actually reaches `profiles.is_explore_plus`.
