@@ -861,8 +861,10 @@
     "currentPlan": "Mojooda Plan",
     "renewsOn": "Tajdeed ki Tareekh",
     "unlimitedLikes": "Unlimited",
-    "billingPendingTitle": "Adaigi ka nizaam abhi jura nahi",
-    "billingPendingBody": "Explore+ app se on nahi kiya ja sakta — ye asli kharidari ki tasdeeq ke baad milta hai, aur payment ka nizaam abhi jura nahi."
+    "renewalMonthly": "Har mahine {price} par khud renew hoti hai jab tak aap cancel na karein. Google Play → Subscriptions mein kabhi bhi cancel karein.",
+    "renewalYearly": "Har saal {price} par khud renew hoti hai jab tak aap cancel na karein. Google Play → Subscriptions mein kabhi bhi cancel karein.",
+    "billingPendingTitle": "Plans load nahi ho sake",
+    "billingPendingBody": "Abhi Google Play se Explore+ ke plans nahi mil sake. Apna connection dekh kar thori der baad dobara koshish karein."
   },
   "profileDetail": {
     "expressInterest": "Dilchaspi Zahir Karein",

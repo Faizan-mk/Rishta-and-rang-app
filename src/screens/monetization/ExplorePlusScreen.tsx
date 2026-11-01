@@ -300,6 +300,13 @@ export function ExplorePlusScreen() {
             style={styles.upgradeButton}
             labelStyle={styles.upgradeLabel}
           />
+          {/* Play's subscriptions policy: say plainly, before the purchase,
+              that it renews and how to stop it. */}
+          <Text style={[styles.renewalNote, rtl && styles.rtlText]}>
+            {plan === 'yearly'
+              ? t('explorePlus.renewalYearly', { price: packages?.yearly?.product.priceString ?? 'PKR 8,990' })
+              : t('explorePlus.renewalMonthly', { price: packages?.monthly?.product.priceString ?? 'PKR 999' })}
+          </Text>
         </Animated.View>
       )}
 
@@ -513,6 +520,7 @@ const makeStyles = (colors: Palette) =>
     },
     limitText: { ...typography.caption, color: colors.teal, fontFamily: fonts.bodyBold, flexShrink: 1 },
     upgradeButton: { marginTop: spacing.sm, borderWidth: 1, borderColor: colors.metalDeep },
+    renewalNote: { ...typography.caption, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.sm },
     upgradeLabel: { color: colors.brandInk },
     manageCard: {
       ...cardSurface(colors),

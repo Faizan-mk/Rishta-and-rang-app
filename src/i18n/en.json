@@ -861,8 +861,10 @@
     "currentPlan": "Current plan",
     "renewsOn": "Renews on",
     "unlimitedLikes": "Unlimited",
-    "billingPendingTitle": "Billing is not connected yet",
-    "billingPendingBody": "Explore+ can't be switched on from the app — it's granted once a real purchase is verified, and payments aren't wired up yet."
+    "renewalMonthly": "Renews automatically every month at {price} until you cancel. Cancel anytime in Google Play → Subscriptions.",
+    "renewalYearly": "Renews automatically every year at {price} until you cancel. Cancel anytime in Google Play → Subscriptions.",
+    "billingPendingTitle": "Couldn't load the plans",
+    "billingPendingBody": "We couldn't reach Google Play to load Explore+ right now. Check your connection and try again in a moment."
   },
   "profileDetail": {
     "expressInterest": "Express interest",
