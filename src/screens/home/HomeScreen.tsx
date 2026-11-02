@@ -11,6 +11,7 @@ import Animated, {
 import { Ionicons } from '@expo/vector-icons';
 import { AuroraBackground } from '../../components/common/AuroraBackground';
 import { PhotoPreview } from '../../components/common/PhotoPreview';
+import { UpdatePrompt } from '../../components/common/UpdatePrompt';
 import { EmptyOrb } from '../../components/common/EmptyOrb';
 import { DiscoverProfileCard } from '../../components/discover/DiscoverProfileCard';
 import { TAB_BAR_BASE_HEIGHT } from '../../store/TabBarVisibilityContext';
@@ -662,6 +663,8 @@ export function HomeScreen() {
       />
 
       <PhotoPreview uri={previewUri} onClose={() => setPreviewUri(null)} />
+      {/* "New update available" — Home only, never over sign-in or the splash. */}
+      <UpdatePrompt />
 
       {currentProfile && (
         <MatchWhySheet

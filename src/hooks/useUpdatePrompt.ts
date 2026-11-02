@@ -1,9 +1,7 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, Linking, Platform } from 'react-native';
 import Constants from 'expo-constants';
 import { supabase } from '../services/supabase';
-import { useDialog } from '../store/DialogContext';
-import { useLanguage } from '../store/LanguageContext';
 
 const PLAY_APP = 'market://details?id=com.rishtaandrang.app';
 const PLAY_WEB = 'https://play.google.com/store/apps/details?id=com.rishtaandrang.app';
@@ -28,22 +26,29 @@ async function openPlayStore(): Promise<void> {
   }
 }
 
+export interface UpdatePromptState {
+  visible: boolean;
+  /** Below min_version_code: no "Not now", no close. */
+  required: boolean;
+  update: () => void;
+  later: () => void;
+}
+
 /**
- * Tells the member when a newer build is on Play (supabase/75_app_version.sql),
- * without adding a library: the app's own dialog, and "Update now" opens
- * Lovebirds in the Play Store.
+ * Whether to ask the member to update (supabase/75_app_version.sql): the
+ * app's own Android versionCode against the build on Play. Rendered by
+ * UpdatePrompt on Home only, so it never covers sign-in or the splash.
  *
- * Checked when the app opens and each time it comes back to the foreground.
- * "Later" holds it off for the rest of this visit; it comes back on the next
- * open until they've updated, and stops by itself once the installed build is
- * the latest. Below min_version_code there is no "Later".
+ * Checked when Home mounts and each time the app comes back to the
+ * foreground. "Not now" holds it off for the rest of this visit; it comes
+ * back on the next open until they've updated, and stops by itself once the
+ * installed build is the latest. Below min_version_code there is no way past it.
  *
  * Android only, and not in development builds, where the version means nothing.
  */
-export function useUpdatePrompt(): void {
-  const { confirm, notify } = useDialog();
-  const { t } = useLanguage();
-  const showing = useRef(false);
+export function useUpdatePrompt(): UpdatePromptState {
+  const [visible, setVisible] = useState(false);
+  const [required, setRequired] = useState(false);
   const dismissed = useRef(false);
 
   useEffect(() => {
@@ -52,7 +57,6 @@ export function useUpdatePrompt(): void {
     if (installed === null) return;
 
     const check = async () => {
-      if (showing.current) return;
       const { data, error } = await supabase
         .from('app_version')
         .select('latest_version_code, min_version_code')
@@ -60,30 +64,14 @@ export function useUpdatePrompt(): void {
         .maybeSingle();
       if (error || !data) return;
       const row = data as { latest_version_code: number; min_version_code: number };
-
       if (installed < row.min_version_code) {
-        showing.current = true;
-        await notify({
-          title: t('update.title'),
-          message: t('update.requiredBody'),
-          confirmLabel: t('update.now'),
-        });
-        showing.current = false;
-        await openPlayStore();
-        return;
-      }
-
-      if (installed < row.latest_version_code && !dismissed.current) {
-        showing.current = true;
-        const update = await confirm({
-          title: t('update.title'),
-          message: t('update.body'),
-          confirmLabel: t('update.now'),
-          cancelLabel: t('update.later'),
-        });
-        showing.current = false;
-        if (update) await openPlayStore();
-        else dismissed.current = true;
+        setRequired(true);
+        setVisible(true);
+      } else if (installed < row.latest_version_code && !dismissed.current) {
+        setRequired(false);
+        setVisible(true);
+      } else {
+        setVisible(false);
       }
     };
 
@@ -92,6 +80,19 @@ export function useUpdatePrompt(): void {
       if (state === 'active') void check();
     });
     return () => sub.remove();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const update = useCallback(() => {
+    // A required update stays up; it's checked again when they come back.
+    if (!required) setVisible(false);
+    void openPlayStore();
+  }, [required]);
+
+  const later = useCallback(() => {
+    if (required) return;
+    dismissed.current = true;
+    setVisible(false);
+  }, [required]);
+
+  return { visible, required, update, later };
 }
