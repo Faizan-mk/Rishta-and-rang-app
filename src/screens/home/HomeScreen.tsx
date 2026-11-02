@@ -88,7 +88,7 @@ export function HomeScreen() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, rtl } = useLanguage();
   const { user } = useAuth();
-  const { isFavorite, isLiked, toggleLike, unlike, toggleFavorite } = useFavorites();
+  const { isFavorite, isLiked, likedIdList, toggleLike, unlike, toggleFavorite } = useFavorites();
   const { confirm, notify } = useDialog();
   const { recordLike, applyServerCount } = useLikeLimit();
   const { datingProfiles, rishtaProfiles, loading, loadMore, reload } = useDiscovery();
@@ -149,31 +149,18 @@ export function HomeScreen() {
   // matrimonial members as Rishta cards. The Intent filter is how a member
   // narrows it to one kind. Anyone casual whose thread moved to Rishta stays off
   // the deck for good.
-  // Someone already matched is a conversation, not a card to swipe. The one
-  // exception is a match made *during this visit* with someone whose card was
-  // already on screen: dropping that card from behind the cursor would shift
-  // the deck and skip the next person. Matches that existed when the app
-  // opened are always left out, even though the deck can load before them.
-  const shownIds = useRef(new Set<string>());
+  // Anyone this member has already liked (matched or still waiting) stays off
+  // the deck, as in other dating apps: there's nothing left to decide about
+  // them, and a filled heart on a card only invited an accidental unlike. They
+  // are under My History → Liked. The one exception is a like made during this
+  // visit: that card keeps its place so the deck behind the cursor doesn't
+  // shift and skip the next person (and Undo can bring it back).
   const keepIds = useRef(new Set<string>());
-  const knownMatched = useRef<Set<string> | null>(null);
-  const matchedIds = useMemo(
-    () => new Set(matches.map((m) => m.sourceProfileId).filter((id): id is string => Boolean(id))),
-    [matches]
-  );
+  const likedKey = likedIdList.join(',');
+  const excludedIds = useMemo(() => new Set(likedIdList), [likedKey]);
   const deck = useMemo(() => {
-    if (knownMatched.current === null) {
-      // The first list that arrives is "already matched".
-      if (matchedIds.size > 0) knownMatched.current = new Set(matchedIds);
-    } else {
-      matchedIds.forEach((id) => {
-        if (knownMatched.current!.has(id)) return;
-        knownMatched.current!.add(id);
-        if (shownIds.current.has(id)) keepIds.current.add(id);
-      });
-    }
     const visible = (p: BrowseProfile) =>
-      !blockedProfileIds.has(p.id) && (!matchedIds.has(p.id) || keepIds.current.has(p.id));
+      !blockedProfileIds.has(p.id) && (!excludedIds.has(p.id) || keepIds.current.has(p.id));
     const dating = oppositeGenderProfiles(datingProfiles, user?.gender).filter(
       (p) => visible(p) && !rishtaProfileIds.has(p.id) && p.intent === 'casual'
     );
@@ -195,7 +182,7 @@ export function HomeScreen() {
       list.push(p);
     });
     return list;
-  }, [datingProfiles, rishtaProfiles, user?.gender, blockedProfileIds, rishtaProfileIds, matchedIds]);
+  }, [datingProfiles, rishtaProfiles, user?.gender, blockedProfileIds, rishtaProfileIds, excludedIds]);
 
   // A non-default sort reorders only the cards still ahead: the ones already
   // swiped keep their places, so a page arriving mid-deck (loadMore below) can
@@ -237,7 +224,6 @@ export function HomeScreen() {
 
   const safeCursor = Math.min(cursor, visibleProfiles.length);
   const currentProfile = visibleProfiles[safeCursor];
-  if (currentProfile) shownIds.current.add(currentProfile.id);
 
   // Which kind of card is on screen: casual members are Friends, everyone else
   // is Rishta. It decides what a like does and which details count, not the
@@ -278,7 +264,6 @@ export function HomeScreen() {
   // A re-filtered deck is a different deck, so start it from the top
   // instead of landing mid-way through it.
   useEffect(() => {
-    shownIds.current = new Set();
     keepIds.current = new Set();
     setCursor(0);
   }, [filters]);
@@ -370,6 +355,12 @@ export function HomeScreen() {
     if (!currentProfile) return;
     const profile = currentProfile;
     const wasLiked = isLiked(profile.id);
+    // An already-liked card (only reachable through Rewind) is left alone: a
+    // like is taken back with Undo, never by a second tap on the heart.
+    if (wasLiked) {
+      advance();
+      return;
+    }
     if (!wasLiked) {
       const allowed = recordLike();
       if (!allowed) {
@@ -379,6 +370,9 @@ export function HomeScreen() {
         return;
       }
     }
+    // Keep this card in place before the like lands: liking it puts it in
+    // excludedIds, and dropping it from behind the cursor would skip a card.
+    keepIds.current.add(profile.id);
     let outcome: Awaited<ReturnType<typeof toggleLike>> = null;
     try {
       outcome = await toggleLike({
@@ -406,8 +400,6 @@ export function HomeScreen() {
       // itself, so this cannot fire on a one-sided like, and re-liking someone
       // already matched does not celebrate again.
       if (outcome?.isNew) {
-        // This card stays where it is (see keepIds), so the deck doesn't shift.
-        keepIds.current.add(profile.id);
         setCelebration({ name: profile.name, photo: profile.photos[0] });
         // No notification row here: like_profile already writes "You matched"
         // for both of them (supabase/44), and a second one from the app doubled it.

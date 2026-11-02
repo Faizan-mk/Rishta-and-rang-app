@@ -134,7 +134,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   ) => {
     if (!user || !prefs[PREF_KEY_BY_TYPE[type]]) return;
     notificationsService.addNotification(user.id, type, title, body, about).then((item) => {
-      setFeed((prev) => [item, ...prev]);
+      // The realtime INSERT for this same row can land first; adding it again
+      // showed the notification twice (and two list items with one key).
+      setFeed((prev) => (prev.some((n) => n.id === item.id) ? prev : [item, ...prev]));
     });
   };
 

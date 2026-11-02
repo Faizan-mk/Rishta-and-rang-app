@@ -165,6 +165,8 @@ export function SettingsScreen() {
           <View style={styles.divider} />
           <SettingsRow icon="shield-checkmark-outline" label={t('settings.privacy')} right="chevron" onPress={() => router.push('/privacy-safety')} />
           <View style={styles.divider} />
+          <SettingsRow icon="key-outline" label={t('changePassword.title')} right="chevron" onPress={() => router.push('/change-password')} />
+          <View style={styles.divider} />
           <SettingsRow icon="help-circle-outline" label={t('settings.help')} right="chevron" onPress={() => router.push('/help-support')} />
           <View style={styles.divider} />
           <SettingsRow icon="document-text-outline" label={t('settings.legal')} right="chevron" onPress={() => router.push('/legal')} />

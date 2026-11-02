@@ -1142,5 +1142,17 @@
     "requiredBody": "This version of Lovebirds is no longer supported. Please update to keep using the app.",
     "now": "Update the app",
     "later": "Not now"
+  },
+  "changePassword": {
+    "title": "Change password",
+    "intro": "Enter your current password, then choose a new one.",
+    "current": "Current password",
+    "submit": "Change password",
+    "currentRequired": "Enter your current password.",
+    "sameAsCurrent": "Your new password must be different from the current one.",
+    "wrongCurrent": "Your current password is wrong.",
+    "failed": "Could not change your password. Check your connection and try again.",
+    "doneTitle": "Password changed",
+    "doneBody": "Use your new password the next time you log in."
   }
 }

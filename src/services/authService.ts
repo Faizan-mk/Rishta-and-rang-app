@@ -1034,7 +1034,23 @@ async function deactivateAccount(): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
+/**
+ * Settings → Change password. The current password is checked first by
+ * signing in with it, so a phone left unlocked can't be used to take the
+ * account; then Supabase Auth gets the new one.
+ */
+async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
+  const { data } = await supabase.auth.getUser();
+  const email = data.user?.email;
+  if (!email) throw new AppError('authErrors.notSignedIn');
+  const check = await supabase.auth.signInWithPassword({ email, password: currentPassword });
+  if (check.error) throw new AppError('changePassword.wrongCurrent');
+  const { error } = await supabase.auth.updateUser({ password: newPassword });
+  if (error) throw new AppError('changePassword.failed');
+}
+
 export const authService = {
+  changePassword,
   touchLastActive,
   touchOffline,
   setIntent,

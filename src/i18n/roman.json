@@ -1142,5 +1142,17 @@
     "requiredBody": "Lovebirds ka yeh version ab nahi chalta. App istemal karte rehne ke liye update karein.",
     "now": "App update karein",
     "later": "Abhi nahi"
+  },
+  "changePassword": {
+    "title": "Password badlein",
+    "intro": "Pehle apna maujooda password daalein, phir naya password chunein.",
+    "current": "Maujooda password",
+    "submit": "Password badlein",
+    "currentRequired": "Apna maujooda password daalein.",
+    "sameAsCurrent": "Naya password purane se alag hona chahiye.",
+    "wrongCurrent": "Maujooda password ghalat hai.",
+    "failed": "Password nahi badla ja saka. Apna connection dekh kar dobara koshish karein.",
+    "doneTitle": "Password badal gaya",
+    "doneBody": "Agli dafa login karte waqt naya password istemal karein."
   }
 }

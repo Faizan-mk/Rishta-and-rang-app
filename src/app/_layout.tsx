@@ -128,6 +128,7 @@ function RootNavigator() {
                 <Stack.Screen name="explore-plus" options={{ title: t('explorePlus.title') }} />
                 <Stack.Screen name="favorites" options={{ title: t('favorites.title') }} />
                 <Stack.Screen name="privacy-safety" options={{ title: t('privacy.title') }} />
+                <Stack.Screen name="change-password" options={{ title: t('changePassword.title') }} />
                 <Stack.Screen name="blocked-users" options={{ title: t('privacy.blockedUsers') }} />
                 <Stack.Screen name="story-privacy" options={{ title: t('stories.privacyTitle') }} />
                 <Stack.Screen name="help-support" options={{ title: t('help.title') }} />
