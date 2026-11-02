@@ -868,6 +868,8 @@
     "renewalTrial": "7 din muft, phir har mahine {price} par khud renew hoti hai jab tak aap cancel na karein. Google Play → Subscriptions mein kabhi bhi cancel karein.",
     "renewalMonthly": "Har mahine {price} par khud renew hoti hai jab tak aap cancel na karein. Google Play → Subscriptions mein kabhi bhi cancel karein.",
     "renewalYearly": "Har saal {price} par khud renew hoti hai jab tak aap cancel na karein. Google Play → Subscriptions mein kabhi bhi cancel karein.",
+    "purchasePendingTitle": "Payment mil gayi",
+    "purchasePendingBody": "Aap ki payment ho gayi hai, lekin Explore+ abhi chalu nahi hua. Aam taur par ek minute lagta hai: yeh screen band kar ke dobara kholein. Aap se dobara paise nahi katenge.",
     "billingPendingTitle": "Plans load nahi ho sake",
     "billingPendingBody": "Abhi Google Play se Explore+ ke plans nahi mil sake. Apna connection dekh kar thori der baad dobara koshish karein."
   },

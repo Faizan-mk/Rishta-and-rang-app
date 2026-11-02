@@ -147,14 +147,14 @@ export function ExplorePlusScreen() {
       // trusts to say the tier really took.
       const purchased = await purchaseExplorePlus(pkg);
       if (!purchased) {
-        await notify({ title: t('explorePlus.billingPendingTitle'), message: t('explorePlus.billingPendingBody') });
+        await notify({ title: t('explorePlus.purchasePendingTitle'), message: t('explorePlus.purchasePendingBody') });
         return;
       }
       await syncExplorePlusEntitlement();
       const fresh = await refreshUser();
 
       if (!fresh?.isExplorePlus) {
-        await notify({ title: t('explorePlus.billingPendingTitle'), message: t('explorePlus.billingPendingBody') });
+        await notify({ title: t('explorePlus.purchasePendingTitle'), message: t('explorePlus.purchasePendingBody') });
         return;
       }
 
@@ -332,7 +332,7 @@ export function ExplorePlusScreen() {
           />
           {/* Play's subscriptions policy: say plainly, before the purchase,
               that it renews and how to stop it. */}
-          <Text style={[styles.renewalNote, rtl && styles.rtlText]}>
+          <Text style={[styles.renewalNote, rtl && styles.rtlCentered]}>
             {plan === 'yearly'
               ? t('explorePlus.renewalYearly', { price: priceLabel(packages?.yearly) ?? FALLBACK_YEARLY })
               : t(plan === 'trial' ? 'explorePlus.renewalTrial' : 'explorePlus.renewalMonthly', {
@@ -626,4 +626,5 @@ const makeStyles = (colors: Palette) =>
     },
     hiddenText: { ...typography.body, color: colors.textSecondary, flex: 1 },
     rtlText: { textAlign: 'right', writingDirection: 'rtl' },
+    rtlCentered: { writingDirection: 'rtl' },
   });

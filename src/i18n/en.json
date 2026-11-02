@@ -868,6 +868,8 @@
     "renewalTrial": "Free for 7 days, then renews automatically every month at {price} until you cancel. Cancel anytime in Google Play → Subscriptions.",
     "renewalMonthly": "Renews automatically every month at {price} until you cancel. Cancel anytime in Google Play → Subscriptions.",
     "renewalYearly": "Renews automatically every year at {price} until you cancel. Cancel anytime in Google Play → Subscriptions.",
+    "purchasePendingTitle": "Payment received",
+    "purchasePendingBody": "Your payment went through, but Explore+ hasn't switched on yet. It usually takes a minute: close and reopen this screen. You won't be charged twice.",
     "billingPendingTitle": "Couldn't load the plans",
     "billingPendingBody": "We couldn't reach Google Play to load Explore+ right now. Check your connection and try again in a moment."
   },
