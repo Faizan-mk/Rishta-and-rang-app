@@ -148,18 +148,31 @@ export function HomeScreen() {
   // matrimonial members as Rishta cards. The Intent filter is how a member
   // narrows it to one kind. Anyone casual whose thread moved to Rishta stays off
   // the deck for good.
-  // Someone already matched is a conversation, not a card to swipe. Cards the
-  // member has already had on screen stay, though: dropping one from behind
-  // the cursor (a like that just matched) would shift the deck and skip the
-  // next person.
+  // Someone already matched is a conversation, not a card to swipe. The one
+  // exception is a match made *during this visit* with someone whose card was
+  // already on screen: dropping that card from behind the cursor would shift
+  // the deck and skip the next person. Matches that existed when the app
+  // opened are always left out, even though the deck can load before them.
   const shownIds = useRef(new Set<string>());
+  const keepIds = useRef(new Set<string>());
+  const knownMatched = useRef<Set<string> | null>(null);
   const matchedIds = useMemo(
     () => new Set(matches.map((m) => m.sourceProfileId).filter((id): id is string => Boolean(id))),
     [matches]
   );
   const deck = useMemo(() => {
+    if (knownMatched.current === null) {
+      // The first list that arrives is "already matched".
+      if (matchedIds.size > 0) knownMatched.current = new Set(matchedIds);
+    } else {
+      matchedIds.forEach((id) => {
+        if (knownMatched.current!.has(id)) return;
+        knownMatched.current!.add(id);
+        if (shownIds.current.has(id)) keepIds.current.add(id);
+      });
+    }
     const visible = (p: BrowseProfile) =>
-      !blockedProfileIds.has(p.id) && (!matchedIds.has(p.id) || shownIds.current.has(p.id));
+      !blockedProfileIds.has(p.id) && (!matchedIds.has(p.id) || keepIds.current.has(p.id));
     const dating = oppositeGenderProfiles(datingProfiles, user?.gender).filter(
       (p) => visible(p) && !rishtaProfileIds.has(p.id) && p.intent === 'casual'
     );
@@ -265,6 +278,7 @@ export function HomeScreen() {
   // instead of landing mid-way through it.
   useEffect(() => {
     shownIds.current = new Set();
+    keepIds.current = new Set();
     setCursor(0);
   }, [filters]);
 
@@ -391,11 +405,18 @@ export function HomeScreen() {
       // itself, so this cannot fire on a one-sided like, and re-liking someone
       // already matched does not celebrate again.
       if (outcome?.isNew) {
+        // This card stays where it is (see keepIds), so the deck doesn't shift.
+        keepIds.current.add(profile.id);
         setCelebration({ name: profile.name, photo: profile.photos[0] });
-        addNotification('match', t('matches.itsAMatch'), t('matches.matchedBody', { name: profile.name }), { id: profile.id, kind: mode });
+        // No notification row here: like_profile already writes "You matched"
+        // for both of them (supabase/44), and a second one from the app doubled it.
       }
+      // A row in this member's own Notifications for every like they send:
+      // "Interest sent" for a rishta profile, "Like sent" for a Dost one.
       if (mode !== 'dating') {
         addNotification('like', t('profileDetail.interestSentTitle'), t('profileDetail.interestSentBody', { name: profile.name }), { id: profile.id, kind: mode });
+      } else if (!outcome?.isNew) {
+        addNotification('like', t('profileDetail.likeSentTitle'), t('profileDetail.likeSentBody', { name: profile.name }), { id: profile.id, kind: mode });
         // No popup: the "Liked · Undo" bar below says it, and lets it be taken back.
       }
       // A match is a conversation now, not something to take back here.

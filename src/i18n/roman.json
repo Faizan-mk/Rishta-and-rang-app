@@ -878,6 +878,8 @@
     "likeSentHint": "{name} ko like bhej diya gaya.",
     "matchedMessage": "Match ho gaya · Message karein",
     "notNow": "Abhi nahi",
+    "likeSentTitle": "Like bhej diya",
+    "likeSentBody": "Aap ne {name} ko like kiya.",
     "interestSentTitle": "Dilchaspi Bhej Di Gayi",
     "interestSentBody": "{name} ko dilchaspi bhej di gayi.",
     "message": "Paigham",

@@ -32,6 +32,7 @@ import { useTheme } from '../../store/ThemeContext';
 import { useAuth } from '../../store/AuthContext';
 import { useDialog } from '../../store/DialogContext';
 import { useMatches } from '../../store/MatchesContext';
+import { useNotifications } from '../../store/NotificationContext';
 import { useFavorites } from '../../store/FavoritesContext';
 import { useViewHistory } from '../../store/ViewHistoryContext';
 import { useActivityHistory } from '../../store/ActivityHistoryContext';
@@ -56,6 +57,7 @@ export function ProfileDetailScreen() {
   const { user } = useAuth();
   const { notify } = useDialog();
   const { getMatchForProfile } = useMatches();
+  const { addNotification } = useNotifications();
   const { datingProfiles, rishtaProfiles } = useDiscovery();
   const { isFavorite, isLiked, toggleLike, toggleFavorite } = useFavorites();
   const { recordView } = useViewHistory();
@@ -162,7 +164,18 @@ export function ProfileDetailScreen() {
       setCelebration({ name: profile.name, photo: profile.photos[0] ?? '' });
       return;
     }
+    if (kind === 'dating') {
+      addNotification('like', t('profileDetail.likeSentTitle'), t('profileDetail.likeSentBody', { name: profile.name }), {
+        id: profile.id,
+        kind,
+      });
+    }
     if (kind === 'rishta') {
+      // Same "Interest sent" row a like from Home leaves in Notifications.
+      addNotification('like', t('profileDetail.interestSentTitle'), t('profileDetail.interestSentBody', { name: profile.name }), {
+        id: profile.id,
+        kind,
+      });
       await notify({
         title: t('profileDetail.interestSentTitle'),
         message: t('profileDetail.interestSentBody', { name: profile.name }),

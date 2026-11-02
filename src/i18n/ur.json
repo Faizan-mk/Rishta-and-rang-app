@@ -878,6 +878,8 @@
     "likeSentHint": "{name} کو لائک بھیج دیا گیا۔",
     "matchedMessage": "میچ ہو گیا · پیغام بھیجیں",
     "notNow": "ابھی نہیں",
+    "likeSentTitle": "لائک بھیج دیا",
+    "likeSentBody": "آپ نے {name} کو لائک کیا۔",
     "interestSentTitle": "دلچسپی بھیج دی گئی",
     "interestSentBody": "{name} کو دلچسپی بھیج دی گئی۔",
     "message": "پیغام",

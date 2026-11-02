@@ -878,6 +878,8 @@
     "likeSentHint": "Like sent to {name}.",
     "matchedMessage": "Matched · Send a message",
     "notNow": "Not now",
+    "likeSentTitle": "Like sent",
+    "likeSentBody": "You liked {name}.",
     "interestSentTitle": "Interest sent",
     "interestSentBody": "Interest sent to {name}.",
     "message": "Message",
