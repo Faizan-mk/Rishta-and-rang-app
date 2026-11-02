@@ -1135,5 +1135,12 @@
     "hintNone": "Your 3 free trials are used. Upgrade to see everyone",
     "noneLeftTitle": "Your 3 free trials are used",
     "noneLeftBody": "Someone liked you. Upgrade to Explore+ to see who, and everyone else who likes you."
+  },
+  "update": {
+    "title": "A new update is available",
+    "body": "Update Lovebirds to get the latest features and fixes.",
+    "requiredBody": "This version of Lovebirds is no longer supported. Please update to keep using the app.",
+    "now": "Update now",
+    "later": "Later"
   }
 }

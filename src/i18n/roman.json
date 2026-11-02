@@ -1135,5 +1135,12 @@
     "hintNone": "Aap ke 3 muft trial khatam ho gaye. Sab dekhne ke liye upgrade karein",
     "noneLeftTitle": "Aap ke 3 trial khatam ho gaye",
     "noneLeftBody": "Kisi ne aap ko pasand kiya hai. Kaun hai, yeh dekhne ke liye Explore+ mein upgrade karein."
+  },
+  "update": {
+    "title": "Naya update aa gaya hai",
+    "body": "Naye features aur fixes ke liye Lovebirds update karein.",
+    "requiredBody": "Lovebirds ka yeh version ab nahi chalta. App istemal karte rehne ke liye update karein.",
+    "now": "Abhi update karein",
+    "later": "Baad mein"
   }
 }

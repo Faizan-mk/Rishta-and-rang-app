@@ -30,6 +30,7 @@ import { usePushRegistration } from '../hooks/usePushRegistration';
 import { usePushNavigation } from '../hooks/usePushNavigation';
 import { useActivityHeartbeat } from '../hooks/useActivityHeartbeat';
 import { useBillingRegistration } from '../hooks/useBillingRegistration';
+import { useUpdatePrompt } from '../hooks/useUpdatePrompt';
 
 // A phone set to a very large font made text spill out of buttons, chips and
 // cards built for normal sizes. Text still grows with the setting, up to 1.3x,
@@ -63,6 +64,8 @@ function RootNavigator() {
   // Points RevenueCat at the signed-in member so a purchase and sync-entitlement
   // agree on whose row to grant Explore+ on.
   useBillingRegistration();
+  // "A new version is out — update" when Play has a newer build.
+  useUpdatePrompt();
 
   const navigationTheme = useMemo<Theme>(() => {
     const base = isDark ? DarkTheme : DefaultTheme;
