@@ -28,6 +28,8 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
+// The app's own Expo project (owner/slug in app.json), as Expo names it.
+const EXPO_PROJECT = '@khanmk/rishta-and-rang';
 
 // Which notification_prefs column gates which event. An event with no entry
 // here is not gated. The three rishta events are one stored notification type
@@ -345,20 +347,48 @@ Deno.serve(async (req: Request) => {
     title,
     body,
     sound: 'default',
+    // Expo's default maps to FCM "normal", which Android holds back (often for
+    // hours, or until the app is next opened on Infinix/Tecno-style phones)
+    // while the app is closed and the phone is idle. High is delivered at once.
+    priority: 'high',
+    channelId: 'default',
     data: { event, ...routing, ...(data ?? {}) },
   }));
 
-  const expoResponse = await fetch(EXPO_PUSH_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-      'Accept-Encoding': 'gzip, deflate',
-    },
-    body: JSON.stringify(messages),
-  });
+  const send = (batch: typeof messages) =>
+    fetch(EXPO_PUSH_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'Accept-Encoding': 'gzip, deflate',
+      },
+      body: JSON.stringify(batch),
+    });
 
-  const result = await expoResponse.json().catch(() => null);
+  let sent = messages;
+  let expoResponse = await send(sent);
+  let result = await expoResponse.json().catch(() => null);
+
+  // Expo refuses a whole request if its tokens belong to more than one Expo
+  // project, and one leftover token from a test build (made under another
+  // project) was enough to stop every push to that member. Its error names the
+  // tokens per project: drop the ones that aren't this app's and send the rest.
+  const mixed = (result?.errors ?? []).find(
+    (e: { code?: string }) => e?.code === 'PUSH_TOO_MANY_EXPERIENCE_IDS'
+  ) as { details?: Record<string, string[]> } | undefined;
+  if (!expoResponse.ok && mixed?.details) {
+    const ours = mixed.details[EXPO_PROJECT] ?? [];
+    const foreign = Object.entries(mixed.details)
+      .filter(([project]) => project !== EXPO_PROJECT)
+      .flatMap(([, list]) => list);
+    if (foreign.length) await supabase.from('push_tokens').delete().in('expo_push_token', foreign);
+    sent = messages.filter((m: { to: string }) => ours.includes(m.to));
+    if (!sent.length) return json({ skipped: 'no_devices', userId }, 200);
+    expoResponse = await send(sent);
+    result = await expoResponse.json().catch(() => null);
+  }
+
   if (!expoResponse.ok) {
     console.error('send-push: Expo rejected the batch', expoResponse.status, JSON.stringify(result));
     return json({ error: 'expo_rejected' }, 502);
@@ -368,7 +398,7 @@ Deno.serve(async (req: Request) => {
   // app was uninstalled — drop that row so we stop paying for it every time.
   const tickets: { status?: string; details?: { error?: string } }[] = result?.data ?? [];
   const dead = tickets
-    .map((ticket, index) => (ticket?.details?.error === 'DeviceNotRegistered' ? messages[index].to : null))
+    .map((ticket, index) => (ticket?.details?.error === 'DeviceNotRegistered' ? sent[index].to : null))
     .filter((token): token is string => Boolean(token));
 
   if (dead.length) {
@@ -376,7 +406,7 @@ Deno.serve(async (req: Request) => {
   }
 
   return json({
-    sent: messages.length,
+    sent: sent.length,
     pruned: dead.length,
     tickets,
   });
