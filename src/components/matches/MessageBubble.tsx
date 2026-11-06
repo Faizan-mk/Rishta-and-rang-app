@@ -15,6 +15,7 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
+import { useChatMediaUri } from '../../hooks/useChatMediaUri';
 import type { ChatMessage, MessageReaction } from '../../types/content';
 import { REACTION_EMOJIS } from '../../types/content';
 import type { Translate } from '../../i18n';
@@ -584,7 +585,8 @@ function VoiceBubble({
   timeLabel: string;
   tapRef: React.MutableRefObject<(() => void) | null>;
 }) {
-  const player = useAudioPlayer(uri);
+  const { uri: playableUri } = useChatMediaUri(uri);
+  const player = useAudioPlayer(playableUri ?? null);
   const status = useAudioPlayerStatus(player);
   const { t } = useLanguage();
   // White-on-gradient for an outgoing bubble, the same muted grey as every
@@ -690,7 +692,9 @@ function ImageBubble({
   // 320dp phone is narrower than 240 — a fixed square spilled past it there.
   const photoSize = Math.min(240, Math.round(windowWidth * 0.6));
   const [previewVisible, setPreviewVisible] = useState(false);
-  const [failed, setFailed] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const { uri: shownUri, failed: linkFailed } = useChatMediaUri(uri);
+  const failed = loadFailed || linkFailed;
 
   // Same reason as the voice note's: the open handler rides on the parent's
   // tap gesture instead of a nested `Pressable` the outer handler would
@@ -718,7 +722,11 @@ function ImageBubble({
             <Text style={[typography.caption, { color: colors.textTertiary }]}>{t('chat.photoUnavailable')}</Text>
           </View>
         ) : (
-          <Image source={{ uri }} style={[styles.image, { width: photoSize }]} onError={() => setFailed(true)} />
+          <Image
+            source={shownUri ? { uri: shownUri } : undefined}
+            style={[styles.image, { width: photoSize }]}
+            onError={() => setLoadFailed(true)}
+          />
         )}
       </View>
       {/* `statusBarTranslucent` matches every other Modal in the app
@@ -737,7 +745,7 @@ function ImageBubble({
             {/* `contain` over the whole screen, not a band across 80% of it:
                letterboxed as the photo's own shape needs, but with the frame
                reaching both edges of the phone the way a viewer expects. */}
-            <Image source={{ uri }} style={styles.previewImage} resizeMode="contain" />
+            <Image source={shownUri ? { uri: shownUri } : undefined} style={styles.previewImage} resizeMode="contain" />
           </Pressable>
           {/* A visible way out. Tapping the backdrop works, but nothing on the
               screen says so, and on a photo that fills the frame there is no

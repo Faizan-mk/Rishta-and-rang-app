@@ -68,6 +68,8 @@ export const PUBLIC_BUCKET = 'public-media';
 export const VERIFICATION_BUCKET = 'private-verification';
 /** Voice notes and voice intros: audio only, 10 MB (supabase/54_voice_limits.sql). */
 export const VOICE_BUCKET = 'voice-media';
+/** Chat photos and voice notes: private, readable only by the two people in the match. */
+export const CHAT_BUCKET = 'chat-media';
 
 /**
  * Public URL for a path inside the public-media bucket. These URLs are what the

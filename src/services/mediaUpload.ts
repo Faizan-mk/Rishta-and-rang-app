@@ -1,6 +1,6 @@
 import { Platform } from 'react-native';
 import { File } from 'expo-file-system';
-import { PUBLIC_BUCKET, VERIFICATION_BUCKET, VOICE_BUCKET, publicMediaUrl, supabase, voiceMediaUrl } from './supabase';
+import { CHAT_BUCKET, PUBLIC_BUCKET, VERIFICATION_BUCKET, VOICE_BUCKET, publicMediaUrl, supabase, voiceMediaUrl } from './supabase';
 import { AppError } from '../utils/appError';
 
 export function isLocalUri(uri: string): boolean {
@@ -89,6 +89,7 @@ const MAX_UPLOAD_BYTES: Record<string, number> = {
   [PUBLIC_BUCKET]: 50 * 1024 * 1024,
   [VERIFICATION_BUCKET]: 10 * 1024 * 1024,
   [VOICE_BUCKET]: 10 * 1024 * 1024,
+  [CHAT_BUCKET]: 10 * 1024 * 1024,
 };
 
 async function upload(localUri: string, bucket: string, path: string, mimeType?: string | null): Promise<void> {
@@ -125,6 +126,30 @@ async function uploadVoice(
   const path = `${userId}/${folder}/${fileName(localUri, mimeType)}`;
   await upload(localUri, VOICE_BUCKET, path, mimeType);
   return voiceMediaUrl(path);
+}
+
+// Chat files are private to the match. The bucket's policies read the first two
+// folders as the match and the sender, and the message row stores this path,
+// not a URL: each reader gets a short-lived link from chatMediaUrl.
+async function uploadChatFile(
+  userId: string,
+  matchId: string,
+  localUri: string,
+  mimeType?: string | null
+): Promise<string> {
+  const path = `${matchId}/${userId}/${fileName(localUri, mimeType)}`;
+  await upload(localUri, CHAT_BUCKET, path, mimeType);
+  return path;
+}
+
+/** Signed link to a chat file. Undefined when the bucket refuses this member. */
+async function chatMediaUrl(path: string): Promise<string | undefined> {
+  try {
+    const { data } = await supabase.storage.from(CHAT_BUCKET).createSignedUrl(path, 60 * 60);
+    return data?.signedUrl ?? undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 async function uploadVerification(userId: string, localUri: string, folder: string): Promise<string> {
@@ -169,10 +194,9 @@ export const mediaUpload = {
   uploadVoiceIntro: (userId: string, uri: string) => uploadVoice(userId, uri, 'voice'),
   uploadCnicPhoto: (userId: string, uri: string) => uploadVerification(userId, uri, 'cnic'),
   uploadSelfiePhoto: (userId: string, uri: string) => uploadVerification(userId, uri, 'selfie'),
-  uploadChatImage: (userId: string, matchId: string, uri: string, mimeType?: string | null) =>
-    uploadPublic(userId, uri, `chat/${matchId}`, mimeType),
-  uploadChatAudio: (userId: string, matchId: string, uri: string, mimeType?: string | null) =>
-    uploadVoice(userId, uri, `chat/${matchId}`, mimeType),
+  uploadChatImage: uploadChatFile,
+  uploadChatAudio: uploadChatFile,
+  chatMediaUrl,
   uploadStoryMedia: (userId: string, uri: string, mimeType?: string | null) =>
     uploadPublic(userId, uri, 'stories', mimeType),
   publicUrl: publicMediaUrl,
