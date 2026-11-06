@@ -2,7 +2,7 @@
   "expo": {
     "name": "Lovebirds",
     "slug": "rishta-and-rang",
-    "version": "1.0.19",
+    "version": "1.0.20",
     "orientation": "portrait",
     "icon": "./assets/app-icon.png",
     "userInterfaceStyle": "automatic",
@@ -72,7 +72,17 @@
       "expo-notifications",
       "expo-video",
       "expo-asset",
-      "expo-router"
+      "expo-router",
+      "./plugins/with-fresco-fix",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableMinifyInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true
+          }
+        }
+      ]
     ],
     "scheme": "rishtaandrang",
     "experiments": {
